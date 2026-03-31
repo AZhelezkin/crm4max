@@ -22,9 +22,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         scope: '',
       })
 
-      const { token, userId } = await authApi.loginWithVk({
-        vk_access_token: result.access_token as string,
-        vk_user_id: String(result.user_id),
+      const { token, userId } = await authApi.loginWithMax({
+        init_data: result.access_token as string,
       })
 
       localStorage.setItem('token', token)
