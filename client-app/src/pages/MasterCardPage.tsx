@@ -8,7 +8,7 @@ import BottomNav from '@/components/BottomNav'
 
 export default function MasterCardPage() {
   const [params] = useSearchParams()
-  const masterId = params.get('masterId') ?? ''
+  const masterId = window.WebApp?.initDataUnsafe?.start_param ?? params.get('masterId') ?? ''
   const navigate = useNavigate()
   const { setMasterId } = useBookingStore()
 
@@ -23,6 +23,12 @@ export default function MasterCardPage() {
     setMasterId(masterId)
     navigate('/book/services')
   }
+
+  if (!masterId) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
+      <span style={{ color: '#8E8E93' }}>Откройте приложение через бота</span>
+    </div>
+  )
 
   if (!master) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
