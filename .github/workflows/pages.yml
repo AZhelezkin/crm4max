@@ -36,14 +36,14 @@ jobs:
         env:
           VITE_BASE_PATH: /crm4max/master-app/
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        run: npm ci && npm run build
+        run: npm install && npm run build
 
       - name: Build client-app
         working-directory: client-app
         env:
           VITE_BASE_PATH: /crm4max/client-app/
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        run: npm ci && npm run build
+        run: npm install && npm run build
 
       - name: Assemble Pages output
         run: |
