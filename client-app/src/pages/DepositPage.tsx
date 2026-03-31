@@ -1,18 +1,16 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import bridge from '@vkontakte/vk-bridge'
 import { useBookingStore } from '@/store/booking.store'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Button from '@/components/Button'
 
-interface Props {
-  bookingId: string
-  depositAmount: number
-}
-
-export default function DepositPage({ bookingId, depositAmount }: Props) {
+export default function DepositPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { service } = useBookingStore()
+  const bookingId = searchParams.get('bookingId') ?? ''
+  const depositAmount = Number(searchParams.get('amount') ?? 0)
 
   const handlePay = async () => {
     try {
