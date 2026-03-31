@@ -27,9 +27,10 @@ const bridge = {
         return {}
 
       case 'VKWebAppGetAuthToken': {
-        const user = window.WebApp?.initDataUnsafe?.user
+        if (!window.WebApp) throw new Error('MAX WebApp unavailable')
+        const user = window.WebApp.initDataUnsafe?.user
         return {
-          access_token: window.WebApp?.initData ?? '',
+          access_token: window.WebApp.initData ?? '',
           user_id: user?.id ?? 0,
         }
       }
