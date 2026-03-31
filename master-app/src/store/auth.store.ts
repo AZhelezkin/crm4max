@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import bridge from '@vkontakte/vk-bridge'
 import { authApi } from '@/api/auth.api'
 import { mastersApi } from '@/api/masters.api'
 import type { Master } from '@/types'
@@ -20,15 +19,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   init: async () => {
     set({ isLoading: true })
     try {
-      const result = await bridge.send('VKWebAppGetAuthToken', {
-        app_id: Number(import.meta.env.VITE_VK_APP_ID),
-        scope: '',
-      })
+      const initData = window.WebApp?.initData
+      if (!initData) throw new Error('MAX WebApp unavailable')
 
-      const { token } = await authApi.loginWithMax({
-        init_data: result.access_token as string,
-      })
+      window.WebApp?.ready()
 
+      const { token } = await authApi.loginWithMax({ init_data: initData })
       localStorage.setItem('token', token)
 
       const master = await mastersApi.getMe()
