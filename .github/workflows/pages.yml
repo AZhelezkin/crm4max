@@ -1,0 +1,80 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'master-app/**'
+      - 'client-app/**'
+      - '.github/workflows/pages.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build apps
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build master-app
+        working-directory: master-app
+        env:
+          VITE_BASE_PATH: /crm4max/master-app/
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm ci && npm run build
+
+      - name: Build client-app
+        working-directory: client-app
+        env:
+          VITE_BASE_PATH: /crm4max/client-app/
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm ci && npm run build
+
+      - name: Assemble Pages output
+        run: |
+          mkdir -p pages/master-app pages/client-app
+          cp -r master-app/dist/. pages/master-app/
+          cp -r client-app/dist/. pages/client-app/
+          cat > pages/index.html <<'EOF'
+          <!DOCTYPE html><html><head><meta charset="UTF-8">
+          <title>CRM4Max</title></head><body>
+          <ul>
+            <li><a href="master-app/">master-app</a></li>
+            <li><a href="client-app/">client-app</a></li>
+          </ul>
+          </body></html>
+          EOF
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy:
+    name: Deploy to Pages
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

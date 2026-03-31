@@ -4,10 +4,9 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  base: process.env.VITE_BASE_PATH ?? '/',
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
   },
-  server: {
-    proxy: { '/api': 'http://localhost:3000' },
-  },
+  server: { proxy: { '/api': 'http://localhost:3000' } },
 })
