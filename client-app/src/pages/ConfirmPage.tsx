@@ -38,41 +38,59 @@ export default function ConfirmPage() {
 
   return (
     <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', flexDirection: 'column' }}>
+
       {/* Шапка */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 16px 12px', position: 'sticky', top: 0, zIndex: 10, background: '#000',
       }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', color: '#2688EB', fontSize: 20 }}>←</button>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', color: '#2688EB', fontSize: 22 }}>←</button>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 600, fontSize: 17 }}>Подтверждение</div>
           <div style={{ color: '#8E8E93', fontSize: 13 }}>{service.name}</div>
         </div>
-        <button onClick={() => navigate('/')} style={{ background: 'none', color: '#8E8E93', fontSize: 18 }}>✕</button>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            background: '#2C2C2E', borderRadius: 8,
+            width: 30, height: 30,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#8E8E93', fontSize: 16,
+          }}
+        >✕</button>
       </div>
 
-      <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
         {/* Мастер */}
         {master && (
           <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-                background: '#2C2C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-                flexShrink: 0,
+                background: '#2C2C2E', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, flexShrink: 0,
               }}>
                 {master.photo
                   ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : '👤'}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{master.name}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{master.name}</div>
                 {master.description && (
-                  <div style={{ color: '#8E8E93', fontSize: 13 }}>{master.description}</div>
+                  <div style={{
+                    color: '#8E8E93', fontSize: 13, marginTop: 1,
+                    overflow: 'hidden', display: '-webkit-box',
+                    WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+                  }}>
+                    {master.description}
+                  </div>
                 )}
               </div>
               {master.rating > 0 && (
-                <div style={{ color: '#FF9500', fontWeight: 600, fontSize: 14 }}>★ {master.rating.toFixed(1)}</div>
+                <div style={{ color: '#FF9500', fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
+                  ★ {master.rating.toFixed(1)}
+                </div>
               )}
             </div>
           </div>
@@ -80,16 +98,18 @@ export default function ConfirmPage() {
 
         {/* Услуга */}
         <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>{service.name}</div>
+          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{service.name}</div>
           {service.description && (
             <div style={{ color: '#8E8E93', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
               {service.description}
             </div>
           )}
-          <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {(price / 100).toLocaleString('ru-RU')} ₽
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontWeight: 600, fontSize: 16 }}>
+              {(price / 100).toLocaleString('ru-RU')} ₽
+            </span>
             {service.discountPercent && (
-              <span style={{ color: '#8E8E93', fontWeight: 400, fontSize: 14, textDecoration: 'line-through', marginLeft: 8 }}>
+              <span style={{ color: '#8E8E93', fontSize: 13, textDecoration: 'line-through' }}>
                 {(service.price / 100).toLocaleString('ru-RU')} ₽
               </span>
             )}
@@ -105,7 +125,12 @@ export default function ConfirmPage() {
             <div style={{ fontWeight: 600 }}>{formattedDate}</div>
             <div style={{ color: '#8E8E93', fontSize: 13 }}>Дата</div>
           </div>
-          <button onClick={() => navigate('/book/calendar')} style={{ background: 'none', color: '#8E8E93', fontSize: 18 }}>✏️</button>
+          <button onClick={() => navigate('/book/calendar')} style={{ background: 'none' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 20h9" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
+              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#8E8E93" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
         {/* Время */}
@@ -119,17 +144,16 @@ export default function ConfirmPage() {
               {remind ? 'Напомним за 1 час' : 'Без напоминания'}
             </div>
           </div>
-          <button
-            onClick={() => {
-              // Возврат к шагу выбора времени
-              navigate('/book/calendar')
-            }}
-            style={{ background: 'none', color: '#8E8E93', fontSize: 18 }}
-          >✏️</button>
+          <button onClick={() => navigate('/book/calendar')} style={{ background: 'none' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 20h9" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
+              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#8E8E93" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Кнопка */}
+      {/* Кнопка Записаться */}
       <div style={{ padding: '12px 16px 32px' }}>
         <button
           onClick={handleConfirm}
