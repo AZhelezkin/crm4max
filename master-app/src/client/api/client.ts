@@ -5,19 +5,17 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Подставляем JWT из localStorage в каждый запрос
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('masterToken')
+  const token = localStorage.getItem('clientToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Глобальная обработка 401
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('masterToken')
+      localStorage.removeItem('clientToken')
       window.location.href = '/'
     }
     return Promise.reject(err)

@@ -5,7 +5,6 @@ on:
     branches: [master]
     paths:
       - 'master-app/**'
-      - 'client-app/**'
       - '.github/workflows/pages.yml'
 
   workflow_dispatch:
@@ -21,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build apps
+    name: Build app
     runs-on: ubuntu-latest
 
     steps:
@@ -34,37 +33,15 @@ jobs:
       - name: Build master-app
         working-directory: master-app
         env:
-          VITE_BASE_PATH: /crm4max/master-app/
+          VITE_BASE_PATH: /crm4max/
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: npm install && npm run build
-
-      - name: Build client-app
-        working-directory: client-app
-        env:
-          VITE_BASE_PATH: /crm4max/client-app/
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        run: npm install && npm run build
-
-      - name: Assemble Pages output
-        run: |
-          mkdir -p pages/master-app pages/client-app
-          cp -r master-app/dist/. pages/master-app/
-          cp -r client-app/dist/. pages/client-app/
-          cat > pages/index.html <<'EOF'
-          <!DOCTYPE html><html><head><meta charset="UTF-8">
-          <title>CRM4Max</title></head><body>
-          <ul>
-            <li><a href="master-app/">master-app</a></li>
-            <li><a href="client-app/">client-app</a></li>
-          </ul>
-          </body></html>
-          EOF
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: pages
+          path: master-app/dist
 
   deploy:
     name: Deploy to Pages
@@ -78,3 +55,4 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+

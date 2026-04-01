@@ -13,6 +13,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@client/*": ["src/client/*"],
       "@vkontakte/vk-bridge": ["src/lib/bridge.ts"]
     }
   },

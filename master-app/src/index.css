@@ -4,6 +4,7 @@
   padding: 0;
 }
 
+/* Тема мастера (по умолчанию) */
 :root {
   --color-primary: #2688EB;
   --color-primary-light: rgba(38, 136, 235, 0.12);
@@ -17,6 +18,23 @@
   --color-card2: #2C2C2E;
   --radius: 12px;
   --radius-sm: 10px;
+}
+
+/* Тема клиента — переопределяет переменные при data-theme="client" на <html> */
+[data-theme="client"] {
+  --color-primary: #007AFE;
+  --color-primary-dim: rgba(0, 122, 254, 0.30);
+  --color-danger: #CE4259;
+  --color-success: #34C759;
+  --color-warning: #FF9500;
+  --color-text: #D3D4D6;
+  --color-text-secondary: #7D7D7F;
+  --color-border: #3A3A3C;
+  --color-bg: #0F0F11;
+  --color-card: #25262B;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --radius-btn: 18px;
 }
 
 body {

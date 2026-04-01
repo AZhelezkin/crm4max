@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
+import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
 import ProfilePage from '@/pages/ProfilePage'
@@ -16,7 +17,21 @@ import BookingDetailPage from '@/pages/BookingDetailPage'
 import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 
+// Определяем режим по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param).
+// Если ?startapp=<UUID мастера> — открываем клиентское приложение (бронирование).
+// Если start_param отсутствует или не является UUID — открываем приложение мастера.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
+const isClientMode = UUID_REGEX.test(startParam)
+
+document.documentElement.dataset.theme = isClientMode ? 'client' : 'master'
+
 export default function App() {
+  if (isClientMode) return <ClientApp />
+  return <MasterApp />
+}
+
+function MasterApp() {
   const { init, isLoading, master } = useAuthStore()
 
   useEffect(() => {

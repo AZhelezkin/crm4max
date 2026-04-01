@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      '@client': resolve(__dirname, 'src/client'),
       '@vkontakte/vk-bridge': resolve(__dirname, 'src/lib/bridge.ts'),
     },
   },
