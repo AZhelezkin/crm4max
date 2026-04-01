@@ -39,13 +39,12 @@ function IcoMore() {
   )
 }
 
-// Табы строго по Figma: Услуги | Фото | Адрес | Отзывы | Все
-const TABS = ['services', 'photo', 'address', 'reviews', 'all'] as const
+// Табы по Figma: Услуги | Фото | Отзывы | Все
+const TABS = ['services', 'photo', 'reviews', 'all'] as const
 type Tab = typeof TABS[number]
 const TAB_LABELS: Record<Tab, string> = {
   services: 'Услуги',
   photo: 'Фото',
-  address: 'Адрес',
   reviews: 'Отзывы',
   all: 'Все',
 }
@@ -126,10 +125,10 @@ export default function MasterCardPage() {
         )}
       </div>
 
-      {/* Аватар + имя + специальность */}
-      <div style={{ padding: '0 16px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* Аватар + имя + описание — по центру */}
+      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 110, height: 110, borderRadius: '50%', flexShrink: 0,
+          width: 110, height: 110, borderRadius: '50%',
           background: 'var(--color-card)', overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -138,7 +137,7 @@ export default function MasterCardPage() {
             : <span style={{ fontSize: 44, color: 'var(--color-text-secondary)' }}>👤</span>
           }
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#D3D4D6', lineHeight: 1.2 }}>
             {master.name}
           </div>
@@ -309,27 +308,6 @@ export default function MasterCardPage() {
           )
         )}
 
-        {/* Адрес */}
-        {tab === 'address' && (
-          <div>
-            {master.location ? (
-              <div style={{
-                background: '#25262B', borderRadius: 20,
-                padding: '16px', display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" fill="#7D7D7F"/>
-                </svg>
-                <span style={{ fontSize: 17, color: '#D3D4D6' }}>{master.location}</span>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 40 }}>
-                Адрес не указан
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Отзывы */}
         {tab === 'reviews' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -369,28 +347,6 @@ export default function MasterCardPage() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Фиксированная кнопка Записаться */}
-      <div style={{
-        position: 'fixed', bottom: 95, left: 0, right: 0,
-        padding: '12px 16px',
-        background: `linear-gradient(to top, var(--color-bg) 60%, transparent)`,
-      }}>
-        <button
-          onClick={handleBook}
-          style={{
-            width: '100%', height: 60, borderRadius: 20,
-            background: '#007AFE', color: '#fff',
-            fontWeight: 500, fontSize: 19,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M8 2v3M16 2v3M3.5 9.09h17M21 8.5V17c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V8.5c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5Z" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Записаться
-        </button>
       </div>
 
       <BottomNav />
