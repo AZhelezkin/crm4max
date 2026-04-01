@@ -52,8 +52,8 @@ function MasterApp() {
     )
   }
 
-  // Новый мастер без имени → онбординг
-  const needsOnboarding = master && !master.name
+  // Новый мастер, не прошедший онбординг
+  const needsOnboarding = master && !master.isOnboarded
 
   return (
     <BrowserRouter>
