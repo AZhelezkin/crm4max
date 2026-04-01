@@ -5,23 +5,25 @@
 }
 
 :root {
-  --color-primary: #2688EB;
-  --color-danger: #FF3B30;
+  --color-primary: #007AFE;
+  --color-primary-dim: rgba(0, 122, 254, 0.30);
+  --color-danger: #CE4259;
   --color-success: #34C759;
   --color-warning: #FF9500;
-  --color-text: #FFFFFF;
-  --color-text-secondary: #8E8E93;
-  --color-border: #2C2C2E;
-  --color-bg: #000000;
-  --color-card: #1C1C1E;
-  --radius: 14px;
-  --radius-sm: 10px;
+  --color-text: #D3D4D6;
+  --color-text-secondary: #7D7D7F;
+  --color-border: #3A3A3C;
+  --color-bg: #0F0F11;
+  --color-card: #25262B;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --radius-btn: 18px;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #000;
-  color: #fff;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;

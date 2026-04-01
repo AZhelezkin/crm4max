@@ -35,109 +35,140 @@ export default function MyBookingsPage() {
     bookingsApi.list().then(setBookings).catch(() => {})
   }, [])
 
-  // Set of dates that have bookings
   const bookedDates = new Set(bookings.map((b) => b.date))
 
-  // Active (upcoming) bookings count for badge
   const upcomingCount = bookings.filter(
     (b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && b.date >= today.format('YYYY-MM-DD')
   ).length
 
-  // Sort bookings chronologically
-  const sortedBookings = [...bookings].sort((a, b) => {
-    const da = a.date + ' ' + a.time
-    const db = b.date + ' ' + b.time
-    return da.localeCompare(db)
-  })
+  const sortedBookings = [...bookings].sort((a, b) =>
+    (a.date + ' ' + a.time).localeCompare(b.date + ' ' + b.time)
+  )
 
   const displayedBookings = selectedDate
     ? sortedBookings.filter((b) => b.date === selectedDate)
     : sortedBookings
 
-  const isPast = (b: Booking) => {
-    const dt = b.date + ' ' + b.time
-    return dayjs(dt).isBefore(today) || b.status === 'COMPLETED' || b.status === 'CANCELLED'
-  }
+  const isPast = (b: Booking) =>
+    dayjs(b.date + ' ' + b.time).isBefore(today) || b.status === 'COMPLETED' || b.status === 'CANCELLED'
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#000', paddingBottom: 80 }}>
-      {/* Шапка */}
-      <div style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{today.format('D MMMM, YYYY')}</div>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', paddingBottom: 95 }}>
+
+      {/* Шапка TopBar */}
+      <div style={{
+        padding: '48px 16px 12px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text)' }}>
+          {today.format('D MMMM, YYYY')}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button style={{ background: '#1C1C1E', borderRadius: 10, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{
+            background: 'var(--color-card)', borderRadius: 'var(--radius-sm)',
+            width: 36, height: 36,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="#8E8E93" strokeWidth="2" />
-              <path d="M16.5 16.5l4 4" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-          <button style={{ background: '#2688EB', borderRadius: 10, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="11" cy="11" r="7" stroke="#7D7D7F" strokeWidth="2"/>
+              <path d="M16.5 16.5l4 4" stroke="#7D7D7F" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
       </div>
 
       {/* Навигация месяца */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 8px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px 8px',
+      }}>
         <button
           onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
-          style={{ background: 'none', color: '#2688EB', fontSize: 20, padding: '4px 8px' }}
-        >‹</button>
-        <span style={{ fontWeight: 600, color: '#8E8E93', fontSize: 14 }}>
-          {viewMonth.format('MMMM YYYY')} ▾
+          style={{ background: 'none', padding: '4px 8px' }}
+        >
+          <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
+            <path d="M8 1L1 8l7 7" stroke="#007AFE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        <span style={{
+          fontWeight: 600, color: 'var(--color-text-secondary)',
+          fontSize: 15, textTransform: 'capitalize',
+        }}>
+          {viewMonth.format('MMMM YYYY')}
         </span>
         <button
           onClick={() => setViewMonth((m) => m.add(1, 'month'))}
-          style={{ background: 'none', color: '#2688EB', fontSize: 20, padding: '4px 8px' }}
-        >›</button>
+          style={{ background: 'none', padding: '4px 8px' }}
+        >
+          <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
+            <path d="M1 1l7 7-7 7" stroke="#007AFE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
 
       {/* Сетка календаря */}
       <div style={{ padding: '0 16px 16px' }}>
-        {/* Заголовок дней */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+        {/* Дни недели */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+          marginBottom: 4,
+        }}>
           {DAY_NAMES.map((d) => (
-            <div key={d} style={{ textAlign: 'center', fontSize: 12, color: '#8E8E93' }}>{d}</div>
+            <div key={d} style={{
+              textAlign: 'center', fontSize: 13,
+              color: 'var(--color-text-secondary)',
+              padding: '4px 0',
+            }}>
+              {d}
+            </div>
           ))}
         </div>
 
         {buildMonthGrid(viewMonth.year(), viewMonth.month()).map((week, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
+          <div key={wi} style={{
+            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 2, marginBottom: 2,
+          }}>
             {week.map((day, di) => {
               if (!day) return <div key={di} />
               const val = day.format('YYYY-MM-DD')
               const isToday = day.isSame(today, 'day')
               const isSelected = val === selectedDate
               const hasBooking = bookedDates.has(val)
-              const isWeekend = day.day() === 0 || day.day() === 6
+
+              let bg = 'transparent'
+              if (isSelected) bg = '#007AFE'
+              else if (isToday) bg = 'rgba(0,122,254,0.15)'
 
               return (
                 <button
                   key={val}
                   onClick={() => setSelectedDate(isSelected ? null : val)}
                   style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    padding: '6px 0', borderRadius: 8, position: 'relative',
-                    background: isSelected ? '#2688EB' : 'transparent',
-                    color: isSelected ? '#fff' : isWeekend ? '#FF3B30' : '#fff',
-                    border: isToday && !isSelected ? '1px solid #2688EB' : 'none',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    width: 55, height: 54, borderRadius: '50%',
+                    margin: '0 auto',
+                    background: bg,
+                    border: isToday && !isSelected ? '1px solid #007AFE' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 14, fontWeight: isToday ? 700 : 400, lineHeight: 1 }}>
+                  <span style={{
+                    fontSize: 15,
+                    fontWeight: isToday ? 700 : 400,
+                    color: isSelected ? '#fff' : 'var(--color-text)',
+                    lineHeight: 1,
+                  }}>
                     {day.date()}
                   </span>
                   {hasBooking ? (
                     <span style={{
                       width: 5, height: 5, borderRadius: '50%',
-                      background: isSelected ? '#fff' : '#FF3B30',
-                      marginTop: 2,
+                      background: isSelected ? '#fff' : 'var(--color-danger)',
+                      marginTop: 2, display: 'block',
                     }} />
                   ) : (
-                    <span style={{ width: 5, height: 5, marginTop: 2 }} />
+                    <span style={{ width: 5, height: 5, marginTop: 2, display: 'block' }} />
                   )}
                 </button>
               )
@@ -148,11 +179,19 @@ export default function MyBookingsPage() {
 
       {/* Список записей */}
       <div style={{ padding: '0 16px' }}>
-        <div style={{ fontSize: 12, color: '#8E8E93', fontWeight: 600, marginBottom: 12, letterSpacing: 0.5 }}>
-          МОИ ЗАПИСИ {upcomingCount > 0 && (
+        <div style={{
+          fontSize: 14, color: 'var(--color-text-secondary)',
+          fontWeight: 400, marginBottom: 12,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          МОИ ЗАПИСИ
+          {upcomingCount > 0 && (
             <span style={{
-              background: '#2688EB', color: '#fff',
-              borderRadius: 10, padding: '1px 7px', fontSize: 11, marginLeft: 6,
+              background: 'rgba(0,122,254,0.30)',
+              color: '#007AFE',
+              borderRadius: 20, padding: '2px 8px',
+              fontSize: 15, fontWeight: 400,
+              minWidth: 23, textAlign: 'center',
             }}>
               {upcomingCount}
             </span>
@@ -160,7 +199,7 @@ export default function MyBookingsPage() {
         </div>
 
         {displayedBookings.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#8E8E93', marginTop: 32 }}>
+          <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 32 }}>
             {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
           </div>
         ) : (
@@ -175,23 +214,36 @@ export default function MyBookingsPage() {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 16,
                     padding: '12px 0',
-                    borderBottom: idx < displayedBookings.length - 1 ? '1px solid #2C2C2E' : 'none',
-                    textAlign: 'left', background: 'none',
+                    borderBottom: idx < displayedBookings.length - 1
+                      ? '1px solid var(--color-border)' : 'none',
+                    textAlign: 'left', background: 'none', width: '100%',
                   }}
                 >
-                  <div style={{ color: '#8E8E93', fontSize: 13, minWidth: 50, flexShrink: 0 }}>
-                    <div>{dateLabel}</div>
-                    <div>{b.time}</div>
+                  {/* Дата и время слева */}
+                  <div style={{
+                    minWidth: 50, flexShrink: 0,
+                    color: past ? 'var(--color-text-secondary)' : 'var(--color-text-secondary)',
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 400 }}>{dateLabel}</div>
+                    <div style={{ fontSize: 15, fontWeight: 400 }}>{b.time}</div>
                   </div>
+
+                  {/* Услуга и мастер */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontWeight: 600, fontSize: 15,
+                      fontSize: 19, fontWeight: 500,
+                      color: past ? 'var(--color-text-secondary)' : 'var(--color-text)',
                       textDecoration: past ? 'line-through' : 'none',
-                      color: past ? '#8E8E93' : '#fff',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {b.service.name}
                     </div>
-                    <div style={{ color: '#8E8E93', fontSize: 13, marginTop: 2 }}>{b.master.name}</div>
+                    <div style={{
+                      fontSize: 15, fontWeight: 400,
+                      color: 'var(--color-text-secondary)', marginTop: 2,
+                    }}>
+                      {b.master.name}
+                    </div>
                   </div>
                 </button>
               )

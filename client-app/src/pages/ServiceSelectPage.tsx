@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { mastersApi } from '@/api/masters.api'
 import { useBookingStore } from '@/store/booking.store'
-import type { Master } from '@/types'
+import type { Master, Service } from '@/types'
 import { discountedPrice } from '@/types'
 import PageHeader from '@/components/PageHeader'
-import Card from '@/components/Card'
 
 export default function ServiceSelectPage() {
   const navigate = useNavigate()
@@ -16,7 +15,7 @@ export default function ServiceSelectPage() {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'))
   }, [masterId, navigate])
 
-  const handleSelect = (service: Master['categories'][0]['services'][0]) => {
+  const handleSelect = (service: Service) => {
     setService(service)
     navigate('/book/calendar')
   }
@@ -25,46 +24,104 @@ export default function ServiceSelectPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
       <PageHeader title="Выберите услугу" />
 
-      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {master?.categories.map((cat) => (
           <div key={cat.id}>
             {cat.name && (
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6, textTransform: 'uppercase' }}>
+              <div style={{
+                fontSize: 13, fontWeight: 600,
+                color: 'var(--color-text-secondary)',
+                marginBottom: 8, marginTop: 8,
+                textTransform: 'uppercase', letterSpacing: 0.5,
+              }}>
                 {cat.name}
               </div>
             )}
-            {cat.services.map((s) => (
-              <Card key={s.id} onClick={() => handleSelect(s)} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{s.name}</div>
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2 }}>
-                      {s.durationMin} мин
-                    </div>
-                    {s.description && (
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2 }}>
-                        {s.description}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {cat.services.map((s) => {
+                const discounted = discountedPrice(s.price, s.discountPercent)
+                const displayPrice = discounted ?? s.price
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => handleSelect(s)}
+                    style={{
+                      background: 'var(--color-card)',
+                      borderRadius: 'var(--radius)',
+                      padding: '14px 16px',
+                      display: 'flex', alignItems: 'center',
+                      gap: 12, textAlign: 'left',
+                      width: '100%',
+                    }}
+                  >
+                    {s.photo && (
+                      <img src={s.photo} alt="" style={{
+                        width: 56, height: 56, borderRadius: 12,
+                        objectFit: 'cover', flexShrink: 0,
+                      }} />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                      }}>
+                        <span style={{
+                          fontWeight: 500, fontSize: 17,
+                          color: 'var(--color-text)',
+                        }}>
+                          {s.name}
+                        </span>
+                        {s.discountPercent && (
+                          <span style={{
+                            background: 'var(--color-danger)', color: '#fff',
+                            borderRadius: 6, fontSize: 10, fontWeight: 700,
+                            padding: '2px 6px', flexShrink: 0,
+                          }}>
+                            -{s.discountPercent}%
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                    {s.discountPercent ? (
-                      <>
-                        <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
-                          {((discountedPrice(s.price, s.discountPercent) ?? s.price) / 100).toLocaleString('ru-RU')} ₽
+                      {s.description && (
+                        <div style={{
+                          color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 3,
+                          overflow: 'hidden', display: '-webkit-box',
+                          WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+                        }}>
+                          {s.description}
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
-                          {(s.price / 100).toLocaleString('ru-RU')} ₽
+                      )}
+                      <div style={{
+                        display: 'flex', alignItems: 'center',
+                        justifyContent: 'space-between', marginTop: 4,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{
+                            fontSize: 17, fontWeight: 400,
+                            color: 'var(--color-text)',
+                          }}>
+                            {(displayPrice / 100).toLocaleString('ru-RU')} ₽
+                          </span>
+                          {s.discountPercent && (
+                            <span style={{
+                              fontSize: 13, color: 'var(--color-text-secondary)',
+                              textDecoration: 'line-through',
+                            }}>
+                              {(s.price / 100).toLocaleString('ru-RU')} ₽
+                            </span>
+                          )}
                         </div>
-                      </>
-                    ) : (
-                      <div style={{ fontWeight: 600 }}>{(s.price / 100).toLocaleString('ru-RU')} ₽</div>
-                    )}
-                    <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
+                          {s.durationMin}
+                          {s.durationMax ? `–${s.durationMax}` : ''} мин
+                        </span>
+                      </div>
+                    </div>
+                    <svg width="9" height="16" viewBox="0 0 9 16" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M1 1l7 7-7 7" stroke="#7D7D7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         ))}
       </div>
