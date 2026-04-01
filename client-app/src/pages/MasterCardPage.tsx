@@ -39,14 +39,13 @@ function IcoMore() {
   )
 }
 
-// Табы по Figma: Услуги | Фото | Отзывы | Все
-const TABS = ['services', 'photo', 'reviews', 'all'] as const
+// Табы по Figma: Услуги | Фото | Отзывы
+const TABS = ['services', 'photo', 'reviews'] as const
 type Tab = typeof TABS[number]
 const TAB_LABELS: Record<Tab, string> = {
   services: 'Услуги',
   photo: 'Фото',
   reviews: 'Отзывы',
-  all: 'Все',
 }
 
 export default function MasterCardPage() {
@@ -105,22 +104,26 @@ export default function MasterCardPage() {
           style={{ width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none' }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" stroke="#007AFE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" stroke="#D3D4D6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
         {/* Рейтинг справа */}
         {master.rating > 0 && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 4,
+            display: 'flex', alignItems: 'center', gap: 6,
             marginRight: 16,
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#7D7D7F">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span style={{ fontSize: 15, fontWeight: 400, color: 'var(--color-text-secondary)' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: '#D3D4D6' }}>
               {master.rating.toFixed(1)}
             </span>
+            <div style={{ display: 'flex', gap: 2 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <svg key={i} width="18" height="18" viewBox="0 0 24 24" fill={i < Math.round(master.rating) ? '#FF9500' : '#3A3A3C'}>
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -174,14 +177,15 @@ export default function MasterCardPage() {
         ))}
       </div>
 
-      {/* Табы: Услуги | Фото | Адрес | Отзывы | Все */}
+      {/* Табы: Услуги | Фото | Отзывы */}
       <div style={{
         display: 'flex',
         borderBottom: '1px solid var(--color-border)',
         overflowX: 'auto',
         scrollbarWidth: 'none',
+        paddingLeft: 16,
       }}>
-        {TABS.map((key) => {
+        {TABS.map((key, idx) => {
           const active = tab === key
           const badge = tabBadge(key)
           return (
@@ -190,12 +194,14 @@ export default function MasterCardPage() {
               onClick={() => setTab(key)}
               style={{
                 flexShrink: 0,
-                padding: '0 12px 10px',
                 paddingTop: 10,
+                paddingBottom: 14,
+                paddingLeft: idx === 0 ? 0 : 20,
+                paddingRight: 20,
                 background: 'none',
-                fontSize: 19, fontWeight: 500,
+                fontSize: 17, fontWeight: 500,
                 color: active ? '#007AFE' : '#7D7D7F',
-                borderBottom: active ? '3px solid #007AFE' : '3px solid transparent',
+                borderBottom: active ? '2px solid #007AFE' : '2px solid transparent',
                 display: 'flex', alignItems: 'center', gap: 6,
                 whiteSpace: 'nowrap',
               }}
@@ -220,11 +226,10 @@ export default function MasterCardPage() {
       <div style={{ padding: '12px 16px 0' }}>
 
         {/* Услуги — список категорий, карточки 384x78 r:20 как в Figma */}
-        {(tab === 'services' || tab === 'all') && (
+        {tab === 'services' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {master.categories.map((cat) => {
               const hasDiscount = cat.services.some((s) => s.discountPercent)
-              const firstPrice = cat.services[0]?.price
               return (
                 <button
                   key={cat.id}
@@ -233,7 +238,7 @@ export default function MasterCardPage() {
                     navigate('/book/services', { state: { categoryId: cat.id } })
                   }}
                   style={{
-                    background: '#25262B',
+                    background: 'rgba(37,38,43,0.6)',
                     borderRadius: 20,
                     height: 78,
                     padding: '0 16px',
@@ -271,11 +276,6 @@ export default function MasterCardPage() {
                       {cat.services.slice(0, 2).map((s) => s.name).join(', ')}
                       {cat.services.length > 2 ? '...' : ''}
                     </div>
-                    {firstPrice && (
-                      <div style={{ fontSize: 14, color: '#7D7D7F', marginTop: 1 }}>
-                        от {(firstPrice / 100).toLocaleString('ru-RU')} ₽
-                      </div>
-                    )}
                   </div>
 
                   {/* Стрелка */}
