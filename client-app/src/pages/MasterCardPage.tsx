@@ -35,12 +35,11 @@ function IcoChat() {
     </svg>
   )
 }
-function IcoMore() {
+function IcoDirections() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M5 10C3.9 10 3 10.9 3 12C3 13.1 3.9 14 5 14C6.1 14 7 13.1 7 12C7 10.9 6.1 10 5 10Z" fill="#007AFE"/>
-      <path d="M19 10C17.9 10 17 10.9 17 12C17 13.1 17.9 14 19 14C20.1 14 21 13.1 21 12C21 10.9 20.1 10 19 10Z" fill="#007AFE"/>
-      <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10Z" fill="#007AFE"/>
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" fill="#007AFE" fillOpacity="0.4"/>
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" fill="#007AFE"/>
     </svg>
   )
 }
@@ -164,7 +163,7 @@ export default function MasterCardPage() {
           { label: 'Запись', Icon: IcoBook,  action: handleBook },
           { label: 'Звонок', Icon: IcoCall,  action: () => {} },
           { label: 'Чат',    Icon: IcoChat,  action: () => navigate('/messages') },
-          { label: 'Ещё',    Icon: IcoMore,  action: () => {} },
+          { label: 'Как добраться', Icon: IcoDirections, action: () => {} },
         ] as const).map((btn) => (
           <button
             key={btn.label}

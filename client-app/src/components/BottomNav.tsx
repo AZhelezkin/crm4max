@@ -1,18 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 
-// Иконки в стиле vuesax/bold (как в Figma)
-function IconCatalog({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path d="M12.25 3.5H7C5.067 3.5 3.5 5.067 3.5 7v5.25c0 1.933 1.567 3.5 3.5 3.5h5.25c1.933 0 3.5-1.567 3.5-3.5V7c0-1.933-1.567-3.5-3.5-3.5Z" fill={c}/>
-      <path d="M21 3.5h-5.25c-1.933 0-3.5 1.567-3.5 3.5v5.25c0 1.933 1.567 3.5 3.5 3.5H21c1.933 0 3.5-1.567 3.5-3.5V7c0-1.933-1.567-3.5-3.5-3.5Z" fill={c} opacity="0.4"/>
-      <path d="M12.25 12.25H7c-1.933 0-3.5 1.567-3.5 3.5V21c0 1.933 1.567 3.5 3.5 3.5h5.25c1.933 0 3.5-1.567 3.5-3.5v-5.25c0-1.933-1.567-3.5-3.5-3.5Z" fill={c} opacity="0.4"/>
-      <path d="M21 12.25h-5.25c-1.933 0-3.5 1.567-3.5 3.5V21c0 1.933 1.567 3.5 3.5 3.5H21c1.933 0 3.5-1.567 3.5-3.5v-5.25c0-1.933-1.567-3.5-3.5-3.5Z" fill={c}/>
-    </svg>
-  )
-}
-
 function IconCalendar({ active }: { active: boolean }) {
   const c = active ? '#007AFE' : '#7D7D7F'
   return (
@@ -25,31 +12,8 @@ function IconCalendar({ active }: { active: boolean }) {
   )
 }
 
-function IconMessage({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path fillRule="evenodd" clipRule="evenodd" d="M19.833 3.5H8.167C5.133 3.5 3.5 5.133 3.5 8.167v7c0 3.033 1.633 4.666 4.667 4.666h1.166c.234 0 .538.151.688.35l1.167 1.55c.514.688 1.353.688 1.867 0l1.167-1.55c.163-.21.455-.35.688-.35h1.167c3.033 0 4.666-1.633 4.666-4.666v-7C24.5 5.133 22.867 3.5 19.833 3.5Z" fill={c} opacity="0.4"/>
-      <path d="M9.333 12.833h9.334M9.333 9.333h5.834" stroke={c} strokeWidth="1.75" strokeLinecap="round"/>
-    </svg>
-  )
-}
-
-function IconLocation({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path fillRule="evenodd" clipRule="evenodd" d="M14 2.333C9.993 2.333 6.75 5.577 6.75 9.583c0 5.634 6.417 14.536 6.694 14.921a.694.694 0 0 0 1.112 0c.277-.385 6.694-9.287 6.694-14.921C21.25 5.577 18.007 2.333 14 2.333Z" fill={c} opacity="0.4"/>
-      <path fillRule="evenodd" clipRule="evenodd" d="M14 12.25a2.917 2.917 0 1 0 0-5.833 2.917 2.917 0 0 0 0 5.833Z" fill={c}/>
-    </svg>
-  )
-}
-
 const NAV_ITEMS = [
-  { key: 'catalog',  label: 'Каталог',    path: '/',           Icon: IconCatalog  },
-  { key: 'bookings', label: 'Записи',      path: '/my-bookings', Icon: IconCalendar },
-  { key: 'messages', label: 'Сообщения',   path: '/messages',   Icon: IconMessage  },
-  { key: 'contacts', label: 'Контакты',    path: '/contacts',   Icon: IconLocation },
+  { key: 'bookings', label: 'Мои записи', path: '/my-bookings', Icon: IconCalendar },
 ]
 
 interface Props {
