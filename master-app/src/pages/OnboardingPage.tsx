@@ -42,12 +42,12 @@ const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50]
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
-  const { setMaster } = useAuthStore()
+  const { setMaster, nameHint } = useAuthStore()
   const [step, setStep] = useState<Step>(0)
   const [saving, setSaving] = useState(false)
 
   // ── Шаг 0: Обо мне ──
-  const [name, setName] = useState('')
+  const [name, setName] = useState(nameHint || '')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
