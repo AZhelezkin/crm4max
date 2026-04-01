@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ token, master, isLoading: false })
     } catch {
       // Вне Max — используем сохранённый токен
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('masterToken')
       if (token) {
         try {
           const master = await mastersApi.getMe()
