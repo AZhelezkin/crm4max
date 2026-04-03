@@ -76,7 +76,7 @@ export default function OnboardingPage() {
   const [catPhotoUploading, setCatPhotoUploading] = useState(false)
   const catPhotoRef = useRef<HTMLInputElement>(null)
 
-  const [services, setServices] = useState<LocalService[]>([])
+  const [servicesByCat, setServicesByCat] = useState<LocalService[][]>([])
   const [showSvcForm, setShowSvcForm] = useState(false)
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
@@ -165,6 +165,7 @@ export default function OnboardingPage() {
       setCategories((prev) => prev.map((c, i) => i === editCatIdx ? { ...c, ...cat } : c))
     } else {
       setCategories((prev) => [...prev, cat])
+      setServicesByCat((prev) => [...prev, []])
     }
     setShowCatForm(false)
   }
@@ -173,7 +174,7 @@ export default function OnboardingPage() {
 
   const openSvcForm = (idx?: number) => {
     if (idx !== undefined) {
-      setSvcForm({ ...services[idx] })
+      setSvcForm({ ...(servicesByCat[selectedCatIdx]?.[idx] ?? svcForm) })
       setEditSvcIdx(idx)
     } else {
       setSvcForm({ name: '', desc: '', duration: '', price: '', discountEnabled: false, discountPercent: 10, workPhotos: [] })
@@ -184,11 +185,17 @@ export default function OnboardingPage() {
 
   const saveSvcForm = () => {
     if (!svcForm.name.trim()) return
-    if (editSvcIdx !== null) {
-      setServices((prev) => prev.map((s, i) => i === editSvcIdx ? { ...svcForm } : s))
-    } else {
-      setServices((prev) => [...prev, { ...svcForm }])
-    }
+    const catIdx = selectedCatIdx
+    setServicesByCat((prev: LocalService[][]) => {
+      const next: LocalService[][] = prev.map((arr: LocalService[]) => [...arr])
+      while (next.length <= catIdx) next.push([])
+      if (editSvcIdx !== null) {
+        next[catIdx] = next[catIdx].map((s: LocalService, i: number) => i === editSvcIdx ? { ...svcForm } : s)
+      } else {
+        next[catIdx] = [...next[catIdx], { ...svcForm }]
+      }
+      return next
+    })
     setShowSvcForm(false)
   }
 
@@ -217,38 +224,46 @@ export default function OnboardingPage() {
       }
 
       if (step === 2) {
-        if (servicesSubStep === 'categories') {
-          // Сохраняем категории в БД
-          const savedCats: LocalCategory[] = []
-          for (const cat of categories) {
-            if (cat.name) {
-              const saved = await categoriesApi.create({
-                name: cat.name, description: cat.desc || undefined, photo: cat.photo || undefined,
-              })
-              savedCats.push({ ...cat, id: saved.id })
-            }
-          }
-          setCategories(savedCats)
-          setServicesSubStep('services')
+        if (servicesSubStep === 'services') {
+          // Возврат к категориям
+          setServicesSubStep('categories')
+          setSaving(false)
           return
         }
-        // Сохраняем услуги
-        const catId = categories[selectedCatIdx]?.id
-        for (const svc of services) {
-          if (svc.name) {
-            const created = await servicesApi.create({
-              name: svc.name,
-              description: svc.desc || undefined,
-              durationMin: Number(svc.duration) || 30,
-              price: Math.round(Number(svc.price) * 100) || 0,
-              discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
-              categoryId: catId,
+
+        // servicesSubStep === 'categories' — сохраняем всё и завершаем онбординг
+        // Сохраняем категории в БД
+        const savedCats: LocalCategory[] = []
+        for (const cat of categories) {
+          if (cat.name) {
+            const saved = await categoriesApi.create({
+              name: cat.name, description: cat.desc || undefined, photo: cat.photo || undefined,
             })
-            for (let i = 0; i < svc.workPhotos.length; i++) {
-              await servicesApi.addWorkPhoto(created.id, svc.workPhotos[i], i)
+            savedCats.push({ ...cat, id: saved.id })
+          }
+        }
+
+        // Сохраняем услуги по всем категориям
+        for (let catIdx = 0; catIdx < savedCats.length; catIdx++) {
+          const catId = savedCats[catIdx]?.id
+          const svcs = servicesByCat[catIdx] ?? []
+          for (const svc of svcs) {
+            if (svc.name) {
+              const created = await servicesApi.create({
+                name: svc.name,
+                description: svc.desc || undefined,
+                durationMin: Number(svc.duration) || 30,
+                price: Math.round(Number(svc.price) * 100) || 0,
+                discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
+                categoryId: catId,
+              })
+              for (let i = 0; i < svc.workPhotos.length; i++) {
+                await servicesApi.addWorkPhoto(created.id, svc.workPhotos[i], i)
+              }
             }
           }
         }
+
         const master = await mastersApi.getMe()
         setMaster(master)
         navigate('/', { replace: true })
@@ -261,7 +276,7 @@ export default function OnboardingPage() {
 
   // ─── Счётчик услуг для таба ───────────────────────────────────────────────
 
-  const servicesCount = services.length
+  const servicesCount = servicesByCat.reduce((s: number, arr: LocalService[]) => s + arr.length, 0)
 
   // ─── Рендер ───────────────────────────────────────────────────────────────
 
@@ -272,17 +287,9 @@ export default function OnboardingPage() {
       {!(step === 2 && servicesSubStep !== 'categories' && false) && (
         <>
           <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-            {step === 2 && servicesSubStep === 'services' && (
-              <button
-                onClick={() => setServicesSubStep('categories')}
-                style={{ background: 'none', border: 'none', color: 'var(--color-text)', fontSize: 22, lineHeight: 1, padding: 0 }}
-              >
-                ←
-              </button>
-            )}
             <h1 style={{ fontSize: 20, fontWeight: 700, flex: 1 }}>
-              {step === 2 && servicesSubStep === 'categories' ? 'Добавьте категории услуги' :
-               step === 2 && servicesSubStep === 'services' ? 'Добавьте услуги' :
+              {step === 2 && servicesSubStep === 'categories' ? 'Каталог услуг' :
+               step === 2 && servicesSubStep === 'services' ? `Услуги: ${categories[selectedCatIdx]?.name ?? ''}` :
                'Каким будет твой бизнес?'}
             </h1>
           </div>
@@ -470,38 +477,66 @@ export default function OnboardingPage() {
         {/* ── Шаг 2а: Категории ── */}
         {step === 2 && servicesSubStep === 'categories' && (
           <>
-            {categories.map((cat, i) => (
-              <button
-                key={i}
-                onClick={() => openCatForm(i)}
-                style={{
-                  width: '100%', background: 'var(--color-card)', border: 'none',
-                  borderRadius: 'var(--radius)', padding: '12px 14px',
-                  display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                {/* Фото категории */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
-                  background: 'var(--color-card2)', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {cat.previewUrl
-                    ? <img src={cat.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <CameraIcon size={20} />
-                  }
+            {categories.length === 0 && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '40px 0' }}>
+                <div style={{ fontSize: 40 }}>📋</div>
+                <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                  Добавьте первую категорию,<br />чтобы группировать услуги
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</div>
-                  {cat.desc && (
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cat.desc}
+              </div>
+            )}
+
+            {categories.map((cat, i) => {
+              const count = servicesByCat[i]?.length ?? 0
+              return (
+                <div
+                  key={i}
+                  style={{
+                    width: '100%', background: 'var(--color-card)',
+                    borderRadius: 'var(--radius)', overflow: 'hidden',
+                  }}
+                >
+                  {/* Строка категории */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+                    {/* Фото */}
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
+                      background: 'var(--color-card2)', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {cat.previewUrl
+                        ? <img src={cat.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <CameraIcon size={20} />
+                      }
                     </div>
-                  )}
+                    {/* Название + кол-во услуг */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2 }}>
+                        {count === 0 ? 'Нет услуг' : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`}
+                      </div>
+                    </div>
+                    {/* Кнопка редактирования категории */}
+                    <button
+                      onClick={() => openCatForm(i)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                    >
+                      <EditIcon />
+                    </button>
+                    {/* Стрелка → открыть услуги */}
+                    <button
+                      onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
+                      }}
+                    >
+                      ›
+                    </button>
+                  </div>
                 </div>
-                <EditIcon />
-              </button>
-            ))}
+              )
+            })}
 
             {/* Кнопка добавить категорию */}
             <button
@@ -514,15 +549,14 @@ export default function OnboardingPage() {
             >
               <div style={{
                 width: 28, height: 28, borderRadius: 8,
-                background: 'var(--color-card2)',
+                background: 'var(--color-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: 'var(--color-text-secondary)',
+                fontSize: 18, color: '#fff', fontWeight: 700,
               }}>+</div>
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Добавить категорию</div>
+                <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Ещё категория</div>
                 <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Стрижки и уход</div>
               </div>
-              <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
             </button>
           </>
         )}
@@ -530,29 +564,13 @@ export default function OnboardingPage() {
         {/* ── Шаг 2б: Услуги ── */}
         {step === 2 && servicesSubStep === 'services' && (
           <>
-            {/* Переключатель категорий (если несколько) */}
-            {categories.length > 1 && (
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-                {categories.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedCatIdx(i)}
-                    style={{
-                      whiteSpace: 'nowrap', padding: '6px 14px',
-                      borderRadius: 20, border: 'none', fontSize: 13, fontWeight: 500,
-                      background: selectedCatIdx === i ? 'var(--color-primary)' : 'var(--color-card)',
-                      color: selectedCatIdx === i ? '#fff' : 'var(--color-text-secondary)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Текущая категория */}
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.3 }}>
+              {categories[selectedCatIdx]?.name}
+            </div>
 
-            {/* Список услуг */}
-            {services.map((svc, i) => (
+            {/* Список услуг текущей категории */}
+            {(servicesByCat[selectedCatIdx] ?? []).map((svc, i) => (
               <button
                 key={i}
                 onClick={() => openSvcForm(i)}
@@ -607,15 +625,14 @@ export default function OnboardingPage() {
             >
               <div style={{
                 width: 28, height: 28, borderRadius: 8,
-                background: 'var(--color-card2)',
+                background: 'var(--color-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: 'var(--color-text-secondary)',
+                fontSize: 18, color: '#fff', fontWeight: 700,
               }}>+</div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Добавить услугу</div>
                 <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Укладка длинных волос</div>
               </div>
-              <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
             </button>
           </>
         )}
@@ -630,8 +647,9 @@ export default function OnboardingPage() {
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
         >
           {saving ? 'Сохраняем...' :
-           step === 2 && servicesSubStep === 'services' ? 'Готово' :
+           step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
            step === 2 && servicesSubStep === 'categories' && categories.length === 0 ? 'Пропустить' :
+           step === 2 && servicesSubStep === 'categories' ? 'Готово' :
            'Далее'}
         </Button>
       </div>
@@ -711,17 +729,6 @@ export default function OnboardingPage() {
           onClose={() => setShowSvcForm(false)}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-            {/* Категория */}
-            {categories.length > 0 && (
-              <select
-                value={selectedCatIdx}
-                onChange={(e) => setSelectedCatIdx(Number(e.target.value))}
-                style={selectStyle}
-              >
-                {categories.map((c, i) => <option key={i} value={i}>{c.name}</option>)}
-              </select>
-            )}
 
             <input
               value={svcForm.name}
@@ -1002,11 +1009,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: 15, color: 'var(--color-text)',
 }
 
-const selectStyle: React.CSSProperties = {
-  width: '100%', background: 'var(--color-card2)', border: 'none',
-  borderRadius: 'var(--radius-sm)', padding: '14px 16px',
-  fontSize: 15, color: 'var(--color-text)', appearance: 'none', cursor: 'pointer',
-}
 
 function UploadingOverlay() {
   return (
