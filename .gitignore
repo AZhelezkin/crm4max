@@ -4,3 +4,6 @@ dist/
 *.local
 .DS_Store
 Thumbs.db
+
+# Backend хранится only на сервере, не в GitHub
+backend/

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
+  Button as MaxButton,
   Avatar,
   CellList,
   CellSimple,
@@ -15,7 +16,6 @@ import {
   Typography,
   Container,
 } from '@maxhub/max-ui'
-import Button from '@/components/Button'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -279,6 +279,7 @@ export default function OnboardingPage() {
           }
         }
 
+        await mastersApi.updateProfile({ isOnboarded: true })
         const master = await mastersApi.getMe()
         setMaster(master)
         navigate('/', { replace: true })
@@ -461,19 +462,17 @@ export default function OnboardingPage() {
             <SectionLabel>ДНИ НЕДЕЛИ, В КОТОРЫЕ РАБОТАЕТЕ</SectionLabel>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {DAYS.map((d) => (
-                <button
-                  key={d.v}
-                  onClick={() => toggleDay(d.v)}
-                  style={{
-                    flex: 1, minWidth: 36, padding: '12px 0',
-                    borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: 600,
-                    background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card)',
-                    color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text-secondary)',
-                    border: 'none', cursor: 'pointer',
-                  }}
-                >
-                  {d.l}
-                </button>
+                <div key={d.v} style={{ flex: 1 }}>
+                  <MaxButton
+                    appearance="themed"
+                    mode={workingDays.includes(d.v) ? 'primary' : 'secondary'}
+                    size="small"
+                    stretched
+                    onClick={() => toggleDay(d.v)}
+                  >
+                    {d.l}
+                  </MaxButton>
+                </div>
               ))}
             </div>
 
@@ -547,18 +546,16 @@ export default function OnboardingPage() {
               )
             })}
 
-            {/* Кнопка "+ Ещё категория" — стиль как в макете: серый прямоугольник */}
-            <button
+            {/* Кнопка "+ Ещё категория" */}
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
               onClick={() => openCatForm()}
-              style={{
-                width: '100%', background: 'var(--color-card2)', border: 'none',
-                borderRadius: 'var(--radius)', padding: '0 16px', height: 60,
-                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-              }}
             >
-              <span style={{ fontSize: 20, color: 'var(--color-text)', lineHeight: 1, fontWeight: 400 }}>+</span>
-              <span style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Ещё категория</span>
-            </button>
+              + Ещё категория
+            </MaxButton>
           </>
         )}
 
@@ -616,25 +613,15 @@ export default function OnboardingPage() {
             ))}
 
             {/* Добавить услугу */}
-            <button
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
               onClick={() => openSvcForm()}
-              style={{
-                width: '100%', background: 'var(--color-card)', border: 'none',
-                borderRadius: 'var(--radius)', padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
-              }}
             >
-              <div style={{
-                width: 28, height: 28, borderRadius: 8,
-                background: 'var(--color-primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: '#fff', fontWeight: 700,
-              }}>+</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Добавить услугу</div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Укладка длинных волос</div>
-              </div>
-            </button>
+              + Добавить услугу
+            </MaxButton>
           </>
         )}
 
@@ -642,18 +629,20 @@ export default function OnboardingPage() {
 
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
-        <Button
-          variant="primary"
-          onClick={handleNext}
-          fullWidth
+        <MaxButton
+          appearance="themed"
+          mode="primary"
+          size="medium"
+          stretched
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
+          onClick={handleNext}
         >
           {saving ? 'Сохраняем...' :
            step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
            step === 2 && servicesSubStep === 'categories' && categories.length === 0 ? 'Пропустить' :
            step === 2 && servicesSubStep === 'categories' ? 'Готово' :
            'Далее'}
-        </Button>
+        </MaxButton>
       </div>
 
       {/* ── Экран добавления/редактирования категории (на весь экран) ── */}
@@ -670,17 +659,14 @@ export default function OnboardingPage() {
             padding: '14px 20px',
             flexShrink: 0,
           }}>
-            <button
+            <MaxButton
+              appearance="themed"
+              mode="tertiary"
+              size="medium"
               onClick={() => setShowCatForm(false)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--color-text)', fontSize: 15, padding: 0,
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}
             >
-              <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
-              <span>Назад</span>
-            </button>
+              ← Назад
+            </MaxButton>
             <span style={{
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
               fontSize: 16, fontWeight: 600, color: 'var(--color-text)',
@@ -759,24 +745,22 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* Кнопка «Готово» — синяя, с отступами по бокам */}
+          {/* Кнопка «Готово» */}
           <div style={{
             padding: '16px 20px',
             paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
             flexShrink: 0,
           }}>
-            <button
-              onClick={saveCatForm}
+            <MaxButton
+              appearance="themed"
+              mode="primary"
+              size="medium"
+              stretched
               disabled={!catFormName.trim() || catPhotoUploading}
-              style={{
-                width: '100%', height: 60, borderRadius: 20,
-                background: !catFormName.trim() || catPhotoUploading ? 'var(--color-card2)' : 'var(--color-primary)',
-                border: 'none', cursor: !catFormName.trim() ? 'default' : 'pointer',
-                fontSize: 16, fontWeight: 600, color: '#fff',
-              }}
+              onClick={saveCatForm}
             >
               Готово
-            </button>
+            </MaxButton>
           </div>
         </div>,
         document.body,
@@ -932,7 +916,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <Button onClick={saveSvcForm} fullWidth disabled={!svcForm.name.trim()}>Готово</Button>
+            <MaxButton appearance="themed" mode="primary" size="medium" stretched disabled={!svcForm.name.trim()} onClick={saveSvcForm}>Готово</MaxButton>
           </div>
         </BottomSheet>
       )}
