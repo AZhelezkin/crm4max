@@ -2,7 +2,6 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
-  Button,
   Avatar,
   CellList,
   CellSimple,
@@ -16,6 +15,7 @@ import {
   Typography,
   Container,
 } from '@maxhub/max-ui'
+import Button from '@/components/Button'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -643,9 +643,9 @@ export default function OnboardingPage() {
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
         <Button
-          mode="primary"
+          variant="primary"
           onClick={handleNext}
-          stretched
+          fullWidth
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
         >
           {saving ? 'Сохраняем...' :
