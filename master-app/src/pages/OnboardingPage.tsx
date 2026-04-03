@@ -640,7 +640,7 @@ export default function OnboardingPage() {
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
         <Button
           onClick={handleNext}
-          fullWidth
+          stretched
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
         >
           {saving ? 'Сохраняем...' :
@@ -927,7 +927,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <Button onClick={saveSvcForm} fullWidth disabled={!svcForm.name.trim()}>Готово</Button>
+            <Button onClick={saveSvcForm} stretched disabled={!svcForm.name.trim()}>Готово</Button>
           </div>
         </BottomSheet>
       )}
