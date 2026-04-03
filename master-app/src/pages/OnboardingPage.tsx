@@ -395,21 +395,16 @@ export default function OnboardingPage() {
             </div>
 
             {/* Имя */}
-            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-              <input
+            <CellList mode="island">
+              <CellInput
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Имя или название бизнеса"
-                style={{
-                  width: '100%', background: 'none', border: 'none',
-                  padding: '14px 16px', fontSize: 16, color: 'var(--color-text)',
-                  outline: 'none',
-                }}
               />
-            </div>
+            </CellList>
 
             {/* Описание */}
-            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            <CellList mode="island">
               <div style={{ position: 'relative' }}>
                 <textarea
                   value={description}
@@ -426,7 +421,7 @@ export default function OnboardingPage() {
                   {description.length}/200
                 </span>
               </div>
-            </div>
+            </CellList>
 
             {/* Телефон (необязательно) */}
             <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
