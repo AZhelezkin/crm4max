@@ -9,7 +9,6 @@ import {
   CellInput,
   CellHeader,
   Switch,
-  Textarea,
   Panel,
   Flex,
   Grid,
@@ -302,19 +301,12 @@ export default function OnboardingPage() {
       {/* Заголовок + табы (только для шагов 0-3, кроме подшагов услуг) */}
       {!(step === 2 && servicesSubStep !== 'categories' && false) && (
         <>
-          <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, flex: 1 }}>
-              {step === 2 && servicesSubStep === 'categories' ? 'Каталог услуг' :
-               step === 2 && servicesSubStep === 'services' ? `Услуги: ${categories[selectedCatIdx]?.name ?? ''}` :
-               'Каким будет твой бизнес?'}
-            </h1>
-          </div>
+
 
           {/* Прогресс-табы */}
           {(step !== 2 || servicesSubStep === 'categories') && (
             <div style={{
               display: 'flex', padding: '16px 16px 0',
-              borderBottom: '1px solid var(--color-border)',
             }}>
               {STEPS.map((label, i) => (
                 <button
@@ -361,27 +353,23 @@ export default function OnboardingPage() {
 
             {/* Аватар */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <button
+              <Avatar.Container
+                size={100}
                 onClick={() => photoInputRef.current?.click()}
-                style={{
-                  width: 100, height: 100, borderRadius: '50%',
-                  background: 'var(--color-card)',
-                  border: 'none', overflow: 'hidden', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', gap: 4,
-                }}
+                style={{ cursor: 'pointer' }}
+                overlay={photoUploading
+                  ? <Avatar.Overlay><span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span></Avatar.Overlay>
+                  : undefined
+                }
               >
                 {photoPreview
-                  ? <>
-                      <img src={photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      {photoUploading && <UploadingOverlay />}
-                    </>
-                  : <>
+                  ? <Avatar.Image src={photoPreview} fallback="?" />
+                  : <Avatar.Icon style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <CameraIcon />
                       <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Добавить</span>
-                    </>
+                    </Avatar.Icon>
                 }
-              </button>
+              </Avatar.Container>
               <input
                 ref={photoInputRef} type="file" accept="image/*" hidden
                 onChange={(e) => handlePhotoChange(
@@ -395,7 +383,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Имя */}
-            <CellList mode="island">
+            <CellList mode="island" header={<CellHeader after={<span style={{ color: 'var(--color-danger)' }}>*</span>}>Имя</CellHeader>}>
               <CellInput
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -404,49 +392,31 @@ export default function OnboardingPage() {
             </CellList>
 
             {/* Описание */}
-            <CellList mode="island">
-              <div style={{ position: 'relative' }}>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 200))}
-                  placeholder="Описание"
-                  rows={3}
-                  style={{
-                    width: '100%', background: 'none', border: 'none',
-                    padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
-                    resize: 'none', display: 'block', outline: 'none',
-                  }}
-                />
-                <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                  {description.length}/200
-                </span>
-              </div>
+            <CellList mode="island" header={<CellHeader after="необязательно">Описание</CellHeader>}>
+              <CellInput
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                placeholder="Кратко о себе и своих услугах"
+              />
             </CellList>
 
             {/* Телефон (необязательно) */}
-            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-              <div style={{ padding: '10px 16px 0', fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                ТЕЛЕФОН
-              </div>
-              <input
+            <CellList mode="island" header={<CellHeader after="необязательно">Телефон</CellHeader>}>
+              <CellInput
                 value={formatPhoneDisplay(phone)}
                 onChange={handlePhoneChange}
                 placeholder="+7"
                 inputMode="tel"
-                style={{
-                  width: '100%', background: 'none', border: 'none',
-                  padding: '4px 16px 12px', fontSize: 15, color: 'var(--color-text)',
-                  outline: 'none',
-                }}
               />
-              {phoneInvalid && (
-                <div style={{ padding: '0 16px 10px', fontSize: 12, color: 'var(--color-danger)' }}>
-                  Введите номер полностью
-                </div>
-              )}
-            </div>
+            </CellList>
+            {phoneInvalid && (
+              <div style={{ fontSize: 12, color: 'var(--color-danger)', paddingLeft: 4 }}>
+                Введите номер полностью
+              </div>
+            )}
 
             {/* Адрес */}
+            <CellHeader after={<span style={{ color: 'var(--color-danger)' }}>*</span>} style={{ paddingLeft: 4 }}>Адрес</CellHeader>
             <AddressSuggestInput value={location} onChange={setLocation} />
           </>
         )}
@@ -704,39 +674,25 @@ export default function OnboardingPage() {
 
             {/* Input: название */}
             <div style={{ padding: '20px 16px 0' }}>
-              <input
-                value={catFormName}
-                onChange={(e) => setCatFormName(e.target.value)}
-                placeholder="Название. Пример: Работа с волосами"
-                autoFocus
-                style={{
-                  width: '100%', background: '#454757', border: 'none',
-                  borderRadius: 20, padding: '18px 20px',
-                  fontSize: 15, color: 'var(--color-text)',
-                  height: 59, boxSizing: 'border-box',
-                }}
-              />
+              <CellList mode="island">
+                <CellInput
+                  value={catFormName}
+                  onChange={(e) => setCatFormName(e.target.value)}
+                  placeholder="Название. Пример: Работа с волосами"
+                  autoFocus
+                />
+              </CellList>
             </div>
 
             {/* Input: описание */}
-            <div style={{ padding: '12px 16px 0', position: 'relative' }}>
-              <textarea
-                value={catFormDesc}
-                onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                placeholder="Описание. Пример: Укладка длинных волос"
-                style={{
-                  width: '100%', background: '#454757', border: 'none',
-                  borderRadius: 20, padding: '18px 60px 18px 20px',
-                  fontSize: 15, color: 'var(--color-text)',
-                  resize: 'none', height: 97, boxSizing: 'border-box', display: 'block',
-                }}
-              />
-              <span style={{
-                position: 'absolute', right: 32, bottom: 16,
-                fontSize: 12, color: 'var(--color-text-secondary)',
-              }}>
-                {catFormDesc.length}/200
-              </span>
+            <div style={{ padding: '12px 16px 0' }}>
+              <CellList mode="island">
+                <CellInput
+                  value={catFormDesc}
+                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
+                  placeholder="Описание. Пример: Укладка длинных волос"
+                />
+              </CellList>
             </div>
           </div>
 
@@ -769,50 +725,42 @@ export default function OnboardingPage() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-            <input
-              value={svcForm.name}
-              onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Название. Пример: Укладка волос"
-              style={inputStyle}
-            />
+            <CellList mode="island">
+              <CellInput
+                value={svcForm.name}
+                onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Название. Пример: Укладка волос"
+              />
+            </CellList>
 
-            <div style={{ position: 'relative' }}>
-              <textarea
+            <CellList mode="island">
+              <CellInput
                 value={svcForm.desc}
                 onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
                 placeholder="Описание. Пример: Современные методы укладки волос без лака"
-                rows={3}
-                style={{ ...inputStyle, resize: 'none', paddingBottom: 28 }}
               />
-              <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                {svcForm.desc.length}/200
-              </span>
-            </div>
+            </CellList>
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <input
-                  value={svcForm.duration}
-                  onChange={(e) => setSvcForm((f) => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))}
-                  placeholder="Продолжительность"
-                  inputMode="numeric"
-                  style={{ ...inputStyle, paddingRight: 44 }}
-                />
-                <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                  МИН
-                </span>
+              <div style={{ flex: 1 }}>
+                <CellList mode="island">
+                  <CellInput
+                    value={svcForm.duration}
+                    onChange={(e) => setSvcForm((f) => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="Длительность, мин"
+                    inputMode="numeric"
+                  />
+                </CellList>
               </div>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <input
-                  value={svcForm.price}
-                  onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
-                  placeholder="Стоимость"
-                  inputMode="decimal"
-                  style={{ ...inputStyle, paddingRight: 30 }}
-                />
-                <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--color-text-secondary)' }}>
-                  ₽
-                </span>
+              <div style={{ flex: 1 }}>
+                <CellList mode="island">
+                  <CellInput
+                    value={svcForm.price}
+                    onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
+                    placeholder="Стоимость, ₽"
+                    inputMode="decimal"
+                  />
+                </CellList>
               </div>
             </div>
 
@@ -1042,11 +990,7 @@ function EditIcon() {
   )
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'var(--color-card2)', border: 'none',
-  borderRadius: 'var(--radius-sm)', padding: '14px 16px',
-  fontSize: 15, color: 'var(--color-text)',
-}
+
 
 
 function UploadingOverlay() {
