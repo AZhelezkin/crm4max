@@ -383,7 +383,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Имя */}
-            <CellList mode="island" header={<CellHeader after={<span style={{ color: 'var(--color-danger)' }}>*</span>}>Имя</CellHeader>}>
+            <CellList mode="island">
               <CellInput
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -392,16 +392,16 @@ export default function OnboardingPage() {
             </CellList>
 
             {/* Описание */}
-            <CellList mode="island" header={<CellHeader after="необязательно">Описание</CellHeader>}>
+            <CellList mode="island">
               <CellInput
                 value={description}
                 onChange={(e) => setDescription(e.target.value.slice(0, 200))}
-                placeholder="Кратко о себе и своих услугах"
+                placeholder="Описание"
               />
             </CellList>
 
             {/* Телефон (необязательно) */}
-            <CellList mode="island" header={<CellHeader after="необязательно">Телефон</CellHeader>}>
+            <CellList mode="island">
               <CellInput
                 value={formatPhoneDisplay(phone)}
                 onChange={handlePhoneChange}
@@ -416,7 +416,6 @@ export default function OnboardingPage() {
             )}
 
             {/* Адрес */}
-            <CellHeader after={<span style={{ color: 'var(--color-danger)' }}>*</span>} style={{ paddingLeft: 4 }}>Адрес</CellHeader>
             <AddressSuggestInput value={location} onChange={setLocation} />
           </>
         )}
