@@ -1,12 +1,26 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import {
+  Button,
+  Avatar,
+  CellList,
+  CellSimple,
+  CellInput,
+  CellHeader,
+  Switch,
+  Textarea,
+  Panel,
+  Flex,
+  Grid,
+  Typography,
+  Container,
+} from '@maxhub/max-ui'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
-import Button from '@/components/Button'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import { formatPrice, discountedPrice } from '@/types'
 
