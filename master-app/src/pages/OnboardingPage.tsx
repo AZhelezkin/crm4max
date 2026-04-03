@@ -364,9 +364,8 @@ export default function OnboardingPage() {
               >
                 {photoPreview
                   ? <Avatar.Image src={photoPreview} fallback="?" />
-                  : <Avatar.Icon style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                      <CameraIcon size={32} />
-                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>фото</span>
+                  : <Avatar.Icon>
+                      <CameraIcon size={36} />
                     </Avatar.Icon>
                 }
               </Avatar.Container>
