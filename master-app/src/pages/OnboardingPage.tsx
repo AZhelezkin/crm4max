@@ -393,7 +393,7 @@ export default function OnboardingPage() {
               />
             </div>
 
-            {/* Имя + описание */}
+            {/* Имя */}
             <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
               <input
                 value={name}
@@ -401,10 +401,14 @@ export default function OnboardingPage() {
                 placeholder="Имя или название бизнеса"
                 style={{
                   width: '100%', background: 'none', border: 'none',
-                  borderBottom: '1px solid var(--color-border)',
                   padding: '14px 16px', fontSize: 16, color: 'var(--color-text)',
+                  outline: 'none',
                 }}
               />
+            </div>
+
+            {/* Описание */}
+            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
               <div style={{ position: 'relative' }}>
                 <textarea
                   value={description}
@@ -414,7 +418,7 @@ export default function OnboardingPage() {
                   style={{
                     width: '100%', background: 'none', border: 'none',
                     padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
-                    resize: 'none', display: 'block',
+                    resize: 'none', display: 'block', outline: 'none',
                   }}
                 />
                 <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
@@ -431,7 +435,7 @@ export default function OnboardingPage() {
               <input
                 value={formatPhoneDisplay(phone)}
                 onChange={handlePhoneChange}
-                placeholder="+7 (___) ___-__-__"
+                placeholder="+7"
                 inputMode="tel"
                 style={{
                   width: '100%', background: 'none', border: 'none',
@@ -639,6 +643,7 @@ export default function OnboardingPage() {
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
         <Button
+          mode="primary"
           onClick={handleNext}
           stretched
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}

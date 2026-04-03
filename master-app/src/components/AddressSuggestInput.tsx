@@ -42,7 +42,7 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
             АДРЕС
           </div>
           <div style={{ fontSize: 15, color: value ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
-            {value || 'Введите адрес организации'}
+            {value || 'Куда приезжать клиентам'}
           </div>
         </div>
         <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
@@ -160,9 +160,10 @@ function AddressModal({ initialValue, onSelect, onClose }: {
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--color-primary)', fontSize: 15, padding: '4px 0', whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', gap: 4,
           }}
         >
-          ← Назад
+          <span>←</span><span>Назад</span>
         </button>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
@@ -174,7 +175,7 @@ function AddressModal({ initialValue, onSelect, onClose }: {
             ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Введите адрес организации"
+            placeholder="Куда приезжать клиентам"
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               fontSize: 15, color: 'var(--color-text)',
