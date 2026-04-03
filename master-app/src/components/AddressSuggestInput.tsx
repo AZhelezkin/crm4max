@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { CellList } from '@maxhub/max-ui'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
@@ -28,25 +29,24 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
   return (
     <>
       {/* Триггер — отображает текущее значение, открывает модал */}
-      <button
-        onClick={openModal}
-        style={{
-          width: '100%', background: 'var(--color-card)', border: 'none',
-          borderRadius: 'var(--radius)', padding: '0 16px',
-          display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
-        }}
-      >
-        <LocationIcon />
-        <div style={{ flex: 1, padding: '10px 0' }}>
-          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 500, marginBottom: 2 }}>
-            АДРЕС
-          </div>
-          <div style={{ fontSize: 15, color: value ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+      <CellList mode="island">
+        <button
+          onClick={openModal}
+          style={{
+            width: '100%', background: 'none', border: 'none',
+            padding: '8px 12px', minHeight: 56,
+            display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
+          }}
+        >
+          <LocationIcon />
+          <span style={{
+            flex: 1,
+            fontSize: 16, color: value ? 'var(--color-text)' : 'var(--text-secondary, var(--color-text-secondary))',
+          }}>
             {value || 'Куда приезжать клиентам'}
-          </div>
-        </div>
-        <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
-      </button>
+          </span>
+        </button>
+      </CellList>
 
       {modalOpen && createPortal(
         <AddressModal

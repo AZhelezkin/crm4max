@@ -412,19 +412,14 @@ export default function OnboardingPage() {
             </CellList>
 
             {/* Телефон (необязательно) */}
-            <CellList mode="island">
+            <CellList mode="island" style={phoneInvalid ? { borderRadius: 'var(--radius)', outline: '1.5px solid rgba(255,59,48,0.5)' } : undefined}>
               <CellInput
                 value={formatPhoneDisplay(phone)}
                 onChange={handlePhoneChange}
-                placeholder="+7"
+                placeholder="Телефон"
                 inputMode="tel"
               />
             </CellList>
-            {phoneInvalid && (
-              <div style={{ fontSize: 12, color: 'var(--color-danger)', paddingLeft: 4 }}>
-                Введите номер полностью
-              </div>
-            )}
 
             {/* Адрес */}
             <AddressSuggestInput value={location} onChange={setLocation} />
