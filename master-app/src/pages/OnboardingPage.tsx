@@ -11,7 +11,7 @@ import { formatPrice, discountedPrice } from '@/types'
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
-type Step = 0 | 1 | 2 | 3
+type Step = 0 | 1 | 2
 type ServicesSubStep = 'categories' | 'services'
 
 interface LocalCategory {
@@ -29,9 +29,10 @@ interface LocalService {
   price: string
   discountEnabled: boolean
   discountPercent: number
+  workPhotos: string[]   // S3 URLs фото работ
 }
 
-const STEPS = ['Обо мне', 'График', 'Услуги', 'Карта'] as const
+const STEPS = ['Обо мне', 'График', 'Услуги'] as const
 const DAYS = [
   { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
   { v: 4, l: 'ЧТ' }, { v: 5, l: 'ПТ' }, { v: 6, l: 'СБ' }, { v: 7, l: 'ВС' },
@@ -50,6 +51,7 @@ export default function OnboardingPage() {
   // ── Шаг 0: Обо мне ──
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [phone, setPhone] = useState('')   // 10 цифр без кода страны
   const [location, setLocation] = useState('')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
@@ -79,14 +81,11 @@ export default function OnboardingPage() {
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
     name: '', desc: '', duration: '', price: '',
-    discountEnabled: false, discountPercent: 10,
+    discountEnabled: false, discountPercent: 10, workPhotos: [],
   })
+  const [svcWorkPhotoUploading, setSvcWorkPhotoUploading] = useState(false)
+  const svcWorkPhotoRef = useRef<HTMLInputElement>(null)
   const [selectedCatIdx, setSelectedCatIdx] = useState(0)
-
-  // ── Шаг 3: Карта ──
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardMM, setCardMM] = useState('')
-  const [cardYY, setCardYY] = useState('')
 
   // ─── Хелперы ──────────────────────────────────────────────────────────────
 
@@ -95,10 +94,24 @@ export default function OnboardingPage() {
       prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()
     )
 
-  const formatCard = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 16)
-    return digits.replace(/(.{4})/g, '$1 ').trim()
+  // Форматирование телефона: 10 цифр → +7 (XXX) XXX-XX-XX
+  const formatPhoneDisplay = (digits: string) => {
+    if (!digits) return ''
+    let r = '+7'
+    if (digits.length > 0) r += ' (' + digits.slice(0, Math.min(3, digits.length))
+    if (digits.length >= 3) r += ') ' + digits.slice(3, Math.min(6, digits.length))
+    if (digits.length >= 6) r += '-' + digits.slice(6, Math.min(8, digits.length))
+    if (digits.length >= 8) r += '-' + digits.slice(8, 10)
+    return r
   }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let digits = e.target.value.replace(/\D/g, '')
+    if (digits.startsWith('7') || digits.startsWith('8')) digits = digits.slice(1)
+    setPhone(digits.slice(0, 10))
+  }
+
+  const phoneInvalid = phone.length > 0 && phone.length < 10
 
   // Показывает локальный превью мгновенно, параллельно загружает в S3.
   // onUploaded(s3url) вызывается после успешной загрузки.
@@ -163,7 +176,7 @@ export default function OnboardingPage() {
       setSvcForm({ ...services[idx] })
       setEditSvcIdx(idx)
     } else {
-      setSvcForm({ name: '', desc: '', duration: '', price: '', discountEnabled: false, discountPercent: 10 })
+      setSvcForm({ name: '', desc: '', duration: '', price: '', discountEnabled: false, discountPercent: 10, workPhotos: [] })
       setEditSvcIdx(null)
     }
     setShowSvcForm(true)
@@ -190,6 +203,7 @@ export default function OnboardingPage() {
           name: name.trim(),
           description,
           location,
+          contacts: phone ? formatPhoneDisplay(phone) : undefined,
           photo: photoUrl ?? undefined,
         })
         setStep(1)
@@ -222,7 +236,7 @@ export default function OnboardingPage() {
         const catId = categories[selectedCatIdx]?.id
         for (const svc of services) {
           if (svc.name) {
-            await servicesApi.create({
+            const created = await servicesApi.create({
               name: svc.name,
               description: svc.desc || undefined,
               durationMin: Number(svc.duration) || 30,
@@ -230,31 +244,19 @@ export default function OnboardingPage() {
               discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
               categoryId: catId,
             })
+            for (let i = 0; i < svc.workPhotos.length; i++) {
+              await servicesApi.addWorkPhoto(created.id, svc.workPhotos[i], i)
+            }
           }
-        }
-        setStep(3)
-        return
-      }
-
-      if (step === 3) {
-        const digits = cardNumber.replace(/\s/g, '')
-        if (digits.length >= 4) {
-          const masked = '•••• •••• ••••' + ' ' + digits.slice(-4)
-          await mastersApi.updatePayment({ cardNumber: masked })
         }
         const master = await mastersApi.getMe()
         setMaster(master)
         navigate('/', { replace: true })
+        return
       }
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleSkipCard = async () => {
-    const master = await mastersApi.getMe()
-    setMaster(master)
-    navigate('/', { replace: true })
   }
 
   // ─── Счётчик услуг для таба ───────────────────────────────────────────────
@@ -283,18 +285,6 @@ export default function OnboardingPage() {
                step === 2 && servicesSubStep === 'services' ? 'Добавьте услуги' :
                'Каким будет твой бизнес?'}
             </h1>
-            {step === 2 && (
-              <button
-                onClick={() => { setStep(3); setServicesSubStep('categories') }}
-                style={{
-                  background: 'var(--color-card2)', border: 'none', borderRadius: 8,
-                  width: 28, height: 28, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', color: 'var(--color-text-secondary)', fontSize: 16,
-                }}
-              >
-                ✕
-              </button>
-            )}
           </div>
 
           {/* Прогресс-табы (только для шагов 0,1,3) */}
@@ -409,6 +399,29 @@ export default function OnboardingPage() {
                   {description.length}/200
                 </span>
               </div>
+            </div>
+
+            {/* Телефон (необязательно) */}
+            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 16px 0', fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                ТЕЛЕФОН
+              </div>
+              <input
+                value={formatPhoneDisplay(phone)}
+                onChange={handlePhoneChange}
+                placeholder="+7 (___) ___-__-__"
+                inputMode="tel"
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  padding: '4px 16px 12px', fontSize: 15, color: 'var(--color-text)',
+                  outline: 'none',
+                }}
+              />
+              {phoneInvalid && (
+                <div style={{ padding: '0 16px 10px', fontSize: 12, color: 'var(--color-danger)' }}>
+                  Введите номер полностью
+                </div>
+              )}
             </div>
 
             {/* Адрес */}
@@ -607,105 +620,6 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {/* ── Шаг 3: Карта ── */}
-        {step === 3 && (
-          <>
-            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <input
-                value={cardNumber}
-                onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                placeholder="Номер карты"
-                inputMode="numeric"
-                style={{
-                  width: '100%', background: 'var(--color-card2)', border: 'none',
-                  borderRadius: 'var(--radius-sm)', padding: '14px 16px',
-                  fontSize: 18, letterSpacing: 2, color: 'var(--color-text)',
-                }}
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  value={cardMM}
-                  onChange={(e) => setCardMM(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                  placeholder="ММ"
-                  inputMode="numeric"
-                  maxLength={2}
-                  style={{
-                    flex: 1, background: 'var(--color-card2)', border: 'none',
-                    borderRadius: 'var(--radius-sm)', padding: '14px',
-                    fontSize: 16, textAlign: 'center', color: 'var(--color-text)',
-                  }}
-                />
-                <span style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-secondary)' }}>/</span>
-                <input
-                  value={cardYY}
-                  onChange={(e) => setCardYY(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                  placeholder="ГГ"
-                  inputMode="numeric"
-                  maxLength={2}
-                  style={{
-                    flex: 1, background: 'var(--color-card2)', border: 'none',
-                    borderRadius: 'var(--radius-sm)', padding: '14px',
-                    fontSize: 16, textAlign: 'center', color: 'var(--color-text)',
-                  }}
-                />
-                <input
-                  placeholder="CVV/CVC"
-                  inputMode="numeric"
-                  maxLength={3}
-                  style={{
-                    flex: 2, background: 'var(--color-card2)', border: 'none',
-                    borderRadius: 'var(--radius-sm)', padding: '14px',
-                    fontSize: 16, textAlign: 'center', color: 'var(--color-text)',
-                  }}
-                />
-              </div>
-
-              {/* Платёжные системы */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 4 }}>
-                {[
-                  { label: 'МИР', color: '#00A859', bg: '#fff' },
-                  { label: 'MC', color: '#EB5757', bg: '#fff' },
-                  { label: 'VISA', color: '#1A1F71', bg: '#fff' },
-                  { label: 'UP', color: '#C00', bg: '#fff' },
-                ].map((s) => (
-                  <div key={s.label} style={{
-                    background: s.bg, borderRadius: 6,
-                    padding: '4px 10px', fontSize: 11, fontWeight: 700,
-                    color: s.color,
-                  }}>
-                    {s.label}
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary)', fontSize: 12 }}>
-                <span>🔒</span>
-                <span>Защита сертификатом SSL и протоколом 3D Secure</span>
-              </div>
-            </div>
-
-            <button
-              style={{
-                width: '100%', background: 'var(--color-card)', border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius)', padding: '14px',
-                color: 'var(--color-text)', fontSize: 15, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              <span>📷</span> Сфотографировать
-            </button>
-
-            <button
-              onClick={handleSkipCard}
-              style={{
-                background: 'none', border: 'none', color: 'var(--color-text-secondary)',
-                fontSize: 14, cursor: 'pointer', textAlign: 'center', padding: '8px',
-              }}
-            >
-              Пропустить
-            </button>
-          </>
-        )}
       </div>
 
       {/* Кнопка Далее / Готово */}
@@ -713,10 +627,10 @@ export default function OnboardingPage() {
         <Button
           onClick={handleNext}
           fullWidth
-          disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
+          disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
         >
           {saving ? 'Сохраняем...' :
-           step === 3 ? 'Готово' :
+           step === 2 && servicesSubStep === 'services' ? 'Готово' :
            step === 2 && servicesSubStep === 'categories' && categories.length === 0 ? 'Пропустить' :
            'Далее'}
         </Button>
@@ -881,19 +795,73 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            {/* Примеры работ (плейсхолдер) */}
+            {/* Примеры работ */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 8 }}>
                 ПРИМЕРЫ РАБОТ
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{
-                  width: 72, height: 72, borderRadius: 10,
-                  background: 'var(--color-card2)', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <CameraIcon size={24} />
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {/* Превью загруженных фото */}
+                {svcForm.workPhotos.map((url, i) => (
+                  <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
+                    <img
+                      src={url} alt=""
+                      style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
+                    />
+                    <button
+                      onClick={() => setSvcForm((f) => ({ ...f, workPhotos: f.workPhotos.filter((_, j) => j !== i) }))}
+                      style={{
+                        position: 'absolute', top: -6, right: -6,
+                        width: 20, height: 20, borderRadius: '50%',
+                        background: 'var(--color-danger)', border: 'none',
+                        color: '#fff', fontSize: 12, lineHeight: 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', padding: 0,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {/* Кнопка добавить */}
+                <button
+                  onClick={() => svcWorkPhotoRef.current?.click()}
+                  disabled={svcWorkPhotoUploading}
+                  style={{
+                    width: 72, height: 72, borderRadius: 10,
+                    background: 'var(--color-card2)', border: 'none', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'center', gap: 4, opacity: svcWorkPhotoUploading ? 0.5 : 1,
+                  }}
+                >
+                  {svcWorkPhotoUploading
+                    ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
+                    : <CameraIcon size={24} />
+                  }
                 </button>
+
+                <input
+                  ref={svcWorkPhotoRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files ?? [])
+                    if (!files.length) return
+                    setSvcWorkPhotoUploading(true)
+                    try {
+                      const urls = await Promise.all(files.map((f) => uploadPhoto(f, 'work')))
+                      setSvcForm((prev) => ({ ...prev, workPhotos: [...prev.workPhotos, ...urls] }))
+                    } catch (err) {
+                      console.error('Ошибка загрузки фото работ:', err)
+                    } finally {
+                      setSvcWorkPhotoUploading(false)
+                      e.target.value = ''
+                    }
+                  }}
+                />
               </div>
             </div>
 

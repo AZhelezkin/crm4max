@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import ClientApp from '@client/ClientApp'
 
@@ -58,30 +58,28 @@ function MasterApp() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Онбординг */}
+        {/* Онбординг — доступен только до завершения */}
         <Route
           path="/onboarding"
           element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />}
         />
 
-        {/* Главный layout с bottom nav */}
-        <Route element={<MainLayout />}>
-          <Route
-            index
-            element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <ProfilePage />}
-          />
-          <Route path="bookings" element={<BookingsPage />} />
-          <Route path="clients" element={<ChatsPage />} />
-          <Route path="income" element={<PaymentsPage />} />
-        </Route>
+        {/* Все остальные роуты — только после онбординга */}
+        <Route element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <Outlet />}>
+          <Route element={<MainLayout />}>
+            <Route index element={<ProfilePage />} />
+            <Route path="bookings" element={<BookingsPage />} />
+            <Route path="clients" element={<ChatsPage />} />
+            <Route path="income" element={<PaymentsPage />} />
+          </Route>
 
-        {/* Вложенные страницы (без bottom nav) */}
-        <Route path="/bookings/new" element={<CreateBookingPage />} />
-        <Route path="/bookings/:id" element={<BookingDetailPage />} />
-        <Route path="/about" element={<AboutMePage />} />
-        <Route path="/schedule" element={<SchedulePage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/payment-settings" element={<PaymentSettingsPage />} />
+          <Route path="/bookings/new" element={<CreateBookingPage />} />
+          <Route path="/bookings/:id" element={<BookingDetailPage />} />
+          <Route path="/about" element={<AboutMePage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/payment-settings" element={<PaymentSettingsPage />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
