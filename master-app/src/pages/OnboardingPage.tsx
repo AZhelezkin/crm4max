@@ -309,8 +309,8 @@ export default function OnboardingPage() {
             </h1>
           </div>
 
-          {/* Прогресс-табы (только для шагов 0,1,3) */}
-          {step !== 2 && (
+          {/* Прогресс-табы */}
+          {(step !== 2 || servicesSubStep === 'categories') && (
             <div style={{
               display: 'flex', padding: '16px 16px 0',
               borderBottom: '1px solid var(--color-border)',
