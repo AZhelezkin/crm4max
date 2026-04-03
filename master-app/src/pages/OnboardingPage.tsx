@@ -932,7 +932,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <Button onClick={saveSvcForm} stretched disabled={!svcForm.name.trim()}>Готово</Button>
+            <Button onClick={saveSvcForm} fullWidth disabled={!svcForm.name.trim()}>Готово</Button>
           </div>
         </BottomSheet>
       )}
