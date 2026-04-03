@@ -393,11 +393,22 @@ export default function OnboardingPage() {
 
             {/* Описание */}
             <CellList mode="island">
-              <CellInput
-                value={description}
-                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
-                placeholder="Описание"
-              />
+              <div style={{ position: 'relative' }}>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                  placeholder="Описание"
+                  rows={3}
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
+                    resize: 'none', display: 'block', outline: 'none',
+                  }}
+                />
+                <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  {description.length}/200
+                </span>
+              </div>
             </CellList>
 
             {/* Телефон (необязательно) */}

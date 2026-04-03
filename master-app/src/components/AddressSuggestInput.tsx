@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CellList, CellInput } from '@maxhub/max-ui'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
@@ -29,16 +28,25 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
   return (
     <>
       {/* Триггер — отображает текущее значение, открывает модал */}
-      <CellList mode="island">
-        <CellInput
-          readOnly
-          before={<LocationIcon />}
-          value={value}
-          placeholder="Куда приезжать клиентам"
-          onClick={openModal}
-          style={{ cursor: 'pointer' }}
-        />
-      </CellList>
+      <button
+        onClick={openModal}
+        style={{
+          width: '100%', background: 'var(--color-card)', border: 'none',
+          borderRadius: 'var(--radius)', padding: '0 16px',
+          display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <LocationIcon />
+        <div style={{ flex: 1, padding: '10px 0' }}>
+          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 500, marginBottom: 2 }}>
+            АДРЕС
+          </div>
+          <div style={{ fontSize: 15, color: value ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+            {value || 'Куда приезжать клиентам'}
+          </div>
+        </div>
+        <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
+      </button>
 
       {modalOpen && createPortal(
         <AddressModal
@@ -157,16 +165,33 @@ function AddressModal({ initialValue, onSelect, onClose }: {
         >
           <span>←</span><span>Назад</span>
         </button>
-        <div style={{ flex: 1 }}>
-          <CellList mode="island">
-            <CellInput
-              ref={inputRef}
-              before={<LocationIcon />}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Куда приезжать клиентам"
-            />
-          </CellList>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)',
+          padding: '8px 12px',
+        }}>
+          <LocationIcon />
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Куда приезжать клиентам"
+            style={{
+              flex: 1, background: 'none', border: 'none', outline: 'none',
+              fontSize: 15, color: 'var(--color-text)',
+            }}
+          />
+          {inputValue && (
+            <button
+              onClick={() => setInputValue('')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--color-text-secondary)', fontSize: 18, lineHeight: 1, padding: 0,
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
