@@ -354,7 +354,7 @@ export default function OnboardingPage() {
             {/* Аватар */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
               <Avatar.Container
-                size={100}
+                size={110}
                 onClick={() => photoInputRef.current?.click()}
                 style={{ cursor: 'pointer' }}
                 overlay={photoUploading
@@ -364,9 +364,9 @@ export default function OnboardingPage() {
               >
                 {photoPreview
                   ? <Avatar.Image src={photoPreview} fallback="?" />
-                  : <Avatar.Icon style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <CameraIcon />
-                      <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Добавить</span>
+                  : <Avatar.Icon style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <CameraIcon size={32} />
+                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>фото</span>
                     </Avatar.Icon>
                 }
               </Avatar.Container>
