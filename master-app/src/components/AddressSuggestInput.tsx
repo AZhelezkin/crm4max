@@ -143,7 +143,7 @@ function AddressModal({ initialValue, onSelect, onClose }: {
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0,
       height: modalHeight,
-      background: 'var(--color-background)',
+      background: 'var(--color-bg)',
       zIndex: 1000,
       display: 'flex', flexDirection: 'column',
     }}>
@@ -166,7 +166,7 @@ function AddressModal({ initialValue, onSelect, onClose }: {
         </button>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: 'var(--color-background)', borderRadius: 'var(--radius-sm)',
+          background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)',
           padding: '8px 12px',
         }}>
           <LocationIcon />
