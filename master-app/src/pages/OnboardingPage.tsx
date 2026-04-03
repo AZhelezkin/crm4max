@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
@@ -477,15 +478,6 @@ export default function OnboardingPage() {
         {/* ── Шаг 2а: Категории ── */}
         {step === 2 && servicesSubStep === 'categories' && (
           <>
-            {categories.length === 0 && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '40px 0' }}>
-                <div style={{ fontSize: 40 }}>📋</div>
-                <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                  Добавьте первую категорию,<br />чтобы группировать услуги
-                </div>
-              </div>
-            )}
-
             {categories.map((cat, i) => {
               const count = servicesByCat[i]?.length ?? 0
               return (
@@ -496,11 +488,10 @@ export default function OnboardingPage() {
                     borderRadius: 'var(--radius)', overflow: 'hidden',
                   }}
                 >
-                  {/* Строка категории */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
                     {/* Фото */}
                     <div style={{
-                      width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
+                      width: 46, height: 46, borderRadius: 23, overflow: 'hidden',
                       background: 'var(--color-card2)', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -516,14 +507,14 @@ export default function OnboardingPage() {
                         {count === 0 ? 'Нет услуг' : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`}
                       </div>
                     </div>
-                    {/* Кнопка редактирования категории */}
+                    {/* Редактировать */}
                     <button
                       onClick={() => openCatForm(i)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                     >
                       <EditIcon />
                     </button>
-                    {/* Стрелка → открыть услуги */}
+                    {/* Открыть услуги */}
                     <button
                       onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
                       style={{
@@ -538,25 +529,17 @@ export default function OnboardingPage() {
               )
             })}
 
-            {/* Кнопка добавить категорию */}
+            {/* Кнопка "+ Ещё категория" — стиль как в макете: серый прямоугольник */}
             <button
               onClick={() => openCatForm()}
               style={{
-                width: '100%', background: 'var(--color-card)', border: 'none',
-                borderRadius: 'var(--radius)', padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+                width: '100%', background: 'var(--color-card2)', border: 'none',
+                borderRadius: 'var(--radius)', padding: '0 16px', height: 60,
+                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
               }}
             >
-              <div style={{
-                width: 28, height: 28, borderRadius: 8,
-                background: 'var(--color-primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: '#fff', fontWeight: 700,
-              }}>+</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Ещё категория</div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Стрижки и уход</div>
-              </div>
+              <span style={{ fontSize: 20, color: 'var(--color-text)', lineHeight: 1, fontWeight: 400 }}>+</span>
+              <span style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Ещё категория</span>
             </button>
           </>
         )}
@@ -655,71 +638,103 @@ export default function OnboardingPage() {
       </div>
 
       {/* ── Боттом-шит: Добавление категории ── */}
-      {showCatForm && (
-        <BottomSheet
-          title={editCatIdx !== null ? 'Редактирование категории' : 'Добавление категории'}
-          onClose={() => setShowCatForm(false)}
-        >
-          {/* Фото категории */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      {showCatForm && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, background: 'var(--color-bg)',
+          zIndex: 200, display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Шапка */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--color-border)',
+            background: 'var(--color-card)',
+            flexShrink: 0,
+          }}>
             <button
-              onClick={() => catPhotoRef.current?.click()}
+              onClick={() => setShowCatForm(false)}
               style={{
-                width: 80, height: 80, borderRadius: '50%',
-                background: 'var(--color-card2)', border: 'none', overflow: 'hidden',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--color-primary)', fontSize: 15, padding: '4px 0', whiteSpace: 'nowrap',
               }}
             >
-              {catFormPreview
-                ? <>
-                    <img src={catFormPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {catPhotoUploading && <UploadingOverlay />}
-                  </>
-                : <CameraIcon />
-              }
+              ← Назад
             </button>
-            <input
-              ref={catPhotoRef} type="file" accept="image/*" hidden
-              onChange={(e) => handlePhotoChange(
-                e,
-                setCatFormPreview,
-                setCatPhotoUploading,
-                (url) => setCatFormPhoto(url),
-                'categories',
-              )}
-            />
+            <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: 16 }}>
+              {editCatIdx !== null ? 'Редактирование категории' : 'Добавление категории'}
+            </span>
+            <div style={{ width: 60 }} />
           </div>
 
-          <div style={{ background: 'var(--color-card2)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', marginBottom: 12 }}>
-            <input
-              value={catFormName}
-              onChange={(e) => setCatFormName(e.target.value)}
-              placeholder="Название. Пример: Работа с волосами"
-              style={{
-                width: '100%', background: 'none', border: 'none',
-                borderBottom: '1px solid var(--color-border)',
-                padding: '14px 16px', fontSize: 15, color: 'var(--color-text)',
-              }}
-            />
-            <div style={{ position: 'relative' }}>
+          {/* Контент */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {/* Фото категории */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+              <button
+                onClick={() => catPhotoRef.current?.click()}
+                style={{
+                  width: 110, height: 110, borderRadius: '50%',
+                  background: 'var(--color-card2)', border: 'none', overflow: 'hidden',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative',
+                }}
+              >
+                {catFormPreview
+                  ? <>
+                      <img src={catFormPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {catPhotoUploading && <UploadingOverlay />}
+                    </>
+                  : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <CameraIcon size={32} />
+                      <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Добавить фото</span>
+                    </div>
+                }
+              </button>
               <input
-                value={catFormDesc}
-                onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                placeholder="Описание. Пример: Укладка длинных волос"
+                ref={catPhotoRef} type="file" accept="image/*" hidden
+                onChange={(e) => handlePhotoChange(
+                  e, setCatFormPreview, setCatPhotoUploading,
+                  (url) => setCatFormPhoto(url), 'categories',
+                )}
+              />
+            </div>
+
+            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+              <input
+                value={catFormName}
+                onChange={(e) => setCatFormName(e.target.value)}
+                placeholder="Название. Пример: Работа с волосами"
+                autoFocus
                 style={{
                   width: '100%', background: 'none', border: 'none',
-                  padding: '14px 56px 14px 16px', fontSize: 15, color: 'var(--color-text)',
+                  borderBottom: '1px solid var(--color-border)',
+                  padding: '14px 16px', fontSize: 15, color: 'var(--color-text)',
                 }}
               />
-              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                {catFormDesc.length}/200
-              </span>
+              <div style={{ position: 'relative' }}>
+                <input
+                  value={catFormDesc}
+                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
+                  placeholder="Описание. Пример: Укладка длинных волос"
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    padding: '14px 56px 14px 16px', fontSize: 15, color: 'var(--color-text)',
+                  }}
+                />
+                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  {catFormDesc.length}/200
+                </span>
+              </div>
             </div>
           </div>
 
-          <Button onClick={saveCatForm} fullWidth disabled={!catFormName.trim()}>Готово</Button>
-        </BottomSheet>
+          {/* Кнопка */}
+          <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', flexShrink: 0 }}>
+            <Button onClick={saveCatForm} fullWidth disabled={!catFormName.trim() || catPhotoUploading}>Готово</Button>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── Боттом-шит: Добавление услуги ── */}
