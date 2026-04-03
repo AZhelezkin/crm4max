@@ -6,6 +6,7 @@ import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import Button from '@/components/Button'
+import AddressSuggestInput from '@/components/AddressSuggestInput'
 import { formatPrice, discountedPrice } from '@/types'
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
@@ -411,13 +412,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Адрес */}
-            <ListRow
-              icon={<LocationIcon />}
-              label="Адрес"
-              sub="Куда приезжать клиентам"
-              value={location}
-              onClick={() => { const v = prompt('Введите адрес'); if (v) setLocation(v) }}
-            />
+            <AddressSuggestInput value={location} onChange={setLocation} />
           </>
         )}
 
@@ -920,29 +915,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ListRow({ icon, label, sub, value, onClick }: {
-  icon: React.ReactNode; label: string; sub: string; value?: string; onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%', background: 'var(--color-card)', border: 'none',
-        borderRadius: 'var(--radius)', padding: '14px 16px',
-        display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left',
-      }}
-    >
-      <span style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {icon}
-      </span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>{value || sub}</div>
-      </div>
-      <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
-    </button>
-  )
-}
 
 function SelectField({ value, onChange, options }: {
   value: number; onChange: (v: string) => void
@@ -1044,15 +1016,6 @@ function CameraIcon({ size = 28 }: { size?: number }) {
   )
 }
 
-function LocationIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-        stroke="#2688EB" strokeWidth="1.8" fill="none" />
-      <circle cx="12" cy="9" r="2.5" stroke="#2688EB" strokeWidth="1.8" fill="none" />
-    </svg>
-  )
-}
 
 function EditIcon() {
   return (
