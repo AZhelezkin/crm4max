@@ -637,47 +637,52 @@ export default function OnboardingPage() {
         </Button>
       </div>
 
-      {/* ── Боттом-шит: Добавление категории ── */}
+      {/* ── Экран добавления/редактирования категории (на весь экран) ── */}
       {showCatForm && createPortal(
         <div style={{
-          position: 'fixed', inset: 0, background: 'var(--color-bg)',
-          zIndex: 200, display: 'flex', flexDirection: 'column',
+          position: 'fixed', inset: 0,
+          background: 'var(--color-card)',
+          zIndex: 200,
+          display: 'flex', flexDirection: 'column',
         }}>
-          {/* Шапка */}
+          {/* Верхний бар */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-border)',
-            background: 'var(--color-card)',
+            display: 'flex', alignItems: 'center',
+            padding: '14px 20px',
             flexShrink: 0,
           }}>
             <button
               onClick={() => setShowCatForm(false)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--color-primary)', fontSize: 15, padding: '4px 0', whiteSpace: 'nowrap',
+                color: 'var(--color-text)', fontSize: 15, padding: 0,
+                display: 'flex', alignItems: 'center', gap: 4,
               }}
             >
-              ← Назад
+              <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
+              <span>Назад</span>
             </button>
-            <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: 16 }}>
+            <span style={{
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              fontSize: 16, fontWeight: 600, color: 'var(--color-text)',
+              pointerEvents: 'none',
+            }}>
               {editCatIdx !== null ? 'Редактирование категории' : 'Добавление категории'}
             </span>
-            <div style={{ width: 60 }} />
           </div>
 
-          {/* Контент */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Контент — скроллируется если не влезает */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
-            {/* Фото категории */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            {/* Аватар — круг 110×110, по центру */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 20px 0' }}>
               <button
                 onClick={() => catPhotoRef.current?.click()}
                 style={{
                   width: 110, height: 110, borderRadius: '50%',
                   background: 'var(--color-card2)', border: 'none', overflow: 'hidden',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative',
+                  position: 'relative', flexShrink: 0,
                 }}
               >
                 {catFormPreview
@@ -685,10 +690,7 @@ export default function OnboardingPage() {
                       <img src={catFormPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       {catPhotoUploading && <UploadingOverlay />}
                     </>
-                  : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <CameraIcon size={32} />
-                      <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Добавить фото</span>
-                    </div>
+                  : <CameraIcon size={32} />
                 }
               </button>
               <input
@@ -700,38 +702,62 @@ export default function OnboardingPage() {
               />
             </div>
 
-            <div style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            {/* Input: название */}
+            <div style={{ padding: '20px 16px 0' }}>
               <input
                 value={catFormName}
                 onChange={(e) => setCatFormName(e.target.value)}
                 placeholder="Название. Пример: Работа с волосами"
                 autoFocus
                 style={{
-                  width: '100%', background: 'none', border: 'none',
-                  borderBottom: '1px solid var(--color-border)',
-                  padding: '14px 16px', fontSize: 15, color: 'var(--color-text)',
+                  width: '100%', background: '#454757', border: 'none',
+                  borderRadius: 20, padding: '18px 20px',
+                  fontSize: 15, color: 'var(--color-text)',
+                  height: 59, boxSizing: 'border-box',
                 }}
               />
-              <div style={{ position: 'relative' }}>
-                <input
-                  value={catFormDesc}
-                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                  placeholder="Описание. Пример: Укладка длинных волос"
-                  style={{
-                    width: '100%', background: 'none', border: 'none',
-                    padding: '14px 56px 14px 16px', fontSize: 15, color: 'var(--color-text)',
-                  }}
-                />
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                  {catFormDesc.length}/200
-                </span>
-              </div>
+            </div>
+
+            {/* Input: описание */}
+            <div style={{ padding: '12px 16px 0', position: 'relative' }}>
+              <textarea
+                value={catFormDesc}
+                onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
+                placeholder="Описание. Пример: Укладка длинных волос"
+                style={{
+                  width: '100%', background: '#454757', border: 'none',
+                  borderRadius: 20, padding: '18px 60px 18px 20px',
+                  fontSize: 15, color: 'var(--color-text)',
+                  resize: 'none', height: 97, boxSizing: 'border-box', display: 'block',
+                }}
+              />
+              <span style={{
+                position: 'absolute', right: 32, bottom: 16,
+                fontSize: 12, color: 'var(--color-text-secondary)',
+              }}>
+                {catFormDesc.length}/200
+              </span>
             </div>
           </div>
 
-          {/* Кнопка */}
-          <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', flexShrink: 0 }}>
-            <Button onClick={saveCatForm} fullWidth disabled={!catFormName.trim() || catPhotoUploading}>Готово</Button>
+          {/* Кнопка «Готово» — синяя, с отступами по бокам */}
+          <div style={{
+            padding: '16px 20px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={saveCatForm}
+              disabled={!catFormName.trim() || catPhotoUploading}
+              style={{
+                width: '100%', height: 60, borderRadius: 20,
+                background: !catFormName.trim() || catPhotoUploading ? 'var(--color-card2)' : 'var(--color-primary)',
+                border: 'none', cursor: !catFormName.trim() ? 'default' : 'pointer',
+                fontSize: 16, fontWeight: 600, color: '#fff',
+              }}
+            >
+              Готово
+            </button>
           </div>
         </div>,
         document.body,
