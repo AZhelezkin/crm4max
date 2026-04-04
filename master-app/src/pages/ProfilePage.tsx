@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const { master } = useAuthStore()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('services')
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const totalServices = master?.categories.reduce((acc, c) => acc + c.services.length, 0) ?? 0
 
@@ -148,7 +149,7 @@ export default function ProfilePage() {
           return (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, margin: '0 -16px' }}>
               {allPhotos.map((p) => (
-                <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden' }}>
+                <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxUrl(p.url)}>
                   <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
               ))}
@@ -157,6 +158,24 @@ export default function ProfilePage() {
         })()}
         {activeTab === 'reviews' && <EmptyState text="Отзывы появятся после первых записей" />}
       </div>
+
+      {/* Лайтбокс */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <img
+            src={lightboxUrl}
+            alt=""
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
+          />
+        </div>
+      )}
     </div>
   )
 }
