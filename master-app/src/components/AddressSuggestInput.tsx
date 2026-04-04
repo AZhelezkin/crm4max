@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { SearchInput } from '@maxhub/max-ui'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
@@ -10,6 +11,15 @@ interface Suggestion {
   title: string
   subtitle: string
   query: string
+}
+
+function parseCenterFromText(text: string): string | null {
+  const match = text.match(/[?&]ll=([\d.+-]+),([\d.+-]+)/)
+  if (!match) return null
+  const lon = match[1]
+  const lat = match[2]
+  if (!lon || !lat) return null
+  return `${lon},${lat}`
 }
 
 interface Props {
@@ -29,11 +39,6 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [isMapFading, setIsMapFading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
 
   useEffect(() => {
     setInputValue(value)
@@ -68,7 +73,11 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     }
 
     fetchPoint(true)
-      .then((point) => point ?? fetchPoint(false))
+      .catch(() => null)
+      .then((point) => {
+        if (point) return point
+        return fetchPoint(false).catch(() => null)
+      })
       .then((point) => {
         if (point) setMapCenter(point)
       })
@@ -173,6 +182,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
+    const centerFromSuggest = parseCenterFromText(s.query)
+    if (centerFromSuggest) setMapCenter(centerFromSuggest)
     geocodeAddress(s.query || full)
   }
 
@@ -222,44 +233,28 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         flexShrink: 0,
       }}>
         <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+          flex: 1,
           background: 'rgba(15,15,17,0.68)', borderRadius: 'var(--radius-sm)',
-          padding: '8px 12px',
+          padding: '6px 8px',
           backdropFilter: 'blur(6px)',
         }}>
-          <LocationIcon />
-          <input
-            ref={inputRef}
+          <SearchInput
             value={inputValue}
-            onChange={(e) => {
-              const next = e.target.value
+            onChange={(e: any) => {
+              const next = e?.target?.value ?? ''
               setInputValue(next)
               setSuggestEnabled(true)
               onChange(next)
             }}
-            placeholder="Адрес"
-            style={{
-              flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontSize: 15, color: 'var(--color-text)',
+            onClear={() => {
+              setInputValue('')
+              setSuggestEnabled(false)
+              onChange('')
+              setSuggestions([])
+              setMapCenter(DEFAULT_CENTER)
             }}
+            placeholder="Адрес"
           />
-          {inputValue && (
-            <button
-              onClick={() => {
-                setInputValue('')
-                setSuggestEnabled(false)
-                onChange('')
-                setSuggestions([])
-                setMapCenter(DEFAULT_CENTER)
-              }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--color-text-secondary)', fontSize: 18, lineHeight: 1, padding: 0,
-              }}
-            >
-              ×
-            </button>
-          )}
         </div>
       </div>
 
