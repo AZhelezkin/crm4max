@@ -25,6 +25,9 @@ import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
+import CategoryFormPortal from '@/components/CategoryFormPortal'
+import ServiceFormPortal from '@/components/ServiceFormPortal'
+import { type LocalWorkPhoto, getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
 import {
   onboardingFieldInputStyle,
   onboardingFieldSuffixStyle,
@@ -92,13 +95,6 @@ interface LocalService {
   workPhotos: LocalWorkPhoto[]
 }
 
-interface LocalWorkPhoto {
-  id: string
-  url: string | null
-  previewUrl: string
-  uploading: boolean
-}
-
 const STEPS = ['Обо мне', 'График', 'Услуги'] as const
 const DAYS = [
   { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
@@ -113,9 +109,6 @@ const ONBOARDING_MISSING_LABELS: Record<string, string> = {
   categories: 'добавить хотя бы одну категорию',
   services: 'добавить хотя бы одну услугу',
 }
-
-const getFirstUploadedWorkPhotoUrl = (workPhotos: LocalWorkPhoto[]) =>
-  workPhotos.find((photo) => !photo.uploading && photo.url)?.url ?? null
 
 // ─── Компонент ────────────────────────────────────────────────────────────────
 
@@ -153,7 +146,6 @@ export default function OnboardingPage() {
   const [catFormPhoto, setCatFormPhoto] = useState<string | null>(null)       // S3 URL
   const [catFormPreview, setCatFormPreview] = useState<string | null>(null)   // local preview
   const [catPhotoUploading, setCatPhotoUploading] = useState(false)
-  const catPhotoRef = useRef<HTMLInputElement>(null)
 
   const [servicesByCat, setServicesByCat] = useState<LocalService[][]>([])
   const [showSvcForm, setShowSvcForm] = useState(false)
@@ -164,8 +156,6 @@ export default function OnboardingPage() {
     photo: null,
     workPhotos: [],
   })
-  const [svcWorkPhotoUploading, setSvcWorkPhotoUploading] = useState(false)
-  const svcWorkPhotoRef = useRef<HTMLInputElement>(null)
   const [selectedCatIdx, setSelectedCatIdx] = useState(0)
 
   // ─── Хелперы ──────────────────────────────────────────────────────────────
@@ -809,107 +799,21 @@ export default function OnboardingPage() {
         </button>
       </div>
 
-      {/* ── Экран добавления/редактирования категории (на весь экран) ── */}
-      {showCatForm && createPortal(
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'var(--color-bg)',
-          zIndex: 200,
-          display: 'flex', flexDirection: 'column',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
-            <button
-              onClick={() => setShowCatForm(false)}
-              style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
-            >
-              <BackArrowIcon />
-            </button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-              {editCatIdx !== null ? 'Редактирование категории' : 'Добавление категории'}
-            </div>
-            <div style={{ width: 56 }} />
-          </div>
-
-          <div style={onboardingPortalContentStyle}>
-            <div style={stepOneIntroTextStyle}>
-              Добавьте фото категории, чтобы клиентам было проще выбирать услуги
-            </div>
-
-            <div style={stepOnePhotoContainerStyle}>
-              <button
-                type="button"
-                onClick={() => catPhotoRef.current?.click()}
-                disabled={catPhotoUploading}
-                style={{
-                  ...stepOnePhotoButtonBaseStyle,
-                  cursor: catPhotoUploading ? 'default' : 'pointer',
-                }}
-              >
-                {catFormPreview
-                  ? <img src={catFormPreview} alt="Фото категории" style={stepOnePhotoPreviewStyle} />
-                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
-
-                {catPhotoUploading && <UploadingOverlay />}
-              </button>
-              <input
-                ref={catPhotoRef} type="file" accept="image/*" hidden
-                onChange={(e) => handlePhotoChange(
-                  e, setCatFormPreview, setCatPhotoUploading,
-                  (url) => setCatFormPhoto(url), 'categories',
-                )}
-              />
-            </div>
-
-            <div style={onboardingFieldWrapStyle}>
-              <input
-                value={catFormName}
-                onChange={(e) => setCatFormName(e.target.value)}
-                placeholder="Название"
-                autoFocus
-                style={onboardingFieldInputStyle}
-              />
-            </div>
-
-            <div style={{ ...onboardingFieldWrapStyle, position: 'relative' }}>
-              <div style={stepOneTextareaWrapStyle}>
-                <textarea
-                  value={catFormDesc}
-                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                  placeholder="Описание"
-                  rows={3}
-                  style={stepOneTextareaStyle}
-                />
-                <span style={stepOneCounterStyle}>{catFormDesc.length}/200</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            padding: '12px 16px',
-            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-            flexShrink: 0,
-          }}>
-            <button
-              type="button"
-              disabled={!catFormName.trim() || catPhotoUploading}
-              onClick={saveCatForm}
-              style={{
-                ...primaryActionButtonBaseStyle,
-                cursor: !catFormName.trim() || catPhotoUploading ? 'default' : 'pointer',
-                background: !catFormName.trim() || catPhotoUploading
-                  ? 'var(--color-card2)'
-                  : 'var(--color-primary)',
-                color: !catFormName.trim() || catPhotoUploading
-                  ? 'var(--color-text-secondary)'
-                  : '#fff',
-              }}
-            >
-              Готово
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
+      <CategoryFormPortal
+        visible={showCatForm}
+        isEdit={editCatIdx !== null}
+        name={catFormName}
+        onNameChange={setCatFormName}
+        desc={catFormDesc}
+        onDescChange={setCatFormDesc}
+        photoPreview={catFormPreview}
+        onPhotoPreview={setCatFormPreview}
+        onPhotoUrl={setCatFormPhoto}
+        photoUploading={catPhotoUploading}
+        onPhotoUploading={setCatPhotoUploading}
+        onClose={() => setShowCatForm(false)}
+        onSave={saveCatForm}
+      />
 
       {/* ── Портал: Ввод адреса ── */}
       {showAddressPortal && createPortal(
@@ -956,269 +860,30 @@ export default function OnboardingPage() {
         document.body,
       )}
 
-      {/* ── Портал: Добавление услуги ── */}
-      {showSvcForm && createPortal(
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'var(--color-bg)',
-          zIndex: 200,
-          display: 'flex', flexDirection: 'column',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
-            <button
-              onClick={() => setShowSvcForm(false)}
-              style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
-            >
-              <BackArrowIcon />
-            </button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-              {editSvcIdx !== null ? 'Редактирование услуги' : 'Добавление услуги'}
-            </div>
-            <div style={{ width: 56 }} />
-          </div>
-
-          <div style={onboardingPortalContentStyle}>
-            <div style={stepOneIntroTextStyle}>
-              Заполните информацию и добавьте примеры работ
-            </div>
-
-            {/* Название */}
-            <div style={onboardingFieldWrapStyle}>
-              <input
-                value={svcForm.name}
-                onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Название. Пример: Укладка волос"
-                autoFocus
-                style={onboardingFieldInputStyle}
-              />
-            </div>
-
-            <div style={{ ...onboardingFieldWrapStyle, position: 'relative' }}>
-              <div style={stepOneTextareaWrapStyle}>
-                <textarea
-                  value={svcForm.desc}
-                  onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
-                  placeholder="Описание"
-                  rows={3}
-                  style={stepOneTextareaStyle}
-                />
-                <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
-              </div>
-            </div>
-
-            {/* Продолжительность */}
-            <div style={onboardingFieldWithSuffixWrapStyle}>
-              <input
-                value={svcForm.durationMin}
-                onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
-                placeholder="Продолжительность"
-                inputMode="numeric"
-                style={onboardingFieldInputStyle}
-              />
-              <span style={onboardingFieldSuffixStyle}>мин</span>
-            </div>
-
-            <div style={onboardingFieldWithSuffixWrapStyle}>
-              <input
-                value={svcForm.price}
-                onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
-                placeholder="Стоимость"
-                inputMode="decimal"
-                style={onboardingFieldInputStyle}
-              />
-              <span style={onboardingFieldSuffixStyle}>₽</span>
-            </div>
-
-            {/* Скидка */}
-{/*            <div style={{ ...onboardingToggleRowStyle, background: 'transparent', padding: 0, borderRadius: 0 }}>*/}
-              <div>
-              <Switch
-                checked={svcForm.discountEnabled}
-                onChange={(e) => setSvcForm((f) => ({ ...f, discountEnabled: e.target.checked }))}
-              />
-              <span style={onboardingToggleLabelStyle}>Скидка</span>
-              {svcForm.discountEnabled && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                  <div style={{ ...onboardingSelectWrapStyle, width: 92 }}>
-                    <select
-                      value={svcForm.discountPercent}
-                      onChange={(e) => setSvcForm((f) => ({ ...f, discountPercent: Number(e.target.value) }))}
-                      style={{ ...onboardingSelectStyle, padding: '11px 36px 11px 12px' }}
-                    >
-                      {DISCOUNT_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <span style={onboardingSelectChevronStyle}>⌄</span>
-                  </div>
-                  <span style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>%</span>
-                </div>
-              )}
-            </div>
-
-            {/* Примеры работ */}
-            <div>
-              <div style={{ ...onboardingSectionLabelStyle, marginBottom: 8 }}>
-                ПРИМЕРЫ РАБОТ
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => svcWorkPhotoRef.current?.click()}
-                  disabled={svcWorkPhotoUploading}
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 10,
-                    background: 'var(--color-card2)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    opacity: svcWorkPhotoUploading ? 0.5 : 1,
-                  }}
-                >
-                  {svcWorkPhotoUploading
-                    ? <Spinner size={24} appearance="contrast" />
-                    : <img src={maskIconUrl} alt="upload" style={serviceWorkPhotoAddIconStyle} />}
-                </button>
-
-                {svcForm.workPhotos.map((photo, i) => (
-                  <div key={photo.id} style={{ position: 'relative', width: 72, height: 72 }}>
-                    <img
-                      src={photo.previewUrl}
-                      alt=""
-                      style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
-                    />
-                    {photo.uploading && <UploadingOverlay />}
-                    <button
-                      onClick={() => setSvcForm((f) => {
-                        const workPhotos = f.workPhotos.filter((_, j) => j !== i)
-                        return {
-                          ...f,
-                          workPhotos,
-                          photo: getFirstUploadedWorkPhotoUrl(workPhotos),
-                        }
-                      })}
-                      style={{
-                        position: 'absolute',
-                        top: -6,
-                        right: -6,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        background: 'var(--color-danger)',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 12,
-                        lineHeight: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        padding: 0,
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-
-                <input
-                  ref={svcWorkPhotoRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  hidden
-                  onChange={async (e) => {
-                    const files = Array.from(e.target.files ?? [])
-                    if (!files.length) return
-
-                    const queuedPhotos: LocalWorkPhoto[] = files.map((file, index) => ({
-                      id: `work-photo-${Date.now()}-${index}`,
-                      url: null,
-                      previewUrl: URL.createObjectURL(file),
-                      uploading: true,
-                    }))
-
-                    setSvcForm((prev) => ({
-                      ...prev,
-                      workPhotos: [...prev.workPhotos, ...queuedPhotos],
-                    }))
-
-                    setSvcWorkPhotoUploading(true)
-                    try {
-                      const results = await Promise.allSettled(files.map((file) => uploadPhoto(file, 'work')))
-
-                      setSvcForm((prev) => {
-                        const uploadedById = new Map<string, string>()
-                        const failedIds = new Set<string>()
-
-                        results.forEach((result, index) => {
-                          const photoId = queuedPhotos[index]?.id
-                          if (!photoId) return
-
-                          if (result.status === 'fulfilled') uploadedById.set(photoId, result.value)
-                          else failedIds.add(photoId)
-                        })
-
-                        const workPhotos = prev.workPhotos.flatMap((photo) => {
-                          if (failedIds.has(photo.id)) return []
-                          const uploadedUrl = uploadedById.get(photo.id)
-                          if (!uploadedUrl) return [photo]
-
-                          return [{
-                            ...photo,
-                            url: uploadedUrl,
-                            previewUrl: uploadedUrl,
-                            uploading: false,
-                          }]
-                        })
-
-                        return {
-                          ...prev,
-                          workPhotos,
-                          photo: getFirstUploadedWorkPhotoUrl(workPhotos),
-                        }
-                      })
-                    } catch (err) {
-                      console.error('Ошибка загрузки фото работ:', err)
-                    } finally {
-                      setSvcWorkPhotoUploading(false)
-                      e.target.value = ''
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            padding: '12px 16px',
-            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-            flexShrink: 0,
-          }}>
-            <button
-              type="button"
-              disabled={!svcForm.name.trim() || svcWorkPhotoUploading}
-              onClick={saveSvcForm}
-              style={{
-                ...primaryActionButtonBaseStyle,
-                cursor: !svcForm.name.trim() || svcWorkPhotoUploading ? 'default' : 'pointer',
-                background: !svcForm.name.trim() || svcWorkPhotoUploading
-                  ? 'var(--color-card2)'
-                  : 'var(--color-primary)',
-                color: !svcForm.name.trim() || svcWorkPhotoUploading
-                  ? 'var(--color-text-secondary)'
-                  : '#fff',
-              }}
-            >
-              Готово
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
+      <ServiceFormPortal
+        visible={showSvcForm}
+        isEdit={editSvcIdx !== null}
+        name={svcForm.name}
+        onNameChange={(v) => setSvcForm((f) => ({ ...f, name: v }))}
+        desc={svcForm.desc}
+        onDescChange={(v) => setSvcForm((f) => ({ ...f, desc: v }))}
+        durationMin={svcForm.durationMin}
+        onDurationChange={(v) => setSvcForm((f) => ({ ...f, durationMin: v }))}
+        price={svcForm.price}
+        onPriceChange={(v) => setSvcForm((f) => ({ ...f, price: v }))}
+        discountEnabled={svcForm.discountEnabled}
+        onDiscountEnabledChange={(v) => setSvcForm((f) => ({ ...f, discountEnabled: v }))}
+        discountPercent={svcForm.discountPercent}
+        onDiscountPercentChange={(v) => setSvcForm((f) => ({ ...f, discountPercent: v }))}
+        workPhotos={svcForm.workPhotos}
+        onWorkPhotosChange={(photos) => setSvcForm((f) => ({
+          ...f,
+          workPhotos: photos,
+          photo: getFirstUploadedWorkPhotoUrl(photos),
+        }))}
+        onClose={() => setShowSvcForm(false)}
+        onSave={saveSvcForm}
+      />
     </div>
   )
 }
