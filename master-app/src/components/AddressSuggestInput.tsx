@@ -6,7 +6,6 @@ import {
 } from '@/components/onboardingStepOne.styles'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
-const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
 const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
 const DEFAULT_CENTER = '37.62007,55.75363' // Москва
@@ -15,6 +14,7 @@ interface Suggestion {
   title: string
   subtitle: string
   query: string
+  position?: string // "lon,lat"
 }
 
 function parseCenterFromText(text: string): string | null {
@@ -52,55 +52,16 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     setSuggestions([])
   }, [value])
 
-  const geocodeAddress = (address: string) => {
-    const clean = address.trim()
-    if (!clean) {
-      setMapCenter(DEFAULT_CENTER)
-      setGeoError(null)
-      setLastGeo(null)
-      return () => {}
-    }
+  // geocodeAddress больше не нужен
 
-    const controller = new AbortController()
-    const fetchPoint = async (useKey: boolean) => {
-      const params = new URLSearchParams({
-        geocode: clean,
-        format: 'json',
-        results: '1',
-      })
-      if (useKey && API_KEY) params.set('apikey', API_KEY)
 
-      const res = await fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal })
-      if (!res.ok) throw new Error('Geocode HTTP error: ' + res.status)
-      const data = await res.json()
-      const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
-      if (!pos || typeof pos !== 'string') throw new Error('No coordinates found')
-      const [lon, lat] = pos.split(' ')
-      if (!lon || !lat) throw new Error('Invalid coordinates')
-      return `${lon},${lat}`
-    }
-
-    setGeoError(null)
-    fetchPoint(true)
-      .catch(() => fetchPoint(false))
-      .then((point) => {
-        if (point) {
-          setMapCenter(point)
-          setLastGeo(point)
-          setGeoError(null)
-        } else {
-          setGeoError('Не удалось получить координаты для адреса')
-        }
-      })
-      .catch((err) => {
-        setGeoError('Ошибка геокодирования: ' + (err?.message || 'unknown'))
-      })
-
-    return () => controller.abort()
-  }
-
+  // При изменении confirmedAddress сбрасываем карту на дефолт
   useEffect(() => {
-    return geocodeAddress(confirmedAddress)
+    if (!confirmedAddress?.trim()) {
+      setMapCenter(DEFAULT_CENTER)
+      setLastGeo(null)
+      setGeoError(null)
+    }
   }, [confirmedAddress])
 
   const buildMapUrl = (center: string) => {
@@ -175,11 +136,19 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         if (!res.ok) return
         const data = await res.json()
         setSuggestions(
-          (data.results ?? []).map((r: any) => ({
-            title: r.title?.text ?? '',
-            subtitle: r.subtitle?.text ?? '',
-            query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
-          }))
+          (data.results ?? []).map((r: any) => {
+            // Координаты приходят в r.position: { lon, lat }
+            let position = undefined
+            if (r.position && typeof r.position.lon === 'number' && typeof r.position.lat === 'number') {
+              position = `${r.position.lon},${r.position.lat}`
+            }
+            return {
+              title: r.title?.text ?? '',
+              subtitle: r.subtitle?.text ?? '',
+              query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
+              position,
+            }
+          })
         )
       } catch {
         // сетевые ошибки игнорируем
@@ -193,8 +162,13 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    // Всегда используем геокодер для получения координат выбранного адреса
-    geocodeAddress(full)
+    if (s.position) {
+      setMapCenter(s.position)
+      setLastGeo(s.position)
+      setGeoError(null)
+    } else {
+      setGeoError('Нет координат для выбранного адреса')
+    }
   }
 
   return (

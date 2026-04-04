@@ -2,7 +2,6 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useRef, useState } from 'react';
 import { stepOneAddressInputIconStyle, stepOneAddressInputStyle, stepOneAddressInputWrapStyle, } from '@/components/onboardingStepOne.styles';
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest';
-const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/';
 const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/';
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY;
 const DEFAULT_CENTER = '37.62007,55.75363'; // Москва
@@ -34,55 +33,14 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         setSuggestEnabled(false);
         setSuggestions([]);
     }, [value]);
-    const geocodeAddress = (address) => {
-        const clean = address.trim();
-        if (!clean) {
-            setMapCenter(DEFAULT_CENTER);
-            setGeoError(null);
-            setLastGeo(null);
-            return () => { };
-        }
-        const controller = new AbortController();
-        const fetchPoint = async (useKey) => {
-            const params = new URLSearchParams({
-                geocode: clean,
-                format: 'json',
-                results: '1',
-            });
-            if (useKey && API_KEY)
-                params.set('apikey', API_KEY);
-            const res = await fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal });
-            if (!res.ok)
-                throw new Error('Geocode HTTP error: ' + res.status);
-            const data = await res.json();
-            const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos;
-            if (!pos || typeof pos !== 'string')
-                throw new Error('No coordinates found');
-            const [lon, lat] = pos.split(' ');
-            if (!lon || !lat)
-                throw new Error('Invalid coordinates');
-            return `${lon},${lat}`;
-        };
-        setGeoError(null);
-        fetchPoint(true)
-            .catch(() => fetchPoint(false))
-            .then((point) => {
-            if (point) {
-                setMapCenter(point);
-                setLastGeo(point);
-                setGeoError(null);
-            }
-            else {
-                setGeoError('Не удалось получить координаты для адреса');
-            }
-        })
-            .catch((err) => {
-            setGeoError('Ошибка геокодирования: ' + (err?.message || 'unknown'));
-        });
-        return () => controller.abort();
-    };
+    // geocodeAddress больше не нужен
+    // При изменении confirmedAddress сбрасываем карту на дефолт
     useEffect(() => {
-        return geocodeAddress(confirmedAddress);
+        if (!confirmedAddress?.trim()) {
+            setMapCenter(DEFAULT_CENTER);
+            setLastGeo(null);
+            setGeoError(null);
+        }
     }, [confirmedAddress]);
     const buildMapUrl = (center) => {
         const params = new URLSearchParams({
@@ -155,11 +113,19 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                 if (!res.ok)
                     return;
                 const data = await res.json();
-                setSuggestions((data.results ?? []).map((r) => ({
-                    title: r.title?.text ?? '',
-                    subtitle: r.subtitle?.text ?? '',
-                    query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
-                })));
+                setSuggestions((data.results ?? []).map((r) => {
+                    // Координаты приходят в r.position: { lon, lat }
+                    let position = undefined;
+                    if (r.position && typeof r.position.lon === 'number' && typeof r.position.lat === 'number') {
+                        position = `${r.position.lon},${r.position.lat}`;
+                    }
+                    return {
+                        title: r.title?.text ?? '',
+                        subtitle: r.subtitle?.text ?? '',
+                        query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
+                        position,
+                    };
+                }));
             }
             catch {
                 // сетевые ошибки игнорируем
@@ -172,8 +138,14 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         onChange(full);
         setSuggestEnabled(false);
         setSuggestions([]);
-        // Всегда используем геокодер для получения координат выбранного адреса
-        geocodeAddress(full);
+        if (s.position) {
+            setMapCenter(s.position);
+            setLastGeo(s.position);
+            setGeoError(null);
+        }
+        else {
+            setGeoError('Нет координат для выбранного адреса');
+        }
     };
     return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden' }, children: [_jsx("img", { src: activeMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", style: {
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
