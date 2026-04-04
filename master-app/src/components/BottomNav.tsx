@@ -1,14 +1,16 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import profileIconUrl from '@/assets/icon-profile.svg'
 
 const TABS = [
   {
     path: '/',
     label: 'Профиль',
     icon: (active: boolean) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="4" fill={active ? '#2688EB' : '#8E8E93'} />
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke={active ? '#2688EB' : '#8E8E93'} strokeWidth="2" strokeLinecap="round" fill="none" />
-      </svg>
+      <img
+        src={profileIconUrl}
+        alt="Профиль"
+        style={{ width: 24, height: 24, opacity: active ? 1 : 0.45 }}
+      />
     ),
   },
   {

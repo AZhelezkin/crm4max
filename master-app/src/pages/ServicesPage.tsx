@@ -10,6 +10,7 @@ const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50]
 
 export default function ServicesPage() {
   const [categories, setCategories] = useState<Category[]>([])
+  const [expandedCatIds, setExpandedCatIds] = useState<Set<string>>(new Set())
   const [showForm, setShowForm] = useState<'category' | 'service' | null>(null)
   const [editService, setEditService] = useState<Service | null>(null)
 
@@ -117,136 +118,158 @@ export default function ServicesPage() {
     load()
   }
 
+  const toggleCat = (id: string) => {
+    setExpandedCatIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   // ─── Рендер ─────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
       <PageHeader title="Услуги" />
 
-      <div style={{ padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        {/* Список категорий */}
-        {categories.map((cat) => (
-          <div key={cat.id}>
-            {/* Категория */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'var(--color-card)', borderRadius: 'var(--radius)',
-              padding: '12px 14px', marginBottom: 8,
-            }}>
-              {/* Фото */}
-              <div style={{
-                width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
-                background: 'var(--color-card2)', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {cat.photo
-                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: 22 }}>✂️</span>
-                }
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {cat.name}
-                  {cat.services.some((s) => s.discountPercent) && (
-                    <span style={{
-                      background: 'var(--color-danger)', color: '#fff',
-                      fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
-                    }}>
-                      % скидки
-                    </span>
-                  )}
+        {/* Список категорий — аккордеон */}
+        {categories.map((cat) => {
+          const expanded = expandedCatIds.has(cat.id)
+          return (
+            <div key={cat.id} style={{ background: 'var(--color-card)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+
+              {/* Заголовок категории — кликабельный */}
+              <div
+                onClick={() => toggleCat(cat.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', cursor: 'pointer',
+                  borderBottom: expanded ? '1px solid var(--color-border)' : 'none',
+                }}
+              >
+                {/* Фото */}
+                <div style={{
+                  width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
+                  background: 'var(--color-card2)', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {cat.photo
+                    ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ fontSize: 22 }}>✂️</span>
+                  }
                 </div>
-                {cat.description && (
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {cat.description}
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => openCatForm(cat)}
-                style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', padding: '4px 8px' }}
-              >
-                <EditIcon />
-              </button>
-              <button
-                onClick={() => handleDeleteCategory(cat.id)}
-                style={{ background: 'none', border: 'none', color: 'var(--color-danger)', padding: '4px 8px', fontSize: 18 }}
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Услуги категории */}
-            {cat.services.map((s) => {
-              const dPrice = discountedPrice(s.price, s.discountPercent)
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => openServiceForm(s)}
-                  style={{
-                    width: '100%', background: 'none', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 14px 10px 70px',
-                    borderBottom: '1px solid var(--color-border)',
-                    cursor: 'pointer', textAlign: 'left',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
-                      {formatDuration(s.durationMin, s.durationMax)}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                    {dPrice !== null ? (
-                      <>
-                        <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
-                          {formatPrice(dPrice)}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
-                          {formatPrice(s.price)}
-                        </div>
-                        <div style={{
-                          background: 'var(--color-danger)', color: '#fff',
-                          fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
-                        }}>
-                          {s.discountPercent}% СКИДКА
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</div>
+                {/* Название */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {cat.name}
+                    {cat.services.some((s) => s.discountPercent) && (
+                      <span style={{
+                        background: 'var(--color-danger)', color: '#fff',
+                        fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
+                      }}>% скидки</span>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteService(s.id) }}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-danger)', fontSize: 18, marginLeft: 8, padding: '4px' }}
-                  >
-                    ✕
-                  </button>
-                </button>
-              )
-            })}
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
+                    {cat.services.length} {cat.services.length === 1 ? 'услуга' : cat.services.length < 5 ? 'услуги' : 'услуг'}
+                  </div>
+                </div>
 
-            {/* Добавить услугу в категорию */}
-            <button
-              onClick={() => openServiceForm(undefined, cat.id)}
-              style={{
-                width: '100%', background: 'none', border: 'none',
-                display: 'flex', alignItems: 'center',
-                padding: '10px 14px 10px 70px',
-                color: 'var(--color-text-secondary)', fontSize: 14, cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, background: 'var(--color-card)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, marginRight: 10,
-              }}>+</div>
-              Добавить услугу
-            </button>
-          </div>
-        ))}
+                {/* Действия: редактировать категорию, удалить */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); openCatForm(cat) }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', padding: '4px 6px', cursor: 'pointer' }}
+                >
+                  <EditIcon />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id) }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-danger)', padding: '4px 6px', fontSize: 18, cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+
+                {/* Шеврон */}
+                <svg
+                  width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  style={{ flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'none' }}
+                >
+                  <path d="M6 9l6 6 6-6" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              {/* Услуги категории — видны только когда раскрыт */}
+              {expanded && (
+                <div>
+                  {cat.services.map((s) => {
+                    const dPrice = discountedPrice(s.price, s.discountPercent)
+                    return (
+                      <div
+                        key={s.id}
+                        style={{
+                          display: 'flex', alignItems: 'center',
+                          padding: '10px 14px 10px 70px',
+                          borderBottom: '1px solid var(--color-border)',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
+                          <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
+                            {formatDuration(s.durationMin, s.durationMax)}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, marginRight: 8 }}>
+                          {dPrice !== null ? (
+                            <>
+                              <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>{formatPrice(dPrice)}</div>
+                              <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</div>
+                              <div style={{ background: 'var(--color-danger)', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px' }}>
+                                {s.discountPercent}% СКИДКА
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => openServiceForm(s)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', padding: '4px 6px', cursor: 'pointer' }}
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteService(s.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-danger)', fontSize: 18, padding: '4px 6px', cursor: 'pointer' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
+
+                  {/* Добавить услугу в категорию */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openServiceForm(undefined, cat.id) }}
+                    style={{
+                      width: '100%', background: 'none', border: 'none',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 14px 10px 70px',
+                      color: 'var(--color-primary)', fontSize: 14, cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 8, background: 'var(--color-card2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
+                    }}>+</div>
+                    Добавить услугу
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
 
         {/* Добавить категорию */}
         <button
@@ -266,31 +289,8 @@ export default function ServicesPage() {
             <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Добавить категорию</div>
             <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Стрижки и уход</div>
           </div>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
         </button>
 
-        {/* Добавить услугу (без категории) */}
-        {categories.length > 0 && (
-          <button
-            onClick={() => openServiceForm()}
-            style={{
-              width: '100%', background: 'var(--color-card)', border: 'none',
-              borderRadius: 'var(--radius)', padding: '14px 16px',
-              display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
-            }}
-          >
-            <div style={{
-              width: 28, height: 28, borderRadius: 8, background: 'var(--color-card2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, color: 'var(--color-text-secondary)',
-            }}>+</div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>Добавить услугу</div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 1 }}>Пример: Укладка длинных волос</div>
-            </div>
-            <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
-          </button>
-        )}
       </div>
 
       {/* ── Боттом-шит: Категория ── */}
