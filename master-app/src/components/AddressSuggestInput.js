@@ -186,7 +186,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                     position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
                     background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 13, padding: '6px 12px',
                     pointerEvents: 'none',
-                }, children: [geoError && _jsxs("div", { style: { color: '#ff6b6b', fontWeight: 600 }, children: ["\u0413\u0435\u043E\u043A\u043E\u0434\u0435\u0440: ", geoError] }), lastGeo && _jsxs("div", { children: ["\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B: ", lastGeo] })] }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
+                }, children: [geoError && _jsxs("div", { style: { color: '#ff6b6b', fontWeight: 600 }, children: ["\u0413\u0435\u043E\u043A\u043E\u0434\u0435\u0440: ", geoError] }), lastGeo && _jsxs("div", { children: ["\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B: ", lastGeo] }), _jsxs("div", { style: { color: '#ffd966', marginTop: 2 }, children: ["\u0410\u0434\u0440\u0435\u0441 \u0434\u043B\u044F \u0433\u0435\u043E\u043A\u043E\u0434\u0435\u0440\u0430: ", _jsx("b", { children: confirmedAddress })] })] }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
                     opacity: isMapFading ? 1 : 0,
                     transform: isMapFading ? 'scale(1)' : 'scale(1.05)',

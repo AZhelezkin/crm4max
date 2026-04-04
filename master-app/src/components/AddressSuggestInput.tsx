@@ -220,6 +220,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       }}>
         {geoError && <div style={{ color: '#ff6b6b', fontWeight: 600 }}>Геокодер: {geoError}</div>}
         {lastGeo && <div>Координаты: {lastGeo}</div>}
+        <div style={{ color: '#ffd966', marginTop: 2 }}>Адрес для геокодера: <b>{confirmedAddress}</b></div>
       </div>
       {nextMapUrl && (
         <img
