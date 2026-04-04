@@ -7,7 +7,6 @@ import {
   CellSimple,
   CellInput,
   CellHeader,
-  Switch,
   Panel,
   Flex,
   Grid,
@@ -48,7 +47,6 @@ import {
   onboardingTimeSelectWrapStyle,
   onboardingToggleLabelStyle,
   onboardingToggleRowStyle,
-  servicePhotoPlaceholderStyle,
   serviceWorkPhotoAddIconStyle,
   stepOneAddressButtonStyle,
   stepOneAddressContentStyle,
@@ -87,8 +85,7 @@ interface LocalService {
   price: string
   discountEnabled: boolean
   discountPercent: number
-  photo: string | null        // S3 URL основного фото
-  previewUrl: string | null   // local preview
+  photo: string | null        // S3 URL обложки, берется из первого фото работ
   workPhotos: string[]        // S3 URLs фото работ
 }
 
@@ -143,11 +140,9 @@ export default function OnboardingPage() {
   const [svcForm, setSvcForm] = useState<LocalService>({
     name: '', desc: '', durationMin: '', price: '',
     discountEnabled: false, discountPercent: 10,
-    photo: null, previewUrl: null,
+    photo: null,
     workPhotos: [],
   })
-  const [svcPhotoUploading, setSvcPhotoUploading] = useState(false)
-  const svcPhotoRef = useRef<HTMLInputElement>(null)
   const [svcWorkPhotoUploading, setSvcWorkPhotoUploading] = useState(false)
   const svcWorkPhotoRef = useRef<HTMLInputElement>(null)
   const [selectedCatIdx, setSelectedCatIdx] = useState(0)
@@ -221,13 +216,18 @@ export default function OnboardingPage() {
   const openSvcForm = (idx?: number) => {
     if (idx !== undefined) {
       const existing = servicesByCat[selectedCatIdx]?.[idx]
-      setSvcForm({ ...(existing ?? svcForm) })
+      if (existing) {
+        setSvcForm({
+          ...existing,
+          photo: existing.workPhotos[0] ?? existing.photo ?? null,
+        })
+      }
       setEditSvcIdx(idx)
     } else {
       setSvcForm({ 
         name: '', desc: '', durationMin: '', price: '', 
         discountEnabled: false, discountPercent: 10,
-        photo: null, previewUrl: null,
+        photo: null,
         workPhotos: [],
       })
       setEditSvcIdx(null)
@@ -238,13 +238,17 @@ export default function OnboardingPage() {
   const saveSvcForm = () => {
     if (!svcForm.name.trim()) return
     const catIdx = selectedCatIdx
+    const normalizedService: LocalService = {
+      ...svcForm,
+      photo: svcForm.workPhotos[0] ?? null,
+    }
     setServicesByCat((prev: LocalService[][]) => {
       const next: LocalService[][] = prev.map((arr: LocalService[]) => [...arr])
       while (next.length <= catIdx) next.push([])
       if (editSvcIdx !== null) {
-        next[catIdx] = next[catIdx].map((s: LocalService, i: number) => i === editSvcIdx ? { ...svcForm } : s)
+        next[catIdx] = next[catIdx].map((s: LocalService, i: number) => i === editSvcIdx ? normalizedService : s)
       } else {
-        next[catIdx] = [...next[catIdx], { ...svcForm }]
+        next[catIdx] = [...next[catIdx], normalizedService]
       }
       return next
     })
@@ -859,36 +863,7 @@ export default function OnboardingPage() {
 
           <div style={onboardingPortalContentStyle}>
             <div style={stepOneIntroTextStyle}>
-              Добавьте фото услуги и заполните информацию
-            </div>
-
-            {/* Фото услуги */}
-            <div style={stepOnePhotoContainerStyle}>
-              <button
-                type="button"
-                onClick={() => svcPhotoRef.current?.click()}
-                disabled={svcPhotoUploading}
-                style={{
-                  ...stepOnePhotoButtonBaseStyle,
-                  cursor: svcPhotoUploading ? 'default' : 'pointer',
-                }}
-              >
-                {svcForm.previewUrl
-                  ? <img src={svcForm.previewUrl} alt="Фото услуги" style={stepOnePhotoPreviewStyle} />
-                  : <img src={uploadIconUrl} alt="Загрузить фото" style={servicePhotoPlaceholderStyle} />}
-
-                {svcPhotoUploading && <UploadingOverlay />}
-              </button>
-              <input
-                ref={svcPhotoRef} type="file" accept="image/*" hidden
-                onChange={(e) => handlePhotoChange(
-                  e, 
-                  (url) => setSvcForm((f) => ({ ...f, previewUrl: url })),
-                  setSvcPhotoUploading,
-                  (url) => setSvcForm((f) => ({ ...f, photo: url })),
-                  'services',
-                )}
-              />
+              Заполните информацию и добавьте примеры работ
             </div>
 
             {/* Название */}
@@ -940,9 +915,9 @@ export default function OnboardingPage() {
 
             {/* Скидка */}
             <div style={onboardingToggleRowStyle}>
-              <Switch
+              <ToggleSwitch
                 checked={svcForm.discountEnabled}
-                onChange={() => setSvcForm((f) => ({ ...f, discountEnabled: !f.discountEnabled }))}
+                onChange={(checked) => setSvcForm((f) => ({ ...f, discountEnabled: checked }))}
               />
               <span style={onboardingToggleLabelStyle}>Скидка</span>
               {svcForm.discountEnabled && (
@@ -976,7 +951,14 @@ export default function OnboardingPage() {
                       style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
                     />
                     <button
-                      onClick={() => setSvcForm((f) => ({ ...f, workPhotos: f.workPhotos.filter((_, j) => j !== i) }))}
+                      onClick={() => setSvcForm((f) => {
+                        const workPhotos = f.workPhotos.filter((_, j) => j !== i)
+                        return {
+                          ...f,
+                          workPhotos,
+                          photo: workPhotos[0] ?? null,
+                        }
+                      })}
                       style={{
                         position: 'absolute',
                         top: -6,
@@ -1036,7 +1018,14 @@ export default function OnboardingPage() {
                     setSvcWorkPhotoUploading(true)
                     try {
                       const urls = await Promise.all(files.map((f) => uploadPhoto(f, 'work')))
-                      setSvcForm((prev) => ({ ...prev, workPhotos: [...prev.workPhotos, ...urls] }))
+                      setSvcForm((prev) => {
+                        const workPhotos = [...prev.workPhotos, ...urls]
+                        return {
+                          ...prev,
+                          workPhotos,
+                          photo: workPhotos[0] ?? null,
+                        }
+                      })
                     } catch (err) {
                       console.error('Ошибка загрузки фото работ:', err)
                     } finally {
@@ -1056,15 +1045,15 @@ export default function OnboardingPage() {
           }}>
             <button
               type="button"
-              disabled={!svcForm.name.trim() || svcPhotoUploading}
+              disabled={!svcForm.name.trim() || svcWorkPhotoUploading}
               onClick={saveSvcForm}
               style={{
                 ...primaryActionButtonBaseStyle,
-                cursor: !svcForm.name.trim() || svcPhotoUploading ? 'default' : 'pointer',
-                background: !svcForm.name.trim() || svcPhotoUploading
+                cursor: !svcForm.name.trim() || svcWorkPhotoUploading ? 'default' : 'pointer',
+                background: !svcForm.name.trim() || svcWorkPhotoUploading
                   ? 'var(--color-card2)'
                   : 'var(--color-primary)',
-                color: !svcForm.name.trim() || svcPhotoUploading
+                color: !svcForm.name.trim() || svcWorkPhotoUploading
                   ? 'var(--color-text-secondary)'
                   : '#fff',
               }}
@@ -1131,6 +1120,40 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
         {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
       </select>
     </div>
+  )
+}
+
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 50,
+        height: 30,
+        padding: 3,
+        border: 'none',
+        borderRadius: 999,
+        background: checked ? 'var(--color-primary)' : 'var(--color-control-secondary)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: checked ? 'flex-end' : 'flex-start',
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.18)',
+        }}
+      />
+    </button>
   )
 }
 
