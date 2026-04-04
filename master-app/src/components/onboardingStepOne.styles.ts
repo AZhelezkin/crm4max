@@ -93,3 +93,43 @@ export const stepOneAddressHintStyle: CSSProperties = {
   lineHeight: '16px',
   marginTop: 1,
 }
+
+export const stepOneAddressInputWrapStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card2)',
+  borderRadius: 10,
+  position: 'relative',
+}
+
+export const stepOneAddressInputStyle: CSSProperties = {
+  width: '100%',
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  color: 'var(--color-text)',
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  padding: '15px 20px 17px 52px',
+}
+
+export const stepOneAddressInputIconStyle: CSSProperties = {
+  position: 'absolute',
+  left: 20,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+export const primaryActionButtonBaseStyle: CSSProperties = {
+  width: '100%',
+  height: 48,
+  border: 'none',
+  borderRadius: 20,
+  fontSize: 16,
+  fontWeight: 600,
+}

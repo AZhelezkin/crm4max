@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   Button as MaxButton,
-  Avatar,
   CellList,
   CellSimple,
   CellInput,
@@ -29,6 +28,7 @@ import {
   stepOneAddressContentStyle,
   stepOneAddressHintStyle,
   stepOneAddressTitleStyle,
+  primaryActionButtonBaseStyle,
   stepOneCounterStyle,
   stepOneIntroTextStyle,
   stepOnePhotoButtonBaseStyle,
@@ -326,12 +326,7 @@ export default function OnboardingPage() {
               <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
                 Настройте график работы
               </div>
-              <button
-                onClick={() => navigate('/')}
-                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
-              >
-                <CloseIcon />
-              </button>
+              <div style={{ width: 56 }} />
             </div>
           )}
 
@@ -350,12 +345,7 @@ export default function OnboardingPage() {
               <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
                 {servicesSubStep === 'services' ? 'Услуги' : 'Категории услуг'}
               </div>
-              <button
-                onClick={() => navigate('/')}
-                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
-              >
-                <CloseIcon />
-              </button>
+              <div style={{ width: 56 }} />
             </div>
           )}
         </>
@@ -658,12 +648,7 @@ export default function OnboardingPage() {
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
           onClick={() => { void handleNext() }}
           style={{
-            width: '100%',
-            height: 48,
-            border: 'none',
-            borderRadius: 20,
-            fontSize: 16,
-            fontWeight: 600,
+            ...primaryActionButtonBaseStyle,
             cursor: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
             background: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())
               ? 'var(--color-card2)'
@@ -703,27 +688,26 @@ export default function OnboardingPage() {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 4 }}>
+            <div style={stepOneIntroTextStyle}>
               Добавьте фото категории, чтобы клиентам было проще выбирать услуги
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <Avatar.Container
-                size={110}
+            <div style={stepOnePhotoContainerStyle}>
+              <button
+                type="button"
                 onClick={() => catPhotoRef.current?.click()}
-                style={{ cursor: 'pointer' }}
-                overlay={catPhotoUploading
-                  ? <Avatar.Overlay><span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span></Avatar.Overlay>
-                  : undefined
-                }
+                disabled={catPhotoUploading}
+                style={{
+                  ...stepOnePhotoButtonBaseStyle,
+                  cursor: catPhotoUploading ? 'default' : 'pointer',
+                }}
               >
                 {catFormPreview
-                  ? <Avatar.Image src={catFormPreview} fallback="?" />
-                  : <Avatar.Icon>
-                      <CameraIcon size={36} />
-                    </Avatar.Icon>
-                }
-              </Avatar.Container>
+                  ? <img src={catFormPreview} alt="Фото категории" style={stepOnePhotoPreviewStyle} />
+                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
+
+                {catPhotoUploading && <UploadingOverlay />}
+              </button>
               <input
                 ref={catPhotoRef} type="file" accept="image/*" hidden
                 onChange={(e) => handlePhotoChange(
@@ -737,25 +721,21 @@ export default function OnboardingPage() {
               <CellInput
                 value={catFormName}
                 onChange={(e) => setCatFormName(e.target.value)}
-                placeholder="Название. Пример: Работа с волосами"
+                placeholder="Название"
                 autoFocus
               />
             </CellList>
 
             <CellList mode="island">
-              <div style={{ position: 'relative' }}>
+              <div style={stepOneTextareaWrapStyle}>
                 <textarea
                   value={catFormDesc}
                   onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                  placeholder="Описание. Пример: Укладка длинных волос"
+                  placeholder="Описание"
                   rows={3}
-                  style={{
-                    width: '100%', background: 'none', border: 'none',
-                    padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
-                    resize: 'none', display: 'block', outline: 'none',
-                  }}
+                  style={stepOneTextareaStyle}
                 />
-                <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <span style={stepOneCounterStyle}>
                   {catFormDesc.length}/200
                 </span>
               </div>
@@ -767,16 +747,23 @@ export default function OnboardingPage() {
             paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
             flexShrink: 0,
           }}>
-            <MaxButton
-              appearance="themed"
-              mode="primary"
-              size="medium"
-              stretched
+            <button
+              type="button"
               disabled={!catFormName.trim() || catPhotoUploading}
               onClick={saveCatForm}
+              style={{
+                ...primaryActionButtonBaseStyle,
+                cursor: !catFormName.trim() || catPhotoUploading ? 'default' : 'pointer',
+                background: !catFormName.trim() || catPhotoUploading
+                  ? 'var(--color-card2)'
+                  : 'var(--color-primary)',
+                color: !catFormName.trim() || catPhotoUploading
+                  ? 'var(--color-text-secondary)'
+                  : '#fff',
+              }}
             >
               Готово
-            </MaxButton>
+            </button>
           </div>
         </div>,
         document.body,
@@ -807,18 +794,21 @@ export default function OnboardingPage() {
             />
           </div>
           <div style={{ padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }}>
-            <MaxButton
-              appearance="themed"
-              mode="primary"
-              size="medium"
-              stretched
+            <button
+              type="button"
               onClick={() => {
                 setLocation(addressDraft.trim())
                 setShowAddressPortal(false)
               }}
+              style={{
+                ...primaryActionButtonBaseStyle,
+                cursor: 'pointer',
+                background: 'var(--color-primary)',
+                color: '#fff',
+              }}
             >
               Готово
-            </MaxButton>
+            </button>
           </div>
         </div>,
         document.body,
@@ -1141,10 +1131,3 @@ function BackArrowIcon() {
   )
 }
 
-function CloseIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M18 6L6 18M6 6l12 12" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}

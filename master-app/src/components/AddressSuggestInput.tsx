@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { SearchInput } from '@maxhub/max-ui'
+import {
+  stepOneAddressInputIconStyle,
+  stepOneAddressInputStyle,
+  stepOneAddressInputWrapStyle,
+} from '@/components/onboardingStepOne.styles'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
@@ -184,7 +188,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     setSuggestions([])
     const centerFromSuggest = parseCenterFromText(s.query)
     if (centerFromSuggest) setMapCenter(centerFromSuggest)
-    geocodeAddress(s.query || full)
+    // URI from suggest may not be suitable for geocoder query, use selected address text.
+    geocodeAddress(full)
   }
 
   return (
@@ -234,14 +239,17 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       }}>
         <div style={{
           flex: 1,
-          background: 'rgba(15,15,17,0.68)', borderRadius: 'var(--radius-sm)',
-          padding: '6px 8px',
+          ...stepOneAddressInputWrapStyle,
+          background: 'rgba(15,15,17,0.68)',
           backdropFilter: 'blur(6px)',
         }}>
-          <SearchInput
+          <div style={stepOneAddressInputIconStyle}>
+            <SearchIcon />
+          </div>
+          <input
             value={inputValue}
-            onChange={(e: any) => {
-              const next = e?.target?.value ?? ''
+            onChange={(e) => {
+              const next = e.target.value
               setInputValue(next)
               if (!next) {
                 setSuggestEnabled(false)
@@ -253,6 +261,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
               onChange(next)
             }}
             placeholder="Адрес"
+            style={stepOneAddressInputStyle}
           />
         </div>
       </div>
@@ -287,6 +296,15 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         )}
       </div>
     </div>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      <circle cx="11" cy="11" r="7" stroke="var(--color-text-secondary)" strokeWidth="1.8" />
+      <path d="M20 20L16.65 16.65" stroke="var(--color-text-secondary)" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 
