@@ -15,7 +15,7 @@ import {
   Typography,
   Container,
 } from '@maxhub/max-ui'
-import uploadIconUrl from '@/assets/upload-icon.svg'
+import maskIconUrl from '@/assets/mask-icon.svg'
 import locationAddImg from '@/assets/location-add.png'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
@@ -927,7 +927,7 @@ export default function OnboardingPage() {
                 >
                   {svcWorkPhotoUploading
                     ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
-                    : <img src={uploadIconUrl} alt="upload" style={{ width: 24, height: 24 }} />
+                    : <img src={maskIconUrl} alt="upload" style={{ width: 24, height: 24 }} />
                   }
                 </button>
 
