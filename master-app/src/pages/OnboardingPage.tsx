@@ -62,7 +62,9 @@ interface LocalService {
   price: string
   discountEnabled: boolean
   discountPercent: number
-  workPhotos: string[]   // S3 URLs фото работ
+  photo: string | null        // S3 URL основного фото
+  previewUrl: string | null   // local preview
+  workPhotos: string[]        // S3 URLs фото работ
 }
 
 const STEPS = ['Обо мне', 'График', 'Услуги'] as const
@@ -114,9 +116,13 @@ export default function OnboardingPage() {
   const [showSvcForm, setShowSvcForm] = useState(false)
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
-    name: '', desc: '', durationMin: '', durationMax: '', price: '',
-    discountEnabled: false, discountPercent: 10, workPhotos: [],
+    name: '', desc: '', duration: '', price: '',
+    discountEnabled: false, discountPercent: 10,
+    photo: null, previewUrl: null,
+    workPhotos: [],
   })
+  const [svcPhotoUploading, setSvcPhotoUploading] = useState(false)
+  const svcPhotoRef = useRef<HTMLInputElement>(null)
   const [svcWorkPhotoUploading, setSvcWorkPhotoUploading] = useState(false)
   const svcWorkPhotoRef = useRef<HTMLInputElement>(null)
   const [selectedCatIdx, setSelectedCatIdx] = useState(0)
@@ -189,10 +195,16 @@ export default function OnboardingPage() {
 
   const openSvcForm = (idx?: number) => {
     if (idx !== undefined) {
-      setSvcForm({ ...(servicesByCat[selectedCatIdx]?.[idx] ?? svcForm) })
+      const existing = servicesByCat[selectedCatIdx]?.[idx]
+      setSvcForm({ ...(existing ?? svcForm) })
       setEditSvcIdx(idx)
     } else {
-      setSvcForm({ name: '', desc: '', durationMin: '', durationMax: '', price: '', discountEnabled: false, discountPercent: 10, workPhotos: [] })
+      setSvcForm({ 
+        name: '', desc: '', duration: '', price: '', 
+        discountEnabled: false, discountPercent: 10,
+        photo: null, previewUrl: null,
+        workPhotos: [],
+      })
       setEditSvcIdx(null)
     }
     setShowSvcForm(true)
@@ -271,6 +283,7 @@ export default function OnboardingPage() {
                 durationMax: Number(svc.durationMax) || undefined,
                 price: Math.round(Number(svc.price) * 100) || 0,
                 discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
+                photo: svc.photo || undefined,
                 categoryId: catId,
               })
               for (let i = 0; i < svc.workPhotos.length; i++) {
@@ -345,7 +358,7 @@ export default function OnboardingPage() {
                 <BackArrowIcon />
               </button>
               <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-                {servicesSubStep === 'services' ? 'Услуги' : 'Категории услуг'}
+                {servicesSubStep === 'services' ? (categories[selectedCatIdx]?.name || 'Услуги') : 'Категории услуг'}
               </div>
               <div style={{ width: 56 }} />
             </div>
@@ -516,9 +529,11 @@ export default function OnboardingPage() {
               return (
                 <div
                   key={i}
+                  onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
                   style={{
                     width: '100%', background: 'var(--color-card)',
                     borderRadius: 'var(--radius)', overflow: 'hidden',
+                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
@@ -542,14 +557,14 @@ export default function OnboardingPage() {
                     </div>
                     {/* Редактировать */}
                     <button
-                      onClick={() => openCatForm(i)}
+                      onClick={(e) => { e.stopPropagation(); openCatForm(i) }}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                     >
                       <EditIcon />
                     </button>
                     {/* Открыть услуги */}
                     <button
-                      onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedCatIdx(i); setServicesSubStep('services') }}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
@@ -726,7 +741,7 @@ export default function OnboardingPage() {
             <CellList mode="island">
               <CellInput
                 value={catFormDesc}
-                onChange={(e) => setCatFormDesc(e.target.value)}
+                onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
                 placeholder="Описание"
               />
             </CellList>
@@ -804,24 +819,74 @@ export default function OnboardingPage() {
         document.body,
       )}
 
-      {/* ── Боттом-шит: Добавление услуги ── */}
-      {showSvcForm && (
-        <BottomSheet
-          title={editSvcIdx !== null ? 'Редактирование услуги' : 'Добавление услуги'}
-          onClose={() => setShowSvcForm(false)}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* ── Портал: Добавление услуги ── */}
+      {showSvcForm && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'var(--color-bg)',
+          zIndex: 200,
+          display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
+            <button
+              onClick={() => setShowSvcForm(false)}
+              style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
+            >
+              <BackArrowIcon />
+            </button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+              {editSvcIdx !== null ? 'Редактирование услуги' : 'Добавление услуги'}
+            </div>
+            <div style={{ width: 56 }} />
+          </div>
 
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={stepOneIntroTextStyle}>
+              Добавьте фото услуги и заполните информацию
+            </div>
+
+            {/* Фото услуги */}
+            <div style={stepOnePhotoContainerStyle}>
+              <button
+                type="button"
+                onClick={() => svcPhotoRef.current?.click()}
+                disabled={svcPhotoUploading}
+                style={{
+                  ...stepOnePhotoButtonBaseStyle,
+                  cursor: svcPhotoUploading ? 'default' : 'pointer',
+                }}
+              >
+                {svcForm.previewUrl
+                  ? <img src={svcForm.previewUrl} alt="Фото услуги" style={stepOnePhotoPreviewStyle} />
+                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
+
+                {svcPhotoUploading && <UploadingOverlay />}
+              </button>
+              <input
+                ref={svcPhotoRef} type="file" accept="image/*" hidden
+                onChange={(e) => handlePhotoChange(
+                  e, 
+                  (url) => setSvcForm((f) => ({ ...f, previewUrl: url })),
+                  setSvcPhotoUploading,
+                  (url) => setSvcForm((f) => ({ ...f, photo: url })),
+                  'services',
+                )}
+              />
+            </div>
+
+            {/* Название */}
             <CellList mode="island">
               <CellInput
                 value={svcForm.name}
                 onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Название. Пример: Укладка волос"
+                autoFocus
               />
             </CellList>
 
-            <div style={stepOneTextareaWrapStyle}>
-              <textarea
+            {/* Описание */}
+            <CellList mode="island">
+              <CellInput
                 value={svcForm.desc}
                 onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
                 placeholder="Описание"
@@ -831,6 +896,7 @@ export default function OnboardingPage() {
               <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
             </div>
 
+            {/* Длительность и стоимость */}
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <CellList mode="island">
@@ -957,10 +1023,33 @@ export default function OnboardingPage() {
                 />
               </div>
             </div>
-
-            <MaxButton appearance="themed" mode="primary" size="medium" stretched disabled={!svcForm.name.trim()} onClick={saveSvcForm}>Готово</MaxButton>
           </div>
-        </BottomSheet>
+
+          <div style={{
+            padding: '12px 16px',
+            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+            flexShrink: 0,
+          }}>
+            <button
+              type="button"
+              disabled={!svcForm.name.trim() || svcPhotoUploading}
+              onClick={saveSvcForm}
+              style={{
+                ...primaryActionButtonBaseStyle,
+                cursor: !svcForm.name.trim() || svcPhotoUploading ? 'default' : 'pointer',
+                background: !svcForm.name.trim() || svcPhotoUploading
+                  ? 'var(--color-card2)'
+                  : 'var(--color-primary)',
+                color: !svcForm.name.trim() || svcPhotoUploading
+                  ? 'var(--color-text-secondary)'
+                  : '#fff',
+              }}
+            >
+              Готово
+            </button>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
