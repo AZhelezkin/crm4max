@@ -243,15 +243,14 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
             onChange={(e: any) => {
               const next = e?.target?.value ?? ''
               setInputValue(next)
-              setSuggestEnabled(true)
+              if (!next) {
+                setSuggestEnabled(false)
+                setSuggestions([])
+                setMapCenter(DEFAULT_CENTER)
+              } else {
+                setSuggestEnabled(true)
+              }
               onChange(next)
-            }}
-            onClear={() => {
-              setInputValue('')
-              setSuggestEnabled(false)
-              onChange('')
-              setSuggestions([])
-              setMapCenter(DEFAULT_CENTER)
             }}
             placeholder="Адрес"
           />
