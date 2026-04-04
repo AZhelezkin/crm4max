@@ -66,7 +66,8 @@ export default function BottomNav() {
 
   return (
     <nav style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, height: 60,
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      height: 'calc(60px + env(safe-area-inset-bottom))',
       background: 'var(--color-card)', borderTop: '1px solid var(--color-border)',
       display: 'flex', zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
@@ -82,6 +83,7 @@ export default function BottomNav() {
               alignItems: 'center', justifyContent: 'center',
               gap: 3, background: 'none', border: 'none',
               cursor: 'pointer', padding: '6px 0',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             <NavIcon path={tab.path} color={color} />
