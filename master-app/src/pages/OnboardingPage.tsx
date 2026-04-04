@@ -193,10 +193,10 @@ export default function OnboardingPage() {
     try {
       const url = await uploadPhoto(file, folder)
       onUploaded(url)
-    } catch (err) {
-      console.error('Ошибка загрузки фото:', err)
-      setPreview(null)
-      setSubmitError('Не удалось загрузить фото. Попробуйте ещё раз.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('Ошибка загрузки фото:', msg)
+      setSubmitError(`Не удалось загрузить фото: ${msg}`)
     } finally {
       setUploading(false)
     }
@@ -1030,7 +1030,8 @@ export default function OnboardingPage() {
             </div>
 
             {/* Скидка */}
-            <div style={{ ...onboardingToggleRowStyle, background: 'transparent', padding: 0, borderRadius: 0 }}>
+{/*            <div style={{ ...onboardingToggleRowStyle, background: 'transparent', padding: 0, borderRadius: 0 }}>*/}
+              <div>
               <Switch
                 checked={svcForm.discountEnabled}
                 onChange={(e) => setSvcForm((f) => ({ ...f, discountEnabled: e.target.checked }))}

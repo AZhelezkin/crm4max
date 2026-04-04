@@ -53,7 +53,7 @@ export function compressImage(file: File, maxSize = 1200, quality = 0.82): Promi
  * Content-Type: multipart/form-data с правильным boundary.
  */
 export async function uploadPhoto(file: File, folder: UploadFolder = 'masters'): Promise<string> {
-  const compressed = await compressImage(file)
+  const compressed = await compressImage(file).catch(() => file)
   const token = localStorage.getItem('masterToken')
 
   const formData = new FormData()
