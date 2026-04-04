@@ -24,6 +24,26 @@ import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import {
+  onboardingInlineFieldStyle,
+  onboardingDiscountBadgeStyle,
+  onboardingListActionButtonStyle,
+  onboardingListButtonStyle,
+  onboardingListCardStyle,
+  onboardingListMediaStyle,
+  onboardingListSubtitleStyle,
+  onboardingListTitleStyle,
+  onboardingPortalContentStyle,
+  onboardingPriceRowStyle,
+  onboardingSectionCardStyle,
+  onboardingSectionLabelStyle,
+  onboardingSelectChevronStyle,
+  onboardingSelectStyle,
+  onboardingSelectWrapStyle,
+  onboardingSplitFieldsStyle,
+  onboardingTimeSelectStyle,
+  onboardingTimeSelectWrapStyle,
+  onboardingToggleLabelStyle,
+  onboardingToggleRowStyle,
   stepOneAddressButtonStyle,
   stepOneAddressContentStyle,
   stepOneAddressHintStyle,
@@ -367,7 +387,7 @@ export default function OnboardingPage() {
       )}
 
       {/* Контент */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={onboardingPortalContentStyle}>
 
         {/* ── Шаг 0: Обо мне ── */}
         {step === 0 && (
@@ -467,12 +487,12 @@ export default function OnboardingPage() {
         {/* ── Шаг 1: График ── */}
         {step === 1 && (
           <>
-            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 4 }}>
+            <div style={stepOneIntroTextStyle}>
               Выберите дни и время, когда вам удобно принимать клиентов
             </div>
 
-            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 12 }}>
+            <div style={onboardingSectionCardStyle}>
+              <div style={onboardingSectionLabelStyle}>
                 ДНИ НЕДЕЛИ
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
@@ -497,8 +517,8 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 12 }}>
+            <div style={onboardingSectionCardStyle}>
+              <div style={onboardingSectionLabelStyle}>
                 ВРЕМЯ РАБОТЫ
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -508,8 +528,8 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 10 }}>
+            <div style={onboardingSectionCardStyle}>
+              <div style={onboardingSectionLabelStyle}>
                 ПЕРЕРЫВ МЕЖДУ ПРИЕМАМИ
               </div>
               <SelectField
@@ -530,19 +550,11 @@ export default function OnboardingPage() {
                 <div
                   key={i}
                   onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
-                  style={{
-                    width: '100%', background: 'var(--color-card)',
-                    borderRadius: 'var(--radius)', overflow: 'hidden',
-                    cursor: 'pointer',
-                  }}
+                  style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+                  <div style={onboardingListButtonStyle}>
                     {/* Фото */}
-                    <div style={{
-                      width: 46, height: 46, borderRadius: 23, overflow: 'hidden',
-                      background: 'var(--color-card2)', flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
+                    <div style={onboardingListMediaStyle}>
                       {cat.previewUrl
                         ? <img src={cat.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <CameraIcon size={20} />
@@ -550,15 +562,15 @@ export default function OnboardingPage() {
                     </div>
                     {/* Название + кол-во услуг */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</div>
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2 }}>
+                      <div style={onboardingListTitleStyle}>{cat.name}</div>
+                      <div style={onboardingListSubtitleStyle}>
                         {count === 0 ? 'Нет услуг' : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`}
                       </div>
                     </div>
                     {/* Редактировать */}
                     <button
                       onClick={(e) => { e.stopPropagation(); openCatForm(i) }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                      style={onboardingListActionButtonStyle}
                     >
                       <EditIcon />
                     </button>
@@ -566,7 +578,7 @@ export default function OnboardingPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); setSelectedCatIdx(i); setServicesSubStep('services') }}
                       style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
+                        ...onboardingListActionButtonStyle,
                         color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
                       }}
                     >
@@ -598,20 +610,16 @@ export default function OnboardingPage() {
               <button
                 key={i}
                 onClick={() => openSvcForm(i)}
-                style={{
-                  width: '100%', background: 'var(--color-card)', border: 'none',
-                  borderRadius: 'var(--radius)', padding: '12px 14px',
-                  display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', textAlign: 'left',
-                }}
+                style={{ ...onboardingListButtonStyle, alignItems: 'flex-start' }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{svc.name}</div>
+                  <div style={onboardingListTitleStyle}>{svc.name}</div>
                   {svc.desc && (
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ ...onboardingListSubtitleStyle, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {svc.desc}
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                  <div style={onboardingPriceRowStyle}>
                     {svc.discountEnabled ? (
                       <>
                         <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
@@ -620,10 +628,7 @@ export default function OnboardingPage() {
                         <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
                           {formatPrice(Math.round(Number(svc.price) * 100) || 0)}
                         </span>
-                        <span style={{
-                          background: 'var(--color-danger)', color: '#fff',
-                          fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
-                        }}>
+                        <span style={onboardingDiscountBadgeStyle}>
                           {svc.discountPercent}% СКИДКА
                         </span>
                       </>
@@ -634,7 +639,9 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </div>
-                <EditIcon />
+                <div style={{ paddingTop: 2, flexShrink: 0 }}>
+                  <EditIcon />
+                </div>
               </button>
             ))}
 
@@ -699,7 +706,7 @@ export default function OnboardingPage() {
             <div style={{ width: 56 }} />
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={onboardingPortalContentStyle}>
             <div style={stepOneIntroTextStyle}>
               Добавьте фото категории, чтобы клиентам было проще выбирать услуги
             </div>
@@ -739,11 +746,16 @@ export default function OnboardingPage() {
             </CellList>
 
             <CellList mode="island">
-              <CellInput
-                value={catFormDesc}
-                onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                placeholder="Описание"
-              />
+              <div style={stepOneTextareaWrapStyle}>
+                <textarea
+                  value={catFormDesc}
+                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
+                  placeholder="Описание"
+                  rows={3}
+                  style={stepOneTextareaStyle}
+                />
+                <span style={stepOneCounterStyle}>{catFormDesc.length}/200</span>
+              </div>
             </CellList>
           </div>
 
@@ -840,7 +852,7 @@ export default function OnboardingPage() {
             <div style={{ width: 56 }} />
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={onboardingPortalContentStyle}>
             <div style={stepOneIntroTextStyle}>
               Добавьте фото услуги и заполните информацию
             </div>
@@ -884,36 +896,37 @@ export default function OnboardingPage() {
               />
             </CellList>
 
-            {/* Описание */}
             <CellList mode="island">
-              <CellInput
-                value={svcForm.desc}
-                onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
-                placeholder="Описание"
-                rows={3}
-                style={stepOneTextareaStyle}
-              />
-              <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
-            </div>
+              <div style={stepOneTextareaWrapStyle}>
+                <textarea
+                  value={svcForm.desc}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
+                  placeholder="Описание"
+                  rows={3}
+                  style={stepOneTextareaStyle}
+                />
+                <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
+              </div>
+            </CellList>
 
             {/* Длительность и стоимость */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ flex: 1 }}>
+            <div style={onboardingSplitFieldsStyle}>
+              <div style={onboardingInlineFieldStyle}>
                 <CellList mode="island">
                   <CellInput
                     value={svcForm.durationMin}
                     onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Длит. мин"
+                    placeholder="Длительность от, мин"
                     inputMode="numeric"
                   />
                 </CellList>
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={onboardingInlineFieldStyle}>
                 <CellList mode="island">
                   <CellInput
                     value={svcForm.durationMax}
                     onChange={(e) => setSvcForm((f) => ({ ...f, durationMax: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Длит. макс"
+                    placeholder="Длительность до, мин"
                     inputMode="numeric"
                   />
                 </CellList>
@@ -930,25 +943,24 @@ export default function OnboardingPage() {
             </CellList>
 
             {/* Скидка */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={onboardingToggleRowStyle}>
               <Toggle
                 checked={svcForm.discountEnabled}
                 onChange={(v) => setSvcForm((f) => ({ ...f, discountEnabled: v }))}
               />
-              <span style={{ fontSize: 15, fontWeight: 500 }}>Скидка</span>
+              <span style={onboardingToggleLabelStyle}>Скидка</span>
               {svcForm.discountEnabled && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                  <select
-                    value={svcForm.discountPercent}
-                    onChange={(e) => setSvcForm((f) => ({ ...f, discountPercent: Number(e.target.value) }))}
-                    style={{
-                      background: 'var(--color-card2)', border: 'none',
-                      borderRadius: 8, padding: '8px 12px',
-                      fontSize: 15, color: 'var(--color-text)', cursor: 'pointer',
-                    }}
-                  >
-                    {DISCOUNT_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <div style={{ ...onboardingSelectWrapStyle, width: 92 }}>
+                    <select
+                      value={svcForm.discountPercent}
+                      onChange={(e) => setSvcForm((f) => ({ ...f, discountPercent: Number(e.target.value) }))}
+                      style={{ ...onboardingSelectStyle, padding: '11px 36px 11px 12px' }}
+                    >
+                      {DISCOUNT_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <span style={onboardingSelectChevronStyle}>⌄</span>
+                  </div>
                   <span style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>%</span>
                 </div>
               )}
@@ -956,26 +968,36 @@ export default function OnboardingPage() {
 
             {/* Примеры работ */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 8 }}>
+              <div style={{ ...onboardingSectionLabelStyle, marginBottom: 8 }}>
                 ПРИМЕРЫ РАБОТ
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {/* Превью загруженных фото */}
                 {svcForm.workPhotos.map((url, i) => (
                   <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
                     <img
-                      src={url} alt=""
+                      src={url}
+                      alt=""
                       style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
                     />
                     <button
                       onClick={() => setSvcForm((f) => ({ ...f, workPhotos: f.workPhotos.filter((_, j) => j !== i) }))}
                       style={{
-                        position: 'absolute', top: -6, right: -6,
-                        width: 20, height: 20, borderRadius: '50%',
-                        background: 'var(--color-danger)', border: 'none',
-                        color: '#fff', fontSize: 12, lineHeight: 1,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', padding: 0,
+                        position: 'absolute',
+                        top: -6,
+                        right: -6,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: 'var(--color-danger)',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 12,
+                        lineHeight: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
                       }}
                     >
                       ×
@@ -983,21 +1005,27 @@ export default function OnboardingPage() {
                   </div>
                 ))}
 
-                {/* Кнопка добавить */}
                 <button
                   onClick={() => svcWorkPhotoRef.current?.click()}
                   disabled={svcWorkPhotoUploading}
                   style={{
-                    width: 72, height: 72, borderRadius: 10,
-                    background: 'var(--color-card2)', border: 'none', cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    justifyContent: 'center', gap: 4, opacity: svcWorkPhotoUploading ? 0.5 : 1,
+                    width: 72,
+                    height: 72,
+                    borderRadius: 10,
+                    background: 'var(--color-card2)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                    opacity: svcWorkPhotoUploading ? 0.5 : 1,
                   }}
                 >
                   {svcWorkPhotoUploading
                     ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
-                    : <img src={maskIconUrl} alt="upload" style={{ width: 24, height: 24 }} />
-                  }
+                    : <img src={maskIconUrl} alt="upload" style={{ width: 24, height: 24 }} />}
                 </button>
 
                 <input
@@ -1059,7 +1087,7 @@ export default function OnboardingPage() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginTop: 4 }}>
+    <div style={{ ...onboardingSectionLabelStyle, marginTop: 4, marginBottom: 0 }}>
       {children}
     </div>
   )
@@ -1071,19 +1099,15 @@ function SelectField({ value, onChange, options }: {
   options: { value: number; label: string }[]
 }) {
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={onboardingSelectWrapStyle}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: '100%', background: 'var(--color-card)', border: 'none',
-          borderRadius: 'var(--radius-sm)', padding: '14px 40px 14px 16px',
-          fontSize: 16, color: 'var(--color-text)', cursor: 'pointer', appearance: 'none',
-        }}
+        style={onboardingSelectStyle}
       >
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)', pointerEvents: 'none' }}>
+      <span style={onboardingSelectChevronStyle}>
         ⌄
       </span>
     </div>
@@ -1094,14 +1118,11 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
   const [h, m] = value.split(':')
   return (
-    <div style={{
-      flex: 1, background: 'var(--color-card)', borderRadius: 'var(--radius-sm)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '12px 8px',
-    }}>
+    <div style={onboardingTimeSelectWrapStyle}>
       <select
         value={h}
         onChange={(e) => onChange(`${e.target.value}:${m}`)}
-        style={{ background: 'none', border: 'none', fontSize: 16, color: 'var(--color-text)', cursor: 'pointer' }}
+        style={onboardingTimeSelectStyle}
       >
         {hours.map((hh) => <option key={hh} value={hh}>{hh}</option>)}
       </select>
@@ -1109,7 +1130,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
       <select
         value={m}
         onChange={(e) => onChange(`${h}:${e.target.value}`)}
-        style={{ background: 'none', border: 'none', fontSize: 16, color: 'var(--color-text)', cursor: 'pointer' }}
+        style={onboardingTimeSelectStyle}
       >
         {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
       </select>

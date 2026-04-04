@@ -60,6 +60,180 @@ export const stepOneCounterStyle: CSSProperties = {
   color: 'var(--color-text-secondary)',
 }
 
+export const onboardingSectionCardStyle: CSSProperties = {
+  background: 'var(--color-card)',
+  borderRadius: 20,
+  padding: '16px 14px 14px',
+}
+
+export const onboardingSectionLabelStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: 'var(--color-text-secondary)',
+  letterSpacing: 0.5,
+  marginBottom: 12,
+}
+
+export const onboardingPortalContentStyle: CSSProperties = {
+  flex: 1,
+  overflowY: 'auto',
+  padding: '16px 16px 0',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+}
+
+export const onboardingSplitFieldsStyle: CSSProperties = {
+  display: 'flex',
+  gap: 8,
+}
+
+export const onboardingInlineFieldStyle: CSSProperties = {
+  flex: 1,
+}
+
+export const onboardingSelectWrapStyle: CSSProperties = {
+  position: 'relative',
+}
+
+export const onboardingSelectStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card2)',
+  border: 'none',
+  borderRadius: 10,
+  padding: '15px 44px 17px 16px',
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  color: 'var(--color-text)',
+  cursor: 'pointer',
+  appearance: 'none',
+  outline: 'none',
+}
+
+export const onboardingSelectChevronStyle: CSSProperties = {
+  position: 'absolute',
+  right: 14,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: 'var(--color-text-secondary)',
+  pointerEvents: 'none',
+}
+
+export const onboardingTimeSelectWrapStyle: CSSProperties = {
+  flex: 1,
+  background: 'var(--color-card2)',
+  borderRadius: 10,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 4,
+  padding: '15px 8px 17px',
+}
+
+export const onboardingTimeSelectStyle: CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  color: 'var(--color-text)',
+  cursor: 'pointer',
+  outline: 'none',
+}
+
+export const onboardingToggleRowStyle: CSSProperties = {
+  background: 'var(--color-card)',
+  borderRadius: 20,
+  padding: '14px 16px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+}
+
+export const onboardingToggleLabelStyle: CSSProperties = {
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  color: 'var(--color-text)',
+}
+
+export const onboardingListCardStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card)',
+  borderRadius: 20,
+  overflow: 'hidden',
+}
+
+export const onboardingListButtonStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card)',
+  border: 'none',
+  borderRadius: 20,
+  padding: '14px 16px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  cursor: 'pointer',
+  textAlign: 'left',
+}
+
+export const onboardingListMediaStyle: CSSProperties = {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  overflow: 'hidden',
+  background: 'var(--color-card2)',
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+export const onboardingListTitleStyle: CSSProperties = {
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  color: 'var(--color-text)',
+}
+
+export const onboardingListSubtitleStyle: CSSProperties = {
+  fontSize: 13,
+  color: 'var(--color-text-secondary)',
+  letterSpacing: 0.15,
+  lineHeight: '16px',
+  marginTop: 1,
+}
+
+export const onboardingListActionButtonStyle: CSSProperties = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 4,
+  flexShrink: 0,
+}
+
+export const onboardingPriceRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginTop: 6,
+  flexWrap: 'wrap',
+}
+
+export const onboardingDiscountBadgeStyle: CSSProperties = {
+  background: 'var(--color-danger)',
+  color: '#fff',
+  fontSize: 10,
+  fontWeight: 700,
+  borderRadius: 6,
+  padding: '2px 6px',
+}
+
 export const stepOneAddressButtonStyle: CSSProperties = {
   width: '100%',
   background: 'var(--color-card2)',
