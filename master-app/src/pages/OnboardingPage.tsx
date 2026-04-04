@@ -22,6 +22,7 @@ import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import { formatPrice, discountedPrice } from '@/types'
+// AddressSuggestInput used in address portal below
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -65,8 +66,8 @@ export default function OnboardingPage() {
   // ── Шаг 0: Обо мне ──
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [phone, setPhone] = useState('')   // 10 цифр без кода страны
   const [location, setLocation] = useState('')
+  const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -107,25 +108,6 @@ export default function OnboardingPage() {
     setWorkingDays((prev) =>
       prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()
     )
-
-  // Форматирование телефона: 10 цифр → +7 (XXX) XXX-XX-XX
-  const formatPhoneDisplay = (digits: string) => {
-    if (!digits) return ''
-    let r = '+7'
-    if (digits.length > 0) r += ' (' + digits.slice(0, Math.min(3, digits.length))
-    if (digits.length >= 3) r += ') ' + digits.slice(3, Math.min(6, digits.length))
-    if (digits.length >= 6) r += '-' + digits.slice(6, Math.min(8, digits.length))
-    if (digits.length >= 8) r += '-' + digits.slice(8, 10)
-    return r
-  }
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let digits = e.target.value.replace(/\D/g, '')
-    if (digits.startsWith('7') || digits.startsWith('8')) digits = digits.slice(1)
-    setPhone(digits.slice(0, 10))
-  }
-
-  const phoneInvalid = phone.length > 0 && phone.length < 10
 
   // Показывает локальный превью мгновенно, параллельно загружает в S3.
   // onUploaded(s3url) вызывается после успешной загрузки.
@@ -224,7 +206,7 @@ export default function OnboardingPage() {
           name: name.trim(),
           description,
           location,
-          contacts: phone ? formatPhoneDisplay(phone) : undefined,
+          contacts: undefined,
           photo: photoUrl ?? undefined,
         })
         setStep(1)
@@ -298,13 +280,24 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок + табы (только для шагов 0-3, кроме подшагов услуг) */}
-      {!(step === 2 && servicesSubStep !== 'categories' && false) && (
+      {/* Заголовок */}
+      {true && (
         <>
+          {/* Шаг 0: кастомный заголовок */}
+          {step === 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+              <div style={{ width: 56, display: 'flex', justifyContent: 'center' }}>
+                {/* back arrow — не активен на шаге 0 */}
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+                Каким будет твой бизнес?
+              </div>
+              <div style={{ width: 56 }} />
+            </div>
+          )}
 
-
-          {/* Прогресс-табы */}
-          {(step !== 2 || servicesSubStep === 'categories') && (
+          {/* Шаги 1–2: прогресс-табы */}
+          {step > 0 && (step !== 2 || servicesSubStep === 'categories') && (
             <div style={{
               display: 'flex', padding: '16px 16px 0',
             }}>
@@ -410,18 +403,31 @@ export default function OnboardingPage() {
               </div>
             </CellList>
 
-            {/* Телефон (необязательно) */}
-            <CellList mode="island" style={phoneInvalid ? { borderRadius: 'var(--radius)', outline: '1.5px solid rgba(255,59,48,0.5)' } : undefined}>
-              <CellInput
-                value={formatPhoneDisplay(phone)}
-                onChange={handlePhoneChange}
-                placeholder="Телефон"
-                inputMode="tel"
-              />
-            </CellList>
-
             {/* Адрес */}
-            <AddressSuggestInput value={location} onChange={setLocation} />
+            <button
+              onClick={() => setShowAddressPortal(true)}
+              style={{
+                width: '100%', background: 'var(--color-card)', border: 'none',
+                borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left',
+                padding: '15px 20px 17px', display: 'flex', alignItems: 'center', gap: 16,
+              }}
+            >
+              <div style={{
+                width: 46, height: 46, borderRadius: 10, background: 'var(--color-card2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <LocationIcon />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 500, fontSize: 19, color: 'var(--color-text)', letterSpacing: -0.19, lineHeight: '24px' }}>
+                  Адрес
+                </div>
+                <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '17px', marginTop: 1 }}>
+                  {location || 'Куда приезжать клиентам'}
+                </div>
+              </div>
+              <ChevronIcon />
+            </button>
           </>
         )}
 
@@ -603,7 +609,7 @@ export default function OnboardingPage() {
           mode="primary"
           size="medium"
           stretched
-          disabled={saving || photoUploading || catPhotoUploading || (step === 0 && (!name.trim() || !location.trim() || phoneInvalid))}
+          disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
           onClick={handleNext}
         >
           {saving ? 'Сохраняем...' :
@@ -714,6 +720,35 @@ export default function OnboardingPage() {
               disabled={!catFormName.trim() || catPhotoUploading}
               onClick={saveCatForm}
             >
+              Готово
+            </MaxButton>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* ── Портал: Ввод адреса ── */}
+      {showAddressPortal && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200,
+          display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', flexShrink: 0 }}>
+            <MaxButton appearance="themed" mode="tertiary" size="medium" onClick={() => setShowAddressPortal(false)}>
+              ← Назад
+            </MaxButton>
+            <span style={{
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              fontSize: 16, fontWeight: 600, color: 'var(--color-text)', pointerEvents: 'none',
+            }}>
+              Адрес
+            </span>
+          </div>
+          <div style={{ padding: '0 16px' }}>
+            <AddressSuggestInput value={location} onChange={setLocation} />
+          </div>
+          <div style={{ padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }}>
+            <MaxButton appearance="themed" mode="primary" size="medium" stretched onClick={() => setShowAddressPortal(false)}>
               Готово
             </MaxButton>
           </div>
@@ -1006,5 +1041,26 @@ function UploadingOverlay() {
     }}>
       <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span>
     </div>
+  )
+}
+
+function LocationIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 13.43a3.12 3.12 0 1 0 0-6.24 3.12 3.12 0 0 0 0 6.24z"
+        stroke="#8E8E93" strokeWidth="1.5" />
+      <path d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 0 1-7.21 0c-2.76-2.66-5.92-6.97-4.77-12.05z"
+        stroke="#8E8E93" strokeWidth="1.5" />
+      <path d="M12 7.5v2M11 8.5h2" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+
+function ChevronIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M9 18l6-6-6-6" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
