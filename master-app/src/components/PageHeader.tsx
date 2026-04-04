@@ -19,7 +19,7 @@ export default function PageHeader({ title, back = true, onBack, right }: Props)
     <header style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
+      justifyContent: 'space-between',
       padding: '16px 16px 12px',
       background: 'var(--color-card)',
       borderBottom: '1px solid var(--color-border)',
@@ -27,16 +27,20 @@ export default function PageHeader({ title, back = true, onBack, right }: Props)
       top: 0,
       zIndex: 10,
     }}>
-      {back && (
-        <button
-          onClick={handleBack}
-          style={{ background: 'none', fontSize: 20, color: 'var(--color-primary)', lineHeight: 1 }}
-        >
-          ←
-        </button>
-      )}
-      <h1 style={{ fontSize: 17, fontWeight: 600, flex: 1 }}>{title}</h1>
-      {right && <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>{right}</div>}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {back && (
+          <button
+            onClick={handleBack}
+            style={{ background: 'none', fontSize: 20, color: 'var(--color-primary)', lineHeight: 1 }}
+          >
+            ←
+          </button>
+        )}
+      </div>
+      <h1 style={{ fontSize: 17, fontWeight: 600, position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>{title}</h1>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        {right}
+      </div>
     </header>
   )
 }
