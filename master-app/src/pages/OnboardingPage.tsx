@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { isAxiosError } from 'axios'
 import {
   Button as MaxButton,
   CellList,
@@ -10,6 +11,7 @@ import {
   Panel,
   Flex,
   Grid,
+  Spinner,
   Typography,
   Container,
 } from '@maxhub/max-ui'
@@ -86,7 +88,14 @@ interface LocalService {
   discountEnabled: boolean
   discountPercent: number
   photo: string | null        // S3 URL обложки, берется из первого фото работ
-  workPhotos: string[]        // S3 URLs фото работ
+  workPhotos: LocalWorkPhoto[]
+}
+
+interface LocalWorkPhoto {
+  id: string
+  url: string | null
+  previewUrl: string
+  uploading: boolean
 }
 
 const STEPS = ['Обо мне', 'График', 'Услуги'] as const
@@ -97,6 +106,16 @@ const DAYS = [
 const BUFFER_OPTIONS = [0, 10, 15, 20, 30, 45, 60]
 const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50]
 
+const ONBOARDING_MISSING_LABELS: Record<string, string> = {
+  profile: 'заполнить профиль',
+  schedule: 'настроить график',
+  categories: 'добавить хотя бы одну категорию',
+  services: 'добавить хотя бы одну услугу',
+}
+
+const getFirstUploadedWorkPhotoUrl = (workPhotos: LocalWorkPhoto[]) =>
+  workPhotos.find((photo) => !photo.uploading && photo.url)?.url ?? null
+
 // ─── Компонент ────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
@@ -104,6 +123,7 @@ export default function OnboardingPage() {
   const { setMaster } = useAuthStore()
   const [step, setStep] = useState<Step>(0)
   const [saving, setSaving] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // ── Шаг 0: Обо мне ──
   const [name, setName] = useState('')
@@ -211,6 +231,16 @@ export default function OnboardingPage() {
     setShowCatForm(false)
   }
 
+  const removeCategory = (index: number) => {
+    setCategories((prev) => prev.filter((_, i) => i !== index))
+    setServicesByCat((prev) => prev.filter((_, i) => i !== index))
+    setSelectedCatIdx((prev) => {
+      if (prev > index) return prev - 1
+      if (prev === index) return Math.max(0, prev - 1)
+      return prev
+    })
+  }
+
   // ─── Форма услуги ─────────────────────────────────────────────────────────
 
   const openSvcForm = (idx?: number) => {
@@ -219,7 +249,7 @@ export default function OnboardingPage() {
       if (existing) {
         setSvcForm({
           ...existing,
-          photo: existing.workPhotos[0] ?? existing.photo ?? null,
+          photo: getFirstUploadedWorkPhotoUrl(existing.workPhotos) ?? existing.photo ?? null,
         })
       }
       setEditSvcIdx(idx)
@@ -240,7 +270,7 @@ export default function OnboardingPage() {
     const catIdx = selectedCatIdx
     const normalizedService: LocalService = {
       ...svcForm,
-      photo: svcForm.workPhotos[0] ?? null,
+      photo: getFirstUploadedWorkPhotoUrl(svcForm.workPhotos),
     }
     setServicesByCat((prev: LocalService[][]) => {
       const next: LocalService[][] = prev.map((arr: LocalService[]) => [...arr])
@@ -255,9 +285,38 @@ export default function OnboardingPage() {
     setShowSvcForm(false)
   }
 
+  const removeService = (index: number) => {
+    setServicesByCat((prev: LocalService[][]) => {
+      const next = prev.map((services, categoryIndex) => (
+        categoryIndex === selectedCatIdx
+          ? services.filter((_, serviceIndex) => serviceIndex !== index)
+          : services
+      ))
+
+      return next
+    })
+  }
+
   // ─── Навигация по шагам ───────────────────────────────────────────────────
 
+  const formatOnboardingError = (missing: unknown) => {
+    if (!Array.isArray(missing) || missing.length === 0) {
+      return 'Не удалось завершить онбординг. Проверьте заполнение всех шагов.'
+    }
+
+    const labels = missing
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => ONBOARDING_MISSING_LABELS[item] ?? item)
+
+    if (labels.length === 0) {
+      return 'Не удалось завершить онбординг. Проверьте заполнение всех шагов.'
+    }
+
+    return `Чтобы завершить онбординг, нужно ${labels.join(', ')}.`
+  }
+
   const handleNext = async () => {
+    setSubmitError(null)
     setSaving(true)
     try {
       if (step === 0) {
@@ -315,8 +374,9 @@ export default function OnboardingPage() {
                 photo: svc.photo || undefined,
                 categoryId: catId,
               })
-              for (let i = 0; i < svc.workPhotos.length; i++) {
-                await servicesApi.addWorkPhoto(created.id, svc.workPhotos[i], i)
+              const uploadedWorkPhotos = svc.workPhotos.filter((photo: LocalWorkPhoto) => !photo.uploading && photo.url)
+              for (let i = 0; i < uploadedWorkPhotos.length; i++) {
+                await servicesApi.addWorkPhoto(created.id, uploadedWorkPhotos[i].url as string, i)
               }
             }
           }
@@ -328,6 +388,18 @@ export default function OnboardingPage() {
         navigate('/', { replace: true })
         return
       }
+    } catch (err: any) {
+      const response = isAxiosError(err) ? err.response : undefined
+
+      if (
+        response?.status === 400
+        && response.data?.error === 'Onboarding is incomplete'
+      ) {
+        setSubmitError(formatOnboardingError(response.data.missing))
+        return
+      }
+
+      setSubmitError('Сохранение не удалось. Попробуйте еще раз.')
     } finally {
       setSaving(false)
     }
@@ -576,23 +648,24 @@ export default function OnboardingPage() {
                         {count === 0 ? 'Нет услуг' : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`}
                       </div>
                     </div>
-                    {/* Редактировать */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openCatForm(i) }}
-                      style={onboardingListActionButtonStyle}
-                    >
-                      <EditIcon />
-                    </button>
-                    {/* Открыть услуги */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedCatIdx(i); setServicesSubStep('services') }}
-                      style={{
-                        ...onboardingListActionButtonStyle,
-                        color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
-                      }}
-                    >
-                      ›
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openCatForm(i) }}
+                        style={onboardingListActionButtonStyle}
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeCategory(i) }}
+                        style={{
+                          ...onboardingListActionButtonStyle,
+                          color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
+                        }}
+                        aria-label="Удалить категорию"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -648,8 +721,32 @@ export default function OnboardingPage() {
                     )}
                   </div>
                 </div>
-                <div style={{ paddingTop: 2, flexShrink: 0 }}>
-                  <EditIcon />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); openSvcForm(i) }}
+                    style={onboardingListActionButtonStyle}
+                    aria-label="Редактировать услугу"
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeService(i)
+                    }}
+                    style={{
+                      ...onboardingListActionButtonStyle,
+                      color: 'var(--color-text-secondary)',
+                      fontSize: 20,
+                      lineHeight: 1,
+                      padding: 4,
+                    }}
+                    aria-label="Удалить услугу"
+                  >
+                    ×
+                  </button>
                 </div>
               </button>
             ))}
@@ -671,6 +768,21 @@ export default function OnboardingPage() {
 
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
+        {submitError && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: 'rgba(209, 50, 50, 0.12)',
+              color: '#9f1d1d',
+              fontSize: 14,
+              lineHeight: 1.4,
+            }}
+          >
+            {submitError}
+          </div>
+        )}
         <button
           type="button"
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
@@ -944,20 +1056,44 @@ export default function OnboardingPage() {
                 ПРИМЕРЫ РАБОТ
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {svcForm.workPhotos.map((url, i) => (
-                  <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
+                <button
+                  onClick={() => svcWorkPhotoRef.current?.click()}
+                  disabled={svcWorkPhotoUploading}
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 10,
+                    background: 'var(--color-card2)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                    opacity: svcWorkPhotoUploading ? 0.5 : 1,
+                  }}
+                >
+                  {svcWorkPhotoUploading
+                    ? <Spinner size={24} appearance="contrast" />
+                    : <img src={maskIconUrl} alt="upload" style={serviceWorkPhotoAddIconStyle} />}
+                </button>
+
+                {svcForm.workPhotos.map((photo, i) => (
+                  <div key={photo.id} style={{ position: 'relative', width: 72, height: 72 }}>
                     <img
-                      src={url}
+                      src={photo.previewUrl}
                       alt=""
                       style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
                     />
+                    {photo.uploading && <UploadingOverlay />}
                     <button
                       onClick={() => setSvcForm((f) => {
                         const workPhotos = f.workPhotos.filter((_, j) => j !== i)
                         return {
                           ...f,
                           workPhotos,
-                          photo: workPhotos[0] ?? null,
+                          photo: getFirstUploadedWorkPhotoUrl(workPhotos),
                         }
                       })}
                       style={{
@@ -984,29 +1120,6 @@ export default function OnboardingPage() {
                   </div>
                 ))}
 
-                <button
-                  onClick={() => svcWorkPhotoRef.current?.click()}
-                  disabled={svcWorkPhotoUploading}
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 10,
-                    background: 'var(--color-card2)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                    opacity: svcWorkPhotoUploading ? 0.5 : 1,
-                  }}
-                >
-                  {svcWorkPhotoUploading
-                    ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
-                    : <img src={maskIconUrl} alt="upload" style={serviceWorkPhotoAddIconStyle} />}
-                </button>
-
                 <input
                   ref={svcWorkPhotoRef}
                   type="file"
@@ -1016,15 +1129,52 @@ export default function OnboardingPage() {
                   onChange={async (e) => {
                     const files = Array.from(e.target.files ?? [])
                     if (!files.length) return
+
+                    const queuedPhotos: LocalWorkPhoto[] = files.map((file, index) => ({
+                      id: `work-photo-${Date.now()}-${index}`,
+                      url: null,
+                      previewUrl: URL.createObjectURL(file),
+                      uploading: true,
+                    }))
+
+                    setSvcForm((prev) => ({
+                      ...prev,
+                      workPhotos: [...prev.workPhotos, ...queuedPhotos],
+                    }))
+
                     setSvcWorkPhotoUploading(true)
                     try {
-                      const urls = await Promise.all(files.map((f) => uploadPhoto(f, 'work')))
+                      const results = await Promise.allSettled(files.map((file) => uploadPhoto(file, 'work')))
+
                       setSvcForm((prev) => {
-                        const workPhotos = [...prev.workPhotos, ...urls]
+                        const uploadedById = new Map<string, string>()
+                        const failedIds = new Set<string>()
+
+                        results.forEach((result, index) => {
+                          const photoId = queuedPhotos[index]?.id
+                          if (!photoId) return
+
+                          if (result.status === 'fulfilled') uploadedById.set(photoId, result.value)
+                          else failedIds.add(photoId)
+                        })
+
+                        const workPhotos = prev.workPhotos.flatMap((photo) => {
+                          if (failedIds.has(photo.id)) return []
+                          const uploadedUrl = uploadedById.get(photo.id)
+                          if (!uploadedUrl) return [photo]
+
+                          return [{
+                            ...photo,
+                            url: uploadedUrl,
+                            previewUrl: uploadedUrl,
+                            uploading: false,
+                          }]
+                        })
+
                         return {
                           ...prev,
                           workPhotos,
-                          photo: workPhotos[0] ?? null,
+                          photo: getFirstUploadedWorkPhotoUrl(workPhotos),
                         }
                       })
                     } catch (err) {
@@ -1132,26 +1282,28 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (chec
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       style={{
-        width: 50,
-        height: 30,
-        padding: 3,
+        width: 44,
+        height: 26,
         border: 'none',
-        borderRadius: 999,
-        background: checked ? 'var(--color-primary)' : 'var(--color-control-secondary)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: checked ? 'flex-end' : 'flex-start',
+        borderRadius: 13,
+        background: checked ? 'var(--color-primary)' : 'var(--color-card)',
+        position: 'relative',
         cursor: 'pointer',
         flexShrink: 0,
+        transition: 'background 0.2s ease',
       }}
     >
       <span
         style={{
-          width: 24,
-          height: 24,
+          position: 'absolute',
+          top: 3,
+          left: checked ? 21 : 3,
+          width: 20,
+          height: 20,
           borderRadius: '50%',
           background: '#fff',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.18)',
+          transition: 'left 0.2s ease',
         }}
       />
     </button>
@@ -1210,7 +1362,7 @@ function UploadingOverlay() {
       background: 'rgba(0,0,0,0.45)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span>
+      <Spinner size={20} appearance="contrast-static" />
     </div>
   )
 }

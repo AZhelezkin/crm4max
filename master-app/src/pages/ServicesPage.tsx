@@ -473,7 +473,7 @@ export default function ServicesPage() {
                   width: 72, height: 72, borderRadius: 10, background: 'var(--color-card2)',
                   border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <CameraIcon size={24} />
+                  <CameraIcon size={36} />
                 </button>
               </div>
             </div>

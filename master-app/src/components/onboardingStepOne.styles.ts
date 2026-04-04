@@ -43,8 +43,8 @@ export const servicePhotoPlaceholderStyle: CSSProperties = {
 }
 
 export const serviceWorkPhotoAddIconStyle: CSSProperties = {
-  width: 32,
-  height: 32,
+  width: 46,
+  height: 46,
 }
 
 export const stepOneTextareaWrapStyle: CSSProperties = {
