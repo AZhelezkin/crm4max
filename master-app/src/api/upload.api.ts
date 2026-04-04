@@ -7,12 +7,14 @@ export type UploadFolder = 'masters' | 'categories' | 'services' | 'work'
  * Content-Type: multipart/form-data с правильным boundary.
  */
 export async function uploadPhoto(file: File, folder: UploadFolder = 'masters'): Promise<string> {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('masterToken')
 
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch(`/api/upload?folder=${folder}`, {
+  const baseUrl = `${import.meta.env.VITE_API_URL ?? ''}/api`
+
+  const res = await fetch(`${baseUrl}/upload?folder=${folder}`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,

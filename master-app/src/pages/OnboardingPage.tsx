@@ -12,6 +12,7 @@ import {
   Flex,
   Grid,
   Spinner,
+  Switch,
   Typography,
   Container,
 } from '@maxhub/max-ui'
@@ -1027,10 +1028,10 @@ export default function OnboardingPage() {
             </div>
 
             {/* Скидка */}
-            <div style={onboardingToggleRowStyle}>
-              <ToggleSwitch
+            <div style={{ ...onboardingToggleRowStyle, background: 'transparent', padding: 0, borderRadius: 0 }}>
+              <Switch
                 checked={svcForm.discountEnabled}
-                onChange={(checked) => setSvcForm((f) => ({ ...f, discountEnabled: checked }))}
+                onChange={(e) => setSvcForm((f) => ({ ...f, discountEnabled: e.target.checked }))}
               />
               <span style={onboardingToggleLabelStyle}>Скидка</span>
               {svcForm.discountEnabled && (
@@ -1274,42 +1275,6 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
   )
 }
 
-function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      style={{
-        width: 44,
-        height: 26,
-        border: 'none',
-        borderRadius: 13,
-        background: checked ? 'var(--color-primary)' : 'var(--color-card)',
-        position: 'relative',
-        cursor: 'pointer',
-        flexShrink: 0,
-        transition: 'background 0.2s ease',
-      }}
-    >
-      <span
-        style={{
-          position: 'absolute',
-          top: 3,
-          left: checked ? 21 : 3,
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          background: '#fff',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.18)',
-          transition: 'left 0.2s ease',
-        }}
-      />
-    </button>
-  )
-}
-
 function BottomSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <div
@@ -1395,4 +1360,9 @@ function BackArrowIcon() {
     </svg>
   )
 }
+
+
+
+
+
 
