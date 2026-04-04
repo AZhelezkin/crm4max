@@ -165,7 +165,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         style={{
           position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
           opacity: isMapFading ? 0 : 1,
-          transition: 'opacity 280ms ease',
+          transform: isMapFading ? 'scale(1.045)' : 'scale(1)',
+          transformOrigin: 'center center',
+          transition: 'opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'opacity, transform',
         }}
       />
       {nextMapUrl && (
@@ -176,7 +179,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
             opacity: isMapFading ? 1 : 0,
-            transition: 'opacity 280ms ease',
+            transform: isMapFading ? 'scale(1)' : 'scale(1.05)',
+            transformOrigin: 'center center',
+            transition: 'opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'opacity, transform',
           }}
         />
       )}
