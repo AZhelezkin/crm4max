@@ -358,22 +358,38 @@ export default function OnboardingPage() {
 
             {/* Аватар */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <Avatar.Container
-                size={110}
+              <button
+                type="button"
                 onClick={() => photoInputRef.current?.click()}
-                style={{ cursor: 'pointer', background: 'var(--color-card2)' }}
-                overlay={photoUploading
-                  ? <Avatar.Overlay><span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span></Avatar.Overlay>
-                  : undefined
-                }
+                disabled={photoUploading}
+                style={{
+                  width: 110,
+                  height: 110,
+                  borderRadius: '50%',
+                  border: 'none',
+                  padding: 0,
+                  cursor: photoUploading ? 'default' : 'pointer',
+                  background: '#2C2D31',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
               >
                 {photoPreview
-                  ? <Avatar.Image src={photoPreview} fallback="?" />
-                  : <Avatar.Icon>
-                      <CameraIcon size={36} />
-                    </Avatar.Icon>
-                }
-              </Avatar.Container>
+                  ? (
+                    <img
+                      src={photoPreview}
+                      alt="Фото профиля"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )
+                  : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={maskIconUrl} alt="Загрузить фото" style={{ width: 26, height: 26, opacity: 0.9 }} />
+                    </div>
+                  )}
+
+                {photoUploading && <UploadingOverlay />}
+              </button>
               <input
                 ref={photoInputRef} type="file" accept="image/*" hidden
                 onChange={(e) => handlePhotoChange(
