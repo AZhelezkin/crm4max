@@ -60,6 +60,25 @@ export const stepOneCounterStyle: CSSProperties = {
   color: 'var(--color-text-secondary)',
 }
 
+export const onboardingFieldWrapStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card2)',
+  borderRadius: 10,
+}
+
+export const onboardingFieldInputStyle: CSSProperties = {
+  width: '100%',
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  color: 'var(--color-text)',
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  padding: '15px 16px 17px',
+}
+
 export const onboardingSectionCardStyle: CSSProperties = {
   background: 'var(--color-card)',
   borderRadius: 20,

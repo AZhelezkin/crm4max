@@ -24,6 +24,8 @@ import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import {
+  onboardingFieldInputStyle,
+  onboardingFieldWrapStyle,
   onboardingInlineFieldStyle,
   onboardingDiscountBadgeStyle,
   onboardingListActionButtonStyle,
@@ -736,16 +738,17 @@ export default function OnboardingPage() {
               />
             </div>
 
-            <CellList mode="island">
-              <CellInput
+            <div style={onboardingFieldWrapStyle}>
+              <input
                 value={catFormName}
                 onChange={(e) => setCatFormName(e.target.value)}
                 placeholder="Название"
                 autoFocus
+                style={onboardingFieldInputStyle}
               />
-            </CellList>
+            </div>
 
-            <CellList mode="island">
+            <div style={{ ...onboardingFieldWrapStyle, position: 'relative' }}>
               <div style={stepOneTextareaWrapStyle}>
                 <textarea
                   value={catFormDesc}
@@ -756,7 +759,7 @@ export default function OnboardingPage() {
                 />
                 <span style={stepOneCounterStyle}>{catFormDesc.length}/200</span>
               </div>
-            </CellList>
+            </div>
           </div>
 
           <div style={{
