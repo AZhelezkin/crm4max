@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
-const STATIC_MAP_URL = 'https://static-maps.yandex.ru/v1'
+const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
 const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 
@@ -72,10 +72,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       ll: center,
       z: '15',
       l: 'map',
-      size: '650,650',
+      lang: 'ru_RU',
+      size: '450,450',
       pt: `${center},pm2rdm`,
     })
-    if (API_KEY) params.set('apikey', API_KEY)
     return `${STATIC_MAP_URL}?${params}`
   }
 
