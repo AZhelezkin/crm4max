@@ -139,7 +139,22 @@ export default function ProfilePage() {
                 action={{ label: '+ Добавить услуги', onClick: () => navigate('/services') }}
               />
         )}
-        {activeTab === 'photos' && <EmptyState text="Фото работ появятся здесь" />}
+        {activeTab === 'photos' && (() => {
+          const allPhotos = (master?.categories ?? [])
+            .flatMap(c => c.services)
+            .flatMap(s => s.workPhotos ?? [])
+            .sort((a, b) => a.order - b.order)
+          if (!allPhotos.length) return <EmptyState text="Фото работ появятся здесь" />
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, margin: '0 -16px' }}>
+              {allPhotos.map((p) => (
+                <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden' }}>
+                  <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </div>
+              ))}
+            </div>
+          )
+        })()}
         {activeTab === 'reviews' && <EmptyState text="Отзывы появятся после первых записей" />}
       </div>
     </div>
