@@ -116,7 +116,7 @@ export default function OnboardingPage() {
   const [showSvcForm, setShowSvcForm] = useState(false)
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
-    name: '', desc: '', duration: '', price: '',
+    name: '', desc: '', durationMin: '', durationMax: '', price: '',
     discountEnabled: false, discountPercent: 10,
     photo: null, previewUrl: null,
     workPhotos: [],
@@ -200,7 +200,7 @@ export default function OnboardingPage() {
       setEditSvcIdx(idx)
     } else {
       setSvcForm({ 
-        name: '', desc: '', duration: '', price: '', 
+        name: '', desc: '', durationMin: '', durationMax: '', price: '', 
         discountEnabled: false, discountPercent: 10,
         photo: null, previewUrl: null,
         workPhotos: [],
