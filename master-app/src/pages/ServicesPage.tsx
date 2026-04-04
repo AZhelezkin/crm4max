@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button as MaxButton } from '@maxhub/max-ui'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
-import PageHeader from '@/components/PageHeader'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -22,6 +22,7 @@ import {
 type SubStep = 'categories' | 'services'
 
 export default function ServicesPage() {
+  const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [subStep, setSubStep] = useState<SubStep>('categories')
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
@@ -153,13 +154,23 @@ export default function ServicesPage() {
   // ─── Рендер ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      <PageHeader
-        title={subStep === 'services' && selectedCat ? selectedCat.name : 'Услуги'}
-        onBack={subStep === 'services' ? () => setSubStep('categories') : undefined}
-      />
+    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
 
-      <div style={{ padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Шапка — как в онбординге */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
+        <button
+          onClick={() => subStep === 'services' ? setSubStep('categories') : navigate(-1)}
+          style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
+        >
+          <BackArrowIcon />
+        </button>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+          {subStep === 'services' && selectedCat ? selectedCat.name : 'Категории услуг'}
+        </div>
+        <div style={{ width: 56 }} />
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
         {/* ── Уровень 1: Список категорий ── */}
         {subStep === 'categories' && (
@@ -341,6 +352,14 @@ function EditIcon() {
         stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
         stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
