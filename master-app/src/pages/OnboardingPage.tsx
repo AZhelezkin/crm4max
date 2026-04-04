@@ -890,16 +890,17 @@ export default function OnboardingPage() {
             </div>
 
             {/* Название */}
-            <CellList mode="island">
-              <CellInput
+            <div style={onboardingFieldWrapStyle}>
+              <input
                 value={svcForm.name}
                 onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Название. Пример: Укладка волос"
                 autoFocus
+                style={onboardingFieldInputStyle}
               />
-            </CellList>
+            </div>
 
-            <CellList mode="island">
+            <div style={{ ...onboardingFieldWrapStyle, position: 'relative' }}>
               <div style={stepOneTextareaWrapStyle}>
                 <textarea
                   value={svcForm.desc}
@@ -910,40 +911,39 @@ export default function OnboardingPage() {
                 />
                 <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
               </div>
-            </CellList>
+            </div>
 
             {/* Длительность и стоимость */}
             <div style={onboardingSplitFieldsStyle}>
-              <div style={onboardingInlineFieldStyle}>
-                <CellList mode="island">
-                  <CellInput
-                    value={svcForm.durationMin}
-                    onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Длительность от, мин"
-                    inputMode="numeric"
-                  />
-                </CellList>
+              <div style={{ ...onboardingFieldWrapStyle, ...onboardingInlineFieldStyle }}>
+                <input
+                  value={svcForm.durationMin}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="Длительность от, мин"
+                  inputMode="numeric"
+                  style={onboardingFieldInputStyle}
+                />
               </div>
-              <div style={onboardingInlineFieldStyle}>
-                <CellList mode="island">
-                  <CellInput
-                    value={svcForm.durationMax}
-                    onChange={(e) => setSvcForm((f) => ({ ...f, durationMax: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Длительность до, мин"
-                    inputMode="numeric"
-                  />
-                </CellList>
+              <div style={{ ...onboardingFieldWrapStyle, ...onboardingInlineFieldStyle }}>
+                <input
+                  value={svcForm.durationMax}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, durationMax: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="Длительность до, мин"
+                  inputMode="numeric"
+                  style={onboardingFieldInputStyle}
+                />
               </div>
             </div>
 
-            <CellList mode="island">
-              <CellInput
+            <div style={onboardingFieldWrapStyle}>
+              <input
                 value={svcForm.price}
                 onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
                 placeholder="Стоимость, ₽"
                 inputMode="decimal"
+                style={onboardingFieldInputStyle}
               />
-            </CellList>
+            </div>
 
             {/* Скидка */}
             <div style={onboardingToggleRowStyle}>
