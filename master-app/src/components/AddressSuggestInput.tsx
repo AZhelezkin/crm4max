@@ -186,9 +186,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    const centerFromSuggest = parseCenterFromText(decodeURIComponent(s.query))
-    if (centerFromSuggest) setMapCenter(centerFromSuggest)
-    // URI from suggest may not be suitable for geocoder query, use selected address text.
+    // Всегда используем геокодер для получения координат выбранного адреса
     geocodeAddress(full)
   }
 
