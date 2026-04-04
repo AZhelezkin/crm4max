@@ -15,6 +15,7 @@ import {
   Typography,
   Container,
 } from '@maxhub/max-ui'
+import uploadIconUrl from '@/assets/upload-icon.svg'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -359,7 +360,7 @@ export default function OnboardingPage() {
               <Avatar.Container
                 size={110}
                 onClick={() => photoInputRef.current?.click()}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', background: 'var(--color-card2)' }}
                 overlay={photoUploading
                   ? <Avatar.Overlay><span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span></Avatar.Overlay>
                   : undefined
@@ -925,7 +926,7 @@ export default function OnboardingPage() {
                 >
                   {svcWorkPhotoUploading
                     ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
-                    : <CameraIcon size={24} />
+                    : <img src={uploadIconUrl} alt="upload" style={{ width: 24, height: 24 }} />
                   }
                 </button>
 
