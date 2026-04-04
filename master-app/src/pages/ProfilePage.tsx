@@ -151,10 +151,7 @@ export default function ProfilePage() {
               label: 'Поделиться', action: () => navigate('/share'),
               icon: <ShareIcon active />,
             },
-            {
-              label: 'Еще', action: () => navigate(),
-              icon: <MoreIcon active />,
-            },
+            { label: 'Еще', action: () => {}, icon: <MoreIcon active /> },
           ].map(({ label, icon, action }) => (
             <button
               key={label}
