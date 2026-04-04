@@ -792,7 +792,7 @@ export default function OnboardingPage() {
               Адрес
             </span>
           </div>
-          <div style={{ padding: '0 16px', flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, minHeight: 0 }}>
             <AddressSuggestInput
               value={addressDraft}
               onChange={setAddressDraft}

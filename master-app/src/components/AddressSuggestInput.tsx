@@ -21,6 +21,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [inputValue, setInputValue] = useState(value)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER)
+  const [suggestEnabled, setSuggestEnabled] = useState(false)
   const [activeMapUrl, setActiveMapUrl] = useState('')
   const [nextMapUrl, setNextMapUrl] = useState<string | null>(null)
   const [nextMapReady, setNextMapReady] = useState(false)
@@ -35,19 +36,21 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
 
   useEffect(() => {
     setInputValue(value)
+    setSuggestEnabled(false)
+    setSuggestions([])
   }, [value])
 
-  useEffect(() => {
-    const address = confirmedAddress.trim()
-    if (!address || !API_KEY) {
+  const geocodeAddress = (address: string) => {
+    const clean = address.trim()
+    if (!clean || !API_KEY) {
       setMapCenter(DEFAULT_CENTER)
-      return
+      return () => {}
     }
 
     const controller = new AbortController()
     const params = new URLSearchParams({
       apikey: API_KEY,
-      geocode: address,
+      geocode: clean,
       format: 'json',
       results: '1',
     })
@@ -65,6 +68,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       })
 
     return () => controller.abort()
+  }
+
+  useEffect(() => {
+    return geocodeAddress(confirmedAddress)
   }, [confirmedAddress])
 
   const buildMapUrl = (center: string) => {
@@ -120,7 +127,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     const text = inputValue.trim()
-    if (!text || !API_KEY) {
+    if (!text || !API_KEY || !suggestEnabled) {
       setSuggestions([])
       return
     }
@@ -154,11 +161,13 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     const full = s.subtitle ? `${s.title}, ${s.subtitle}` : s.title
     setInputValue(full)
     onChange(full)
+    setSuggestEnabled(false)
     setSuggestions([])
+    geocodeAddress(full)
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden' }}>
       <img
         src={activeMapUrl}
         alt="Карта"
@@ -215,6 +224,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
             onChange={(e) => {
               const next = e.target.value
               setInputValue(next)
+              setSuggestEnabled(true)
               onChange(next)
             }}
             placeholder="Куда приезжать клиентам"
@@ -227,8 +237,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
             <button
               onClick={() => {
                 setInputValue('')
+                setSuggestEnabled(false)
                 onChange('')
                 setSuggestions([])
+                setMapCenter(DEFAULT_CENTER)
               }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
