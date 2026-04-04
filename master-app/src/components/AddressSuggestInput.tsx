@@ -13,17 +13,24 @@ const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 interface Suggestion {
   title: string
   subtitle: string
-  query: string
-  position?: string // "lon,lat"
+  uri: string
+  position?: string // "lon,lat" — если пришло от API
 }
 
-function parseCenterFromText(text: string): string | null {
-  const match = text.match(/[?&]ll=([\d.+-]+),([\d.+-]+)/)
-  if (!match) return null
-  const lon = match[1]
-  const lat = match[2]
-  if (!lon || !lat) return null
-  return `${lon},${lat}`
+// Yandex suggest URI: ymapsbm1://geo?ll=37.620070%2C55.753630&...
+// После decodeURIComponent: ...?ll=37.620070,55.753630&...
+function parseCenterFromUri(uri: string): string | null {
+  try {
+    const decoded = decodeURIComponent(uri)
+    const match = decoded.match(/[?&]ll=([\d.+-]+),([\d.+-]+)/)
+    if (!match) return null
+    const lon = match[1]
+    const lat = match[2]
+    if (!lon || !lat) return null
+    return `${lon},${lat}`
+  } catch {
+    return null
+  }
 }
 
 interface Props {
@@ -41,8 +48,6 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [nextMapUrl, setNextMapUrl] = useState<string | null>(null)
   const [nextMapReady, setNextMapReady] = useState(false)
   const [isMapFading, setIsMapFading] = useState(false)
-  const [geoError, setGeoError] = useState<string | null>(null)
-  const [lastGeo, setLastGeo] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -52,15 +57,9 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     setSuggestions([])
   }, [value])
 
-  // geocodeAddress больше не нужен
-
-
-  // При изменении confirmedAddress сбрасываем карту на дефолт
   useEffect(() => {
     if (!confirmedAddress?.trim()) {
       setMapCenter(DEFAULT_CENTER)
-      setLastGeo(null)
-      setGeoError(null)
     }
   }, [confirmedAddress])
 
@@ -77,8 +76,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   }
 
   useEffect(() => {
-    const initialUrl = buildMapUrl(DEFAULT_CENTER)
-    setActiveMapUrl(initialUrl)
+    setActiveMapUrl(buildMapUrl(DEFAULT_CENTER))
   }, [])
 
   useEffect(() => {
@@ -137,15 +135,14 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         const data = await res.json()
         setSuggestions(
           (data.results ?? []).map((r: any) => {
-            // Координаты приходят в r.position: { lon, lat }
-            let position = undefined
+            let position: string | undefined
             if (r.position && typeof r.position.lon === 'number' && typeof r.position.lat === 'number') {
               position = `${r.position.lon},${r.position.lat}`
             }
             return {
               title: r.title?.text ?? '',
               subtitle: r.subtitle?.text ?? '',
-              query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
+              uri: r.uri ?? '',
               position,
             }
           })
@@ -162,13 +159,10 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    if (s.position) {
-      setMapCenter(s.position)
-      setLastGeo(s.position)
-      setGeoError(null)
-    } else {
-      setGeoError('Нет координат для выбранного адреса')
-    }
+    // Координаты: сначала из поля position (если API вернул),
+    // иначе парсим из URI (ll=lon%2Clat)
+    const center = s.position ?? parseCenterFromUri(s.uri)
+    if (center) setMapCenter(center)
   }
 
   return (
@@ -185,17 +179,6 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
           willChange: 'opacity, transform',
         }}
       />
-
-      {/* Диагностика геокодирования */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
-        background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 13, padding: '6px 12px',
-        pointerEvents: 'none',
-      }}>
-        {geoError && <div style={{ color: '#ff6b6b', fontWeight: 600 }}>Геокодер: {geoError}</div>}
-        {lastGeo && <div>Координаты: {lastGeo}</div>}
-        <div style={{ color: '#ffd966', marginTop: 2 }}>Адрес для геокодера: <b>{confirmedAddress}</b></div>
-      </div>
       {nextMapUrl && (
         <img
           src={nextMapUrl}
