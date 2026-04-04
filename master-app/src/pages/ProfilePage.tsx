@@ -60,15 +60,15 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, padding: '0 16px' }}>
           {[
             {
-              label: 'Запись', action: () => navigate('/bookings/new'),
-              icon: <CalendarIcon active />,
+              label: 'Услуги', action: () => navigate('/services'),
+              icon: <EditIcon active />,
             },
             {
-              label: 'Добавить', action: () => navigate('/services'),
-              icon: <AddIcon active />,
+              label: 'Профиль', action: () => navigate('/about'),
+              icon: <EditIcon active />,
             },
             {
-              label: 'Изменить', action: () => navigate('/about'),
+              label: 'Изменить', action: () => navigate(),
               icon: <EditIcon active />,
             },
             {
@@ -188,10 +188,6 @@ function ServicesList({ categories }: { categories: Category[] }) {
                 padding: '12px 14px', cursor: 'pointer',
               }}
             >
-              {cat.photo
-                ? <img src={cat.photo} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
-                : <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✂️</div>
-              }
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
                   {cat.name}
@@ -227,7 +223,7 @@ function ServicesList({ categories }: { categories: Category[] }) {
                       key={s.id}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '10px 14px 10px 58px',
+                        padding: '10px 14px',
                         borderTop: '1px solid var(--color-border)',
                       }}
                     >
