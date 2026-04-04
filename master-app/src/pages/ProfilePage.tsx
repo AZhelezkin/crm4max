@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import type { Category } from '@/types'
@@ -10,9 +10,88 @@ export default function ProfilePage() {
   const { master } = useAuthStore()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('services')
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const lbStripRef  = useRef<HTMLDivElement>(null)
+  const lbOverlayRef = useRef<HTMLDivElement>(null)
+  const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
   const totalServices = master?.categories.reduce((acc, c) => acc + c.services.length, 0) ?? 0
+
+  const allPhotos = (master?.categories ?? [])
+    .flatMap(c => c.services)
+    .flatMap(s => s.workPhotos ?? [])
+    .sort((a, b) => a.order - b.order)
+
+  function onLbStart(e: React.TouchEvent) {
+    const t = e.touches[0]
+    lbTouch.current = { startX: t.clientX, startY: t.clientY, dir: null, moved: false }
+    if (lbStripRef.current)   lbStripRef.current.style.transition = 'none'
+    if (lbOverlayRef.current) lbOverlayRef.current.style.transition = 'none'
+  }
+
+  function onLbMove(e: React.TouchEvent) {
+    const dx = e.touches[0].clientX - lbTouch.current.startX
+    const dy = e.touches[0].clientY - lbTouch.current.startY
+    lbTouch.current.moved = true
+    if (!lbTouch.current.dir) {
+      if (Math.abs(dx) > Math.abs(dy) + 5) lbTouch.current.dir = 'h'
+      else if (Math.abs(dy) > Math.abs(dx) + 5) lbTouch.current.dir = 'v'
+      else return
+    }
+    if (lbTouch.current.dir === 'h' && lbStripRef.current) {
+      lbStripRef.current.style.transform = `translateX(calc(-100vw + ${dx}px))`
+    }
+    if (lbTouch.current.dir === 'v' && lbOverlayRef.current) {
+      const p = Math.max(0, dy)
+      lbOverlayRef.current.style.transform = `translateY(${p}px)`
+      lbOverlayRef.current.style.opacity = String(Math.max(0, 1 - p / 300))
+    }
+  }
+
+  function onLbEnd(e: React.TouchEvent) {
+    const { startX, startY, dir, moved } = lbTouch.current
+    const dx = e.changedTouches[0].clientX - startX
+    const dy = e.changedTouches[0].clientY - startY
+
+    // Tap — close
+    if (!moved) { setLightboxIndex(null); return }
+
+    if (dir === 'v') {
+      if (dy > 100 && lbOverlayRef.current) {
+        lbOverlayRef.current.style.transition = 'transform 0.25s ease, opacity 0.25s ease'
+        lbOverlayRef.current.style.transform = 'translateY(100%)'
+        lbOverlayRef.current.style.opacity = '0'
+        setTimeout(() => setLightboxIndex(null), 250)
+      } else if (lbOverlayRef.current) {
+        lbOverlayRef.current.style.transition = 'transform 0.3s ease, opacity 0.3s ease'
+        lbOverlayRef.current.style.transform = 'translateY(0)'
+        lbOverlayRef.current.style.opacity = '1'
+      }
+      return
+    }
+
+    if (dir === 'h') {
+      const W = window.innerWidth
+      const goNext = dx < -60 && lightboxIndex! < allPhotos.length - 1
+      const goPrev = dx > 60 && lightboxIndex! > 0
+      if (goNext || goPrev) {
+        if (lbStripRef.current) {
+          lbStripRef.current.style.transition = 'transform 0.25s ease'
+          lbStripRef.current.style.transform = `translateX(calc(-100vw + ${goNext ? -W : W}px))`
+        }
+        setTimeout(() => {
+          setLightboxIndex(i => i !== null ? i + (goNext ? 1 : -1) : null)
+          if (lbStripRef.current) {
+            lbStripRef.current.style.transition = 'none'
+            lbStripRef.current.style.transform = 'translateX(-100vw)'
+          }
+        }, 250)
+      } else if (lbStripRef.current) {
+        lbStripRef.current.style.transition = 'transform 0.3s ease'
+        lbStripRef.current.style.transform = 'translateX(-100vw)'
+      }
+    }
+  }
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', overflowX: 'hidden' }}>
@@ -69,12 +148,12 @@ export default function ProfilePage() {
               icon: <EditIcon active />,
             },
             {
-              label: 'Изменить', action: () => navigate('/about'),
-              icon: <EditIcon active />,
-            },
-            {
               label: 'Поделиться', action: () => navigate('/share'),
               icon: <ShareIcon active />,
+            },
+            {
+              label: 'Еще', action: () => navigate(),
+              icon: <MoreIcon active />,
             },
           ].map(({ label, icon, action }) => (
             <button
@@ -140,40 +219,75 @@ export default function ProfilePage() {
                 action={{ label: '+ Добавить услуги', onClick: () => navigate('/services') }}
               />
         )}
-        {activeTab === 'photos' && (() => {
-          const allPhotos = (master?.categories ?? [])
-            .flatMap(c => c.services)
-            .flatMap(s => s.workPhotos ?? [])
-            .sort((a, b) => a.order - b.order)
-          if (!allPhotos.length) return <EmptyState text="Фото работ появятся здесь" />
-          return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, margin: '0 -16px' }}>
-              {allPhotos.map((p) => (
-                <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxUrl(p.url)}>
-                  <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                </div>
-              ))}
-            </div>
-          )
-        })()}
+        {activeTab === 'photos' && (
+          !allPhotos.length
+            ? <EmptyState text="Фото работ появятся здесь" />
+            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, margin: '0 -16px' }}>
+                {allPhotos.map((p, i) => (
+                  <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxIndex(i)}>
+                    <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  </div>
+                ))}
+              </div>
+        )}
         {activeTab === 'reviews' && <EmptyState text="Отзывы появятся после первых записей" />}
       </div>
 
       {/* Лайтбокс */}
-      {lightboxUrl && (
+      {lightboxIndex !== null && (
         <div
-          onClick={() => setLightboxUrl(null)}
+          ref={lbOverlayRef}
+          onTouchStart={onLbStart}
+          onTouchMove={onLbMove}
+          onTouchEnd={onLbEnd}
           style={{
             position: 'fixed', inset: 0, zIndex: 1000,
             background: 'rgba(0,0,0,0.92)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
           }}
         >
-          <img
-            src={lightboxUrl}
-            alt=""
-            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
-          />
+          {/* Strip: prev | current | next */}
+          <div
+            ref={lbStripRef}
+            style={{
+              display: 'flex', width: '300vw', height: '100%',
+              transform: 'translateX(-100vw)',
+              willChange: 'transform',
+            }}
+          >
+            {[lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (
+              <div
+                key={idx}
+                style={{
+                  width: '100vw', height: '100%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {allPhotos[idx] && (
+                  <img
+                    src={allPhotos[idx].url}
+                    alt=""
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none' }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Точки */}
+          {allPhotos.length > 1 && (
+            <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+              {allPhotos.map((_, i) => (
+                <div key={i} style={{
+                  width: i === lightboxIndex ? 8 : 6,
+                  height: i === lightboxIndex ? 8 : 6,
+                  borderRadius: '50%',
+                  background: i === lightboxIndex ? '#fff' : 'rgba(255,255,255,0.35)',
+                  transition: 'all 0.2s',
+                }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
