@@ -21,7 +21,12 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [inputValue, setInputValue] = useState(value)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER)
+  const [activeMapUrl, setActiveMapUrl] = useState('')
+  const [nextMapUrl, setNextMapUrl] = useState<string | null>(null)
+  const [nextMapReady, setNextMapReady] = useState(false)
+  const [isMapFading, setIsMapFading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -61,6 +66,55 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
 
     return () => controller.abort()
   }, [confirmedAddress])
+
+  const buildMapUrl = (center: string) => {
+    const params = new URLSearchParams({
+      ll: center,
+      z: '15',
+      l: 'map',
+      size: '650,650',
+      pt: `${center},pm2rdm`,
+    })
+    if (API_KEY) params.set('apikey', API_KEY)
+    return `${STATIC_MAP_URL}?${params}`
+  }
+
+  useEffect(() => {
+    const initialUrl = buildMapUrl(DEFAULT_CENTER)
+    setActiveMapUrl(initialUrl)
+  }, [])
+
+  useEffect(() => {
+    const targetUrl = buildMapUrl(mapCenter)
+    if (!activeMapUrl) {
+      setActiveMapUrl(targetUrl)
+      return
+    }
+    if (targetUrl === activeMapUrl) return
+    setNextMapReady(false)
+    setNextMapUrl(targetUrl)
+  }, [mapCenter, activeMapUrl])
+
+  useEffect(() => {
+    if (!nextMapReady || !nextMapUrl) return
+    setIsMapFading(true)
+    if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
+    fadeTimeoutRef.current = setTimeout(() => {
+      setActiveMapUrl(nextMapUrl)
+      setNextMapUrl(null)
+      setNextMapReady(false)
+      setIsMapFading(false)
+    }, 300)
+    return () => {
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
+    }
+  }, [nextMapReady, nextMapUrl])
+
+  useEffect(() => {
+    return () => {
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -103,23 +157,29 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     setSuggestions([])
   }
 
-  const mapParams = new URLSearchParams({
-    ll: mapCenter,
-    z: '15',
-    l: 'map',
-    size: '650,650',
-    pt: `${mapCenter},pm2rdm`,
-  })
-  if (API_KEY) mapParams.set('apikey', API_KEY)
-  const mapUrl = `${STATIC_MAP_URL}?${mapParams}`
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
       <img
-        src={mapUrl}
+        src={activeMapUrl}
         alt="Карта"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+          opacity: isMapFading ? 0 : 1,
+          transition: 'opacity 280ms ease',
+        }}
       />
+      {nextMapUrl && (
+        <img
+          src={nextMapUrl}
+          alt="Карта"
+          onLoad={() => setNextMapReady(true)}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+            opacity: isMapFading ? 1 : 0,
+            transition: 'opacity 280ms ease',
+          }}
+        />
+      )}
       <div
         style={{
           position: 'absolute',
