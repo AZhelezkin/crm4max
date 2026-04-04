@@ -314,7 +314,7 @@ export default function OnboardingPage() {
       )}
 
       {/* Контент */}
-      <div style={onboardingPortalContentStyle}>
+      <div style={{ ...onboardingPortalContentStyle, ...(step === 2 ? { display: 'none' } : {}) }}>
 
         {/* ── Шаг 0: Обо мне ── */}
         {step === 0 && (
