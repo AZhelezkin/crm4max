@@ -545,7 +545,7 @@ export default function OnboardingPage() {
             <AddressSuggestInput
               value={addressDraft}
               onChange={setAddressDraft}
-              confirmedAddress={location}
+              confirmedAddress={addressDraft}
             />
           </div>
           <div style={{ padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }}>
