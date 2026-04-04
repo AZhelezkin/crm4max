@@ -103,7 +103,6 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
     }
 
     const handleDeleteCategory = async (id: string) => {
-      if (!confirm('Удалить категорию и все её услуги?')) return
       await categoriesApi.remove(id)
       if (id === selectedCatId) changeSubStep('categories')
       load()
