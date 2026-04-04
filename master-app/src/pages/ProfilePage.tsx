@@ -62,7 +62,7 @@ export default function ProfilePage() {
           {[
             {
               label: 'Услуги', action: () => navigate('/services'),
-              icon: <EditIcon active />,
+              icon: <CatalogIcon active />,
             },
             {
               label: 'Профиль', action: () => navigate('/about'),
@@ -359,6 +359,21 @@ function EditIcon({ active }: { active?: boolean }) {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke={c} strokeWidth="2" strokeLinecap="round" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke={c} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CatalogIcon({ active }: { active?: boolean }) {
+  const c = active ? '#2688EB' : '#8E8E93'
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      {/* Документ */}
+      <rect x="3" y="3" width="13" height="17" rx="2" stroke={c} strokeWidth="2" />
+      {/* Строки списка */}
+      <path d="M7 8h6M7 12h6M7 16h4" stroke={c} strokeWidth="1.75" strokeLinecap="round" />
+      {/* Плюс в правом нижнем углу */}
+      <circle cx="19" cy="19" r="4" fill={c} />
+      <path d="M19 17v4M17 19h4" stroke="white" strokeWidth="1.75" strokeLinecap="round" />
     </svg>
   )
 }

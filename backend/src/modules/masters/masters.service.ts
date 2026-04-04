@@ -34,7 +34,13 @@ export const mastersService = {
       where: { id: masterId },
       include: {
         schedule: true,
-        categories: { include: { services: true } },
+        categories: {
+          include: {
+            services: {
+              include: { workPhotos: { orderBy: { order: 'asc' } } },
+            },
+          },
+        },
       },
     })
   },

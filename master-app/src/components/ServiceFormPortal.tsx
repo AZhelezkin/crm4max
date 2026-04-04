@@ -140,9 +140,9 @@ export default function ServiceFormPortal({
         </div>
 
         {/* Длительность + Стоимость */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: '20%' }}>
           {/* Длительность */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '50%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '40%' }}>
             <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
               <input
                 value={durationMin}
@@ -156,7 +156,7 @@ export default function ServiceFormPortal({
           </div>
 
           {/* Стоимость */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '50%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '40%' }}>
             <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
               <input
                 value={price}
