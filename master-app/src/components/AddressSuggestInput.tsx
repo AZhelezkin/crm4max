@@ -9,6 +9,7 @@ const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
 const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
+const GEOCODE_KEY = import.meta.env.VITE_YANDEX_GEOCODE_KEY as string
 const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 
 interface Suggestion {
@@ -21,7 +22,7 @@ async function geocode(address: string): Promise<string | null> {
     geocode: address,
     format: 'json',
     results: '1',
-    ...(API_KEY ? { apikey: API_KEY } : {}),
+    ...(GEOCODE_KEY ? { apikey: GEOCODE_KEY } : {}),
   })
   try {
     const res = await fetch(`${GEOCODE_URL}?${params}`)
