@@ -637,12 +637,16 @@ export default function OnboardingPage() {
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
         <MaxButton
+          type="button"
           appearance="themed"
           mode="primary"
           size="medium"
           stretched
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
-          onClick={handleNext}
+          onClick={(e) => {
+            e.preventDefault()
+            void handleNext()
+          }}
         >
           {saving ? 'Сохраняем...' :
            step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
