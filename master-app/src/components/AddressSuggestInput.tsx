@@ -186,7 +186,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    const centerFromSuggest = parseCenterFromText(s.query)
+    const centerFromSuggest = parseCenterFromText(decodeURIComponent(s.query))
     if (centerFromSuggest) setMapCenter(centerFromSuggest)
     // URI from suggest may not be suitable for geocoder query, use selected address text.
     geocodeAddress(full)
@@ -232,7 +232,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       <div style={{
         position: 'relative', zIndex: 1,
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '12px 0',
+        padding: '12px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.18)',
         background: 'transparent',
         flexShrink: 0,
