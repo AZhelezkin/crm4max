@@ -36,6 +36,17 @@ export const stepOnePhotoPreviewStyle: CSSProperties = {
   objectFit: 'cover',
 }
 
+export const servicePhotoPlaceholderStyle: CSSProperties = {
+  width: '112%',
+  height: '112%',
+  objectFit: 'cover',
+}
+
+export const serviceWorkPhotoAddIconStyle: CSSProperties = {
+  width: 32,
+  height: 32,
+}
+
 export const stepOneTextareaWrapStyle: CSSProperties = {
   position: 'relative',
 }
@@ -66,6 +77,16 @@ export const onboardingFieldWrapStyle: CSSProperties = {
   borderRadius: 10,
 }
 
+export const onboardingFieldWithSuffixWrapStyle: CSSProperties = {
+  width: '100%',
+  background: 'var(--color-card2)',
+  borderRadius: 10,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  paddingRight: 16,
+}
+
 export const onboardingFieldInputStyle: CSSProperties = {
   width: '100%',
   border: 'none',
@@ -77,6 +98,15 @@ export const onboardingFieldInputStyle: CSSProperties = {
   lineHeight: '22px',
   letterSpacing: -0.16,
   padding: '15px 16px 17px',
+}
+
+export const onboardingFieldSuffixStyle: CSSProperties = {
+  flexShrink: 0,
+  fontSize: 16,
+  fontWeight: 500,
+  lineHeight: '22px',
+  letterSpacing: -0.16,
+  color: 'var(--color-text-secondary)',
 }
 
 export const onboardingSectionCardStyle: CSSProperties = {

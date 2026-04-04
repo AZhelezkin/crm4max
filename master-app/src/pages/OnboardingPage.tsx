@@ -25,6 +25,8 @@ import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import {
   onboardingFieldInputStyle,
+  onboardingFieldSuffixStyle,
+  onboardingFieldWithSuffixWrapStyle,
   onboardingFieldWrapStyle,
   onboardingInlineFieldStyle,
   onboardingDiscountBadgeStyle,
@@ -46,6 +48,8 @@ import {
   onboardingTimeSelectWrapStyle,
   onboardingToggleLabelStyle,
   onboardingToggleRowStyle,
+  servicePhotoPlaceholderStyle,
+  serviceWorkPhotoAddIconStyle,
   stepOneAddressButtonStyle,
   stepOneAddressContentStyle,
   stepOneAddressHintStyle,
@@ -80,7 +84,6 @@ interface LocalService {
   name: string
   desc: string
   durationMin: string
-  durationMax: string
   price: string
   discountEnabled: boolean
   discountPercent: number
@@ -138,7 +141,7 @@ export default function OnboardingPage() {
   const [showSvcForm, setShowSvcForm] = useState(false)
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
-    name: '', desc: '', durationMin: '', durationMax: '', price: '',
+    name: '', desc: '', durationMin: '', price: '',
     discountEnabled: false, discountPercent: 10,
     photo: null, previewUrl: null,
     workPhotos: [],
@@ -222,7 +225,7 @@ export default function OnboardingPage() {
       setEditSvcIdx(idx)
     } else {
       setSvcForm({ 
-        name: '', desc: '', durationMin: '', durationMax: '', price: '', 
+        name: '', desc: '', durationMin: '', price: '', 
         discountEnabled: false, discountPercent: 10,
         photo: null, previewUrl: null,
         workPhotos: [],
@@ -302,7 +305,6 @@ export default function OnboardingPage() {
                 name: svc.name,
                 description: svc.desc || undefined,
                 durationMin: Number(svc.durationMin) || 30,
-                durationMax: Number(svc.durationMax) || undefined,
                 price: Math.round(Number(svc.price) * 100) || 0,
                 discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
                 photo: svc.photo || undefined,
@@ -873,7 +875,7 @@ export default function OnboardingPage() {
               >
                 {svcForm.previewUrl
                   ? <img src={svcForm.previewUrl} alt="Фото услуги" style={stepOnePhotoPreviewStyle} />
-                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
+                  : <img src={uploadIconUrl} alt="Загрузить фото" style={servicePhotoPlaceholderStyle} />}
 
                 {svcPhotoUploading && <UploadingOverlay />}
               </button>
@@ -913,43 +915,34 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Длительность и стоимость */}
-            <div style={onboardingSplitFieldsStyle}>
-              <div style={{ ...onboardingFieldWrapStyle, ...onboardingInlineFieldStyle }}>
-                <input
-                  value={svcForm.durationMin}
-                  onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
-                  placeholder="Длительность от, мин"
-                  inputMode="numeric"
-                  style={onboardingFieldInputStyle}
-                />
-              </div>
-              <div style={{ ...onboardingFieldWrapStyle, ...onboardingInlineFieldStyle }}>
-                <input
-                  value={svcForm.durationMax}
-                  onChange={(e) => setSvcForm((f) => ({ ...f, durationMax: e.target.value.replace(/\D/g, '') }))}
-                  placeholder="Длительность до, мин"
-                  inputMode="numeric"
-                  style={onboardingFieldInputStyle}
-                />
-              </div>
+            {/* Продолжительность */}
+            <div style={onboardingFieldWithSuffixWrapStyle}>
+              <input
+                value={svcForm.durationMin}
+                onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
+                placeholder="Продолжительность"
+                inputMode="numeric"
+                style={onboardingFieldInputStyle}
+              />
+              <span style={onboardingFieldSuffixStyle}>мин</span>
             </div>
 
-            <div style={onboardingFieldWrapStyle}>
+            <div style={onboardingFieldWithSuffixWrapStyle}>
               <input
                 value={svcForm.price}
                 onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
-                placeholder="Стоимость, ₽"
+                placeholder="Стоимость"
                 inputMode="decimal"
                 style={onboardingFieldInputStyle}
               />
+              <span style={onboardingFieldSuffixStyle}>₽</span>
             </div>
 
             {/* Скидка */}
             <div style={onboardingToggleRowStyle}>
-              <Toggle
+              <Switch
                 checked={svcForm.discountEnabled}
-                onChange={(v) => setSvcForm((f) => ({ ...f, discountEnabled: v }))}
+                onChange={() => setSvcForm((f) => ({ ...f, discountEnabled: !f.discountEnabled }))}
               />
               <span style={onboardingToggleLabelStyle}>Скидка</span>
               {svcForm.discountEnabled && (
@@ -1028,7 +1021,7 @@ export default function OnboardingPage() {
                 >
                   {svcWorkPhotoUploading
                     ? <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>Загрузка...</span>
-                    : <img src={maskIconUrl} alt="upload" style={{ width: 24, height: 24 }} />}
+                    : <img src={maskIconUrl} alt="upload" style={serviceWorkPhotoAddIconStyle} />}
                 </button>
 
                 <input
@@ -1138,25 +1131,6 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
         {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
       </select>
     </div>
-  )
-}
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      style={{
-        width: 44, height: 26, borderRadius: 13, border: 'none',
-        background: checked ? 'var(--color-primary)' : 'var(--color-card2)',
-        position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
-      }}
-    >
-      <span style={{
-        position: 'absolute', top: 3, left: checked ? 20 : 3,
-        width: 20, height: 20, borderRadius: '50%', background: '#fff',
-        transition: 'left 0.2s', display: 'block',
-      }} />
-    </button>
   )
 }
 
