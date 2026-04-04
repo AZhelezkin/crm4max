@@ -16,6 +16,7 @@ import {
   Container,
 } from '@maxhub/max-ui'
 import uploadIconUrl from '@/assets/upload-icon.svg'
+import locationAddImg from '@/assets/location-add.png'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -422,22 +423,22 @@ export default function OnboardingPage() {
                   setShowAddressPortal(true)
                 }}
                 style={{
-                  width: '100%', background: 'none', border: 'none',
+                  width: '100%', background: 'var(--color-card2)', border: 'none',
                   cursor: 'pointer', textAlign: 'left',
                   padding: '15px 20px 17px', display: 'flex', alignItems: 'center', gap: 16,
+                  borderRadius: 10,
                 }}
               >
-                <div style={{
-                  width: 46, height: 46, borderRadius: 10, background: 'var(--color-card2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <LocationIcon />
-                </div>
+                <img
+                  src={locationAddImg}
+                  alt="location"
+                  style={{ width: 24, height: 24, flexShrink: 0 }}
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 500, fontSize: 19, color: 'var(--color-text)', letterSpacing: -0.19, lineHeight: '24px' }}>
+                  <div style={{ fontWeight: 500, fontSize: 16, color: 'var(--color-text)', letterSpacing: -0.16, lineHeight: '22px' }}>
                     Адрес
                   </div>
-                  <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '17px', marginTop: 1 }}>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '16px', marginTop: 1 }}>
                     {location || 'Куда приезжать клиентам'}
                   </div>
                 </div>
