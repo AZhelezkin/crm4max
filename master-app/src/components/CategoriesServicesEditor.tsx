@@ -251,12 +251,6 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                     style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
                   >
                     <div style={onboardingListButtonStyle}>
-                      <div style={{ ...onboardingListMediaStyle, borderRadius: 10 }}>
-                        {s.photo
-                          ? <img src={s.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 20 }}>✂️</span>
-                        }
-                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={onboardingListTitleStyle}>{s.name}</div>
                         <div style={onboardingListSubtitleStyle}>{formatDuration(s.durationMin, s.durationMax)}</div>
