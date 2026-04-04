@@ -57,7 +57,8 @@ interface LocalCategory {
 interface LocalService {
   name: string
   desc: string
-  duration: string
+  durationMin: string
+  durationMax: string
   price: string
   discountEnabled: boolean
   discountPercent: number
@@ -113,7 +114,7 @@ export default function OnboardingPage() {
   const [showSvcForm, setShowSvcForm] = useState(false)
   const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
   const [svcForm, setSvcForm] = useState<LocalService>({
-    name: '', desc: '', duration: '', price: '',
+    name: '', desc: '', durationMin: '', durationMax: '', price: '',
     discountEnabled: false, discountPercent: 10, workPhotos: [],
   })
   const [svcWorkPhotoUploading, setSvcWorkPhotoUploading] = useState(false)
@@ -191,7 +192,7 @@ export default function OnboardingPage() {
       setSvcForm({ ...(servicesByCat[selectedCatIdx]?.[idx] ?? svcForm) })
       setEditSvcIdx(idx)
     } else {
-      setSvcForm({ name: '', desc: '', duration: '', price: '', discountEnabled: false, discountPercent: 10, workPhotos: [] })
+      setSvcForm({ name: '', desc: '', durationMin: '', durationMax: '', price: '', discountEnabled: false, discountPercent: 10, workPhotos: [] })
       setEditSvcIdx(null)
     }
     setShowSvcForm(true)
@@ -266,7 +267,8 @@ export default function OnboardingPage() {
               const created = await servicesApi.create({
                 name: svc.name,
                 description: svc.desc || undefined,
-                durationMin: Number(svc.duration) || 30,
+                durationMin: Number(svc.durationMin) || 30,
+                durationMax: Number(svc.durationMax) || undefined,
                 price: Math.round(Number(svc.price) * 100) || 0,
                 discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
                 categoryId: catId,
@@ -576,11 +578,6 @@ export default function OnboardingPage() {
         {/* ── Шаг 2б: Услуги ── */}
         {step === 2 && servicesSubStep === 'services' && (
           <>
-            {/* Текущая категория */}
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.3 }}>
-              {categories[selectedCatIdx]?.name}
-            </div>
-
             {/* Список услуг текущей категории */}
             {(servicesByCat[selectedCatIdx] ?? []).map((svc, i) => (
               <button
@@ -727,18 +724,11 @@ export default function OnboardingPage() {
             </CellList>
 
             <CellList mode="island">
-              <div style={stepOneTextareaWrapStyle}>
-                <textarea
-                  value={catFormDesc}
-                  onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
-                  placeholder="Описание"
-                  rows={3}
-                  style={stepOneTextareaStyle}
-                />
-                <span style={stepOneCounterStyle}>
-                  {catFormDesc.length}/200
-                </span>
-              </div>
+              <CellInput
+                value={catFormDesc}
+                onChange={(e) => setCatFormDesc(e.target.value)}
+                placeholder="Описание"
+              />
             </CellList>
           </div>
 
@@ -830,21 +820,24 @@ export default function OnboardingPage() {
               />
             </CellList>
 
-            <CellList mode="island">
-              <CellInput
+            <div style={stepOneTextareaWrapStyle}>
+              <textarea
                 value={svcForm.desc}
                 onChange={(e) => setSvcForm((f) => ({ ...f, desc: e.target.value.slice(0, 200) }))}
-                placeholder="Описание. Пример: Современные методы укладки волос без лака"
+                placeholder="Описание"
+                rows={3}
+                style={stepOneTextareaStyle}
               />
-            </CellList>
+              <span style={stepOneCounterStyle}>{svcForm.desc.length}/200</span>
+            </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <CellList mode="island">
                   <CellInput
-                    value={svcForm.duration}
-                    onChange={(e) => setSvcForm((f) => ({ ...f, duration: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Длительность, мин"
+                    value={svcForm.durationMin}
+                    onChange={(e) => setSvcForm((f) => ({ ...f, durationMin: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="Длит. мин"
                     inputMode="numeric"
                   />
                 </CellList>
@@ -852,14 +845,23 @@ export default function OnboardingPage() {
               <div style={{ flex: 1 }}>
                 <CellList mode="island">
                   <CellInput
-                    value={svcForm.price}
-                    onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
-                    placeholder="Стоимость, ₽"
-                    inputMode="decimal"
+                    value={svcForm.durationMax}
+                    onChange={(e) => setSvcForm((f) => ({ ...f, durationMax: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="Длит. макс"
+                    inputMode="numeric"
                   />
                 </CellList>
               </div>
             </div>
+
+            <CellList mode="island">
+              <CellInput
+                value={svcForm.price}
+                onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value.replace(/[^\d.]/, '') }))}
+                placeholder="Стоимость, ₽"
+                inputMode="decimal"
+              />
+            </CellList>
 
             {/* Скидка */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
