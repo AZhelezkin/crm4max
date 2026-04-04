@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
+const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
+const STATIC_MAP_URL = 'https://static-maps.yandex.ru/v1'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
+const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 
 interface Suggestion {
   title: string
@@ -11,11 +14,13 @@ interface Suggestion {
 interface Props {
   value: string
   onChange: (v: string) => void
+  confirmedAddress?: string
 }
 
-export default function AddressSuggestInput({ value, onChange }: Props) {
+export default function AddressSuggestInput({ value, onChange, confirmedAddress = '' }: Props) {
   const [inputValue, setInputValue] = useState(value)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -26,6 +31,36 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
   useEffect(() => {
     setInputValue(value)
   }, [value])
+
+  useEffect(() => {
+    const address = confirmedAddress.trim()
+    if (!address || !API_KEY) {
+      setMapCenter(DEFAULT_CENTER)
+      return
+    }
+
+    const controller = new AbortController()
+    const params = new URLSearchParams({
+      apikey: API_KEY,
+      geocode: address,
+      format: 'json',
+      results: '1',
+    })
+
+    fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
+        if (!pos || typeof pos !== 'string') return
+        const [lon, lat] = pos.split(' ')
+        if (lon && lat) setMapCenter(`${lon},${lat}`)
+      })
+      .catch(() => {
+        // В офлайне/без геокодера оставляем текущий центр
+      })
+
+    return () => controller.abort()
+  }, [confirmedAddress])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -68,19 +103,44 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
     setSuggestions([])
   }
 
+  const mapParams = new URLSearchParams({
+    ll: mapCenter,
+    z: '15',
+    l: 'map',
+    size: '650,650',
+    pt: `${mapCenter},pm2rdm`,
+  })
+  if (API_KEY) mapParams.set('apikey', API_KEY)
+  const mapUrl = `${STATIC_MAP_URL}?${mapParams}`
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
+      <img
+        src={mapUrl}
+        alt="Карта"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(15,15,17,0.66) 0%, rgba(15,15,17,0.5) 40%, rgba(15,15,17,0.72) 100%)',
+        }}
+      />
+
       <div style={{
+        position: 'relative', zIndex: 1,
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '12px 0',
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: '1px solid rgba(255,255,255,0.18)',
         background: 'transparent',
         flexShrink: 0,
       }}>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: 'var(--color-card)', borderRadius: 'var(--radius-sm)',
+          background: 'rgba(15,15,17,0.68)', borderRadius: 'var(--radius-sm)',
           padding: '8px 12px',
+          backdropFilter: 'blur(6px)',
         }}>
           <LocationIcon />
           <input
@@ -115,16 +175,16 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {suggestions.map((s, i) => (
           <button
             key={i}
             onMouseDown={(e) => { e.preventDefault(); handleSelect(s) }}
             onClick={() => handleSelect(s)}
             style={{
-              width: '100%', background: 'none', border: 'none',
+              width: '100%', background: 'rgba(15,15,17,0.62)', border: 'none',
               padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
-              borderBottom: '1px solid var(--color-border)',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
               display: 'flex', alignItems: 'center', gap: 12,
             }}
           >
@@ -139,7 +199,7 @@ export default function AddressSuggestInput({ value, onChange }: Props) {
         ))}
 
         {inputValue.trim() && suggestions.length === 0 && (
-          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14 }}>
+          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14, position: 'relative', zIndex: 1 }}>
             Ничего не найдено
           </div>
         )}

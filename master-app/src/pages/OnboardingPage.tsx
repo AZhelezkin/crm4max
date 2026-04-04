@@ -67,6 +67,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
+  const [addressDraft, setAddressDraft] = useState('')
   const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
@@ -415,7 +416,10 @@ export default function OnboardingPage() {
             {/* Адрес */}
             <CellList mode="island">
               <button
-                onClick={() => setShowAddressPortal(true)}
+                onClick={() => {
+                  setAddressDraft(location)
+                  setShowAddressPortal(true)
+                }}
                 style={{
                   width: '100%', background: 'none', border: 'none',
                   cursor: 'pointer', textAlign: 'left',
@@ -788,11 +792,24 @@ export default function OnboardingPage() {
               Адрес
             </span>
           </div>
-          <div style={{ padding: '0 16px' }}>
-            <AddressSuggestInput value={location} onChange={setLocation} />
+          <div style={{ padding: '0 16px', flex: 1, minHeight: 0 }}>
+            <AddressSuggestInput
+              value={addressDraft}
+              onChange={setAddressDraft}
+              confirmedAddress={location}
+            />
           </div>
           <div style={{ padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }}>
-            <MaxButton appearance="themed" mode="primary" size="medium" stretched onClick={() => setShowAddressPortal(false)}>
+            <MaxButton
+              appearance="themed"
+              mode="primary"
+              size="medium"
+              stretched
+              onClick={() => {
+                setLocation(addressDraft.trim())
+                setShowAddressPortal(false)
+              }}
+            >
               Готово
             </MaxButton>
           </div>
