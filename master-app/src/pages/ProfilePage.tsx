@@ -193,56 +193,81 @@ function ServicesList({ categories }: { categories: Category[] }) {
     })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {categories.map((cat) => {
         const expanded = expandedIds.has(cat.id)
+        const hasDiscount = cat.services.some((s) => s.discountPercent)
+        const preview = cat.services.map((s) => s.name).join(' • ')
+
         return (
           <div key={cat.id}>
             {/* Категория */}
             <div
               onClick={() => toggle(cat.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                background: 'var(--color-card)', borderRadius: expanded ? 'var(--radius) var(--radius) 0 0' : 'var(--radius)',
-                padding: '12px 14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center',
+                background: 'var(--color-card)',
+                borderRadius: expanded ? '20px 20px 0 0' : 20,
+                minHeight: 78,
+                padding: '0 16px 0 0',
+                cursor: 'pointer',
               }}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {cat.name}
-                  {cat.services.some((s) => s.discountPercent) && (
+              {/* Круглое фото категории */}
+              <div style={{
+                width: 46, height: 46, borderRadius: '50%',
+                flexShrink: 0, overflow: 'hidden',
+                background: 'var(--color-card2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 12px 0 16px',
+              }}>
+                {cat.photo
+                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: 22 }}>✂️</span>
+                }
+              </div>
+
+              {/* Текст */}
+              <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</span>
+                  {hasDiscount && (
                     <span style={{
-                      background: 'var(--color-danger)', color: '#fff',
-                      fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
-                    }}>
-                      % скидки
-                    </span>
+                      background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                      fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
+                    }}>% скидки</span>
                   )}
                 </div>
-                {cat.description && (
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {cat.description}
-                  </div>
-                )}
+                <div style={{
+                  color: 'var(--color-text-secondary)', fontSize: 13,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {cat.description || preview}
+                </div>
               </div>
-              <span style={{
-                color: 'var(--color-text-secondary)', fontSize: 16, lineHeight: 1,
-                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+
+              {/* Шеврон */}
+              <div style={{
+                flexShrink: 0,
+                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s',
-              }}>▾</span>
+                marginLeft: 8,
+              }}>
+                <ChevronRightIcon />
+              </div>
             </div>
 
             {/* Услуги — раскрываются */}
             {expanded && (
-              <div style={{ background: 'var(--color-card)', borderRadius: '0 0 var(--radius) var(--radius)', overflow: 'hidden' }}>
-                {cat.services.map((s, idx) => {
+              <div style={{ background: 'var(--color-card)', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
+                {cat.services.map((s) => {
                   const dPrice = discountedPrice(s.price, s.discountPercent)
                   return (
                     <div
                       key={s.id}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '10px 14px',
+                        padding: '10px 16px',
                         borderTop: '1px solid var(--color-border)',
                       }}
                     >
@@ -262,10 +287,10 @@ function ServicesList({ categories }: { categories: Category[] }) {
                               {formatPrice(s.price)}
                             </div>
                             <div style={{
-                              background: 'var(--color-danger)', color: '#fff',
+                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
                               fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
                             }}>
-                              {s.discountPercent}% СКИДКА
+                              -{s.discountPercent}%
                             </div>
                           </>
                         ) : (
@@ -345,6 +370,14 @@ function MoreIcon({ active }: { active?: boolean }) {
       <circle cx="5" cy="12" r="2" fill={c} />
       <circle cx="12" cy="12" r="2" fill={c} />
       <circle cx="19" cy="12" r="2" fill={c} />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
