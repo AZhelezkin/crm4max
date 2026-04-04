@@ -16,6 +16,7 @@ import {
   Container,
 } from '@maxhub/max-ui'
 import maskIconUrl from '@/assets/mask-icon.svg'
+import uploadIconUrl from '@/assets/upload-icon.svg'
 import locationAddImg from '@/assets/location-add.png'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
@@ -23,6 +24,20 @@ import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
+import {
+  stepOneAddressButtonStyle,
+  stepOneAddressContentStyle,
+  stepOneAddressHintStyle,
+  stepOneAddressTitleStyle,
+  stepOneCounterStyle,
+  stepOneIntroTextStyle,
+  stepOnePhotoButtonBaseStyle,
+  stepOnePhotoContainerStyle,
+  stepOnePhotoPlaceholderStyle,
+  stepOnePhotoPreviewStyle,
+  stepOneTextareaStyle,
+  stepOneTextareaWrapStyle,
+} from '@/components/onboardingStepOne.styles'
 import { formatPrice, discountedPrice } from '@/types'
 // AddressSuggestInput used in address portal below
 
@@ -352,26 +367,19 @@ export default function OnboardingPage() {
         {/* ── Шаг 0: Обо мне ── */}
         {step === 0 && (
           <>
-            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 4 }}>
+            <div style={stepOneIntroTextStyle}>
               Добавьте фото, чтобы вас узнавали с первого взгляда
             </div>
 
             {/* Аватар */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <div style={stepOnePhotoContainerStyle}>
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
                 disabled={photoUploading}
                 style={{
-                  width: 110,
-                  height: 110,
-                  borderRadius: '50%',
-                  border: 'none',
-                  padding: 0,
+                  ...stepOnePhotoButtonBaseStyle,
                   cursor: photoUploading ? 'default' : 'pointer',
-                  background: '#2C2D31',
-                  position: 'relative',
-                  overflow: 'hidden',
                 }}
               >
                 {photoPreview
@@ -379,14 +387,10 @@ export default function OnboardingPage() {
                     <img
                       src={photoPreview}
                       alt="Фото профиля"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={stepOnePhotoPreviewStyle}
                     />
                   )
-                  : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src={maskIconUrl} alt="Загрузить фото" style={{ width: 26, height: 26, opacity: 0.9 }} />
-                    </div>
-                  )}
+                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
 
                 {photoUploading && <UploadingOverlay />}
               </button>
@@ -413,19 +417,15 @@ export default function OnboardingPage() {
 
             {/* Описание */}
             <CellList mode="island">
-              <div style={{ position: 'relative' }}>
+              <div style={stepOneTextareaWrapStyle}>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value.slice(0, 200))}
                   placeholder="Описание"
                   rows={3}
-                  style={{
-                    width: '100%', background: 'none', border: 'none',
-                    padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
-                    resize: 'none', display: 'block', outline: 'none',
-                  }}
+                  style={stepOneTextareaStyle}
                 />
-                <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <span style={stepOneCounterStyle}>
                   {description.length}/200
                 </span>
               </div>
@@ -438,23 +438,18 @@ export default function OnboardingPage() {
                   setAddressDraft(location)
                   setShowAddressPortal(true)
                 }}
-                style={{
-                  width: '100%', background: 'var(--color-card2)', border: 'none',
-                  cursor: 'pointer', textAlign: 'left',
-                  padding: '15px 20px 17px', display: 'flex', alignItems: 'center', gap: 16,
-                  borderRadius: 10,
-                }}
+                style={stepOneAddressButtonStyle}
               >
                 <img
                   src={locationAddImg}
                   alt="location"
                   style={{ width: 24, height: 24, flexShrink: 0 }}
                 />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 500, fontSize: 16, color: 'var(--color-text)', letterSpacing: -0.16, lineHeight: '22px' }}>
+                <div style={stepOneAddressContentStyle}>
+                  <div style={stepOneAddressTitleStyle}>
                     Адрес
                   </div>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '16px', marginTop: 1 }}>
+                  <div style={stepOneAddressHintStyle}>
                     {location || 'Куда приезжать клиентам'}
                   </div>
                 </div>
