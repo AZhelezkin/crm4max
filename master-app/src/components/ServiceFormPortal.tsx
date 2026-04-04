@@ -326,7 +326,7 @@ function UploadingOverlay() {
       background: 'rgba(0,0,0,0.45)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span>
+      <Spinner size={20} appearance="contrast-static" />
     </div>
   )
 }

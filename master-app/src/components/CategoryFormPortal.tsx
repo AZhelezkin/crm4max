@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { Spinner } from '@maxhub/max-ui'
 import { uploadPhoto } from '@/api/upload.api'
 import uploadIconUrl from '@/assets/upload-icon.svg'
 import {
@@ -187,7 +188,7 @@ function UploadingOverlay() {
       background: 'rgba(0,0,0,0.45)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span>
+      <Spinner size={20} appearance="contrast-static" />
     </div>
   )
 }

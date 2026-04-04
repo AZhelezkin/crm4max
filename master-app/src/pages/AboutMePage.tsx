@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { CellList, CellInput } from '@maxhub/max-ui'
+import { CellList, CellInput, Spinner } from '@maxhub/max-ui'
 import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
 import { uploadPhoto } from '@/api/upload.api'
@@ -46,9 +46,8 @@ function UploadingOverlay() {
     <div style={{
       position: 'absolute', inset: 0, borderRadius: 'inherit',
       background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontSize: 22,
     }}>
-      ↑
+      <Spinner size={20} appearance="contrast-static" />
     </div>
   )
 }
