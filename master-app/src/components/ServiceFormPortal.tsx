@@ -114,21 +114,6 @@ export default function ServiceFormPortal({
 
       {/* Контент */}
       <div style={onboardingPortalContentStyle}>
-        {/* Категория (опционально) */}
-        {categories && (
-          <div style={onboardingSelectWrapStyle}>
-            <select
-              value={categoryId ?? ''}
-              onChange={(e) => onCategoryIdChange?.(e.target.value)}
-              style={onboardingSelectStyle}
-            >
-              <option value="">Категория</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <span style={onboardingSelectChevronStyle}>⌄</span>
-          </div>
-        )}
-
         {/* Название */}
         <div style={onboardingFieldWrapStyle}>
           <input
