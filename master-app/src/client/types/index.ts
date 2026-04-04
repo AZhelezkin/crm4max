@@ -37,8 +37,7 @@ export interface Service {
   id: string
   name: string
   description: string | null
-  durationMin: number
-  durationMax: number | null
+  duration: number
   price: number
   discountPercent: number | null
   photo: string | null
@@ -54,8 +53,7 @@ export function formatPrice(kopecks: number): string {
   return (kopecks / 100).toLocaleString('ru-RU') + ' ₽'
 }
 
-export function formatDuration(min: number, max: number | null): string {
-  if (max && max !== min) return `${min}-${max} мин`
+export function formatDuration(min: number): string {
   return `${min} мин`
 }
 

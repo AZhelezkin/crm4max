@@ -102,7 +102,7 @@ export default function ServiceSelectPage() {
                           )}
                         </div>
                         <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
-                          {s.durationMin}{s.durationMax ? `–${s.durationMax}` : ''} мин
+                          {s.duration} мин
                         </span>
                       </div>
                     </div>

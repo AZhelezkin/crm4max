@@ -390,7 +390,7 @@ function ServicesList({ categories }: { categories: Category[] }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
                         <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
-                          {formatDuration(s.durationMin, s.durationMax)}
+                          {formatDuration(s.duration)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>

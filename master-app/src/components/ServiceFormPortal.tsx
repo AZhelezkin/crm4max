@@ -39,7 +39,7 @@ interface Props {
   onNameChange: (v: string) => void
   desc: string
   onDescChange: (v: string) => void
-  durationMin: string
+  duration: string
   onDurationChange: (v: string) => void
   price: string
   onPriceChange: (v: string) => void
@@ -62,7 +62,7 @@ export default function ServiceFormPortal({
   visible, isEdit,
   name, onNameChange,
   desc, onDescChange,
-  durationMin, onDurationChange,
+  duration, onDurationChange,
   price, onPriceChange,
   discountEnabled, onDiscountEnabledChange,
   discountPercent, onDiscountPercentChange,
@@ -145,7 +145,7 @@ export default function ServiceFormPortal({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '40%' }}>
             <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
               <input
-                value={durationMin}
+                value={duration}
                 onChange={(e) => onDurationChange(e.target.value.replace(/\D/g, ''))}
                 placeholder="Длит."
                 inputMode="numeric"

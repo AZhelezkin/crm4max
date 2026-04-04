@@ -2,18 +2,34 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useRef, useState } from 'react';
 import { stepOneAddressInputIconStyle, stepOneAddressInputStyle, stepOneAddressInputWrapStyle, } from '@/components/onboardingStepOne.styles';
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest';
+const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/';
 const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/';
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY;
+const GEOCODE_KEY = import.meta.env.VITE_YANDEX_GEOCODE_KEY;
 const DEFAULT_CENTER = '37.62007,55.75363'; // Москва
-function parseCenterFromText(text) {
-    const match = text.match(/[?&]ll=([\d.+-]+),([\d.+-]+)/);
-    if (!match)
+async function geocode(address) {
+    const params = new URLSearchParams({
+        geocode: address,
+        format: 'json',
+        results: '1',
+        ...(GEOCODE_KEY ? { apikey: GEOCODE_KEY } : {}),
+    });
+    try {
+        const res = await fetch(`${GEOCODE_URL}?${params}`);
+        if (!res.ok)
+            return null;
+        const data = await res.json();
+        const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos;
+        if (!pos || typeof pos !== 'string')
+            return null;
+        const [lon, lat] = pos.split(' ');
+        if (!lon || !lat)
+            return null;
+        return `${lon},${lat}`;
+    }
+    catch {
         return null;
-    const lon = match[1];
-    const lat = match[2];
-    if (!lon || !lat)
-        return null;
-    return `${lon},${lat}`;
+    }
 }
 export default function AddressSuggestInput({ value, onChange, confirmedAddress = '' }) {
     const [inputValue, setInputValue] = useState(value);
@@ -24,38 +40,27 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     const [nextMapUrl, setNextMapUrl] = useState(null);
     const [nextMapReady, setNextMapReady] = useState(false);
     const [isMapFading, setIsMapFading] = useState(false);
-    const [geoError, setGeoError] = useState(null);
-    const [lastGeo, setLastGeo] = useState(null);
     const debounceRef = useRef(null);
     const fadeTimeoutRef = useRef(null);
+    const geocodeAbortRef = useRef(null);
     useEffect(() => {
         setInputValue(value);
         setSuggestEnabled(false);
         setSuggestions([]);
     }, [value]);
-    // geocodeAddress больше не нужен
-    // При изменении confirmedAddress сбрасываем карту на дефолт
     useEffect(() => {
-        if (!confirmedAddress?.trim()) {
+        if (!confirmedAddress?.trim())
             setMapCenter(DEFAULT_CENTER);
-            setLastGeo(null);
-            setGeoError(null);
-        }
     }, [confirmedAddress]);
     const buildMapUrl = (center) => {
         const params = new URLSearchParams({
-            ll: center,
-            z: '15',
-            l: 'map',
-            lang: 'ru_RU',
-            size: '450,450',
+            ll: center, z: '15', l: 'map', lang: 'ru_RU', size: '450,450',
             pt: `${center},pm2rdm`,
         });
         return `${STATIC_MAP_URL}?${params}`;
     };
     useEffect(() => {
-        const initialUrl = buildMapUrl(DEFAULT_CENTER);
-        setActiveMapUrl(initialUrl);
+        setActiveMapUrl(buildMapUrl(DEFAULT_CENTER));
     }, []);
     useEffect(() => {
         const targetUrl = buildMapUrl(mapCenter);
@@ -80,17 +85,14 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
             setNextMapReady(false);
             setIsMapFading(false);
         }, 300);
-        return () => {
-            if (fadeTimeoutRef.current)
-                clearTimeout(fadeTimeoutRef.current);
-        };
+        return () => { if (fadeTimeoutRef.current)
+            clearTimeout(fadeTimeoutRef.current); };
     }, [nextMapReady, nextMapUrl]);
     useEffect(() => {
-        return () => {
-            if (fadeTimeoutRef.current)
-                clearTimeout(fadeTimeoutRef.current);
-        };
+        return () => { if (fadeTimeoutRef.current)
+            clearTimeout(fadeTimeoutRef.current); };
     }, []);
+    // Suggest
     useEffect(() => {
         if (debounceRef.current)
             clearTimeout(debounceRef.current);
@@ -102,34 +104,19 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         debounceRef.current = setTimeout(async () => {
             try {
                 const params = new URLSearchParams({
-                    apikey: API_KEY,
-                    text,
-                    lang: 'ru',
-                    results: '5',
-                    types: 'house,street',
-                    print_address: '1',
+                    apikey: API_KEY, text, lang: 'ru', results: '5',
+                    types: 'house,street', print_address: '1',
                 });
                 const res = await fetch(`${SUGGEST_URL}?${params}`);
                 if (!res.ok)
                     return;
                 const data = await res.json();
-                setSuggestions((data.results ?? []).map((r) => {
-                    // Координаты приходят в r.position: { lon, lat }
-                    let position = undefined;
-                    if (r.position && typeof r.position.lon === 'number' && typeof r.position.lat === 'number') {
-                        position = `${r.position.lon},${r.position.lat}`;
-                    }
-                    return {
-                        title: r.title?.text ?? '',
-                        subtitle: r.subtitle?.text ?? '',
-                        query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
-                        position,
-                    };
-                }));
+                setSuggestions((data.results ?? []).map((r) => ({
+                    title: r.title?.text ?? '',
+                    subtitle: r.subtitle?.text ?? '',
+                })));
             }
-            catch {
-                // сетевые ошибки игнорируем
-            }
+            catch { /* ignore */ }
         }, 300);
     }, [inputValue]);
     const handleSelect = (s) => {
@@ -138,14 +125,13 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         onChange(full);
         setSuggestEnabled(false);
         setSuggestions([]);
-        if (s.position) {
-            setMapCenter(s.position);
-            setLastGeo(s.position);
-            setGeoError(null);
-        }
-        else {
-            setGeoError('Нет координат для выбранного адреса');
-        }
+        // Геокодируем выбранный адрес чтобы получить координаты
+        if (geocodeAbortRef.current)
+            geocodeAbortRef.current.abort();
+        geocode(full).then((center) => {
+            if (center)
+                setMapCenter(center);
+        });
     };
     return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden' }, children: [_jsx("img", { src: activeMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", style: {
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
@@ -154,11 +140,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                     transformOrigin: 'center center',
                     transition: 'opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
                     willChange: 'opacity, transform',
-                } }), _jsxs("div", { style: {
-                    position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
-                    background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 13, padding: '6px 12px',
-                    pointerEvents: 'none',
-                }, children: [geoError && _jsxs("div", { style: { color: '#ff6b6b', fontWeight: 600 }, children: ["\u0413\u0435\u043E\u043A\u043E\u0434\u0435\u0440: ", geoError] }), lastGeo && _jsxs("div", { children: ["\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B: ", lastGeo] }), _jsxs("div", { style: { color: '#ffd966', marginTop: 2 }, children: ["\u0410\u0434\u0440\u0435\u0441 \u0434\u043B\u044F \u0433\u0435\u043E\u043A\u043E\u0434\u0435\u0440\u0430: ", _jsx("b", { children: confirmedAddress })] })] }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
+                } }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
                     opacity: isMapFading ? 1 : 0,
                     transform: isMapFading ? 'scale(1)' : 'scale(1.05)',
@@ -166,22 +148,15 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                     transition: 'opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
                     willChange: 'opacity, transform',
                 } })), _jsx("div", { style: {
-                    position: 'absolute',
-                    inset: 0,
+                    position: 'absolute', inset: 0,
                     background: 'linear-gradient(180deg, rgba(15,15,17,0.66) 0%, rgba(15,15,17,0.5) 40%, rgba(15,15,17,0.72) 100%)',
                 } }), _jsx("div", { style: {
                     position: 'relative', zIndex: 1,
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '12px 16px',
                     borderBottom: '1px solid rgba(255,255,255,0.18)',
-                    background: 'transparent',
                     flexShrink: 0,
-                }, children: _jsxs("div", { style: {
-                        flex: 1,
-                        ...stepOneAddressInputWrapStyle,
-                        background: 'rgba(15,15,17,0.68)',
-                        backdropFilter: 'blur(6px)',
-                    }, children: [_jsx("div", { style: stepOneAddressInputIconStyle, children: _jsx(SearchIcon, {}) }), _jsx("input", { value: inputValue, onChange: (e) => {
+                }, children: _jsxs("div", { style: { flex: 1, ...stepOneAddressInputWrapStyle, background: 'rgba(15,15,17,0.68)', backdropFilter: 'blur(6px)' }, children: [_jsx("div", { style: stepOneAddressInputIconStyle, children: _jsx(SearchIcon, {}) }), _jsx("input", { value: inputValue, onChange: (e) => {
                                 const next = e.target.value;
                                 setInputValue(next);
                                 if (!next) {
@@ -198,7 +173,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                             padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
                             borderBottom: '1px solid rgba(255,255,255,0.12)',
                             display: 'flex', alignItems: 'center', gap: 12,
-                        }, children: [_jsx(LocationIcon, {}), _jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: { fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }, children: s.title }), s.subtitle && (_jsx("div", { style: { fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }, children: s.subtitle }))] })] }, i))), inputValue.trim() && suggestions.length === 0 && (_jsx("div", { style: { padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14, position: 'relative', zIndex: 1 }, children: "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E" }))] })] }));
+                        }, children: [_jsx(LocationIcon, {}), _jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: { fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }, children: s.title }), s.subtitle && (_jsx("div", { style: { fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }, children: s.subtitle }))] })] }, i))), inputValue.trim() && suggestions.length === 0 && (_jsx("div", { style: { padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14 }, children: "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E" }))] })] }));
 }
 function SearchIcon() {
     return (_jsxs("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", style: { flexShrink: 0 }, children: [_jsx("circle", { cx: "11", cy: "11", r: "7", stroke: "var(--color-text-secondary)", strokeWidth: "1.8" }), _jsx("path", { d: "M20 20L16.65 16.65", stroke: "var(--color-text-secondary)", strokeWidth: "1.8", strokeLinecap: "round" })] }));

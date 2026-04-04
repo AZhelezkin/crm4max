@@ -64,7 +64,7 @@ export default function CreateBookingPage() {
           >
             <option value="">Выберите услугу</option>
             {services.map((s) => (
-              <option key={s.id} value={s.id}>{s.name} — {s.durationMin} мин</option>
+              <option key={s.id} value={s.id}>{s.name} — {s.duration} мин</option>
             ))}
           </select>
         </div>

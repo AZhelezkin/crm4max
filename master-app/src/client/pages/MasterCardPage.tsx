@@ -446,7 +446,7 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
                           )}
                         </div>
                         <div style={{ color: '#7D7D7F', fontSize: 12, marginTop: 2 }}>
-                          {formatDuration(s.durationMin, s.durationMax)}
+                          {formatDuration(s.duration)}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
                           <span style={{ fontWeight: 600, fontSize: 14, color: dPrice !== null ? '#007AFE' : '#D3D4D6' }}>

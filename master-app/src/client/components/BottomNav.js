@@ -20,7 +20,6 @@ export default function BottomNav({ badge = {} }) {
             background: 'var(--color-bg)',
             borderTop: '1px solid var(--color-border)',
             display: 'flex',
-            paddingBottom: 'env(safe-area-inset-bottom)',
             zIndex: 50,
         }, children: NAV_ITEMS.map(({ key, label, path, Icon }) => {
             const active = isActive(path);

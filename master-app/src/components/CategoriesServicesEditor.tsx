@@ -116,7 +116,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
         setSvcName(service.name)
         setSvcDesc(service.description ?? '')
         setSvcPrice(String(service.price / 100))
-        setSvcDuration(String(service.durationMin))
+        setSvcDuration(String(service.duration))
         setSvcCategoryId(service.categoryId ?? '')
         setSvcDiscountEnabled(!!service.discountPercent)
         setSvcDiscountPercent(service.discountPercent ?? 10)
@@ -142,7 +142,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
         name: svcName.trim(),
         description: svcDesc || undefined,
         price: Math.round(Number(svcPrice) * 100) || 0,
-        durationMin: Number(svcDuration) || 30,
+        duration: Number(svcDuration) || 30,
         categoryId: svcCategoryId || undefined,
         discountPercent: svcDiscountEnabled ? svcDiscountPercent : undefined,
         photo: firstPhotoUrl || undefined,
@@ -253,7 +253,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                     <div style={onboardingListButtonStyle}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={onboardingListTitleStyle}>{s.name}</div>
-                        <div style={onboardingListSubtitleStyle}>{formatDuration(s.durationMin, s.durationMax)}</div>
+                        <div style={onboardingListSubtitleStyle}>{formatDuration(s.duration)}</div>
                         <div style={onboardingPriceRowStyle}>
                           {dPrice !== null ? (
                             <>
@@ -324,7 +324,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
           onNameChange={setSvcName}
           desc={svcDesc}
           onDescChange={setSvcDesc}
-          durationMin={svcDuration}
+          duration={svcDuration}
           onDurationChange={setSvcDuration}
           price={svcPrice}
           onPriceChange={setSvcPrice}

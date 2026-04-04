@@ -23,8 +23,7 @@ export const servicesApi = {
     categoryId?: string
     name: string
     description?: string
-    durationMin: number
-    durationMax?: number
+    duration: number
     price: number
     discountPercent?: number
     photo?: string
@@ -34,8 +33,7 @@ export const servicesApi = {
     categoryId?: string
     name?: string
     description?: string
-    durationMin?: number
-    durationMax?: number
+    duration?: number
     price?: number
     discountPercent?: number
     photo?: string

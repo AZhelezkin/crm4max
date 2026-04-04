@@ -6,8 +6,6 @@ export function discountedPrice(price, discountPercent) {
 export function formatPrice(kopecks) {
     return (kopecks / 100).toLocaleString('ru-RU') + ' ₽';
 }
-export function formatDuration(min, max) {
-    if (max && max !== min)
-        return `${min}-${max} мин`;
+export function formatDuration(min) {
     return `${min} мин`;
 }

@@ -88,7 +88,7 @@ interface LocalCategory {
 interface LocalService {
   name: string
   desc: string
-  durationMin: string
+  duration: string
   price: string
   discountEnabled: boolean
   discountPercent: number
