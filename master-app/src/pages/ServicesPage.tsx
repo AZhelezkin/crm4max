@@ -229,10 +229,20 @@ export default function ServicesPage() {
                           ...onboardingListButtonStyle,
                           borderRadius: 0,
                           borderTop: '1px solid var(--color-border)',
-                          alignItems: 'flex-start',
-                          paddingLeft: 76,
+                          alignItems: 'center',
                         }}
                       >
+                        {/* Миниатюра первого примера работ */}
+                        <div style={{
+                          ...onboardingListMediaStyle,
+                          borderRadius: 10,
+                          flexShrink: 0,
+                        }}>
+                          {s.photo
+                            ? <img src={s.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ fontSize: 20 }}>✂️</span>
+                          }
+                        </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={onboardingListTitleStyle}>{s.name}</div>
                           <div style={onboardingListSubtitleStyle}>{formatDuration(s.durationMin, s.durationMax)}</div>
@@ -280,13 +290,12 @@ export default function ServicesPage() {
                       borderRadius: 0,
                       borderTop: '1px solid var(--color-border)',
                       color: 'var(--color-primary)',
-                      paddingLeft: 76,
                     }}
                   >
                     <div style={{
-                      width: 28, height: 28, borderRadius: 8, background: 'var(--color-card2)',
+                      width: 48, height: 48, borderRadius: 10, background: 'var(--color-card2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 18, flexShrink: 0,
+                      fontSize: 22, flexShrink: 0,
                     }}>+</div>
                     Добавить услугу
                   </button>
