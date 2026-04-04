@@ -41,6 +41,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [nextMapUrl, setNextMapUrl] = useState<string | null>(null)
   const [nextMapReady, setNextMapReady] = useState(false)
   const [isMapFading, setIsMapFading] = useState(false)
+  const [geoError, setGeoError] = useState<string | null>(null)
+  const [lastGeo, setLastGeo] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -54,6 +56,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     const clean = address.trim()
     if (!clean) {
       setMapCenter(DEFAULT_CENTER)
+      setGeoError(null)
+      setLastGeo(null)
       return () => {}
     }
 
@@ -67,26 +71,29 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       if (useKey && API_KEY) params.set('apikey', API_KEY)
 
       const res = await fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal })
-      if (!res.ok) return null
+      if (!res.ok) throw new Error('Geocode HTTP error: ' + res.status)
       const data = await res.json()
       const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
-      if (!pos || typeof pos !== 'string') return null
+      if (!pos || typeof pos !== 'string') throw new Error('No coordinates found')
       const [lon, lat] = pos.split(' ')
-      if (!lon || !lat) return null
+      if (!lon || !lat) throw new Error('Invalid coordinates')
       return `${lon},${lat}`
     }
 
+    setGeoError(null)
     fetchPoint(true)
-      .catch(() => null)
+      .catch(() => fetchPoint(false))
       .then((point) => {
-        if (point) return point
-        return fetchPoint(false).catch(() => null)
+        if (point) {
+          setMapCenter(point)
+          setLastGeo(point)
+          setGeoError(null)
+        } else {
+          setGeoError('Не удалось получить координаты для адреса')
+        }
       })
-      .then((point) => {
-        if (point) setMapCenter(point)
-      })
-      .catch(() => {
-        // В офлайне/без геокодера оставляем текущий центр
+      .catch((err) => {
+        setGeoError('Ошибка геокодирования: ' + (err?.message || 'unknown'))
       })
 
     return () => controller.abort()
@@ -204,6 +211,16 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
           willChange: 'opacity, transform',
         }}
       />
+
+      {/* Диагностика геокодирования */}
+      <div style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
+        background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 13, padding: '6px 12px',
+        pointerEvents: 'none',
+      }}>
+        {geoError && <div style={{ color: '#ff6b6b', fontWeight: 600 }}>Геокодер: {geoError}</div>}
+        {lastGeo && <div>Координаты: {lastGeo}</div>}
+      </div>
       {nextMapUrl && (
         <img
           src={nextMapUrl}

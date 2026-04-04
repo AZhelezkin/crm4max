@@ -25,6 +25,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     const [nextMapUrl, setNextMapUrl] = useState(null);
     const [nextMapReady, setNextMapReady] = useState(false);
     const [isMapFading, setIsMapFading] = useState(false);
+    const [geoError, setGeoError] = useState(null);
+    const [lastGeo, setLastGeo] = useState(null);
     const debounceRef = useRef(null);
     const fadeTimeoutRef = useRef(null);
     useEffect(() => {
@@ -36,6 +38,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         const clean = address.trim();
         if (!clean) {
             setMapCenter(DEFAULT_CENTER);
+            setGeoError(null);
+            setLastGeo(null);
             return () => { };
         }
         const controller = new AbortController();
@@ -49,29 +53,31 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                 params.set('apikey', API_KEY);
             const res = await fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal });
             if (!res.ok)
-                return null;
+                throw new Error('Geocode HTTP error: ' + res.status);
             const data = await res.json();
             const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos;
             if (!pos || typeof pos !== 'string')
-                return null;
+                throw new Error('No coordinates found');
             const [lon, lat] = pos.split(' ');
             if (!lon || !lat)
-                return null;
+                throw new Error('Invalid coordinates');
             return `${lon},${lat}`;
         };
+        setGeoError(null);
         fetchPoint(true)
-            .catch(() => null)
+            .catch(() => fetchPoint(false))
             .then((point) => {
-            if (point)
-                return point;
-            return fetchPoint(false).catch(() => null);
-        })
-            .then((point) => {
-            if (point)
+            if (point) {
                 setMapCenter(point);
+                setLastGeo(point);
+                setGeoError(null);
+            }
+            else {
+                setGeoError('Не удалось получить координаты для адреса');
+            }
         })
-            .catch(() => {
-            // В офлайне/без геокодера оставляем текущий центр
+            .catch((err) => {
+            setGeoError('Ошибка геокодирования: ' + (err?.message || 'unknown'));
         });
         return () => controller.abort();
     };
@@ -176,7 +182,11 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
                     transformOrigin: 'center center',
                     transition: 'opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
                     willChange: 'opacity, transform',
-                } }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
+                } }), _jsxs("div", { style: {
+                    position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
+                    background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 13, padding: '6px 12px',
+                    pointerEvents: 'none',
+                }, children: [geoError && _jsxs("div", { style: { color: '#ff6b6b', fontWeight: 600 }, children: ["\u0413\u0435\u043E\u043A\u043E\u0434\u0435\u0440: ", geoError] }), lastGeo && _jsxs("div", { children: ["\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B: ", lastGeo] })] }), nextMapUrl && (_jsx("img", { src: nextMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", onLoad: () => setNextMapReady(true), style: {
                     position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
                     opacity: isMapFading ? 1 : 0,
                     transform: isMapFading ? 'scale(1)' : 'scale(1.05)',
