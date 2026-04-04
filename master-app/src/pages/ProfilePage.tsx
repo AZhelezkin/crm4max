@@ -23,6 +23,7 @@ export default function ProfilePage() {
     .sort((a, b) => a.order - b.order)
 
   function onLbStart(e: React.TouchEvent) {
+    e.stopPropagation()
     const t = e.touches[0]
     lbTouch.current = { startX: t.clientX, startY: t.clientY, dir: null, moved: false }
     if (lbStripRef.current)   lbStripRef.current.style.transition = 'none'
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   }
 
   function onLbMove(e: React.TouchEvent) {
+    e.stopPropagation()
     const dx = e.touches[0].clientX - lbTouch.current.startX
     const dy = e.touches[0].clientY - lbTouch.current.startY
     lbTouch.current.moved = true
@@ -49,6 +51,8 @@ export default function ProfilePage() {
   }
 
   function onLbEnd(e: React.TouchEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     const { startX, startY, dir, moved } = lbTouch.current
     const dx = e.changedTouches[0].clientX - startX
     const dy = e.changedTouches[0].clientY - startY
@@ -242,6 +246,7 @@ export default function ProfilePage() {
             background: 'rgba(0,0,0,0.92)',
             overflow: 'hidden',
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Strip: prev | current | next */}
           <div
