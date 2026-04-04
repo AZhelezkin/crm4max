@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
 
 function BackArrowIcon() {
@@ -44,9 +44,11 @@ export default function ShareLinkPage() {
   const navigate = useNavigate()
   const { master } = useAuthStore()
   const [copied, setCopied] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const masterId = master?.id ?? ''
   const deepLink = `https://max.ru/id9706002253_bot?startapp=${masterId}`
+  const hasLink = masterId.length > 0
 
   const handleCopy = async () => {
     try {
@@ -75,16 +77,13 @@ export default function ShareLinkPage() {
   }
 
   const handleDownloadQR = () => {
-    const svg = document.getElementById('master-qr-svg')
-    if (!svg) return
-    const svgData = new XMLSerializer().serializeToString(svg)
-    const blob = new Blob([svgData], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const url = canvas.toDataURL('image/png')
     const a = document.createElement('a')
     a.href = url
-    a.download = 'qr-code.svg'
+    a.download = 'qr-code.png'
     a.click()
-    URL.revokeObjectURL(url)
   }
 
   return (
@@ -192,15 +191,24 @@ export default function ShareLinkPage() {
             padding: 16,
             display: 'inline-flex',
           }}>
-            <QRCodeSVG
-              id="master-qr-svg"
-              value={deepLink}
-              size={200}
-              bgColor="#ffffff"
-              fgColor="#0F0F11"
-              level="M"
-              includeMargin={false}
-            />
+            {hasLink ? (
+              <QRCodeCanvas
+                ref={canvasRef}
+                value={deepLink}
+                size={200}
+                bgColor="#ffffff"
+                fgColor="#0F0F11"
+                level="M"
+              />
+            ) : (
+              <div style={{
+                width: 200, height: 200,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#aaa', fontSize: 13, textAlign: 'center', padding: 16,
+              }}>
+                QR-код появится после авторизации
+              </div>
+            )}
           </div>
 
           <div style={{ textAlign: 'center' }}>
