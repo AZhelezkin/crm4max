@@ -133,7 +133,7 @@ export default function ProfilePage() {
       <div style={{ padding: '12px 16px 80px' }}>
         {activeTab === 'services' && (
           master?.categories.length
-            ? <ServicesList categories={master.categories} onEdit={() => navigate('/services')} />
+            ? <ServicesList categories={master.categories} />
             : <EmptyState
                 text="Услуги ещё не добавлены"
                 action={{ label: '+ Добавить услуги', onClick: () => navigate('/services') }}
@@ -163,90 +163,108 @@ export default function ProfilePage() {
 
 // ─── ServicesList ─────────────────────────────────────────────────────────────
 
-function ServicesList({ categories, onEdit }: { categories: Category[]; onEdit: () => void }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {categories.map((cat) => (
-        <div key={cat.id}>
-          {/* Категория */}
-          <div
-            onClick={onEdit}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'var(--color-card)', borderRadius: 'var(--radius)',
-              padding: '12px 14px', cursor: 'pointer', marginBottom: 8,
-            }}
-          >
-            {cat.photo
-              ? <img src={cat.photo} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
-              : <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✂️</div>
-            }
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {cat.name}
-                {cat.services.some((s) => s.discountPercent) && (
-                  <span style={{
-                    background: 'var(--color-danger)', color: '#fff',
-                    fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
-                  }}>
-                    % скидки
-                  </span>
-                )}
-              </div>
-              {cat.description && (
-                <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {cat.description}
-                </div>
-              )}
-            </div>
-            <span style={{ color: 'var(--color-text-secondary)', fontSize: 18 }}>›</span>
-          </div>
+function ServicesList({ categories }: { categories: Category[] }) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
-          {/* Услуги */}
-          {cat.services.map((s) => {
-            const dPrice = discountedPrice(s.price, s.discountPercent)
-            return (
-              <div
-                key={s.id}
-                onClick={onEdit}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px 10px 58px',
-                  borderBottom: '1px solid var(--color-border)',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
-                    {formatDuration(s.durationMin, s.durationMax)}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                  {dPrice !== null ? (
-                    <>
-                      <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
-                        {formatPrice(dPrice)}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
-                        {formatPrice(s.price)}
-                      </div>
-                      <div style={{
-                        background: 'var(--color-danger)', color: '#fff',
-                        fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
-                      }}>
-                        {s.discountPercent}% СКИДКА
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</div>
+  const toggle = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {categories.map((cat) => {
+        const expanded = expandedIds.has(cat.id)
+        return (
+          <div key={cat.id}>
+            {/* Категория */}
+            <div
+              onClick={() => toggle(cat.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'var(--color-card)', borderRadius: expanded ? 'var(--radius) var(--radius) 0 0' : 'var(--radius)',
+                padding: '12px 14px', cursor: 'pointer',
+              }}
+            >
+              {cat.photo
+                ? <img src={cat.photo} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
+                : <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--color-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✂️</div>
+              }
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {cat.name}
+                  {cat.services.some((s) => s.discountPercent) && (
+                    <span style={{
+                      background: 'var(--color-danger)', color: '#fff',
+                      fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
+                    }}>
+                      % скидки
+                    </span>
                   )}
                 </div>
+                {cat.description && (
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {cat.description}
+                  </div>
+                )}
               </div>
-            )
-          })}
-        </div>
-      ))}
+              <span style={{
+                color: 'var(--color-text-secondary)', fontSize: 16, lineHeight: 1,
+                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
+              }}>▾</span>
+            </div>
+
+            {/* Услуги — раскрываются */}
+            {expanded && (
+              <div style={{ background: 'var(--color-card)', borderRadius: '0 0 var(--radius) var(--radius)', overflow: 'hidden' }}>
+                {cat.services.map((s, idx) => {
+                  const dPrice = discountedPrice(s.price, s.discountPercent)
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 14px 10px 58px',
+                        borderTop: '1px solid var(--color-border)',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
+                        <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
+                          {formatDuration(s.durationMin, s.durationMax)}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                        {dPrice !== null ? (
+                          <>
+                            <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
+                              {formatPrice(dPrice)}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
+                              {formatPrice(s.price)}
+                            </div>
+                            <div style={{
+                              background: 'var(--color-danger)', color: '#fff',
+                              fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
+                            }}>
+                              {s.discountPercent}% СКИДКА
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
