@@ -68,7 +68,7 @@ export default function ProfilePage() {
               icon: <EditIcon active />,
             },
             {
-              label: 'Изменить', action: () => navigate(),
+              label: 'Изменить', action: () => navigate('/about'),
               icon: <EditIcon active />,
             },
             {
