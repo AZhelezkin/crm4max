@@ -636,16 +636,24 @@ export default function OnboardingPage() {
 
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
-        <MaxButton
+        <button
           type="button"
-          appearance="themed"
-          mode="primary"
-          size="medium"
-          stretched
           disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
-          onClick={(e) => {
-            e.preventDefault()
-            void handleNext()
+          onClick={() => { void handleNext() }}
+          style={{
+            width: '100%',
+            height: 48,
+            border: 'none',
+            borderRadius: 20,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
+            background: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())
+              ? 'var(--color-card2)'
+              : 'var(--color-primary)',
+            color: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())
+              ? 'var(--color-text-secondary)'
+              : '#fff',
           }}
         >
           {saving ? 'Сохраняем...' :
@@ -653,7 +661,7 @@ export default function OnboardingPage() {
            step === 2 && servicesSubStep === 'categories' && categories.length === 0 ? 'Пропустить' :
            step === 2 && servicesSubStep === 'categories' ? 'Готово' :
            'Далее'}
-        </MaxButton>
+        </button>
       </div>
 
       {/* ── Экран добавления/редактирования категории (на весь экран) ── */}
