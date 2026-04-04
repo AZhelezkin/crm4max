@@ -18,9 +18,12 @@ import {
   onboardingPriceRowStyle,
 } from '@/components/onboardingStepOne.styles'
 
+type SubStep = 'categories' | 'services'
+
 export default function ServicesPage() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [expandedCatIds, setExpandedCatIds] = useState<Set<string>>(new Set())
+  const [subStep, setSubStep] = useState<SubStep>('categories')
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
 
   // Форма категории
   const [showCatForm, setShowCatForm] = useState(false)
@@ -74,6 +77,7 @@ export default function ServicesPage() {
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Удалить категорию и все её услуги?')) return
     await categoriesApi.remove(id)
+    if (id === selectedCatId) setSubStep('categories')
     load()
   }
 
@@ -143,183 +147,155 @@ export default function ServicesPage() {
     load()
   }
 
-  const toggleCat = (id: string) => {
-    setExpandedCatIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
+  const selectedCat = categories.find((c) => c.id === selectedCatId) ?? null
 
   // ─── Рендер ─────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      <PageHeader title="Услуги" />
+      <PageHeader
+        title={subStep === 'services' && selectedCat ? selectedCat.name : 'Услуги'}
+        onBack={subStep === 'services' ? () => setSubStep('categories') : undefined}
+      />
 
       <div style={{ padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        {/* Список категорий — аккордеон */}
-        {categories.map((cat) => {
-          const expanded = expandedCatIds.has(cat.id)
-          return (
-            <div key={cat.id} style={onboardingListCardStyle}>
-
-              {/* Заголовок категории */}
+        {/* ── Уровень 1: Список категорий ── */}
+        {subStep === 'categories' && (
+          <>
+            {categories.map((cat) => (
               <div
-                onClick={() => toggleCat(cat.id)}
-                style={{
-                  ...onboardingListButtonStyle,
-                  borderRadius: 0,
-                  borderBottom: expanded ? '1px solid var(--color-border)' : 'none',
-                  cursor: 'pointer',
-                }}
+                key={cat.id}
+                onClick={() => { setSelectedCatId(cat.id); setSubStep('services') }}
+                style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
               >
-                <div style={onboardingListMediaStyle}>
-                  {cat.photo
-                    ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontSize: 22 }}>✂️</span>
-                  }
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...onboardingListTitleStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {cat.name}
-                    {cat.services.some((s) => s.discountPercent) && (
-                      <span style={onboardingDiscountBadgeStyle}>% скидки</span>
-                    )}
+                <div style={onboardingListButtonStyle}>
+                  <div style={onboardingListMediaStyle}>
+                    {cat.photo
+                      ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span style={{ fontSize: 22 }}>✂️</span>
+                    }
                   </div>
-                  <div style={onboardingListSubtitleStyle}>
-                    {cat.services.length === 0
-                      ? 'Нет услуг'
-                      : `${cat.services.length} ${cat.services.length === 1 ? 'услуга' : cat.services.length < 5 ? 'услуги' : 'услуг'}`}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...onboardingListTitleStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {cat.name}
+                      {cat.services.some((s) => s.discountPercent) && (
+                        <span style={onboardingDiscountBadgeStyle}>% скидки</span>
+                      )}
+                    </div>
+                    <div style={onboardingListSubtitleStyle}>
+                      {cat.services.length === 0
+                        ? 'Нет услуг'
+                        : `${cat.services.length} ${cat.services.length === 1 ? 'услуга' : cat.services.length < 5 ? 'услуги' : 'услуг'}`}
+                    </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openCatForm(cat) }}
-                    style={onboardingListActionButtonStyle}
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); void handleDeleteCategory(cat.id) }}
-                    style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
-                  >
-                    ×
-                  </button>
-                  <svg
-                    width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    style={{ flexShrink: 0, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'none' }}
-                  >
-                    <path d="M6 9l6 6 6-6" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openCatForm(cat) }}
+                      style={onboardingListActionButtonStyle}
+                    >
+                      <EditIcon />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); void handleDeleteCategory(cat.id) }}
+                      style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               </div>
+            ))}
 
-              {/* Услуги категории */}
-              {expanded && (
-                <div>
-                  {cat.services.map((s) => {
-                    const dPrice = discountedPrice(s.price, s.discountPercent)
-                    return (
+            {/* Добавить категорию */}
+            <button
+              onClick={() => openCatForm()}
+              style={{ ...onboardingListCardStyle, ...onboardingListButtonStyle, borderRadius: 20 }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 24, background: 'var(--color-card2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, color: 'var(--color-text-secondary)', flexShrink: 0,
+              }}>+</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={onboardingListTitleStyle}>Добавить категорию</div>
+                <div style={onboardingListSubtitleStyle}>Пример: Стрижки и уход</div>
+              </div>
+            </button>
+          </>
+        )}
+
+        {/* ── Уровень 2: Услуги выбранной категории ── */}
+        {subStep === 'services' && selectedCat && (
+          <>
+            {selectedCat.services.map((s) => {
+              const dPrice = discountedPrice(s.price, s.discountPercent)
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => openSvcForm(s)}
+                  style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
+                >
+                  <div style={onboardingListButtonStyle}>
+                    <div style={{ ...onboardingListMediaStyle, borderRadius: 10 }}>
+                      {s.photo
+                        ? <img src={s.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 20 }}>✂️</span>
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={onboardingListTitleStyle}>{s.name}</div>
+                      <div style={onboardingListSubtitleStyle}>{formatDuration(s.durationMin, s.durationMax)}</div>
+                      <div style={onboardingPriceRowStyle}>
+                        {dPrice !== null ? (
+                          <>
+                            <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>{formatPrice(dPrice)}</span>
+                            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
+                            <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
+                          </>
+                        ) : (
+                          <span style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <button
-                        key={s.id}
-                        onClick={() => openSvcForm(s)}
-                        style={{
-                          ...onboardingListButtonStyle,
-                          borderRadius: 0,
-                          borderTop: '1px solid var(--color-border)',
-                          alignItems: 'center',
-                        }}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openSvcForm(s) }}
+                        style={onboardingListActionButtonStyle}
                       >
-                        {/* Миниатюра первого примера работ */}
-                        <div style={{
-                          ...onboardingListMediaStyle,
-                          borderRadius: 10,
-                          flexShrink: 0,
-                        }}>
-                          {s.photo
-                            ? <img src={s.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <span style={{ fontSize: 20 }}>✂️</span>
-                          }
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={onboardingListTitleStyle}>{s.name}</div>
-                          <div style={onboardingListSubtitleStyle}>{formatDuration(s.durationMin, s.durationMax)}</div>
-                          <div style={onboardingPriceRowStyle}>
-                            {dPrice !== null ? (
-                              <>
-                                <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
-                                  {formatPrice(dPrice)}
-                                </span>
-                                <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
-                                  {formatPrice(s.price)}
-                                </span>
-                                <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
-                              </>
-                            ) : (
-                              <span style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); openSvcForm(s) }}
-                            style={onboardingListActionButtonStyle}
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); void handleDeleteService(s.id) }}
-                            style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <EditIcon />
                       </button>
-                    )
-                  })}
-
-                  {/* Добавить услугу */}
-                  <button
-                    onClick={() => openSvcForm(undefined, cat.id)}
-                    style={{
-                      ...onboardingListButtonStyle,
-                      borderRadius: 0,
-                      borderTop: '1px solid var(--color-border)',
-                      color: 'var(--color-primary)',
-                    }}
-                  >
-                    <div style={{
-                      width: 48, height: 48, borderRadius: 10, background: 'var(--color-card2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 22, flexShrink: 0,
-                    }}>+</div>
-                    Добавить услугу
-                  </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); void handleDeleteService(s.id) }}
+                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          )
-        })}
+              )
+            })}
 
-        {/* Добавить категорию */}
-        <button
-          onClick={() => openCatForm()}
-          style={{ ...onboardingListCardStyle, ...onboardingListButtonStyle, borderRadius: 20 }}
-        >
-          <div style={{
-            width: 48, height: 48, borderRadius: 24, background: 'var(--color-card2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, color: 'var(--color-text-secondary)', flexShrink: 0,
-          }}>+</div>
-          <div style={{ flex: 1, textAlign: 'left' }}>
-            <div style={onboardingListTitleStyle}>Добавить категорию</div>
-            <div style={onboardingListSubtitleStyle}>Пример: Стрижки и уход</div>
-          </div>
-        </button>
+            {/* Добавить услугу */}
+            <button
+              onClick={() => openSvcForm(undefined, selectedCat.id)}
+              style={{ ...onboardingListCardStyle, ...onboardingListButtonStyle, borderRadius: 20 }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 24, background: 'var(--color-card2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, color: 'var(--color-text-secondary)', flexShrink: 0,
+              }}>+</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={onboardingListTitleStyle}>Добавить услугу</div>
+                <div style={onboardingListSubtitleStyle}>Название, цена, фото работ</div>
+              </div>
+            </button>
+          </>
+        )}
 
       </div>
 

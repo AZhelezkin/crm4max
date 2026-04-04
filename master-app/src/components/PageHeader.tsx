@@ -3,10 +3,16 @@ import { useNavigate } from 'react-router-dom'
 interface Props {
   title: string
   back?: boolean
+  onBack?: () => void
 }
 
-export default function PageHeader({ title, back = true }: Props) {
+export default function PageHeader({ title, back = true, onBack }: Props) {
   const navigate = useNavigate()
+
+  const handleBack = () => {
+    if (onBack) onBack()
+    else navigate(-1)
+  }
 
   return (
     <header style={{
@@ -22,7 +28,7 @@ export default function PageHeader({ title, back = true }: Props) {
     }}>
       {back && (
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           style={{ background: 'none', fontSize: 20, color: 'var(--color-primary)', lineHeight: 1 }}
         >
           ←
