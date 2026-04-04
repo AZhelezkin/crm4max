@@ -35,7 +35,6 @@ export default function BottomNav({ badge = {} }: Props) {
       background: 'var(--color-bg)',
       borderTop: '1px solid var(--color-border)',
       display: 'flex',
-      paddingBottom: 'env(safe-area-inset-bottom)',
       zIndex: 50,
     }}>
       {NAV_ITEMS.map(({ key, label, path, Icon }) => {
