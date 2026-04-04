@@ -195,6 +195,8 @@ export default function OnboardingPage() {
       onUploaded(url)
     } catch (err) {
       console.error('Ошибка загрузки фото:', err)
+      setPreview(null)
+      setSubmitError('Не удалось загрузить фото. Попробуйте ещё раз.')
     } finally {
       setUploading(false)
     }

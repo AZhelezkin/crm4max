@@ -1,16 +1,63 @@
 export type UploadFolder = 'masters' | 'categories' | 'services' | 'work'
 
 /**
+ * Сжимает изображение через canvas.
+ * maxSize — максимальная сторона в пикселях (по умолчанию 1200).
+ * quality — качество JPEG (0–1, по умолчанию 0.82).
+ */
+export function compressImage(file: File, maxSize = 1200, quality = 0.82): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+
+      let { width, height } = img
+      if (width > maxSize || height > maxSize) {
+        if (width >= height) {
+          height = Math.round((height * maxSize) / width)
+          width = maxSize
+        } else {
+          width = Math.round((width * maxSize) / height)
+          height = maxSize
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('canvas toBlob failed')); return }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        quality,
+      )
+    }
+
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image load failed')) }
+    img.src = objectUrl
+  })
+}
+
+/**
  * Загружает файл на сервер → S3 и возвращает публичный URL.
+ * Перед загрузкой сжимает изображение через canvas.
  *
  * Использует fetch напрямую (не axios), чтобы браузер сам установил
  * Content-Type: multipart/form-data с правильным boundary.
  */
 export async function uploadPhoto(file: File, folder: UploadFolder = 'masters'): Promise<string> {
+  const compressed = await compressImage(file)
   const token = localStorage.getItem('masterToken')
 
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', compressed)
 
   const baseUrl = `${import.meta.env.VITE_API_URL ?? ''}/api`
 
