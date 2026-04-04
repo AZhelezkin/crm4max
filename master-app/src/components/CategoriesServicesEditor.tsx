@@ -178,8 +178,8 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
     const selectedCat = categories.find((c) => c.id === selectedCatId) ?? null
 
     return (
-      <>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
           {/* ── Список категорий ── */}
           {subStep === 'categories' && (
@@ -350,7 +350,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
           onClose={() => setShowSvcForm(false)}
           onSave={() => { void saveSvcForm() }}
         />
-      </>
+      </div>
     )
   },
 )
