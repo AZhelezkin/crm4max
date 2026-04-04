@@ -9,6 +9,7 @@ const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 interface Suggestion {
   title: string
   subtitle: string
+  query: string
 }
 
 interface Props {
@@ -42,26 +43,34 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
 
   const geocodeAddress = (address: string) => {
     const clean = address.trim()
-    if (!clean || !API_KEY) {
+    if (!clean) {
       setMapCenter(DEFAULT_CENTER)
       return () => {}
     }
 
     const controller = new AbortController()
-    const params = new URLSearchParams({
-      apikey: API_KEY,
-      geocode: clean,
-      format: 'json',
-      results: '1',
-    })
+    const fetchPoint = async (useKey: boolean) => {
+      const params = new URLSearchParams({
+        geocode: clean,
+        format: 'json',
+        results: '1',
+      })
+      if (useKey && API_KEY) params.set('apikey', API_KEY)
 
-    fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
-        if (!pos || typeof pos !== 'string') return
-        const [lon, lat] = pos.split(' ')
-        if (lon && lat) setMapCenter(`${lon},${lat}`)
+      const res = await fetch(`${GEOCODE_URL}?${params}`, { signal: controller.signal })
+      if (!res.ok) return null
+      const data = await res.json()
+      const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
+      if (!pos || typeof pos !== 'string') return null
+      const [lon, lat] = pos.split(' ')
+      if (!lon || !lat) return null
+      return `${lon},${lat}`
+    }
+
+    fetchPoint(true)
+      .then((point) => point ?? fetchPoint(false))
+      .then((point) => {
+        if (point) setMapCenter(point)
       })
       .catch(() => {
         // В офлайне/без геокодера оставляем текущий центр
@@ -149,6 +158,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
           (data.results ?? []).map((r: any) => ({
             title: r.title?.text ?? '',
             subtitle: r.subtitle?.text ?? '',
+            query: r.uri ?? `${r.title?.text ?? ''} ${r.subtitle?.text ?? ''}`.trim(),
           }))
         )
       } catch {
@@ -163,7 +173,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    geocodeAddress(full)
+    geocodeAddress(s.query || full)
   }
 
   return (
@@ -227,7 +237,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
               setSuggestEnabled(true)
               onChange(next)
             }}
-            placeholder="Куда приезжать клиентам"
+            placeholder="Адрес"
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               fontSize: 15, color: 'var(--color-text)',

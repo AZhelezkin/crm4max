@@ -789,7 +789,7 @@ export default function OnboardingPage() {
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
               fontSize: 16, fontWeight: 600, color: 'var(--color-text)', pointerEvents: 'none',
             }}>
-              Адрес
+              Добавление адреса
             </span>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
