@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
+import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
 import {
   Button as MaxButton,
   CellList,
@@ -138,25 +139,9 @@ export default function OnboardingPage() {
 
   // ── Шаг 2: Услуги ──
   const [servicesSubStep, setServicesSubStep] = useState<ServicesSubStep>('categories')
-  const [categories, setCategories] = useState<LocalCategory[]>([])
-  const [showCatForm, setShowCatForm] = useState(false)
-  const [editCatIdx, setEditCatIdx] = useState<number | null>(null)
-  const [catFormName, setCatFormName] = useState('')
-  const [catFormDesc, setCatFormDesc] = useState('')
-  const [catFormPhoto, setCatFormPhoto] = useState<string | null>(null)       // S3 URL
-  const [catFormPreview, setCatFormPreview] = useState<string | null>(null)   // local preview
-  const [catPhotoUploading, setCatPhotoUploading] = useState(false)
-
-  const [servicesByCat, setServicesByCat] = useState<LocalService[][]>([])
-  const [showSvcForm, setShowSvcForm] = useState(false)
-  const [editSvcIdx, setEditSvcIdx] = useState<number | null>(null)
-  const [svcForm, setSvcForm] = useState<LocalService>({
-    name: '', desc: '', durationMin: '', price: '',
-    discountEnabled: false, discountPercent: 10,
-    photo: null,
-    workPhotos: [],
-  })
-  const [selectedCatIdx, setSelectedCatIdx] = useState(0)
+  const [servicesSelectedCatName, setServicesSelectedCatName] = useState('')
+  const [catCount, setCatCount] = useState(0)
+  const editorRef = useRef<CategoriesServicesEditorHandle>(null)
 
   // ─── Хелперы ──────────────────────────────────────────────────────────────
 
@@ -190,104 +175,6 @@ export default function OnboardingPage() {
     } finally {
       setUploading(false)
     }
-  }
-
-  // ─── Форма категории ──────────────────────────────────────────────────────
-
-  const openCatForm = (idx?: number) => {
-    if (idx !== undefined) {
-      const c = categories[idx]
-      setCatFormName(c.name)
-      setCatFormDesc(c.desc)
-      setCatFormPhoto(c.photo)
-      setCatFormPreview(c.previewUrl)
-      setEditCatIdx(idx)
-    } else {
-      setCatFormName(''); setCatFormDesc(''); setCatFormPhoto(null); setCatFormPreview(null)
-      setEditCatIdx(null)
-    }
-    setShowCatForm(true)
-  }
-
-  const saveCatForm = () => {
-    if (!catFormName.trim()) return
-    const cat: LocalCategory = {
-      name: catFormName.trim(), desc: catFormDesc,
-      photo: catFormPhoto, previewUrl: catFormPreview,
-    }
-    if (editCatIdx !== null) {
-      setCategories((prev) => prev.map((c, i) => i === editCatIdx ? { ...c, ...cat } : c))
-    } else {
-      setCategories((prev) => [...prev, cat])
-      setServicesByCat((prev) => [...prev, []])
-    }
-    setShowCatForm(false)
-  }
-
-  const removeCategory = (index: number) => {
-    setCategories((prev) => prev.filter((_, i) => i !== index))
-    setServicesByCat((prev) => prev.filter((_, i) => i !== index))
-    setSelectedCatIdx((prev) => {
-      if (prev > index) return prev - 1
-      if (prev === index) return Math.max(0, prev - 1)
-      return prev
-    })
-  }
-
-  // ─── Форма услуги ─────────────────────────────────────────────────────────
-
-  const openSvcForm = (idx?: number) => {
-    if (idx !== undefined) {
-      const existing = servicesByCat[selectedCatIdx]?.[idx]
-      if (existing) {
-        setSvcForm({
-          ...existing,
-          photo: getFirstUploadedWorkPhotoUrl(existing.workPhotos) ?? existing.photo ?? null,
-        })
-      }
-      setEditSvcIdx(idx)
-    } else {
-      setSvcForm({ 
-        name: '', desc: '', durationMin: '', price: '', 
-        discountEnabled: false, discountPercent: 10,
-        photo: null,
-        workPhotos: [],
-      })
-      setEditSvcIdx(null)
-    }
-    setShowSvcForm(true)
-  }
-
-  const saveSvcForm = () => {
-    if (!svcForm.name.trim()) return
-    const catIdx = selectedCatIdx
-    const normalizedService: LocalService = {
-      ...svcForm,
-      photo: getFirstUploadedWorkPhotoUrl(svcForm.workPhotos),
-    }
-    setServicesByCat((prev: LocalService[][]) => {
-      const next: LocalService[][] = prev.map((arr: LocalService[]) => [...arr])
-      while (next.length <= catIdx) next.push([])
-      if (editSvcIdx !== null) {
-        next[catIdx] = next[catIdx].map((s: LocalService, i: number) => i === editSvcIdx ? normalizedService : s)
-      } else {
-        next[catIdx] = [...next[catIdx], normalizedService]
-      }
-      return next
-    })
-    setShowSvcForm(false)
-  }
-
-  const removeService = (index: number) => {
-    setServicesByCat((prev: LocalService[][]) => {
-      const next = prev.map((services, categoryIndex) => (
-        categoryIndex === selectedCatIdx
-          ? services.filter((_, serviceIndex) => serviceIndex !== index)
-          : services
-      ))
-
-      return next
-    })
   }
 
   // ─── Навигация по шагам ───────────────────────────────────────────────────
@@ -334,47 +221,13 @@ export default function OnboardingPage() {
 
       if (step === 2) {
         if (servicesSubStep === 'services') {
-          // Возврат к категориям
+          editorRef.current?.goToCategories()
           setServicesSubStep('categories')
           setSaving(false)
           return
         }
 
-        // servicesSubStep === 'categories' — сохраняем всё и завершаем онбординг
-        // Сохраняем категории в БД
-        const savedCats: LocalCategory[] = []
-        for (const cat of categories) {
-          if (cat.name) {
-            const saved = await categoriesApi.create({
-              name: cat.name, description: cat.desc || undefined, photo: cat.photo || undefined,
-            })
-            savedCats.push({ ...cat, id: saved.id })
-          }
-        }
-
-        // Сохраняем услуги по всем категориям
-        for (let catIdx = 0; catIdx < savedCats.length; catIdx++) {
-          const catId = savedCats[catIdx]?.id
-          const svcs = servicesByCat[catIdx] ?? []
-          for (const svc of svcs) {
-            if (svc.name) {
-              const created = await servicesApi.create({
-                name: svc.name,
-                description: svc.desc || undefined,
-                durationMin: Number(svc.durationMin) || 30,
-                price: Math.round(Number(svc.price) * 100) || 0,
-                discountPercent: svc.discountEnabled ? svc.discountPercent : undefined,
-                photo: svc.photo || undefined,
-                categoryId: catId,
-              })
-              const uploadedWorkPhotos = svc.workPhotos.filter((photo: LocalWorkPhoto) => !photo.uploading && photo.url)
-              for (let i = 0; i < uploadedWorkPhotos.length; i++) {
-                await servicesApi.addWorkPhoto(created.id, uploadedWorkPhotos[i].url as string, i)
-              }
-            }
-          }
-        }
-
+        // servicesSubStep === 'categories' — категории/услуги уже в БД, завершаем онбординг
         await mastersApi.updateProfile({ isOnboarded: true })
         const master = await mastersApi.getMe()
         setMaster(master)
@@ -397,10 +250,6 @@ export default function OnboardingPage() {
       setSaving(false)
     }
   }
-
-  // ─── Счётчик услуг для таба ───────────────────────────────────────────────
-
-  const servicesCount = servicesByCat.reduce((s: number, arr: LocalService[]) => s + arr.length, 0)
 
   // ─── Рендер ───────────────────────────────────────────────────────────────
 
@@ -444,15 +293,19 @@ export default function OnboardingPage() {
             <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
               <button
                 onClick={() => {
-                  if (servicesSubStep === 'services') setServicesSubStep('categories')
-                  else setStep(1)
+                  if (servicesSubStep === 'services') {
+                    editorRef.current?.goToCategories()
+                    setServicesSubStep('categories')
+                  } else {
+                    setStep(1)
+                  }
                 }}
                 style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
               >
                 <BackArrowIcon />
               </button>
               <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-                {servicesSubStep === 'services' ? (categories[selectedCatIdx]?.name || 'Услуги') : 'Категории услуг'}
+                {servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
               </div>
               <div style={{ width: 56 }} />
             </div>
@@ -615,149 +468,20 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {/* ── Шаг 2а: Категории ── */}
-        {step === 2 && servicesSubStep === 'categories' && (
-          <>
-            {categories.map((cat, i) => {
-              const count = servicesByCat[i]?.length ?? 0
-              return (
-                <div
-                  key={i}
-                  onClick={() => { setSelectedCatIdx(i); setServicesSubStep('services') }}
-                  style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
-                >
-                  <div style={onboardingListButtonStyle}>
-                    {/* Фото */}
-                    <div style={onboardingListMediaStyle}>
-                      {cat.previewUrl
-                        ? <img src={cat.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <CameraIcon size={20} />
-                      }
-                    </div>
-                    {/* Название + кол-во услуг */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={onboardingListTitleStyle}>{cat.name}</div>
-                      <div style={onboardingListSubtitleStyle}>
-                        {count === 0 ? 'Нет услуг' : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openCatForm(i) }}
-                        style={onboardingListActionButtonStyle}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removeCategory(i) }}
-                        style={{
-                          ...onboardingListActionButtonStyle,
-                          color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1, padding: 4,
-                        }}
-                        aria-label="Удалить категорию"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Кнопка "+ Ещё категория" */}
-            <MaxButton
-              appearance="themed"
-              mode="secondary"
-              size="medium"
-              stretched
-              onClick={() => openCatForm()}
-            >
-              + Ещё категория
-            </MaxButton>
-          </>
-        )}
-
-        {/* ── Шаг 2б: Услуги ── */}
-        {step === 2 && servicesSubStep === 'services' && (
-          <>
-            {/* Список услуг текущей категории */}
-            {(servicesByCat[selectedCatIdx] ?? []).map((svc, i) => (
-              <button
-                key={i}
-                onClick={() => openSvcForm(i)}
-                style={{ ...onboardingListButtonStyle, alignItems: 'flex-start' }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={onboardingListTitleStyle}>{svc.name}</div>
-                  {svc.desc && (
-                    <div style={{ ...onboardingListSubtitleStyle, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {svc.desc}
-                    </div>
-                  )}
-                  <div style={onboardingPriceRowStyle}>
-                    {svc.discountEnabled ? (
-                      <>
-                        <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
-                          {formatPrice(Math.round(Number(svc.price) * 100 * (1 - svc.discountPercent / 100)) || 0)}
-                        </span>
-                        <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
-                          {formatPrice(Math.round(Number(svc.price) * 100) || 0)}
-                        </span>
-                        <span style={onboardingDiscountBadgeStyle}>
-                          {svc.discountPercent}% СКИДКА
-                        </span>
-                      </>
-                    ) : (
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>
-                        {formatPrice(Math.round(Number(svc.price) * 100) || 0)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); openSvcForm(i) }}
-                    style={onboardingListActionButtonStyle}
-                    aria-label="Редактировать услугу"
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeService(i)
-                    }}
-                    style={{
-                      ...onboardingListActionButtonStyle,
-                      color: 'var(--color-text-secondary)',
-                      fontSize: 20,
-                      lineHeight: 1,
-                      padding: 4,
-                    }}
-                    aria-label="Удалить услугу"
-                  >
-                    ×
-                  </button>
-                </div>
-              </button>
-            ))}
-
-            {/* Добавить услугу */}
-            <MaxButton
-              appearance="themed"
-              mode="secondary"
-              size="medium"
-              stretched
-              onClick={() => openSvcForm()}
-            >
-              + Добавить услугу
-            </MaxButton>
-          </>
-        )}
+        {/* ── Шаг 2: Категории + Услуги (CategoriesServicesEditor renderит свой скролл и порталы, не внутри обёртки) ── */}
 
       </div>
+
+      {step === 2 && (
+        <CategoriesServicesEditor
+          ref={editorRef}
+          onSubStepChange={(ss, catName) => {
+            setServicesSubStep(ss)
+            if (catName) setServicesSelectedCatName(catName)
+          }}
+          onCategoryCountChange={setCatCount}
+        />
+      )}
 
       {/* Кнопка Далее / Готово */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
@@ -778,42 +502,27 @@ export default function OnboardingPage() {
         )}
         <button
           type="button"
-          disabled={saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())}
+          disabled={saving || photoUploading || (step === 0 && !name.trim())}
           onClick={() => { void handleNext() }}
           style={{
             ...primaryActionButtonBaseStyle,
-            cursor: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
-            background: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())
+            cursor: saving || photoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
+            background: saving || photoUploading || (step === 0 && !name.trim())
               ? 'var(--color-card2)'
               : 'var(--color-primary)',
-            color: saving || photoUploading || catPhotoUploading || (step === 0 && !name.trim())
+            color: saving || photoUploading || (step === 0 && !name.trim())
               ? 'var(--color-text-secondary)'
               : '#fff',
           }}
         >
           {saving ? 'Сохраняем...' :
            step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
-           step === 2 && servicesSubStep === 'categories' && categories.length === 0 ? 'Пропустить' :
+           step === 2 && servicesSubStep === 'categories' && catCount === 0 ? 'Пропустить' :
            step === 2 && servicesSubStep === 'categories' ? 'Готово' :
            'Далее'}
         </button>
       </div>
 
-      <CategoryFormPortal
-        visible={showCatForm}
-        isEdit={editCatIdx !== null}
-        name={catFormName}
-        onNameChange={setCatFormName}
-        desc={catFormDesc}
-        onDescChange={setCatFormDesc}
-        photoPreview={catFormPreview}
-        onPhotoPreview={setCatFormPreview}
-        onPhotoUrl={setCatFormPhoto}
-        photoUploading={catPhotoUploading}
-        onPhotoUploading={setCatPhotoUploading}
-        onClose={() => setShowCatForm(false)}
-        onSave={saveCatForm}
-      />
 
       {/* ── Портал: Ввод адреса ── */}
       {showAddressPortal && createPortal(
@@ -860,30 +569,6 @@ export default function OnboardingPage() {
         document.body,
       )}
 
-      <ServiceFormPortal
-        visible={showSvcForm}
-        isEdit={editSvcIdx !== null}
-        name={svcForm.name}
-        onNameChange={(v) => setSvcForm((f) => ({ ...f, name: v }))}
-        desc={svcForm.desc}
-        onDescChange={(v) => setSvcForm((f) => ({ ...f, desc: v }))}
-        durationMin={svcForm.durationMin}
-        onDurationChange={(v) => setSvcForm((f) => ({ ...f, durationMin: v }))}
-        price={svcForm.price}
-        onPriceChange={(v) => setSvcForm((f) => ({ ...f, price: v }))}
-        discountEnabled={svcForm.discountEnabled}
-        onDiscountEnabledChange={(v) => setSvcForm((f) => ({ ...f, discountEnabled: v }))}
-        discountPercent={svcForm.discountPercent}
-        onDiscountPercentChange={(v) => setSvcForm((f) => ({ ...f, discountPercent: v }))}
-        workPhotos={svcForm.workPhotos}
-        onWorkPhotosChange={(photos) => setSvcForm((f) => ({
-          ...f,
-          workPhotos: photos,
-          photo: getFirstUploadedWorkPhotoUrl(photos),
-        }))}
-        onClose={() => setShowSvcForm(false)}
-        onSave={saveSvcForm}
-      />
     </div>
   )
 }
