@@ -672,55 +672,45 @@ export default function OnboardingPage() {
       {showCatForm && createPortal(
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'var(--color-card)',
+          background: 'var(--color-bg)',
           zIndex: 200,
           display: 'flex', flexDirection: 'column',
         }}>
-          {/* Верхний бар */}
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            padding: '14px 20px',
-            flexShrink: 0,
-          }}>
-            <MaxButton
-              appearance="themed"
-              mode="tertiary"
-              size="medium"
+          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
+            <button
               onClick={() => setShowCatForm(false)}
+              style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
             >
-              ← Назад
-            </MaxButton>
-            <span style={{
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-              fontSize: 16, fontWeight: 600, color: 'var(--color-text)',
-              pointerEvents: 'none',
-            }}>
+              <BackArrowIcon />
+            </button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
               {editCatIdx !== null ? 'Редактирование категории' : 'Добавление категории'}
-            </span>
+            </div>
+            <div style={{ width: 56 }} />
           </div>
 
-          {/* Контент — скроллируется если не влезает */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 4 }}>
+              Добавьте фото категории, чтобы клиентам было проще выбирать услуги
+            </div>
 
-            {/* Аватар — круг 110×110, по центру */}
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 20px 0' }}>
-              <button
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+              <Avatar.Container
+                size={110}
                 onClick={() => catPhotoRef.current?.click()}
-                style={{
-                  width: 110, height: 110, borderRadius: '50%',
-                  background: 'var(--color-card2)', border: 'none', overflow: 'hidden',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', flexShrink: 0,
-                }}
+                style={{ cursor: 'pointer' }}
+                overlay={catPhotoUploading
+                  ? <Avatar.Overlay><span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>↑</span></Avatar.Overlay>
+                  : undefined
+                }
               >
                 {catFormPreview
-                  ? <>
-                      <img src={catFormPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      {catPhotoUploading && <UploadingOverlay />}
-                    </>
-                  : <CameraIcon size={32} />
+                  ? <Avatar.Image src={catFormPreview} fallback="?" />
+                  : <Avatar.Icon>
+                      <CameraIcon size={36} />
+                    </Avatar.Icon>
                 }
-              </button>
+              </Avatar.Container>
               <input
                 ref={catPhotoRef} type="file" accept="image/*" hidden
                 onChange={(e) => handlePhotoChange(
@@ -730,34 +720,38 @@ export default function OnboardingPage() {
               />
             </div>
 
-            {/* Input: название */}
-            <div style={{ padding: '20px 16px 0' }}>
-              <CellList mode="island">
-                <CellInput
-                  value={catFormName}
-                  onChange={(e) => setCatFormName(e.target.value)}
-                  placeholder="Название. Пример: Работа с волосами"
-                  autoFocus
-                />
-              </CellList>
-            </div>
+            <CellList mode="island">
+              <CellInput
+                value={catFormName}
+                onChange={(e) => setCatFormName(e.target.value)}
+                placeholder="Название. Пример: Работа с волосами"
+                autoFocus
+              />
+            </CellList>
 
-            {/* Input: описание */}
-            <div style={{ padding: '12px 16px 0' }}>
-              <CellList mode="island">
-                <CellInput
+            <CellList mode="island">
+              <div style={{ position: 'relative' }}>
+                <textarea
                   value={catFormDesc}
                   onChange={(e) => setCatFormDesc(e.target.value.slice(0, 200))}
                   placeholder="Описание. Пример: Укладка длинных волос"
+                  rows={3}
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    padding: '14px 16px 24px', fontSize: 16, color: 'var(--color-text)',
+                    resize: 'none', display: 'block', outline: 'none',
+                  }}
                 />
-              </CellList>
-            </div>
+                <span style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  {catFormDesc.length}/200
+                </span>
+              </div>
+            </CellList>
           </div>
 
-          {/* Кнопка «Готово» */}
           <div style={{
-            padding: '16px 20px',
-            paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+            padding: '12px 16px',
+            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
             flexShrink: 0,
           }}>
             <MaxButton
