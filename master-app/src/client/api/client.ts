@@ -16,11 +16,10 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('clientToken')
-      const base = import.meta.env.BASE_URL ?? '/'
       const hashQuery = window.location.hash.includes('?')
         ? window.location.hash.slice(window.location.hash.indexOf('?'))
         : ''
-      window.location.replace(`${base}#/${hashQuery}`)
+        window.location.hash = hashQuery ? `#/${hashQuery}` : '#/'
     }
     return Promise.reject(err)
   }

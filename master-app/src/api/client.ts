@@ -18,8 +18,7 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('masterToken')
-      const base = import.meta.env.BASE_URL ?? '/'
-      window.location.replace(`${base}#/onboarding`)
+      window.location.hash = '#/onboarding'
     }
     return Promise.reject(err)
   }
