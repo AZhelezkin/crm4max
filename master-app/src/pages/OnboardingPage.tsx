@@ -268,6 +268,7 @@ export default function OnboardingPage() {
           location,
           contacts: undefined,
           photo: photoUrl ?? undefined,
+          isOnboarded: false,
         })
         setStep(1)
         return
