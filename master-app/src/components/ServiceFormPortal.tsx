@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Spinner, Switch } from '@maxhub/max-ui'
+import { Spinner } from '@maxhub/max-ui'
 import { uploadPhoto } from '@/api/upload.api'
 import maskIconUrl from '@/assets/mask-icon.svg'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -139,36 +139,58 @@ export default function ServiceFormPortal({
           </div>
         </div>
 
-        {/* Длительность */}
-        <div style={onboardingFieldWithSuffixWrapStyle}>
-          <input
-            value={durationMin}
-            onChange={(e) => onDurationChange(e.target.value.replace(/\D/g, ''))}
-            placeholder="Продолжительность"
-            inputMode="numeric"
-            style={onboardingFieldInputStyle}
-          />
-          <span style={onboardingFieldSuffixStyle}>мин</span>
-        </div>
+        {/* Длительность + Стоимость */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {/* Длительность */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '50%' }}>
+            <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
+              <input
+                value={durationMin}
+                onChange={(e) => onDurationChange(e.target.value.replace(/\D/g, ''))}
+                placeholder="Длит."
+                inputMode="numeric"
+                style={onboardingFieldInputStyle}
+              />
+            </div>
+            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, fontSize: 15 }}>мин</span>
+          </div>
 
-        {/* Стоимость */}
-        <div style={onboardingFieldWithSuffixWrapStyle}>
-          <input
-            value={price}
-            onChange={(e) => onPriceChange(e.target.value.replace(/[^\d.]/, ''))}
-            placeholder="Стоимость"
-            inputMode="decimal"
-            style={onboardingFieldInputStyle}
-          />
-          <span style={onboardingFieldSuffixStyle}>₽</span>
+          {/* Стоимость */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '50%' }}>
+            <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
+              <input
+                value={price}
+                onChange={(e) => onPriceChange(e.target.value.replace(/[^\d.]/, ''))}
+                placeholder="Цена"
+                inputMode="decimal"
+                style={onboardingFieldInputStyle}
+              />
+            </div>
+            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, fontSize: 15 }}>₽</span>
+          </div>
         </div>
 
         {/* Скидка */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
-          <Switch
-            checked={discountEnabled}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onDiscountEnabledChange(e.target.checked)}
-          />
+          <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 26, flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={discountEnabled}
+              onChange={(e) => onDiscountEnabledChange(e.target.checked)}
+              style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
+            />
+            <span style={{
+              position: 'absolute', inset: 0, borderRadius: 13, cursor: 'pointer',
+              background: discountEnabled ? 'var(--color-primary)' : 'var(--color-card2)',
+              transition: 'background 0.2s',
+            }}>
+              <span style={{
+                position: 'absolute', top: 3, left: discountEnabled ? 21 : 3,
+                width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </span>
+          </label>
           <span style={onboardingToggleLabelStyle}>Скидка</span>
           {discountEnabled && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
