@@ -6,6 +6,7 @@ import {
 } from '@/components/onboardingStepOne.styles'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
+const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
 const STATIC_MAP_URL = 'https://static-maps.yandex.ru/1.x/'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
 const DEFAULT_CENTER = '37.62007,55.75363' // Москва
@@ -13,19 +14,22 @@ const DEFAULT_CENTER = '37.62007,55.75363' // Москва
 interface Suggestion {
   title: string
   subtitle: string
-  uri: string
-  position?: string // "lon,lat" — если пришло от API
 }
 
-// Yandex suggest URI: ymapsbm1://geo?ll=37.620070%2C55.753630&...
-// После decodeURIComponent: ...?ll=37.620070,55.753630&...
-function parseCenterFromUri(uri: string): string | null {
+async function geocode(address: string): Promise<string | null> {
+  const params = new URLSearchParams({
+    geocode: address,
+    format: 'json',
+    results: '1',
+    ...(API_KEY ? { apikey: API_KEY } : {}),
+  })
   try {
-    const decoded = decodeURIComponent(uri)
-    const match = decoded.match(/[?&]ll=([\d.+-]+),([\d.+-]+)/)
-    if (!match) return null
-    const lon = match[1]
-    const lat = match[2]
+    const res = await fetch(`${GEOCODE_URL}?${params}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const pos = data?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
+    if (!pos || typeof pos !== 'string') return null
+    const [lon, lat] = pos.split(' ')
     if (!lon || !lat) return null
     return `${lon},${lat}`
   } catch {
@@ -50,6 +54,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   const [isMapFading, setIsMapFading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const geocodeAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     setInputValue(value)
@@ -58,18 +63,12 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
   }, [value])
 
   useEffect(() => {
-    if (!confirmedAddress?.trim()) {
-      setMapCenter(DEFAULT_CENTER)
-    }
+    if (!confirmedAddress?.trim()) setMapCenter(DEFAULT_CENTER)
   }, [confirmedAddress])
 
   const buildMapUrl = (center: string) => {
     const params = new URLSearchParams({
-      ll: center,
-      z: '15',
-      l: 'map',
-      lang: 'ru_RU',
-      size: '450,450',
+      ll: center, z: '15', l: 'map', lang: 'ru_RU', size: '450,450',
       pt: `${center},pm2rdm`,
     })
     return `${STATIC_MAP_URL}?${params}`
@@ -81,10 +80,7 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
 
   useEffect(() => {
     const targetUrl = buildMapUrl(mapCenter)
-    if (!activeMapUrl) {
-      setActiveMapUrl(targetUrl)
-      return
-    }
+    if (!activeMapUrl) { setActiveMapUrl(targetUrl); return }
     if (targetUrl === activeMapUrl) return
     setNextMapReady(false)
     setNextMapUrl(targetUrl)
@@ -100,56 +96,35 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
       setNextMapReady(false)
       setIsMapFading(false)
     }, 300)
-    return () => {
-      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
-    }
+    return () => { if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current) }
   }, [nextMapReady, nextMapUrl])
 
   useEffect(() => {
-    return () => {
-      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
-    }
+    return () => { if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current) }
   }, [])
 
+  // Suggest
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-
     const text = inputValue.trim()
-    if (!text || !API_KEY || !suggestEnabled) {
-      setSuggestions([])
-      return
-    }
+    if (!text || !API_KEY || !suggestEnabled) { setSuggestions([]); return }
 
     debounceRef.current = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
-          apikey: API_KEY,
-          text,
-          lang: 'ru',
-          results: '5',
-          types: 'house,street',
-          print_address: '1',
+          apikey: API_KEY, text, lang: 'ru', results: '5',
+          types: 'house,street', print_address: '1',
         })
         const res = await fetch(`${SUGGEST_URL}?${params}`)
         if (!res.ok) return
         const data = await res.json()
         setSuggestions(
-          (data.results ?? []).map((r: any) => {
-            let position: string | undefined
-            if (r.position && typeof r.position.lon === 'number' && typeof r.position.lat === 'number') {
-              position = `${r.position.lon},${r.position.lat}`
-            }
-            return {
-              title: r.title?.text ?? '',
-              subtitle: r.subtitle?.text ?? '',
-              uri: r.uri ?? '',
-              position,
-            }
-          })
+          (data.results ?? []).map((r: any) => ({
+            title: r.title?.text ?? '',
+            subtitle: r.subtitle?.text ?? '',
+          }))
         )
-      } catch {
-        // сетевые ошибки игнорируем
-      }
+      } catch { /* ignore */ }
     }, 300)
   }, [inputValue])
 
@@ -159,10 +134,12 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
-    // Координаты: сначала из поля position (если API вернул),
-    // иначе парсим из URI (ll=lon%2Clat)
-    const center = s.position ?? parseCenterFromUri(s.uri)
-    if (center) setMapCenter(center)
+
+    // Геокодируем выбранный адрес чтобы получить координаты
+    if (geocodeAbortRef.current) geocodeAbortRef.current.abort()
+    geocode(full).then((center) => {
+      if (center) setMapCenter(center)
+    })
   }
 
   return (
@@ -194,31 +171,20 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
           }}
         />
       )}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(15,15,17,0.66) 0%, rgba(15,15,17,0.5) 40%, rgba(15,15,17,0.72) 100%)',
-        }}
-      />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(180deg, rgba(15,15,17,0.66) 0%, rgba(15,15,17,0.5) 40%, rgba(15,15,17,0.72) 100%)',
+      }} />
 
       <div style={{
         position: 'relative', zIndex: 1,
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '12px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.18)',
-        background: 'transparent',
         flexShrink: 0,
       }}>
-        <div style={{
-          flex: 1,
-          ...stepOneAddressInputWrapStyle,
-          background: 'rgba(15,15,17,0.68)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <div style={stepOneAddressInputIconStyle}>
-            <SearchIcon />
-          </div>
+        <div style={{ flex: 1, ...stepOneAddressInputWrapStyle, background: 'rgba(15,15,17,0.68)', backdropFilter: 'blur(6px)' }}>
+          <div style={stepOneAddressInputIconStyle}><SearchIcon /></div>
           <input
             value={inputValue}
             onChange={(e) => {
@@ -261,9 +227,8 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
             </div>
           </button>
         ))}
-
         {inputValue.trim() && suggestions.length === 0 && (
-          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14, position: 'relative', zIndex: 1 }}>
+          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14 }}>
             Ничего не найдено
           </div>
         )}
