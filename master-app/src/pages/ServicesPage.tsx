@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button as MaxButton } from '@maxhub/max-ui'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
@@ -208,20 +209,15 @@ export default function ServicesPage() {
             ))}
 
             {/* Добавить категорию */}
-            <button
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
               onClick={() => openCatForm()}
-              style={{ ...onboardingListCardStyle, ...onboardingListButtonStyle, borderRadius: 20 }}
             >
-              <div style={{
-                width: 48, height: 48, borderRadius: 24, background: 'var(--color-card2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, color: 'var(--color-text-secondary)', flexShrink: 0,
-              }}>+</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={onboardingListTitleStyle}>Добавить категорию</div>
-                <div style={onboardingListSubtitleStyle}>Пример: Стрижки и уход</div>
-              </div>
-            </button>
+              + Добавить категорию
+            </MaxButton>
           </>
         )}
 
@@ -280,20 +276,15 @@ export default function ServicesPage() {
             })}
 
             {/* Добавить услугу */}
-            <button
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
               onClick={() => openSvcForm(undefined, selectedCat.id)}
-              style={{ ...onboardingListCardStyle, ...onboardingListButtonStyle, borderRadius: 20 }}
             >
-              <div style={{
-                width: 48, height: 48, borderRadius: 24, background: 'var(--color-card2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, color: 'var(--color-text-secondary)', flexShrink: 0,
-              }}>+</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={onboardingListTitleStyle}>Добавить услугу</div>
-                <div style={onboardingListSubtitleStyle}>Название, цена, фото работ</div>
-              </div>
-            </button>
+              + Добавить услугу
+            </MaxButton>
           </>
         )}
 
