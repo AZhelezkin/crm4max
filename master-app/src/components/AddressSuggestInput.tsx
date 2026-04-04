@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { CellList } from '@maxhub/max-ui'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
@@ -16,90 +14,19 @@ interface Props {
 }
 
 export default function AddressSuggestInput({ value, onChange }: Props) {
-  const [modalOpen, setModalOpen] = useState(false)
-
-  const openModal = () => setModalOpen(true)
-  const closeModal = () => setModalOpen(false)
-
-  const handleSelect = (address: string) => {
-    onChange(address)
-    closeModal()
-  }
-
-  return (
-    <>
-      {/* Триггер — отображает текущее значение, открывает модал */}
-      <CellList mode="island">
-        <button
-          onClick={openModal}
-          style={{
-            width: '100%', background: 'none', border: 'none',
-            padding: '8px 12px', minHeight: 56,
-            display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
-          }}
-        >
-          <LocationIcon />
-          <span style={{
-            flex: 1,
-            fontSize: 16, color: value ? 'var(--color-text)' : 'var(--text-secondary, var(--color-text-secondary))',
-          }}>
-            {value || 'Куда приезжать клиентам'}
-          </span>
-        </button>
-      </CellList>
-
-      {modalOpen && createPortal(
-        <AddressModal
-          initialValue={value}
-          onSelect={handleSelect}
-          onClose={closeModal}
-        />,
-        document.body,
-      )}
-    </>
-  )
-}
-
-// ─── Полноэкранный модал поиска адреса ────────────────────────────────────────
-
-function AddressModal({ initialValue, onSelect, onClose }: {
-  initialValue: string
-  onSelect: (address: string) => void
-  onClose: () => void
-}) {
-  const [inputValue, setInputValue] = useState(initialValue)
+  const [inputValue, setInputValue] = useState(value)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [modalHeight, setModalHeight] = useState<number>(window.innerHeight)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Автофокус при открытии
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  // visualViewport — корректная высота с учётом клавиатуры на iOS/Android
   useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const update = () => setModalHeight(vv.height)
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    update()
-    return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
-    }
-  }, [])
+    setInputValue(value)
+  }, [value])
 
-  // Закрытие по Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  // Фетч саджестов с дебаунсом
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
@@ -136,45 +63,34 @@ function AddressModal({ initialValue, onSelect, onClose }: {
 
   const handleSelect = (s: Suggestion) => {
     const full = s.subtitle ? `${s.title}, ${s.subtitle}` : s.title
-    onSelect(full)
+    setInputValue(full)
+    onChange(full)
+    setSuggestions([])
   }
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0,
-      height: modalHeight,
-      background: 'var(--color-bg)',
-      zIndex: 1000,
-      display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Шапка с инпутом */}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '12px 16px',
+        padding: '12px 0',
         borderBottom: '1px solid var(--color-border)',
-        background: 'var(--color-card)',
+        background: 'transparent',
         flexShrink: 0,
       }}>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--color-primary)', fontSize: 15, padding: '4px 0', whiteSpace: 'nowrap',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}
-        >
-          <span>←</span><span>Назад</span>
-        </button>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)',
+          background: 'var(--color-card)', borderRadius: 'var(--radius-sm)',
           padding: '8px 12px',
         }}>
           <LocationIcon />
           <input
             ref={inputRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              setInputValue(next)
+              onChange(next)
+            }}
             placeholder="Куда приезжать клиентам"
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
@@ -183,7 +99,11 @@ function AddressModal({ initialValue, onSelect, onClose }: {
           />
           {inputValue && (
             <button
-              onClick={() => setInputValue('')}
+              onClick={() => {
+                setInputValue('')
+                onChange('')
+                setSuggestions([])
+              }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--color-text-secondary)', fontSize: 18, lineHeight: 1, padding: 0,
@@ -195,8 +115,7 @@ function AddressModal({ initialValue, onSelect, onClose }: {
         </div>
       </div>
 
-      {/* Список саджестов — скроллируемый */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {suggestions.map((s, i) => (
           <button
             key={i}

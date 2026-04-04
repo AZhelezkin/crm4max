@@ -296,39 +296,48 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Шаги 1–2: прогресс-табы */}
-          {step > 0 && (step !== 2 || servicesSubStep === 'categories') && (
-            <div style={{
-              display: 'flex', padding: '16px 16px 0',
-            }}>
-              {STEPS.map((label, i) => (
-                <button
-                  key={i}
-                  onClick={() => { if (i < step) setStep(i as Step) }}
-                  style={{
-                    flex: 1, minWidth: 0, background: 'none', border: 'none',
-                    padding: '8px 4px 12px',
-                    borderBottom: step === i ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    color: step === i ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                    fontSize: 13, fontWeight: 500, cursor: i < step ? 'pointer' : 'default',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {label === 'Услуги' ? `Услуги ${servicesCount > 0 ? servicesCount : ''}`.trim() : label}
-                </button>
-              ))}
+          {/* Шаг 1: кастомный заголовок */}
+          {step === 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+              <button
+                onClick={() => setStep(0)}
+                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
+              >
+                <BackArrowIcon />
+              </button>
+              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+                Настройте график работы
+              </div>
+              <button
+                onClick={() => navigate('/')}
+                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
+              >
+                <CloseIcon />
+              </button>
             </div>
           )}
 
-          {/* Подзаголовок для шага 2 */}
-          {step === 2 && servicesSubStep === 'categories' && (
-            <div style={{ padding: '12px 16px 0', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5 }}>
-              ВНУТРИ КАТЕГОРИЙ БУДУТ УСЛУГИ
-            </div>
-          )}
-          {step === 2 && servicesSubStep === 'services' && (
-            <div style={{ padding: '12px 16px 0', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5 }}>
-              ТО, ЗА ЧТО ВЫ БЕРЁТЕ ОПЛАТУ
+          {/* Шаг 2: кастомный заголовок */}
+          {step === 2 && (
+            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+              <button
+                onClick={() => {
+                  if (servicesSubStep === 'services') setServicesSubStep('categories')
+                  else setStep(1)
+                }}
+                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
+              >
+                <BackArrowIcon />
+              </button>
+              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+                {servicesSubStep === 'services' ? 'Услуги' : 'Категории услуг'}
+              </div>
+              <button
+                onClick={() => navigate('/')}
+                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
+              >
+                <CloseIcon />
+              </button>
             </div>
           )}
         </>
@@ -404,66 +413,89 @@ export default function OnboardingPage() {
             </CellList>
 
             {/* Адрес */}
-            <button
-              onClick={() => setShowAddressPortal(true)}
-              style={{
-                width: '100%', background: 'var(--color-card)', border: 'none',
-                borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left',
-                padding: '15px 20px 17px', display: 'flex', alignItems: 'center', gap: 16,
-              }}
-            >
-              <div style={{
-                width: 46, height: 46, borderRadius: 10, background: 'var(--color-card2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <LocationIcon />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 500, fontSize: 19, color: 'var(--color-text)', letterSpacing: -0.19, lineHeight: '24px' }}>
-                  Адрес
+            <CellList mode="island">
+              <button
+                onClick={() => setShowAddressPortal(true)}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                  padding: '15px 20px 17px', display: 'flex', alignItems: 'center', gap: 16,
+                }}
+              >
+                <div style={{
+                  width: 46, height: 46, borderRadius: 10, background: 'var(--color-card2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <LocationIcon />
                 </div>
-                <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '17px', marginTop: 1 }}>
-                  {location || 'Куда приезжать клиентам'}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500, fontSize: 19, color: 'var(--color-text)', letterSpacing: -0.19, lineHeight: '24px' }}>
+                    Адрес
+                  </div>
+                  <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', letterSpacing: 0.15, lineHeight: '17px', marginTop: 1 }}>
+                    {location || 'Куда приезжать клиентам'}
+                  </div>
                 </div>
-              </div>
-              <ChevronIcon />
-            </button>
+                <ChevronIcon />
+              </button>
+            </CellList>
           </>
         )}
 
         {/* ── Шаг 1: График ── */}
         {step === 1 && (
           <>
-            <SectionLabel>ДНИ НЕДЕЛИ, В КОТОРЫЕ РАБОТАЕТЕ</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {DAYS.map((d) => (
-                <div key={d.v} style={{ flex: 1 }}>
-                  <MaxButton
-                    appearance="themed"
-                    mode={workingDays.includes(d.v) ? 'primary' : 'secondary'}
-                    size="small"
-                    stretched
+            <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 4 }}>
+              Выберите дни и время, когда вам удобно принимать клиентов
+            </div>
+
+            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 12 }}>
+                ДНИ НЕДЕЛИ
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+                {DAYS.map((d) => (
+                  <button
+                    key={d.v}
                     onClick={() => toggleDay(d.v)}
+                    style={{
+                      border: 'none',
+                      borderRadius: 12,
+                      height: 36,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card2)',
+                      color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text)',
+                    }}
                   >
                     {d.l}
-                  </MaxButton>
-                </div>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <SectionLabel>ВРЕМЯ РАБОТЫ</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <TimeSelect value={startTime} onChange={setStartTime} />
-              <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
-              <TimeSelect value={endTime} onChange={setEndTime} />
+            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 12 }}>
+                ВРЕМЯ РАБОТЫ
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <TimeSelect value={startTime} onChange={setStartTime} />
+                <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                <TimeSelect value={endTime} onChange={setEndTime} />
+              </div>
             </div>
 
-            <SectionLabel>ПЕРЕРЫВ МЕЖДУ ПРИЁМАМИ</SectionLabel>
-            <SelectField
-              value={buffer}
-              onChange={(v) => setBuffer(Number(v))}
-              options={BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` }))}
-            />
+            <div style={{ background: 'var(--color-card)', borderRadius: 20, padding: '16px 14px 14px' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: 0.5, marginBottom: 10 }}>
+                ПЕРЕРЫВ МЕЖДУ ПРИЕМАМИ
+              </div>
+              <SelectField
+                value={buffer}
+                onChange={(v) => setBuffer(Number(v))}
+                options={BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` }))}
+              />
+            </div>
           </>
         )}
 
@@ -1061,6 +1093,22 @@ function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path d="M9 18l6-6-6-6" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M18 6L6 18M6 6l12 12" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
