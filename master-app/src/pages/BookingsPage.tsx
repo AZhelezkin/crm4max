@@ -6,7 +6,6 @@ import { bookingsApi } from '@/api/bookings.api'
 import type { Booking } from '@/types'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
-import Button from '@/components/Button'
 
 dayjs.locale('ru')
 
@@ -24,21 +23,59 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'var(--color-text-secondary)',
 }
 
+const sortByDateTime = (a: Booking, b: Booking) => {
+  const cmp = b.date.localeCompare(a.date)
+  return cmp !== 0 ? cmp : b.time.localeCompare(a.time)
+}
+
 export default function BookingsPage() {
   const navigate = useNavigate()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [view, setView]         = useState<'list' | 'calendar'>('list')
+  const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    bookingsApi.list().then(setBookings).catch(() => {})
-  }, [])
+  const load = () => bookingsApi.list().then(setBookings).catch(() => {})
 
-  const upcoming  = bookings.filter((b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && b.date >= dayjs().format('YYYY-MM-DD'))
-  const past      = bookings.filter((b) => b.status === 'COMPLETED' || b.date < dayjs().format('YYYY-MM-DD'))
+  useEffect(() => { load() }, [])
+
+  const refresh = () => {
+    setRefreshing(true)
+    bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setRefreshing(false))
+  }
+
+  const today = dayjs().format('YYYY-MM-DD')
+  const upcoming = bookings
+    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && b.date >= today)
+    .sort(sortByDateTime)
+  const past = bookings
+    .filter((b) => b.status === 'COMPLETED' || b.date < today)
+    .sort(sortByDateTime)
+
+  const headerRight = (
+    <>
+      <button
+        onClick={refresh}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--color-primary)', WebkitTapHighlightColor: 'transparent' }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style={{ display: 'block', transform: refreshing ? 'rotate(360deg)' : 'none', transition: refreshing ? 'transform 0.5s linear' : 'none' }}>
+          <path d="M2 12C2 6.477 6.477 2 12 2c3.09 0 5.859 1.352 7.75 3.5L22 8M22 2v6h-6M22 12c0 5.523-4.477 10-10 10-3.09 0-5.859-1.352-7.75-3.5L2 16M2 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      <button
+        onClick={() => navigate('/bookings/new')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--color-primary)', WebkitTapHighlightColor: 'transparent' }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </>
+  )
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      <PageHeader title="Записи" back={false} />
+      <PageHeader title="Записи" back={false} right={headerRight} />
 
       <div style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
         {(['list', 'calendar'] as const).map((v) => (
@@ -58,10 +95,6 @@ export default function BookingsPage() {
       </div>
 
       <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Button variant="secondary" onClick={() => navigate('/bookings/new')} fullWidth>
-          + Создать запись
-        </Button>
-
         {view === 'calendar' ? (
           <CalendarView bookings={bookings} onBookingClick={(id) => navigate(`/bookings/${id}`)} />
         ) : (

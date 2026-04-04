@@ -4,9 +4,10 @@ interface Props {
   title: string
   back?: boolean
   onBack?: () => void
+  right?: React.ReactNode
 }
 
-export default function PageHeader({ title, back = true, onBack }: Props) {
+export default function PageHeader({ title, back = true, onBack, right }: Props) {
   const navigate = useNavigate()
 
   const handleBack = () => {
@@ -34,7 +35,8 @@ export default function PageHeader({ title, back = true, onBack }: Props) {
           ←
         </button>
       )}
-      <h1 style={{ fontSize: 17, fontWeight: 600 }}>{title}</h1>
+      <h1 style={{ fontSize: 17, fontWeight: 600, flex: 1 }}>{title}</h1>
+      {right && <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>{right}</div>}
     </header>
   )
 }
