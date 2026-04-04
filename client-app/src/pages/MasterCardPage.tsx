@@ -163,7 +163,42 @@ export default function MasterCardPage() {
           { label: 'Запись', Icon: IcoBook,  action: handleBook },
           { label: 'Звонок', Icon: IcoCall,  action: () => {} },
           { label: 'Чат',    Icon: IcoChat,  action: () => navigate('/messages') },
-          { label: 'Как добраться', Icon: IcoDirections, action: () => {} },
+          {
+            label: 'Как добраться',
+            Icon: IcoDirections,
+            action: () => {
+              if (master.location) {
+                const [lon, lat] = master.location.split(',').map(Number)
+                if (!isNaN(lat) && !isNaN(lon)) {
+                  // Предложить выбор приложения
+                  const app = window.prompt(
+                    'Открыть в:\n1 — Яндекс.Карты\n2 — Google Maps\n3 — 2GIS\n4 — Яндекс.Навигатор',
+                    '1'
+                  )
+                  let url = ''
+                  switch (app) {
+                    case '2':
+                      // Google Maps: широта,долгота
+                      url = `https://maps.google.com/?q=${lat},${lon}`
+                      break
+                    case '3':
+                      // 2GIS: широта,долгота
+                      url = `https://2gis.ru/?query=${lat},${lon}`
+                      break
+                    case '4':
+                      // Яндекс.Навигатор: app-схема
+                      url = `yandexnavi://build_route_on_map?lat_to=${lat}&lon_to=${lon}`
+                      break
+                    case '1':
+                    default:
+                      // Яндекс.Карты: долгота,широта
+                      url = `https://maps.yandex.ru/?ll=${lon},${lat}&z=16`
+                  }
+                  if (url) window.open(url, '_blank')
+                }
+              }
+            },
+          },
         ] as const).map((btn) => (
           <button
             key={btn.label}

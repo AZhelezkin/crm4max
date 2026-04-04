@@ -6,8 +6,7 @@ const FAKE_SERVICE: Service = {
   id: 'svc-1',
   name: 'Мужская стрижка',
   description: null,
-  durationMin: 40,
-  durationMax: null,
+  duration: 40,
   price: 150000,
   discountPercent: null,
   photo: null,
@@ -37,7 +36,7 @@ describe('booking.store', () => {
     const { service } = useBookingStore.getState()
     expect(service?.id).toBe('svc-1')
     expect(service?.name).toBe('Мужская стрижка')
-    expect(service?.durationMin).toBe(40)
+    expect(service?.duration).toBe(40)
   })
 
   it('setDateTime сохраняет дату и время', () => {

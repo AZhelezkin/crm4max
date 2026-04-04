@@ -71,7 +71,7 @@ async function main() {
 
         for (const service of catServices) {
           const price = (service.price / 100).toFixed(2)
-          const duration = service.durationMin
+          const duration = service.duration
           const discount = service.discountPercent ? ` (-${service.discountPercent}%)` : ''
           const photos = service.workPhotos.length
           const bookings = service._count.bookings

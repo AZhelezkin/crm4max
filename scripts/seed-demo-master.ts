@@ -177,7 +177,7 @@ async function main() {
       categoryId:  catManicure.id,
       name:        'Маникюр классический',
       description: 'Обрезной маникюр + покрытие гель-лаком по желанию',
-      durationMin: 60,
+      duration: 60,
       price:       250000, // 2 500 ₽
     },
   })
@@ -188,7 +188,7 @@ async function main() {
       categoryId:  catManicure.id,
       name:        'Маникюр аппаратный',
       description: 'Аппаратный маникюр без срезания кутикулы',
-      durationMin: 75,
+      duration: 75,
       price:       300000, // 3 000 ₽
     },
   })
@@ -199,7 +199,7 @@ async function main() {
       categoryId:    catManicure.id,
       name:          'Маникюр + покрытие гель-лаком',
       description:   'Аппаратный маникюр + цветное покрытие гель-лаком',
-      durationMin:   90,
+      duration:   90,
       price:         350000, // 3 500 ₽
       discountPercent: 10,
     },
@@ -210,7 +210,7 @@ async function main() {
       masterId:    master.id,
       categoryId:  catManicure.id,
       name:        'Снятие гель-лака',
-      durationMin: 20,
+      duration: 20,
       price:        80000, // 800 ₽
     },
   })
@@ -236,7 +236,7 @@ async function main() {
       categoryId:  catPedicure.id,
       name:        'Педикюр аппаратный',
       description: 'Обработка стоп + уход за кутикулой',
-      durationMin: 75,
+      duration: 75,
       price:       350000, // 3 500 ₽
     },
   })
@@ -246,7 +246,7 @@ async function main() {
       masterId:      master.id,
       categoryId:    catPedicure.id,
       name:          'Педикюр + покрытие гель-лаком',
-      durationMin:   100,
+      duration:   100,
       price:         450000, // 4 500 ₽
       discountPercent: 15,
     },
@@ -258,7 +258,7 @@ async function main() {
       categoryId:  catPedicure.id,
       name:        'SPA-педикюр',
       description: 'Педикюр + парафинотерапия + массаж стоп',
-      durationMin: 120,
+      duration: 120,
       price:       600000, // 6 000 ₽
     },
   })
@@ -283,8 +283,7 @@ async function main() {
       categoryId:  catExtensions.id,
       name:        'Наращивание гелем',
       description: 'Наращивание + коррекция + дизайн по желанию',
-      durationMin: 150,
-      durationMax: 180,
+      duration: 150,
       price:       600000, // 6 000 ₽
     },
   })
@@ -295,8 +294,7 @@ async function main() {
       categoryId:  catExtensions.id,
       name:        'Коррекция наращивания',
       description: 'Коррекция отросшей базы + выравнивание',
-      durationMin: 90,
-      durationMax: 120,
+      duration: 90,
       price:       400000, // 4 000 ₽
     },
   })
@@ -306,7 +304,7 @@ async function main() {
       masterId:    master.id,
       categoryId:  catExtensions.id,
       name:        'Снятие наращивания',
-      durationMin: 45,
+      duration: 45,
       price:       150000, // 1 500 ₽
     },
   })
@@ -330,7 +328,7 @@ async function main() {
       masterId:    master.id,
       categoryId:  catNailArt.id,
       name:        'Дизайн простой (1 ноготь)',
-      durationMin: 15,
+      duration: 15,
       price:        30000, // 300 ₽
     },
   })
@@ -341,8 +339,7 @@ async function main() {
       categoryId:    catNailArt.id,
       name:          'Дизайн на все ногти',
       description:   'Nail-арт на все ногти: стемпинг, фольга или ручная роспись',
-      durationMin:   60,
-      durationMax:   90,
+      duration:   60,
       price:         250000, // 2 500 ₽
       discountPercent: 20,
     },
@@ -354,7 +351,7 @@ async function main() {
       categoryId:  catNailArt.id,
       name:        'Французский маникюр (Френч)',
       description: 'Классический или цветной френч на натуральных ногтях или наращивании',
-      durationMin: 30,
+      duration: 30,
       price:       150000, // 1 500 ₽
     },
   })
