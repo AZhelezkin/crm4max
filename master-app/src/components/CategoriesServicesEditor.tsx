@@ -179,7 +179,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
 
     return (
       <>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* ── Список категорий ── */}
           {subStep === 'categories' && (
@@ -227,16 +227,6 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                   </div>
                 </div>
               ))}
-
-              <MaxButton
-                appearance="themed"
-                mode="secondary"
-                size="medium"
-                stretched
-                onClick={() => openCatForm()}
-              >
-                + Добавить категорию
-              </MaxButton>
             </>
           )}
 
@@ -293,19 +283,35 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                   </div>
                 )
               })}
-
-              <MaxButton
-                appearance="themed"
-                mode="secondary"
-                size="medium"
-                stretched
-                onClick={() => openSvcForm(undefined, selectedCat.id)}
-              >
-                + Добавить услугу
-              </MaxButton>
             </>
           )}
 
+        </div>
+
+        {/* Кнопка добавления — всегда внизу */}
+        <div style={{ padding: '8px 16px', paddingBottom: 'calc(8px + env(safe-area-inset-bottom))' }}>
+          {subStep === 'categories' && (
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
+              onClick={() => openCatForm()}
+            >
+              + Добавить категорию
+            </MaxButton>
+          )}
+          {subStep === 'services' && selectedCat && (
+            <MaxButton
+              appearance="themed"
+              mode="secondary"
+              size="medium"
+              stretched
+              onClick={() => openSvcForm(undefined, selectedCat.id)}
+            >
+              + Добавить услугу
+            </MaxButton>
+          )}
         </div>
 
         <CategoryFormPortal
