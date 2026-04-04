@@ -73,8 +73,8 @@ export default function ProfilePage() {
               icon: <EditIcon active />,
             },
             {
-              label: 'Ещё', action: () => {},
-              icon: <MoreIcon active />,
+              label: 'Поделиться', action: () => navigate('/share'),
+              icon: <ShareIcon active />,
             },
           ].map(({ label, icon, action }) => (
             <button
@@ -378,6 +378,17 @@ function ChevronRightIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ShareIcon({ active }: { active?: boolean }) {
+  const c = active ? '#2688EB' : '#8E8E93'
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="16 6 12 2 8 6" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="2" x2="12" y2="15" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

@@ -16,6 +16,7 @@ import ServicesPage from '@/pages/ServicesPage'
 import BookingDetailPage from '@/pages/BookingDetailPage'
 import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
+import ShareLinkPage from '@/pages/ShareLinkPage'
 
 // Определяем режим по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param).
 // Если ?startapp=<UUID мастера> — открываем клиентское приложение (бронирование).
@@ -79,6 +80,7 @@ function MasterApp() {
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/payment-settings" element={<PaymentSettingsPage />} />
+          <Route path="/share" element={<ShareLinkPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
