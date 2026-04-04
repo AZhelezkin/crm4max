@@ -67,9 +67,9 @@ export default function BottomNav() {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      height: 'calc(60px + env(safe-area-inset-bottom))',
+      height: 60,
       background: 'var(--color-card)', borderTop: '1px solid var(--color-border)',
-      display: 'flex', zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)',
+      display: 'flex', zIndex: 50,
     }}>
       {TABS.map((tab) => {
         const active = activeTab === tab.path
