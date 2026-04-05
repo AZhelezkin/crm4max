@@ -47,12 +47,13 @@ export default function ShareLinkPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const masterId = master?.id ?? ''
-  const deepLink = `https://max.ru/id9706002253_bot?startapp=${masterId}`
+  const botLink = `https://max.ru/id9706002253_bot?startapp=${masterId}`
+  const deepLink = `https://azhelezkin.github.io/crm4max/master-app/#/?masterId=${masterId}`
   const hasLink = masterId.length > 0
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(deepLink)
+      await navigator.clipboard.writeText(botLink)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -66,7 +67,7 @@ export default function ShareLinkPage() {
         await navigator.share({
           title: master?.name ?? 'Записаться ко мне',
           text: `Записывайтесь ко мне через Max: ${master?.name ?? ''}`,
-          url: deepLink,
+          url: botLink,
         })
       } catch {
         // пользователь отменил

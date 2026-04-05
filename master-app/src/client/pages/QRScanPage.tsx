@@ -7,8 +7,16 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 function extractMasterId(scanned: string): string | null {
   try {
     const url = new URL(scanned)
+    // формат бота: ?startapp=<UUID>
     const startapp = url.searchParams.get('startapp')
     if (startapp && UUID_REGEX.test(startapp)) return startapp
+    // формат GitHub Pages: ?masterId=<UUID>
+    const masterId = url.searchParams.get('masterId')
+    if (masterId && UUID_REGEX.test(masterId)) return masterId
+    // формат хэша: #/?masterId=<UUID>
+    const hashSearch = url.hash.split('?')[1] ?? ''
+    const hashMasterId = new URLSearchParams(hashSearch).get('masterId')
+    if (hashMasterId && UUID_REGEX.test(hashMasterId)) return hashMasterId
   } catch {
     if (UUID_REGEX.test(scanned)) return scanned
   }
