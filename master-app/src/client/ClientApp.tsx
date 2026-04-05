@@ -16,13 +16,12 @@ import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const isQRMode = !UUID_REGEX.test(startParam)
+const isQRMode = startParam !== 'mmode' && !UUID_REGEX.test(startParam)
 
-// В QR-режиме: если masterId уже получен (после скана) — карточка мастера, иначе — сканер
-function RootRoute() {
+// В QR-режиме: если masterId есть в URL (после скана) — карточка мастера, иначе — сканер
+function HomeRoute() {
   const [params] = useSearchParams()
-  const hasMasterId = !!params.get('masterId') || UUID_REGEX.test(startParam)
-  if (isQRMode && !hasMasterId) return <Navigate to="/qr" replace />
+  if (isQRMode && !params.get('masterId')) return <QRScanPage />
   return <MasterCardPage />
 }
 
@@ -31,7 +30,7 @@ export default function ClientApp() {
 
   useEffect(() => { init() }, [init])
 
-  if (isLoading && !isQRMode) {
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
         <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
@@ -42,8 +41,7 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/"                element={<RootRoute />} />
-        <Route path="/qr"              element={<QRScanPage />} />
+        <Route path="/"                element={<HomeRoute />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
@@ -53,7 +51,7 @@ export default function ClientApp() {
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
-        <Route path="*"                element={<Navigate to={isQRMode ? '/qr' : '/'} replace />} />
+        <Route path="*"                element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   )
