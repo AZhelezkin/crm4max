@@ -146,9 +146,8 @@ export default function MasterCardPage() {
   }
 
   if (!masterId) return (
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100dvh', gap: 8 }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
       <span style={{ color: 'var(--color-text-secondary)' }}>Откройте приложение через бота</span>
-      <span style={{ fontSize: 11, color: '#aaa' }}>startParam: "{startParam || '(empty)'}"</span>
     </div>
   )
   if (!master) return (
