@@ -1,10 +1,9 @@
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// openCodeReader может вернуть объект { data, result, text } или строку
 type ScanResult = string | { data?: string; result?: string; text?: string }
 
 function extractMasterId(raw: ScanResult): string | null {
@@ -27,21 +26,23 @@ function extractMasterId(raw: ScanResult): string | null {
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
+  const [scanning, setScanning] = useState(false)
 
-  useEffect(() => {
-    if (!window.WebApp?.openCodeReader) return
-
-    // fileSelect: true — камера + выбор из галереи
+  const handleScan = () => {
+    if (!window.WebApp?.openCodeReader || scanning) return
+    setScanning(true)
     window.WebApp.openCodeReader(true).then((result) => {
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
+      } else {
+        setScanning(false)
       }
     }).catch(() => {
-      // пользователь закрыл сканер
+      setScanning(false)
     })
-  }, [navigate, setMasterId])
+  }
 
   return (
     <div style={{
@@ -55,6 +56,20 @@ export default function QRScanPage() {
       <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 14 }}>
         Попросите мастера показать QR-код и направьте камеру на него
       </p>
+      <button
+        onClick={handleScan}
+        disabled={scanning}
+        style={{
+          marginTop: 8,
+          background: 'var(--color-primary)', color: '#fff',
+          border: 'none', borderRadius: 12, padding: '14px 40px',
+          fontSize: 16, fontWeight: 600,
+          cursor: scanning ? 'default' : 'pointer',
+          opacity: scanning ? 0.7 : 1,
+        }}
+      >
+        {scanning ? 'Открываю камеру…' : 'Сканировать'}
+      </button>
     </div>
   )
 }
