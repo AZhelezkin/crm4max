@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 
@@ -18,45 +18,24 @@ function extractMasterId(scanned: string): string | null {
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
-  const [debugInfo, setDebugInfo] = useState<string>('waiting...')
 
   useEffect(() => {
-    if (!window.WebApp?.openCodeReader) {
-      setDebugInfo('openCodeReader not available')
-      return
-    }
-
-    setDebugInfo('calling openCodeReader...')
+    if (!window.WebApp?.openCodeReader) return
 
     window.WebApp.openCodeReader(true).then((result) => {
-      setDebugInfo(`resolved: ${result}`)
+      console.log('[QRScan] resolved:', result)
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
       } else {
-        setDebugInfo(`no masterId in: ${result}`)
+        navigate('/', { replace: true })
       }
     }).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err)
-      setDebugInfo(`rejected: ${msg}`)
+      console.log('[QRScan] rejected:', err)
+      navigate('/', { replace: true })
     })
   }, [navigate, setMasterId])
 
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-      height: '100dvh', padding: 16, gap: 12, background: 'var(--color-bg)',
-    }}>
-      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', textAlign: 'center', wordBreak: 'break-all' }}>
-        {debugInfo}
-      </div>
-      <button
-        onClick={() => navigate('/', { replace: true })}
-        style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--color-card)', cursor: 'pointer' }}
-      >
-        Назад
-      </button>
-    </div>
-  )
+  return null
 }
