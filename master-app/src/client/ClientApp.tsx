@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
 
@@ -17,12 +17,13 @@ import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function InitRedirect() {
-  const navigate = useNavigate()
-  useEffect(() => {
-    if (!UUID_REGEX.test(startParam)) navigate('/qr', { replace: true })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return null
+// Если startParam — UUID, пришли от мастера напрямую → карточка мастера
+// Иначе — QR-сканер, пока masterId не появится в URL после скана
+function HomeRoute() {
+  const [params] = useSearchParams()
+  const masterId = UUID_REGEX.test(startParam) ? startParam : params.get('masterId')
+  if (!masterId) return <QRScanPage />
+  return <MasterCardPage />
 }
 
 export default function ClientApp() {
@@ -40,10 +41,8 @@ export default function ClientApp() {
 
   return (
     <HashRouter>
-      <InitRedirect />
       <Routes>
-        <Route path="/"                element={<MasterCardPage />} />
-        <Route path="/qr"              element={<QRScanPage />} />
+        <Route path="/"                element={<HomeRoute />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
