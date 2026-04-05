@@ -16,13 +16,24 @@ import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-// Если startParam — UUID, сразу показываем карточку мастера. Иначе — QR-сканер.
-const defaultRoute = UUID_REGEX.test(startParam) ? '/' : '/qr'
+const isQRMode = !UUID_REGEX.test(startParam)
 
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
 
   useEffect(() => { init() }, [init])
+
+  // В QR-режиме показываем сканер сразу, не ждём auth —
+  // openCodeReader требует активного user gesture, который истекает пока грузится auth
+  if (isQRMode) {
+    return (
+      <HashRouter>
+        <Routes>
+          <Route path="*" element={<QRScanPage />} />
+        </Routes>
+      </HashRouter>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -35,8 +46,7 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/"                element={UUID_REGEX.test(startParam) ? <MasterCardPage /> : <Navigate to="/qr" replace />} />
-        <Route path="/qr"              element={<QRScanPage />} />
+        <Route path="/"                element={<MasterCardPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
@@ -46,7 +56,7 @@ export default function ClientApp() {
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
-        <Route path="*"                element={<Navigate to={defaultRoute} replace />} />
+        <Route path="*"                element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   )

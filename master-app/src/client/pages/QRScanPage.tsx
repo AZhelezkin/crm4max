@@ -28,20 +28,15 @@ export default function QRScanPage() {
   useEffect(() => {
     if (!window.WebApp?.openCodeReader) return
 
-    const id = setTimeout(() => {
-      window.WebApp!.openCodeReader(true).then((result) => {
-        const masterId = extractMasterId(result)
-        if (masterId) {
-          setMasterId(masterId)
-          navigate(`/?masterId=${masterId}`, { replace: true })
-        }
-        // если masterId не найден — остаёмся на странице (null)
-      }).catch(() => {
-        // пользователь закрыл сканер — остаёмся, не навигируем
-      })
-    }, 300)
-
-    return () => clearTimeout(id)
+    window.WebApp.openCodeReader(true).then((result) => {
+      const masterId = extractMasterId(result)
+      if (masterId) {
+        setMasterId(masterId)
+        navigate(`/?masterId=${masterId}`, { replace: true })
+      }
+    }).catch(() => {
+      // пользователь закрыл сканер — остаёмся на странице
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null
