@@ -56,11 +56,11 @@ export default function ProfilePage() {
   const [reviewsLoaded, setReviewsLoaded] = useState(false)
 
   useEffect(() => {
-    if (activeTab !== 'reviews' || reviewsLoaded || !master?.id) return
+    if (reviewsLoaded || !master?.id) return
     mastersApi.getReviews(master.id)
       .then((r) => { setReviews(r); setReviewsLoaded(true) })
       .catch(() => setReviewsLoaded(true))
-  }, [activeTab, master?.id, reviewsLoaded])
+  }, [master?.id, reviewsLoaded])
 
   useEffect(() => {
     if (!showSchedule) return
