@@ -22,16 +22,24 @@ export default function QRScanPage() {
   useEffect(() => {
     if (!window.WebApp?.openCodeReader) return
 
+    console.log('[QRScan] openCodeReader available, calling...')
+
     // fileSelect: true — камера + выбор из галереи
     window.WebApp.openCodeReader(true).then((result) => {
+      console.log('[QRScan] resolved:', result)
       const masterId = extractMasterId(result)
+      console.log('[QRScan] masterId extracted:', masterId)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
+      } else {
+        // QR отсканирован, но это не ссылка мастера (например, бот-URL перехвачен Max)
+        navigate('/', { replace: true })
       }
-    }).catch(() => {
-      // пользователь закрыл сканер — возвращаемся назад
-      navigate(-1)
+    }).catch((err) => {
+      console.log('[QRScan] rejected:', err)
+      // пользователь закрыл сканер без результата
+      navigate('/', { replace: true })
     })
   }, [navigate, setMasterId])
 
