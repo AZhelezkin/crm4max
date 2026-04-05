@@ -27,7 +27,7 @@ export default function QRScanPage() {
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
-        navigate('/', { replace: true })
+        navigate(`/?masterId=${masterId}`, { replace: true })
       }
     }).catch(() => {
       // пользователь закрыл сканер — возвращаемся назад
