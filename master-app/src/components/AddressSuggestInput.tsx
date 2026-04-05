@@ -41,10 +41,11 @@ async function geocode(address: string): Promise<string | null> {
 interface Props {
   value: string
   onChange: (v: string) => void
+  onGeocode?: (lat: number, lng: number) => void
   confirmedAddress?: string
 }
 
-export default function AddressSuggestInput({ value, onChange, confirmedAddress = '' }: Props) {
+export default function AddressSuggestInput({ value, onChange, onGeocode, confirmedAddress = '' }: Props) {
   const [inputValue, setInputValue] = useState(value)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER)
@@ -139,7 +140,13 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
     // Геокодируем выбранный адрес чтобы получить координаты
     if (geocodeAbortRef.current) geocodeAbortRef.current.abort()
     geocode(full).then((center) => {
-      if (center) setMapCenter(center)
+      if (center) {
+        setMapCenter(center)
+        if (onGeocode) {
+          const [lon, lat] = center.split(',').map(Number)
+          onGeocode(lat, lon)
+        }
+      }
     })
   }
 

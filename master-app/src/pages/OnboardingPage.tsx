@@ -124,6 +124,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [addressDraft, setAddressDraft] = useState('')
   const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -205,6 +206,7 @@ export default function OnboardingPage() {
           name: name.trim(),
           description,
           location,
+          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
           contacts: undefined,
           photo: photoUrl ?? undefined,
           isOnboarded: false,
@@ -545,6 +547,7 @@ export default function OnboardingPage() {
             <AddressSuggestInput
               value={addressDraft}
               onChange={setAddressDraft}
+              onGeocode={(lat, lng) => setCoords({ lat, lng })}
               confirmedAddress={addressDraft}
             />
           </div>

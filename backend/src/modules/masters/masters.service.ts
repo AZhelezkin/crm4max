@@ -10,6 +10,8 @@ export const mastersService = {
         photo: true,
         description: true,
         location: true,
+        lat: true,
+        lng: true,
         rating: true,
         schedule: true,
         categories: {
@@ -51,6 +53,8 @@ export const mastersService = {
     description?: string
     contacts?: string
     location?: string
+    lat?: number
+    lng?: number
     isOnboarded?: boolean
   }) {
     return prisma.master.update({

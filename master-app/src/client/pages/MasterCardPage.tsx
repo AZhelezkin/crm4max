@@ -203,15 +203,20 @@ export default function MasterCardPage() {
           { label: 'Запись',        Icon: IcoBook,       action: () => handleBook() },
           { label: 'Звонок',        Icon: IcoCall,       action: () => {} },
           { label: 'Чат',           Icon: IcoChat,       action: () => navigate('/messages') },
-          { label: 'Как добраться', Icon: IcoDirections, action: () => {} },
+          { label: 'Как добраться', Icon: IcoDirections, action: () => {
+            if (master.lat && master.lng)
+              window.location.href = `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
+          }, disabled: !master.lat || !master.lng },
         ] as const).map((btn) => (
           <button
             key={btn.label}
             onClick={btn.action}
+            disabled={'disabled' in btn ? btn.disabled : false}
             style={{
               flex: 1, height: 69, background: '#25262B', borderRadius: 18,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-              border: 'none', cursor: 'pointer',
+              border: 'none', cursor: 'disabled' in btn && btn.disabled ? 'default' : 'pointer',
+              opacity: 'disabled' in btn && btn.disabled ? 0.4 : 1,
             }}
           >
             <btn.Icon />

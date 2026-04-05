@@ -60,6 +60,7 @@ export default function AboutMePage() {
   const [contacts, setContacts]       = useState(master?.contacts ?? '')
   const [description, setDescription] = useState(master?.description ?? '')
   const [location, setLocation]       = useState(master?.location ?? '')
+  const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null)
   const [saving, setSaving]           = useState(false)
 
   const [photoPreview, setPhotoPreview]     = useState<string | null>(master?.photo ?? null)
@@ -93,6 +94,7 @@ export default function AboutMePage() {
         contacts,
         description,
         location,
+        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
         ...(photoUrl ? { photo: photoUrl } : {}),
       })
       setMaster({ ...master!, ...updated })
@@ -231,6 +233,7 @@ export default function AboutMePage() {
             <AddressSuggestInput
               value={addressDraft}
               onChange={setAddressDraft}
+              onGeocode={(lat, lng) => setCoords({ lat, lng })}
               confirmedAddress={location}
             />
           </div>

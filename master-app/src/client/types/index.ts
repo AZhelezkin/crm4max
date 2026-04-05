@@ -4,6 +4,8 @@ export interface Master {
   photo: string | null
   description: string | null
   location: string | null
+  lat: number | null
+  lng: number | null
   rating: number
   schedule: Schedule | null
   categories: Category[]
