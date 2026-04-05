@@ -139,6 +139,9 @@ export default function OnboardingPage() {
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('18:00')
   const [buffer, setBuffer] = useState(30)
+  const [hasBreak, setHasBreak] = useState(false)
+  const [breakStart, setBreakStart] = useState('13:00')
+  const [breakEnd, setBreakEnd] = useState('14:00')
 
   // ── Шаг 2: Услуги ──
   const [servicesSubStep, setServicesSubStep] = useState<ServicesSubStep>('categories')
@@ -251,7 +254,11 @@ export default function OnboardingPage() {
       }
 
       if (step === 1) {
-        await scheduleApi.upsert({ workingDays, startTime, endTime, bufferMinutes: buffer })
+        await scheduleApi.upsert({
+          workingDays, startTime, endTime, bufferMinutes: buffer,
+          breakStart: hasBreak ? breakStart : undefined,
+          breakEnd: hasBreak ? breakEnd : undefined,
+        })
         setStep(2)
         return
       }
@@ -400,7 +407,7 @@ export default function OnboardingPage() {
               <CellInput
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Имя или название бизнеса"
+                placeholder="Имя или название бизнеса*"
               />
             </CellList>
 
@@ -516,6 +523,26 @@ export default function OnboardingPage() {
                 onChange={(v) => setBuffer(Number(v))}
                 options={BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` }))}
               />
+            </div>
+
+            <div style={onboardingSectionCardStyle}>
+              <div style={onboardingToggleRowStyle}>
+                <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Обед</span>
+                <Switch
+                  checked={hasBreak}
+                  onChange={() => setHasBreak((v) => !v)}
+                />
+              </div>
+              {hasBreak && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={onboardingSectionLabelStyle}>ВРЕМЯ ОБЕДА</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <TimeSelect value={breakStart} onChange={setBreakStart} />
+                    <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                    <TimeSelect value={breakEnd} onChange={setBreakEnd} />
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
