@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
 
@@ -16,13 +16,13 @@ import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const isQRMode = startParam !== 'mmode' && !UUID_REGEX.test(startParam)
 
-// В QR-режиме: если masterId есть в URL (после скана) — карточка мастера, иначе — сканер
-function HomeRoute() {
-  const [params] = useSearchParams()
-  if (isQRMode && !params.get('masterId')) return <QRScanPage />
-  return <MasterCardPage />
+function InitRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!UUID_REGEX.test(startParam)) navigate('/qr', { replace: true })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
 }
 
 export default function ClientApp() {
@@ -32,7 +32,7 @@ export default function ClientApp() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-bg)' }}>
         <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
       </div>
     )
@@ -40,8 +40,10 @@ export default function ClientApp() {
 
   return (
     <HashRouter>
+      <InitRedirect />
       <Routes>
-        <Route path="/"                element={<HomeRoute />} />
+        <Route path="/"                element={<MasterCardPage />} />
+        <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
