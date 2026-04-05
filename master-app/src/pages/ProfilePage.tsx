@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { Switch } from '@maxhub/max-ui'
 import { useAuthStore } from '@/store/auth.store'
 import { scheduleApi } from '@/api/schedule.api'
-import type { Category } from '@/types'
+import { mastersApi } from '@/api/masters.api'
+import type { Category, Review } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
 import {
   onboardingSectionCardStyle,
@@ -50,6 +51,16 @@ export default function ProfilePage() {
   const [hasBreak, setHasBreak]           = useState(false)
   const [breakStart, setBreakStart]       = useState('13:00')
   const [breakEnd, setBreakEnd]           = useState('14:00')
+
+  const [reviews, setReviews]         = useState<Review[]>([])
+  const [reviewsLoaded, setReviewsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (activeTab !== 'reviews' || reviewsLoaded || !master?.id) return
+    mastersApi.getReviews(master.id)
+      .then((r) => { setReviews(r); setReviewsLoaded(true) })
+      .catch(() => setReviewsLoaded(true))
+  }, [activeTab, master?.id, reviewsLoaded])
 
   useEffect(() => {
     if (!showSchedule) return
@@ -261,7 +272,7 @@ export default function ProfilePage() {
         {([
           { key: 'services', label: 'Услуги', count: totalServices },
           { key: 'photos',   label: 'Фото',   count: 0 },
-          { key: 'reviews',  label: 'Отзывы', count: 0 },
+          { key: 'reviews',  label: 'Отзывы', count: reviews.length },
         ] as { key: Tab; label: string; count: number }[]).map((tab) => (
           <button
             key={tab.key}
@@ -310,7 +321,39 @@ export default function ProfilePage() {
                 ))}
               </div>
         )}
-        {activeTab === 'reviews' && <EmptyState text="Отзывы появятся после первых записей" />}
+        {activeTab === 'reviews' && (
+          reviews.length === 0
+            ? <EmptyState text={reviewsLoaded ? 'Пока нет отзывов' : 'Загрузка…'} />
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {reviews.map((r) => (
+                  <div key={r.id} style={{ background: 'var(--color-card)', borderRadius: 16, padding: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: 'var(--color-card2)', overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        {r.client.photo
+                          ? <img src={r.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 18 }}>👤</span>
+                        }
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>{r.client.name}</div>
+                        <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < r.rating ? '#FF9500' : 'var(--color-card2)'}>
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {r.text && <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
+                  </div>
+                ))}
+              </div>
+        )}
       </div>
 
       {/* Портал расписания */}

@@ -75,6 +75,14 @@ export interface Payment {
   createdAt: string
 }
 
+export interface Review {
+  id: string
+  rating: number
+  text: string | null
+  createdAt: string
+  client: { name: string; photo: string | null }
+}
+
 /** Расчёт цены со скидкой в копейках */
 export function discountedPrice(price: number, discountPercent: number | null): number | null {
   if (!discountPercent) return null

@@ -1,9 +1,12 @@
 import { api } from './client'
-import type { Master } from '@/types'
+import type { Master, Review } from '@/types'
 
 export const mastersApi = {
   getMe: () =>
     api.get<Master>('/masters/me').then((r) => r.data),
+
+  getReviews: (masterId: string) =>
+    api.get<{ reviews: Review[] }>(`/masters/${masterId}`).then((r) => r.data.reviews),
 
   updateProfile: (data: Partial<Pick<Master, 'name' | 'photo' | 'description' | 'contacts' | 'phone' | 'location' | 'lat' | 'lng' | 'isOnboarded'>>) =>
     api.put<Master>('/masters/me', data).then((r) => r.data),
