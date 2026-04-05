@@ -205,7 +205,7 @@ export default function MasterCardPage() {
           { label: 'Чат',           Icon: IcoChat,       action: () => navigate('/messages') },
           { label: 'Как добраться', Icon: IcoDirections, action: () => {
             if (master.lat && master.lng)
-              window.location.href = `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
+              window.WebApp?.openLink(`geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`)
           }, disabled: !master.lat || !master.lng },
         ] as const).map((btn) => (
           <button
