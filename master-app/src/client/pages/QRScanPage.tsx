@@ -4,7 +4,10 @@ import { useBookingStore } from '@client/store/booking.store'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function extractMasterId(scanned: string): string | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractMasterId(raw: any): string | null {
+  // openCodeReader может вернуть объект { data: "...", format: "..." } или строку
+  const scanned: string = typeof raw === 'string' ? raw : (raw?.data ?? raw?.result ?? raw?.text ?? JSON.stringify(raw))
   // 1. Попробовать как URL с query-параметром startapp
   try {
     const url = new URL(scanned)
@@ -40,14 +43,15 @@ export default function QRScanPage() {
     }
     setScanning(true)
     setError(null)
-    window.WebApp.openCodeReader(true).then((result) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window.WebApp.openCodeReader(true) as Promise<any>).then((result) => {
       setScanning(false)
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
       } else {
-        setError(`Не удалось определить мастера.\nРезультат: ${result}`)
+        setError(`Не удалось определить мастера.\nРезультат: ${JSON.stringify(result)}`)
       }
     }).catch((err) => {
       setScanning(false)
