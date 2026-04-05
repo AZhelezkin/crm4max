@@ -19,11 +19,9 @@ import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
+//   ""      → клиент, QR сканер (нативная кнопка или бот без startapp)
 //   <UUID>  → клиент, запись к конкретному мастеру
-//   "qr"    → клиент, режим сканирования QR-кода мастера
-//   ""      → клиент, режим сканирования QR-кода (нативная кнопка в мессенджере)
 //   "mmode" → мастер (кабинет / онбординг)
-// Fallback для GitHub Pages / разработки: hash-параметр #/?masterId=<UUID>
 export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
 const isClientMode = startParam !== 'mmode'
 

@@ -7,7 +7,7 @@ import { startParam } from '@/App'
 function InitRedirect() {
   const navigate = useNavigate()
   useEffect(() => {
-    if (startParam === 'qr') navigate('/qr', { replace: true })
+    if (!startParam) navigate('/qr', { replace: true })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return null
 }
