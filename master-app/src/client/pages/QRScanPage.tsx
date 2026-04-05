@@ -22,13 +22,16 @@ export default function QRScanPage() {
   useEffect(() => {
     if (!window.WebApp?.openCodeReader) return
 
-    window.WebApp.openCodeReader((result) => {
-      if (!result) return
+    // fileSelect: true — камера + выбор из галереи
+    window.WebApp.openCodeReader(true).then((result) => {
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
         navigate('/', { replace: true })
       }
+    }).catch(() => {
+      // пользователь закрыл сканер — возвращаемся назад
+      navigate(-1)
     })
   }, [navigate, setMasterId])
 
