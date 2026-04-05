@@ -3,11 +3,13 @@ import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-d
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
 
-// Компонент внутри роутера: при старте с startapp=qr один раз редиректит на /qr
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Если startapp не UUID → QR-сканер. Если UUID → карточка мастера (MasterCardPage).
 function InitRedirect() {
   const navigate = useNavigate()
   useEffect(() => {
-    if (!startParam || startParam === 'qr') navigate('/qr', { replace: true })
+    if (!UUID_REGEX.test(startParam)) navigate('/qr', { replace: true })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return null
 }
