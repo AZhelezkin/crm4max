@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 
@@ -31,20 +31,27 @@ const scanPromise = _isQR ? (window.WebApp?.openCodeReader?.(true) ?? null) : nu
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
+  const [debug, setDebug] = useState<string>('')
 
   useEffect(() => {
-    if (!scanPromise) return
+    if (!scanPromise) { setDebug('no scanPromise'); return }
 
     scanPromise.then((result) => {
       const masterId = extractMasterId(result)
+      setDebug(`masterId=${masterId} raw=${JSON.stringify(result).slice(0, 80)}`)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
       }
-    }).catch(() => {
-      // пользователь закрыл сканер
+    }).catch((e) => {
+      setDebug(`catch: ${String(e)}`)
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return null
+  if (!debug) return null
+  return (
+    <div style={{ padding: 20, fontSize: 12, wordBreak: 'break-all', color: '#333', background: '#fff' }}>
+      {debug}
+    </div>
+  )
 }
