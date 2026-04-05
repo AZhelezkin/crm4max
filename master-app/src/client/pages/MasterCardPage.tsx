@@ -311,6 +311,7 @@ export default function MasterCardPage() {
         >
           {/* Крестик */}
           <button
+            onTouchEnd={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
             onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
             style={{
               position: 'absolute', top: 16, right: 16, zIndex: 10,
