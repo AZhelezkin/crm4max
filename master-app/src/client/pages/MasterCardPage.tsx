@@ -54,8 +54,7 @@ export default function MasterCardPage() {
   const [master, setMaster] = useState<Master | null>(null)
   const [tab, setTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const lbStripRef   = useRef<HTMLDivElement>(null)
-  const lbOverlayRef = useRef<HTMLDivElement>(null)
+  const lbStripRef = useRef<HTMLDivElement>(null)
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
   useEffect(() => {
@@ -77,13 +76,12 @@ export default function MasterCardPage() {
     }
   }
 
-  // Lightbox touch handlers
+  // Lightbox touch handlers (горизонтальный свайп для листания)
   function onLbStart(e: React.TouchEvent) {
     e.stopPropagation()
     const t = e.touches[0]
     lbTouch.current = { startX: t.clientX, startY: t.clientY, dir: null, moved: false }
-    if (lbStripRef.current)   lbStripRef.current.style.transition = 'none'
-    if (lbOverlayRef.current) lbOverlayRef.current.style.transition = 'none'
+    if (lbStripRef.current) lbStripRef.current.style.transition = 'none'
   }
   function onLbMove(e: React.TouchEvent) {
     e.stopPropagation()
@@ -92,56 +90,34 @@ export default function MasterCardPage() {
     lbTouch.current.moved = true
     if (!lbTouch.current.dir) {
       if (Math.abs(dx) > Math.abs(dy) + 5) lbTouch.current.dir = 'h'
-      else if (Math.abs(dy) > Math.abs(dx) + 5) lbTouch.current.dir = 'v'
-      else return
+      else lbTouch.current.dir = 'v'
     }
     if (lbTouch.current.dir === 'h' && lbStripRef.current)
       lbStripRef.current.style.transform = `translateX(calc(-100vw + ${dx}px))`
-    if (lbTouch.current.dir === 'v' && lbOverlayRef.current) {
-      const p = Math.max(0, dy)
-      lbOverlayRef.current.style.transform = `translateY(${p}px)`
-      lbOverlayRef.current.style.opacity = String(Math.max(0, 1 - p / 300))
-    }
   }
   function onLbEnd(e: React.TouchEvent) {
     e.preventDefault(); e.stopPropagation()
-    const { startX, startY, dir, moved } = lbTouch.current
+    const { startX, dir } = lbTouch.current
     const dx = e.changedTouches[0].clientX - startX
-    const dy = e.changedTouches[0].clientY - startY
-    if (!moved) { setLightboxIndex(null); return }
-    if (dir === 'v') {
-      if (dy > 100 && lbOverlayRef.current) {
-        lbOverlayRef.current.style.transition = 'transform 0.25s ease, opacity 0.25s ease'
-        lbOverlayRef.current.style.transform = 'translateY(100%)'
-        lbOverlayRef.current.style.opacity = '0'
-        setTimeout(() => setLightboxIndex(null), 250)
-      } else if (lbOverlayRef.current) {
-        lbOverlayRef.current.style.transition = 'transform 0.3s ease, opacity 0.3s ease'
-        lbOverlayRef.current.style.transform = 'translateY(0)'
-        lbOverlayRef.current.style.opacity = '1'
+    if (dir !== 'h') return
+    const W = window.innerWidth
+    const goNext = dx < -60 && lightboxIndex! < workPhotos.length - 1
+    const goPrev = dx > 60 && lightboxIndex! > 0
+    if (goNext || goPrev) {
+      if (lbStripRef.current) {
+        lbStripRef.current.style.transition = 'transform 0.25s ease'
+        lbStripRef.current.style.transform = `translateX(calc(-100vw + ${goNext ? -W : W}px))`
       }
-      return
-    }
-    if (dir === 'h') {
-      const W = window.innerWidth
-      const goNext = dx < -60 && lightboxIndex! < workPhotos.length - 1
-      const goPrev = dx > 60 && lightboxIndex! > 0
-      if (goNext || goPrev) {
+      setTimeout(() => {
+        setLightboxIndex(i => i !== null ? i + (goNext ? 1 : -1) : null)
         if (lbStripRef.current) {
-          lbStripRef.current.style.transition = 'transform 0.25s ease'
-          lbStripRef.current.style.transform = `translateX(calc(-100vw + ${goNext ? -W : W}px))`
+          lbStripRef.current.style.transition = 'none'
+          lbStripRef.current.style.transform = 'translateX(-100vw)'
         }
-        setTimeout(() => {
-          setLightboxIndex(i => i !== null ? i + (goNext ? 1 : -1) : null)
-          if (lbStripRef.current) {
-            lbStripRef.current.style.transition = 'none'
-            lbStripRef.current.style.transform = 'translateX(-100vw)'
-          }
-        }, 250)
-      } else if (lbStripRef.current) {
-        lbStripRef.current.style.transition = 'transform 0.3s ease'
-        lbStripRef.current.style.transform = 'translateX(-100vw)'
-      }
+      }, 250)
+    } else if (lbStripRef.current) {
+      lbStripRef.current.style.transition = 'transform 0.3s ease'
+      lbStripRef.current.style.transform = 'translateX(-100vw)'
     }
   }
 
@@ -157,6 +133,7 @@ export default function MasterCardPage() {
   )
 
   const tabBadge = (t: Tab) => {
+    if (t === 'services') return master.categories.flatMap((c) => c.services).length
     if (t === 'photo') return workPhotos.length
     if (t === 'reviews') return master.reviews.length
     return 0
@@ -205,7 +182,7 @@ export default function MasterCardPage() {
             if (master.phone)
               window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
           }, disabled: !master.phone },
-          { label: 'Чат',           Icon: IcoChat,       action: () => navigate('/messages') },
+          { label: 'Чат',           Icon: IcoChat,       action: () => {}, disabled: true },
           { label: 'Адрес', Icon: IcoDirections, action: () => {
             if (master.lat && master.lng)
               window.WebApp?.openLink(`geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`)
@@ -326,13 +303,28 @@ export default function MasterCardPage() {
       {/* Лайтбокс */}
       {lightboxIndex !== null && (
         <div
-          ref={lbOverlayRef}
           onTouchStart={onLbStart}
           onTouchMove={onLbMove}
           onTouchEnd={onLbEnd}
-          onClick={() => setLightboxIndex(null)}
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden' }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }}
         >
+          {/* Крестик */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
+            style={{
+              position: 'absolute', top: 16, right: 16, zIndex: 10,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1 1l14 14M15 1L1 15" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+
           <div
             ref={lbStripRef}
             style={{ display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }}

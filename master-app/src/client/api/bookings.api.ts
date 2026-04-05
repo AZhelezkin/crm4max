@@ -2,7 +2,7 @@ import { api } from './client'
 import type { Booking } from '@client/types'
 
 export const bookingsApi = {
-  create: (data: { masterId: string; serviceId: string; date: string; time: string }) =>
+  create: (data: { masterId: string; serviceId: string; date: string; time: string; remind?: boolean }) =>
     api.post<Booking>('/bookings', data).then((r) => r.data),
 
   list: (params?: { status?: string }) =>

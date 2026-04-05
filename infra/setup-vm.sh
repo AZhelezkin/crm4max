@@ -35,6 +35,22 @@ mkdir -p /opt/crm4max
 chown $USER:$USER /opt/crm4max
 
 echo ""
+echo "==> Настраиваем cron для напоминаний"
+cat > /opt/crm4max/cron-reminders.sh << 'EOF'
+#!/bin/bash
+# Загружаем CRON_SECRET из .env.prod
+export $(grep -s '^CRON_SECRET=' /opt/crm4max/.env.prod | head -1)
+curl -s -X POST "http://localhost:3000/api/notifications/reminders" \
+  -H "x-cron-secret: ${CRON_SECRET}" \
+  --max-time 30 \
+  >> /var/log/crm4max-reminders.log 2>&1
+EOF
+chmod +x /opt/crm4max/cron-reminders.sh
+
+# Добавляем в crontab (каждый час в :00)
+(crontab -l 2>/dev/null | grep -v 'cron-reminders'; echo "0 * * * * /opt/crm4max/cron-reminders.sh") | crontab -
+
+echo ""
 echo "✅ VM готова!"
 echo ""
 echo "Следующие шаги:"

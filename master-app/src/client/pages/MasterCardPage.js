@@ -15,20 +15,21 @@ function IcoChat() {
     return (_jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", children: [_jsx("path", { d: "M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z", stroke: "#007AFE", strokeWidth: "2", strokeMiterlimit: "10", strokeLinecap: "round", strokeLinejoin: "round" }), _jsx("path", { d: "M7 8H17M7 13H13", stroke: "#007AFE", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" })] }));
 }
 function IcoDirections() {
-    return (_jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", children: [_jsx("path", { fillRule: "evenodd", clipRule: "evenodd", d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z", fill: "#007AFE", fillOpacity: "0.4" }), _jsx("path", { fillRule: "evenodd", clipRule: "evenodd", d: "M12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z", fill: "#007AFE" })] }));
+    return (_jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", children: [_jsx("path", { d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z", stroke: "#007AFE", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }), _jsx("circle", { cx: "12", cy: "9", r: "2.5", stroke: "#007AFE", strokeWidth: "2" })] }));
 }
 const TABS = ['services', 'photo', 'reviews'];
 const TAB_LABELS = { services: 'Услуги', photo: 'Фото', reviews: 'Отзывы' };
 export default function MasterCardPage() {
     const [params] = useSearchParams();
-    const masterId = window.WebApp?.initDataUnsafe?.start_param ?? params.get('masterId') ?? '';
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const startParam = window.WebApp?.initDataUnsafe?.start_param ?? '';
+    const masterId = (UUID_REGEX.test(startParam) ? startParam : null) ?? params.get('masterId') ?? '';
     const navigate = useNavigate();
     const { setMasterId, setService } = useBookingStore();
     const [master, setMaster] = useState(null);
     const [tab, setTab] = useState('services');
     const [lightboxIndex, setLightboxIndex] = useState(null);
     const lbStripRef = useRef(null);
-    const lbOverlayRef = useRef(null);
     const lbTouch = useRef({ startX: 0, startY: 0, dir: null, moved: false });
     useEffect(() => {
         if (masterId)
@@ -48,61 +49,31 @@ export default function MasterCardPage() {
             navigate('/book/services');
         }
     };
-    // Lightbox touch handlers
+    // Lightbox touch handlers (горизонтальный свайп для листания)
     function onLbStart(e) {
         e.stopPropagation();
         const t = e.touches[0];
         lbTouch.current = { startX: t.clientX, startY: t.clientY, dir: null, moved: false };
         if (lbStripRef.current)
             lbStripRef.current.style.transition = 'none';
-        if (lbOverlayRef.current)
-            lbOverlayRef.current.style.transition = 'none';
     }
     function onLbMove(e) {
         e.stopPropagation();
         const dx = e.touches[0].clientX - lbTouch.current.startX;
         const dy = e.touches[0].clientY - lbTouch.current.startY;
         lbTouch.current.moved = true;
-        if (!lbTouch.current.dir) {
-            if (Math.abs(dx) > Math.abs(dy) + 5)
-                lbTouch.current.dir = 'h';
-            else if (Math.abs(dy) > Math.abs(dx) + 5)
-                lbTouch.current.dir = 'v';
-            else
-                return;
-        }
+        if (!lbTouch.current.dir)
+            lbTouch.current.dir = Math.abs(dx) > Math.abs(dy) + 5 ? 'h' : 'v';
         if (lbTouch.current.dir === 'h' && lbStripRef.current)
             lbStripRef.current.style.transform = `translateX(calc(-100vw + ${dx}px))`;
-        if (lbTouch.current.dir === 'v' && lbOverlayRef.current) {
-            const p = Math.max(0, dy);
-            lbOverlayRef.current.style.transform = `translateY(${p}px)`;
-            lbOverlayRef.current.style.opacity = String(Math.max(0, 1 - p / 300));
-        }
     }
     function onLbEnd(e) {
         e.preventDefault();
         e.stopPropagation();
-        const { startX, startY, dir, moved } = lbTouch.current;
+        const { startX, dir } = lbTouch.current;
         const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-        if (!moved) {
-            setLightboxIndex(null);
+        if (dir !== 'h')
             return;
-        }
-        if (dir === 'v') {
-            if (dy > 100 && lbOverlayRef.current) {
-                lbOverlayRef.current.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-                lbOverlayRef.current.style.transform = 'translateY(100%)';
-                lbOverlayRef.current.style.opacity = '0';
-                setTimeout(() => setLightboxIndex(null), 250);
-            }
-            else if (lbOverlayRef.current) {
-                lbOverlayRef.current.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                lbOverlayRef.current.style.transform = 'translateY(0)';
-                lbOverlayRef.current.style.opacity = '1';
-            }
-            return;
-        }
         if (dir === 'h') {
             const W = window.innerWidth;
             const goNext = dx < -60 && lightboxIndex < workPhotos.length - 1;
@@ -127,10 +98,12 @@ export default function MasterCardPage() {
         }
     }
     if (!masterId)
-        return (_jsx("div", { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }, children: _jsx("span", { style: { color: 'var(--color-text-secondary)' }, children: "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0447\u0435\u0440\u0435\uFFFD\uFFFD \u0431\u043E\u0442\u0430" }) }));
+        return (_jsx("div", { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }, children: _jsx("span", { style: { color: 'var(--color-text-secondary)' }, children: "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0447\u0435\u0440\u0435\u0437 \u0431\u043E\u0442\u0430" }) }));
     if (!master)
         return (_jsx("div", { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }, children: _jsx("span", { style: { color: 'var(--color-text-secondary)' }, children: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430..." }) }));
     const tabBadge = (t) => {
+        if (t === 'services')
+            return master.categories.flatMap((c) => c.services).length;
         if (t === 'photo')
             return workPhotos.length;
         if (t === 'reviews')
@@ -151,13 +124,20 @@ export default function MasterCardPage() {
                             ? _jsx("img", { src: master.photo, alt: "", style: { width: '100%', height: '100%', objectFit: 'cover' } })
                             : _jsx("span", { style: { fontSize: 44, color: 'var(--color-text-secondary)' }, children: "\uD83D\uDC64" }) }), _jsx("div", { style: { fontSize: 28, fontWeight: 600, color: '#D3D4D6', lineHeight: 1.2 }, children: master.name }), master.description && (_jsx("div", { style: { fontSize: 15, color: '#7D7D7F', marginTop: 4, padding: '0 24px' }, children: master.description }))] }), _jsx("div", { style: { display: 'flex', gap: 8, padding: '0 16px 16px' }, children: [
                     { label: 'Запись', Icon: IcoBook, action: () => handleBook() },
-                    { label: 'Звонок', Icon: IcoCall, action: () => { } },
-                    { label: 'Чат', Icon: IcoChat, action: () => navigate('/messages') },
-                    { label: 'Как добраться', Icon: IcoDirections, action: () => { } },
-                ].map((btn) => (_jsxs("button", { onClick: btn.action, style: {
+                    { label: 'Звонок', Icon: IcoCall, action: () => {
+                            if (master.phone)
+                                window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`);
+                        }, disabled: !master.phone },
+                    { label: 'Чат', Icon: IcoChat, action: () => {}, disabled: true },
+                    { label: 'Адрес', Icon: IcoDirections, action: () => {
+                            if (master.lat && master.lng)
+                                window.WebApp?.openLink(`geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`);
+                        }, disabled: !master.lat || !master.lng },
+                ].map((btn) => (_jsxs("button", { onClick: btn.action, disabled: 'disabled' in btn ? btn.disabled : false, style: {
                         flex: 1, height: 69, background: '#25262B', borderRadius: 18,
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        border: 'none', cursor: 'pointer',
+                        border: 'none', cursor: 'disabled' in btn && btn.disabled ? 'default' : 'pointer',
+                        opacity: 'disabled' in btn && btn.disabled ? 0.4 : 1,
                     }, children: [_jsx(btn.Icon, {}), _jsx("span", { style: { fontSize: 14, fontWeight: 400, color: '#007AFE' }, children: btn.label })] }, btn.label))) }), _jsx("div", { style: { display: 'flex', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', scrollbarWidth: 'none', paddingLeft: 16 }, children: TABS.map((key, idx) => {
                     const active = tab === key;
                     const badge = tabBadge(key);
@@ -182,7 +162,7 @@ export default function MasterCardPage() {
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                                 }, children: r.client.photo
                                                     ? _jsx("img", { src: r.client.photo, alt: "", style: { width: '100%', height: '100%', objectFit: 'cover' } })
-                                                    : _jsx("span", { style: { fontSize: 20 }, children: "\uD83D\uDC64" }) }), _jsxs("div", { children: [_jsx("div", { style: { fontSize: 15, fontWeight: 500, color: '#D3D4D6' }, children: r.client.name }), _jsx("div", { style: { display: 'flex', gap: 2, marginTop: 2 }, children: Array.from({ length: 5 }).map((_, i) => (_jsx("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: i < r.rating ? '#FF9500' : '#3A3A3C', children: _jsx("path", { d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" }) }, i))) })] })] }), r.text && _jsx("p", { style: { fontSize: 15, color: '#7D7D7F', lineHeight: 1.5, margin: 0 }, children: r.text })] }, r.id)))] }))] }), _jsx(BottomNav, {}), lightboxIndex !== null && (_jsxs("div", { ref: lbOverlayRef, onTouchStart: onLbStart, onTouchMove: onLbMove, onTouchEnd: onLbEnd, onClick: () => setLightboxIndex(null), style: { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden' }, children: [_jsx("div", { ref: lbStripRef, style: { display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }, children: [lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (_jsx("div", { style: { width: '100vw', height: '100%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }, children: workPhotos[idx] && (_jsx("img", { src: workPhotos[idx].url, alt: "", style: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none' } })) }, idx))) }), workPhotos.length > 1 && (_jsx("div", { style: { position: 'absolute', bottom: 32, left: 0, right: 0, display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'none' }, children: workPhotos.map((_, i) => (_jsx("div", { style: {
+                                                    : _jsx("span", { style: { fontSize: 20 }, children: "\uD83D\uDC64" }) }), _jsxs("div", { children: [_jsx("div", { style: { fontSize: 15, fontWeight: 500, color: '#D3D4D6' }, children: r.client.name }), _jsx("div", { style: { display: 'flex', gap: 2, marginTop: 2 }, children: Array.from({ length: 5 }).map((_, i) => (_jsx("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: i < r.rating ? '#FF9500' : '#3A3A3C', children: _jsx("path", { d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" }) }, i))) })] })] }), r.text && _jsx("p", { style: { fontSize: 15, color: '#7D7D7F', lineHeight: 1.5, margin: 0 }, children: r.text })] }, r.id)))] }))] }), _jsx(BottomNav, {}), lightboxIndex !== null && (_jsxs("div", { onTouchStart: onLbStart, onTouchMove: onLbMove, onTouchEnd: onLbEnd, onClick: (e) => e.stopPropagation(), style: { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }, children: [_jsx("button", { onClick: (e) => { e.stopPropagation(); setLightboxIndex(null); }, style: { position: 'absolute', top: 16, right: 16, zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }, children: _jsx("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", children: _jsx("path", { d: "M1 1l14 14M15 1L1 15", stroke: "#fff", strokeWidth: "2", strokeLinecap: "round" }) }) }), _jsx("div", { ref: lbStripRef, style: { display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }, children: [lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (_jsx("div", { style: { width: '100vw', height: '100%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }, children: workPhotos[idx] && (_jsx("img", { src: workPhotos[idx].url, alt: "", style: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none' } })) }, idx))) }), workPhotos.length > 1 && (_jsx("div", { style: { position: 'absolute', bottom: 32, left: 0, right: 0, display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'none' }, children: workPhotos.map((_, i) => (_jsx("div", { style: {
                                 width: i === lightboxIndex ? 8 : 6, height: i === lightboxIndex ? 8 : 6,
                                 borderRadius: '50%',
                                 background: i === lightboxIndex ? '#fff' : 'rgba(255,255,255,0.35)',
