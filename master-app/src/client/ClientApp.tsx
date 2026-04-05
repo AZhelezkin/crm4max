@@ -23,19 +23,7 @@ export default function ClientApp() {
 
   useEffect(() => { init() }, [init])
 
-  // В QR-режиме показываем сканер сразу, не ждём auth —
-  // openCodeReader требует активного user gesture, который истекает пока грузится auth
-  if (isQRMode) {
-    return (
-      <HashRouter>
-        <Routes>
-          <Route path="*" element={<QRScanPage />} />
-        </Routes>
-      </HashRouter>
-    )
-  }
-
-  if (isLoading) {
+  if (isLoading && !isQRMode) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
         <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
@@ -46,7 +34,9 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/"                element={<MasterCardPage />} />
+        {/* В QR-режиме стартуем с /qr, при UUID startParam — с / */}
+        <Route path="/"                element={isQRMode ? <Navigate to="/qr" replace /> : <MasterCardPage />} />
+        <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
@@ -56,7 +46,7 @@ export default function ClientApp() {
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
-        <Route path="*"                element={<Navigate to="/" replace />} />
+        <Route path="*"                element={<Navigate to={isQRMode ? '/qr' : '/'} replace />} />
       </Routes>
     </HashRouter>
   )
