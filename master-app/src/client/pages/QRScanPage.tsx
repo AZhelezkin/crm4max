@@ -35,18 +35,5 @@ export default function QRScanPage() {
     })
   }, [navigate, setMasterId])
 
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100dvh', gap: 16,
-      background: 'var(--color-bg)', color: 'var(--color-text)',
-      padding: '0 24px', textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 64 }}>📷</div>
-      <h2 style={{ margin: 0, fontSize: 20 }}>Сканировать QR-код</h2>
-      <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 14 }}>
-        Попросите мастера показать QR-код и направьте камеру на него
-      </p>
-    </div>
-  )
+  return null
 }
