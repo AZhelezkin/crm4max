@@ -1,8 +1,29 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { Switch } from '@maxhub/max-ui'
 import { useAuthStore } from '@/store/auth.store'
+import { scheduleApi } from '@/api/schedule.api'
 import type { Category } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
+import {
+  onboardingSectionCardStyle,
+  onboardingSectionLabelStyle,
+  onboardingSelectChevronStyle,
+  onboardingSelectStyle,
+  onboardingSelectWrapStyle,
+  onboardingTimeSelectStyle,
+  onboardingTimeSelectWrapStyle,
+  onboardingToggleLabelStyle,
+  onboardingToggleRowStyle,
+  primaryActionButtonBaseStyle,
+} from '@/components/onboardingStepOne.styles'
+
+const DAYS = [
+  { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
+  { v: 4, l: 'ЧТ' }, { v: 5, l: 'ПТ' }, { v: 6, l: 'СБ' }, { v: 7, l: 'ВС' },
+]
+const BUFFER_OPTIONS = [0, 10, 15, 20, 30, 45, 60]
 
 type Tab = 'services' | 'photos' | 'reviews'
 
@@ -16,6 +37,64 @@ export default function ProfilePage() {
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
   const totalServices = master?.categories.reduce((acc, c) => acc + c.services.length, 0) ?? 0
+
+  // ── Портал расписания ──
+  const [showSchedule, setShowSchedule]   = useState(false)
+  const [schLoading, setSchLoading]       = useState(false)
+  const [schSaving, setSchSaving]         = useState(false)
+  const [schError, setSchError]           = useState<string | null>(null)
+  const [workingDays, setWorkingDays]     = useState<number[]>([1, 2, 3, 4, 5])
+  const [startTime, setStartTime]         = useState('09:00')
+  const [endTime, setEndTime]             = useState('18:00')
+  const [buffer, setBuffer]               = useState(30)
+  const [hasBreak, setHasBreak]           = useState(false)
+  const [breakStart, setBreakStart]       = useState('13:00')
+  const [breakEnd, setBreakEnd]           = useState('14:00')
+
+  useEffect(() => {
+    if (!showSchedule) return
+    setSchLoading(true)
+    setSchError(null)
+    scheduleApi.get()
+      .then((s) => {
+        if (!s) return
+        setWorkingDays(s.workingDays)
+        setStartTime(s.startTime)
+        setEndTime(s.endTime)
+        setBuffer(s.bufferMinutes)
+        setHasBreak(!!s.breakStart)
+        setBreakStart(s.breakStart ?? '13:00')
+        setBreakEnd(s.breakEnd ?? '14:00')
+      })
+      .catch(() => {/* нет расписания — оставляем дефолты */})
+      .finally(() => setSchLoading(false))
+  }, [showSchedule])
+
+  const handleSaveSchedule = async () => {
+    if (hasBreak && breakEnd <= breakStart) {
+      setSchError('Конец обеда должен быть позже его начала')
+      return
+    }
+    setSchSaving(true)
+    setSchError(null)
+    try {
+      await scheduleApi.upsert({
+        workingDays, startTime, endTime, bufferMinutes: buffer,
+        breakStart: hasBreak ? breakStart : undefined,
+        breakEnd: hasBreak ? breakEnd : undefined,
+      })
+      setShowSchedule(false)
+    } catch {
+      setSchError('Не удалось сохранить. Попробуйте ещё раз.')
+    } finally {
+      setSchSaving(false)
+    }
+  }
+
+  const toggleDay = (d: number) =>
+    setWorkingDays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()
+    )
 
   const allPhotos = (master?.categories ?? [])
     .flatMap(c => c.services)
@@ -155,7 +234,7 @@ export default function ProfilePage() {
               label: 'Поделиться', action: () => navigate('/share'),
               icon: <ShareIcon active />,
             },
-            { label: 'Еще', action: () => {}, icon: <MoreIcon active /> },
+            { label: 'Расписание', action: () => setShowSchedule(true), icon: <ScheduleIcon active /> },
           ].map(({ label, icon, action }) => (
             <button
               key={label}
@@ -233,6 +312,114 @@ export default function ProfilePage() {
         )}
         {activeTab === 'reviews' && <EmptyState text="Отзывы появятся после первых записей" />}
       </div>
+
+      {/* Портал расписания */}
+      {showSchedule && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+
+          {/* Заголовок */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
+            <button
+              onClick={() => setShowSchedule(false)}
+              style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              <BackArrowIcon />
+            </button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+              Расписание
+            </div>
+            <div style={{ width: 56 }} />
+          </div>
+
+          {/* Контент */}
+          <div style={{ flex: 1, padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {schLoading
+              ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-secondary)' }}>Загрузка…</div>
+              : <>
+                  {/* Дни недели */}
+                  <div style={onboardingSectionCardStyle}>
+                    <div style={onboardingSectionLabelStyle}>ДНИ НЕДЕЛИ</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+                      {DAYS.map((d) => (
+                        <button
+                          key={d.v}
+                          onClick={() => toggleDay(d.v)}
+                          style={{
+                            border: 'none', borderRadius: 12, height: 36,
+                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card2)',
+                            color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text)',
+                          }}
+                        >{d.l}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Время работы */}
+                  <div style={onboardingSectionCardStyle}>
+                    <div style={onboardingSectionLabelStyle}>ВРЕМЯ РАБОТЫ</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <SchTimeSelect value={startTime} onChange={setStartTime} />
+                      <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                      <SchTimeSelect value={endTime} onChange={setEndTime} />
+                    </div>
+                  </div>
+
+                  {/* Перерыв между приёмами */}
+                  <div style={onboardingSectionCardStyle}>
+                    <div style={onboardingSectionLabelStyle}>ПЕРЕРЫВ МЕЖДУ ПРИЁМАМИ</div>
+                    <SchSelectField
+                      value={buffer}
+                      onChange={(v) => setBuffer(Number(v))}
+                      options={BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` }))}
+                    />
+                  </div>
+
+                  {/* Обед */}
+                  <div style={onboardingSectionCardStyle}>
+                    <div style={onboardingToggleRowStyle}>
+                      <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Обед</span>
+                      <Switch checked={hasBreak} onChange={() => setHasBreak((v) => !v)} />
+                    </div>
+                    {hasBreak && (
+                      <div style={{ marginTop: 12 }}>
+                        <div style={onboardingSectionLabelStyle}>ВРЕМЯ ОБЕДА</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <SchTimeSelect value={breakStart} onChange={setBreakStart} />
+                          <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                          <SchTimeSelect value={breakEnd} onChange={setBreakEnd} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {schError && (
+                    <div style={{ fontSize: 14, color: 'var(--color-error, #FF3B30)', padding: '4px 4px' }}>{schError}</div>
+                  )}
+                </>
+            }
+          </div>
+
+          {/* Кнопка сохранить */}
+          <div style={{ padding: '16px 16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleSaveSchedule}
+              disabled={schSaving || schLoading}
+              style={{
+                ...primaryActionButtonBaseStyle,
+                cursor: schSaving || schLoading ? 'default' : 'pointer',
+                background: schSaving || schLoading ? 'var(--color-card2)' : 'var(--color-primary)',
+                color: schSaving || schLoading ? 'var(--color-text-secondary)' : '#fff',
+              }}
+            >
+              {schSaving ? 'Сохраняем…' : 'Сохранить'}
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {/* Лайтбокс */}
       {lightboxIndex !== null && (
@@ -494,14 +681,51 @@ function CatalogIcon({ active }: { active?: boolean }) {
   )
 }
 
-function MoreIcon({ active }: { active?: boolean }) {
+function ScheduleIcon({ active }: { active?: boolean }) {
   const c = active ? '#2688EB' : '#8E8E93'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="5" cy="12" r="2" fill={c} />
-      <circle cx="12" cy="12" r="2" fill={c} />
-      <circle cx="19" cy="12" r="2" fill={c} />
+      <circle cx="12" cy="12" r="9" stroke={c} strokeWidth="2" />
+      <path d="M12 7v5l3 3" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  )
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function SchTimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  const [h, m] = value.split(':')
+  return (
+    <div style={onboardingTimeSelectWrapStyle}>
+      <select value={h} onChange={(e) => onChange(`${e.target.value}:${m}`)} style={onboardingTimeSelectStyle}>
+        {hours.map((hh) => <option key={hh} value={hh}>{hh}</option>)}
+      </select>
+      <span style={{ color: 'var(--color-text-secondary)' }}>:</span>
+      <select value={m} onChange={(e) => onChange(`${h}:${e.target.value}`)} style={onboardingTimeSelectStyle}>
+        {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function SchSelectField({ value, onChange, options }: {
+  value: number; onChange: (v: string) => void
+  options: { value: number; label: string }[]
+}) {
+  return (
+    <div style={onboardingSelectWrapStyle}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={onboardingSelectStyle}>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <span style={onboardingSelectChevronStyle}>⌄</span>
+    </div>
   )
 }
 
