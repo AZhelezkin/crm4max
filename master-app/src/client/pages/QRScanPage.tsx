@@ -5,13 +5,25 @@ import { useBookingStore } from '@client/store/booking.store'
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function extractMasterId(scanned: string): string | null {
+  // 1. Попробовать как URL с query-параметром startapp
   try {
     const url = new URL(scanned)
     const startapp = url.searchParams.get('startapp')
     if (startapp && UUID_REGEX.test(startapp)) return startapp
-  } catch {
-    if (UUID_REGEX.test(scanned)) return scanned
-  }
+  } catch { /* не URL */ }
+
+  // 2. Попробовать как URL с hash-параметром: #startapp=UUID
+  try {
+    const url = new URL(scanned)
+    const hashParams = new URLSearchParams(url.hash.replace(/^#\/?/, ''))
+    const startapp = hashParams.get('startapp')
+    if (startapp && UUID_REGEX.test(startapp)) return startapp
+  } catch { /* не URL */ }
+
+  // 3. Найти любой UUID в строке
+  const match = scanned.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
+  if (match) return match[0]
+
   return null
 }
 
@@ -56,11 +68,16 @@ export default function QRScanPage() {
       </div>
 
       {error && (
-        <div style={{
-          fontSize: 13, color: '#e53935', background: '#fff0f0',
-          borderRadius: 8, padding: '10px 14px', textAlign: 'center',
-          wordBreak: 'break-all', maxWidth: 320,
-        }}>
+        <div
+          onClick={() => navigator.clipboard?.writeText(error).catch(() => {})}
+          style={{
+            fontSize: 12, color: '#e53935', background: '#fff0f0',
+            borderRadius: 8, padding: '10px 14px', textAlign: 'left',
+            wordBreak: 'break-all', maxWidth: 320, cursor: 'copy',
+            whiteSpace: 'pre-wrap',
+          }}
+          title="Нажмите чтобы скопировать"
+        >
           {error}
         </div>
       )}
