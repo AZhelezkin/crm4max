@@ -168,11 +168,16 @@ export default function OnboardingPage() {
 
   const isValidPhone = (val: string) => val.replace(/\D/g, '').length === 11
 
-  const handlePhoneChange = (raw: string) => {
+  const handlePhoneChange = (rawInput: string) => {
     setPhoneError(null)
-    const digits = raw.replace(/\D/g, '')
-    const capped = digits.slice(0, 11)
-    setPhone(formatPhone(capped))
+    let digits = rawInput.replace(/\D/g, '')
+    if (digits.startsWith('8')) digits = '7' + digits.slice(1)
+    digits = digits.slice(0, 11)
+    const prevDigits = phone.replace(/\D/g, '')
+    if (digits === prevDigits && rawInput.length < phone.length) {
+      digits = prevDigits.slice(0, -1)
+    }
+    setPhone(digits ? formatPhone(digits) : '')
   }
 
   // Показывает локальный превью мгновенно, параллельно загружает в S3.
@@ -405,14 +410,13 @@ export default function OnboardingPage() {
                 <CellInput
                   value={phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
-                  placeholder="+7 (___) ___-__-__"
+                  placeholder="Телефон"
                   inputMode="tel"
                 />
               </CellList>
-              {phoneError
-                ? <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
-                : <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>Для связи с клиентами</div>
-              }
+              {phoneError && (
+                <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
+              )}
             </div>
 
             {/* Описание */}
