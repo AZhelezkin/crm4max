@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 
@@ -21,37 +21,45 @@ function extractMasterId(raw: ScanResult): string | null {
   return null
 }
 
-// Запускаем сканер на уровне модуля — синхронно при импорте,
-// пока user gesture от нажатия кнопки ещё активен.
-// Только в QR-режиме (startParam не UUID и не mmode).
-const _sp = window.WebApp?.initDataUnsafe?.start_param ?? ''
-const _isQR = _sp !== 'mmode' && !UUID_REGEX.test(_sp)
-const scanPromise = _isQR ? (window.WebApp?.openCodeReader?.(true) ?? null) : null
-
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
-  const [debug, setDebug] = useState<string>('')
+  const [scanning, setScanning] = useState(false)
 
-  useEffect(() => {
-    if (!scanPromise) { setDebug('no scanPromise'); return }
-
-    scanPromise.then((result) => {
+  const handleScan = () => {
+    if (!window.WebApp?.openCodeReader || scanning) return
+    setScanning(true)
+    window.WebApp.openCodeReader(true).then((result) => {
       const masterId = extractMasterId(result)
-      setDebug(`masterId=${masterId} raw=${JSON.stringify(result).slice(0, 80)}`)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
+      } else {
+        setScanning(false)
       }
-    }).catch((e) => {
-      setDebug(`catch: ${String(e)}`)
+    }).catch(() => {
+      setScanning(false)
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
-  if (!debug) return null
   return (
-    <div style={{ padding: 20, fontSize: 12, wordBreak: 'break-all', color: '#333', background: '#fff' }}>
-      {debug}
+    <div
+      onClick={handleScan}
+      style={{
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        height: '100dvh', gap: 16,
+        background: 'var(--color-bg)',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontSize: 56 }}>📷</div>
+      <div style={{ fontSize: 17, fontWeight: 600 }}>
+        {scanning ? 'Открываю камеру…' : 'Нажмите для сканирования'}
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', textAlign: 'center', padding: '0 32px' }}>
+        Отсканируйте QR-код мастера, чтобы записаться
+      </div>
     </div>
   )
 }
