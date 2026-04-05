@@ -254,6 +254,11 @@ export default function OnboardingPage() {
       }
 
       if (step === 1) {
+        if (hasBreak && breakEnd <= breakStart) {
+          setSubmitError('Конец обеда должен быть позже его начала')
+          setSaving(false)
+          return
+        }
         await scheduleApi.upsert({
           workingDays, startTime, endTime, bufferMinutes: buffer,
           breakStart: hasBreak ? breakStart : undefined,
