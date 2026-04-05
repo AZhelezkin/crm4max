@@ -1,18 +1,7 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-// Если startapp не UUID → QR-сканер. Если UUID → карточка мастера (MasterCardPage).
-function InitRedirect() {
-  const navigate = useNavigate()
-  useEffect(() => {
-    if (!UUID_REGEX.test(startParam)) navigate('/qr', { replace: true })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return null
-}
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
@@ -25,6 +14,10 @@ import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Если startParam — UUID, сразу показываем карточку мастера. Иначе — QR-сканер.
+const defaultRoute = UUID_REGEX.test(startParam) ? '/' : '/qr'
 
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
@@ -41,9 +34,8 @@ export default function ClientApp() {
 
   return (
     <HashRouter>
-      <InitRedirect />
       <Routes>
-        <Route path="/"                element={<MasterCardPage />} />
+        <Route path="/"                element={UUID_REGEX.test(startParam) ? <MasterCardPage /> : <Navigate to="/qr" replace />} />
         <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
@@ -54,7 +46,7 @@ export default function ClientApp() {
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
-        <Route path="*"                element={<Navigate to="/" replace />} />
+        <Route path="*"                element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </HashRouter>
   )
