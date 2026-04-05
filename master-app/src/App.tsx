@@ -21,14 +21,11 @@ import ShareLinkPage from '@/pages/ShareLinkPage'
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   <UUID>  → клиент, запись к конкретному мастеру
 //   "qr"    → клиент, режим сканирования QR-кода мастера
+//   ""      → клиент, режим сканирования QR-кода (нативная кнопка в мессенджере)
 //   "mmode" → мастер (кабинет / онбординг)
-//   ""      → мастер (прямой переход без startapp)
 // Fallback для GitHub Pages / разработки: hash-параметр #/?masterId=<UUID>
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
-const hashSearch = window.location.hash.split('?')[1] ?? ''
-const fallbackMasterId = new URLSearchParams(hashSearch).get('masterId') ?? ''
-const isClientMode = UUID_REGEX.test(startParam) || UUID_REGEX.test(fallbackMasterId) || startParam === 'qr'
+const isClientMode = startParam !== 'mmode'
 
 document.documentElement.dataset.theme = isClientMode ? 'client' : 'master'
 
