@@ -16,15 +16,17 @@ import BookingDetailPage from '@/pages/BookingDetailPage';
 import CreateBookingPage from '@/pages/CreateBookingPage';
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage';
 import ShareLinkPage from '@/pages/ShareLinkPage';
-// Определяем режим по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param).
-// Если ?startapp=<UUID мастера> — открываем клиентское приложение (бронирование).
-// Если start_param отсутствует или не является UUID — открываем приложение мастера.
+// Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
+//   <UUID>  → клиент, запись к конкретному мастеру
+//   "qr"    → клиент, режим сканирования QR-кода мастера
+//   "mmode" → мастер (кабинет / онбординг)
+//   ""      → мастер (прямой переход без startapp)
 // Fallback для GitHub Pages / разработки: hash-параметр #/?masterId=<UUID>
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const startParam = window.WebApp?.initDataUnsafe?.start_param ?? '';
+export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? '';
 const hashSearch = window.location.hash.split('?')[1] ?? '';
 const fallbackMasterId = new URLSearchParams(hashSearch).get('masterId') ?? '';
-const isClientMode = UUID_REGEX.test(startParam) || UUID_REGEX.test(fallbackMasterId);
+const isClientMode = UUID_REGEX.test(startParam) || UUID_REGEX.test(fallbackMasterId) || startParam === 'qr';
 document.documentElement.dataset.theme = isClientMode ? 'client' : 'master';
 export default function App() {
     if (isClientMode)

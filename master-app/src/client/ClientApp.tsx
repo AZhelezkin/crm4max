@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
+import { startParam } from '@/App'
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
@@ -12,6 +13,7 @@ import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import ContactsPage      from '@client/pages/ContactsPage'
+import QRScanPage        from '@client/pages/QRScanPage'
 
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
@@ -29,7 +31,8 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/"                element={<MasterCardPage />} />
+        <Route path="/"                element={startParam === 'qr' ? <QRScanPage /> : <MasterCardPage />} />
+        <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
