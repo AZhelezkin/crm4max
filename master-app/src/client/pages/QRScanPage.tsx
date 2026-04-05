@@ -21,21 +21,28 @@ function extractMasterId(raw: ScanResult): string | null {
   return null
 }
 
+// Запускаем сканер на уровне модуля — синхронно при импорте,
+// пока user gesture от нажатия кнопки ещё активен.
+// Только в QR-режиме (startParam не UUID и не mmode).
+const _sp = window.WebApp?.initDataUnsafe?.start_param ?? ''
+const _isQR = _sp !== 'mmode' && !UUID_REGEX.test(_sp)
+const scanPromise = _isQR ? (window.WebApp?.openCodeReader?.(true) ?? null) : null
+
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
 
   useEffect(() => {
-    if (!window.WebApp?.openCodeReader) return
+    if (!scanPromise) return
 
-    window.WebApp.openCodeReader(true).then((result) => {
+    scanPromise.then((result) => {
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
       }
     }).catch(() => {
-      // пользователь закрыл сканер — остаёмся на странице
+      // пользователь закрыл сканер
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
