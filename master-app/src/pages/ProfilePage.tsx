@@ -271,7 +271,7 @@ export default function ProfilePage() {
       <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', padding: '0 16px' }}>
         {([
           { key: 'services', label: 'Услуги', count: totalServices },
-          { key: 'photos',   label: 'Фото',   count: 0 },
+          { key: 'photos',   label: 'Фото',   count: allPhotos.length },
           { key: 'reviews',  label: 'Отзывы', count: reviews.length },
         ] as { key: Tab; label: string; count: number }[]).map((tab) => (
           <button
