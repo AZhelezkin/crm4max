@@ -58,6 +58,8 @@ export default function AboutMePage() {
 
   const [name, setName]               = useState(master?.name ?? '')
   const [contacts, setContacts]       = useState(master?.contacts ?? '')
+  const [phone, setPhone]             = useState(master?.phone ?? '')
+  const [phoneError, setPhoneError]   = useState<string | null>(null)
   const [description, setDescription] = useState(master?.description ?? '')
   const [location, setLocation]       = useState(master?.location ?? '')
   const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null)
@@ -70,6 +72,27 @@ export default function AboutMePage() {
 
   const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [addressDraft, setAddressDraft]           = useState(location)
+
+  const formatPhone = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '')
+    const d = digits.startsWith('8') ? '7' + digits.slice(1) : digits
+    const n = d.startsWith('7') ? d : d ? '7' + d : ''
+    if (!n) return ''
+    let result = '+7'
+    if (n.length > 1) result += ' (' + n.slice(1, 4)
+    if (n.length >= 4) result += ') ' + n.slice(4, 7)
+    if (n.length >= 7) result += '-' + n.slice(7, 9)
+    if (n.length >= 9) result += '-' + n.slice(9, 11)
+    return result
+  }
+
+  const isValidPhone = (val: string) => val.replace(/\D/g, '').length === 11
+
+  const handlePhoneChange = (raw: string) => {
+    setPhoneError(null)
+    const digits = raw.replace(/\D/g, '').slice(0, 11)
+    setPhone(formatPhone(digits))
+  }
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -87,11 +110,16 @@ export default function AboutMePage() {
   }
 
   const handleSave = async () => {
+    if (phone && !isValidPhone(phone)) {
+      setPhoneError('Введите номер полностью: +7 (XXX) XXX-XX-XX')
+      return
+    }
     setSaving(true)
     try {
       const updated = await mastersApi.updateProfile({
         name,
         contacts,
+        phone: phone || undefined,
         description,
         location,
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
@@ -162,6 +190,22 @@ export default function AboutMePage() {
             placeholder="Контакты (телефон или ссылка)"
           />
         </CellList>
+
+        {/* Телефон */}
+        <div>
+          <CellList mode="island">
+            <CellInput
+              value={phone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="+7 (___) ___-__-__"
+              inputMode="tel"
+            />
+          </CellList>
+          {phoneError
+            ? <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
+            : <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>Для связи с клиентами</div>
+          }
+        </div>
 
         {/* Описание */}
         <CellList mode="island">

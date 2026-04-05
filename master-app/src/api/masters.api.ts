@@ -5,7 +5,7 @@ export const mastersApi = {
   getMe: () =>
     api.get<Master>('/masters/me').then((r) => r.data),
 
-  updateProfile: (data: Partial<Pick<Master, 'name' | 'photo' | 'description' | 'contacts' | 'location' | 'isOnboarded'>>) =>
+  updateProfile: (data: Partial<Pick<Master, 'name' | 'photo' | 'description' | 'contacts' | 'phone' | 'location' | 'lat' | 'lng' | 'isOnboarded'>>) =>
     api.put<Master>('/masters/me', data).then((r) => r.data),
 
   updatePayment: (data: { cardNumber?: string; vkPayLinked?: boolean }) =>

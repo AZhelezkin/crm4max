@@ -52,6 +52,7 @@ export const mastersService = {
     photo?: string
     description?: string
     contacts?: string
+    phone?: string
     location?: string
     lat?: number
     lng?: number

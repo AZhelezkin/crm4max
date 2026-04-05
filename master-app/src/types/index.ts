@@ -4,6 +4,7 @@ export interface Master {
   photo: string | null
   description: string | null
   contacts: string | null
+  phone: string | null
   location: string | null
   lat: number | null
   lng: number | null

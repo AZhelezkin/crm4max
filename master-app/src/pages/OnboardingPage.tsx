@@ -122,6 +122,8 @@ export default function OnboardingPage() {
 
   // ── Шаг 0: Обо мне ──
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -150,6 +152,28 @@ export default function OnboardingPage() {
     setWorkingDays((prev) =>
       prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()
     )
+
+  const formatPhone = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '')
+    const d = digits.startsWith('8') ? '7' + digits.slice(1) : digits.startsWith('7') ? digits : digits
+    const n = d.startsWith('7') ? d : d ? '7' + d : ''
+    if (!n) return ''
+    let result = '+7'
+    if (n.length > 1) result += ' (' + n.slice(1, 4)
+    if (n.length >= 4) result += ') ' + n.slice(4, 7)
+    if (n.length >= 7) result += '-' + n.slice(7, 9)
+    if (n.length >= 9) result += '-' + n.slice(9, 11)
+    return result
+  }
+
+  const isValidPhone = (val: string) => val.replace(/\D/g, '').length === 11
+
+  const handlePhoneChange = (raw: string) => {
+    setPhoneError(null)
+    const digits = raw.replace(/\D/g, '')
+    const capped = digits.slice(0, 11)
+    setPhone(formatPhone(capped))
+  }
 
   // Показывает локальный превью мгновенно, параллельно загружает в S3.
   // onUploaded(s3url) вызывается после успешной загрузки.
@@ -202,8 +226,14 @@ export default function OnboardingPage() {
     try {
       if (step === 0) {
         if (!name.trim()) { setSaving(false); return }
+        if (phone && !isValidPhone(phone)) {
+          setPhoneError('Введите номер полностью: +7 (XXX) XXX-XX-XX')
+          setSaving(false)
+          return
+        }
         await mastersApi.updateProfile({
           name: name.trim(),
+          phone: phone || undefined,
           description,
           location,
           ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
@@ -368,6 +398,22 @@ export default function OnboardingPage() {
                 placeholder="Имя или название бизнеса"
               />
             </CellList>
+
+            {/* Телефон */}
+            <div>
+              <CellList mode="island">
+                <CellInput
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  placeholder="+7 (___) ___-__-__"
+                  inputMode="tel"
+                />
+              </CellList>
+              {phoneError
+                ? <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
+                : <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '4px 16px 0' }}>Для связи с клиентами</div>
+              }
+            </div>
 
             {/* Описание */}
             <CellList mode="island">

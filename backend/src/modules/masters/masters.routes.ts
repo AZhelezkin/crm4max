@@ -25,6 +25,7 @@ export async function masterRoutes(app: FastifyInstance) {
       photo: z.string().optional(),
       description: z.string().optional(),
       contacts: z.string().optional(),
+      phone: z.string().optional(),
       location: z.string().optional(),
       lat: z.number().optional(),
       lng: z.number().optional(),
