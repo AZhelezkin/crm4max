@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
 
@@ -18,6 +18,14 @@ import QRScanPage        from '@client/pages/QRScanPage'
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const isQRMode = !UUID_REGEX.test(startParam)
 
+// В QR-режиме: если masterId уже получен (после скана) — карточка мастера, иначе — сканер
+function RootRoute() {
+  const [params] = useSearchParams()
+  const hasMasterId = !!params.get('masterId') || UUID_REGEX.test(startParam)
+  if (isQRMode && !hasMasterId) return <Navigate to="/qr" replace />
+  return <MasterCardPage />
+}
+
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
 
@@ -34,8 +42,7 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <Routes>
-        {/* В QR-режиме стартуем с /qr, при UUID startParam — с / */}
-        <Route path="/"                element={isQRMode ? <Navigate to="/qr" replace /> : <MasterCardPage />} />
+        <Route path="/"                element={<RootRoute />} />
         <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
