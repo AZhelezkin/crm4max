@@ -57,7 +57,7 @@ export default function AboutMePage() {
   const { master, setMaster } = useAuthStore()
 
   const [name, setName]               = useState(master?.name ?? '')
-  const [contacts, setContacts]       = useState(master?.contacts ?? '')
+  const [contacts]                     = useState(master?.contacts ?? '')
   const [phone, setPhone]             = useState(master?.phone ?? '')
   const [phoneError, setPhoneError]   = useState<string | null>(null)
   const [description, setDescription] = useState(master?.description ?? '')
@@ -185,15 +185,6 @@ export default function AboutMePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Имя или название бизнеса"
-          />
-        </CellList>
-
-        {/* Контакты */}
-        <CellList mode="island">
-          <CellInput
-            value={contacts}
-            onChange={(e) => setContacts(e.target.value)}
-            placeholder="Контакты (телефон или ссылка)"
           />
         </CellList>
 
