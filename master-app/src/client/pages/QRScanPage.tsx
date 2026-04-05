@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 
@@ -18,30 +18,45 @@ function extractMasterId(scanned: string): string | null {
 export default function QRScanPage() {
   const navigate = useNavigate()
   const setMasterId = useBookingStore((s) => s.setMasterId)
+  const [debugInfo, setDebugInfo] = useState<string>('waiting...')
 
   useEffect(() => {
-    if (!window.WebApp?.openCodeReader) return
+    if (!window.WebApp?.openCodeReader) {
+      setDebugInfo('openCodeReader not available')
+      return
+    }
 
-    console.log('[QRScan] openCodeReader available, calling...')
+    setDebugInfo('calling openCodeReader...')
 
-    // fileSelect: true — камера + выбор из галереи
     window.WebApp.openCodeReader(true).then((result) => {
-      console.log('[QRScan] resolved:', result)
+      setDebugInfo(`resolved: ${result}`)
       const masterId = extractMasterId(result)
-      console.log('[QRScan] masterId extracted:', masterId)
       if (masterId) {
         setMasterId(masterId)
         navigate(`/?masterId=${masterId}`, { replace: true })
       } else {
-        // QR отсканирован, но это не ссылка мастера (например, бот-URL перехвачен Max)
-        navigate('/', { replace: true })
+        setDebugInfo(`no masterId in: ${result}`)
       }
     }).catch((err) => {
-      console.log('[QRScan] rejected:', err)
-      // пользователь закрыл сканер без результата
-      navigate('/', { replace: true })
+      const msg = err instanceof Error ? err.message : String(err)
+      setDebugInfo(`rejected: ${msg}`)
     })
   }, [navigate, setMasterId])
 
-  return null
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+      height: '100dvh', padding: 16, gap: 12, background: 'var(--color-bg)',
+    }}>
+      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', textAlign: 'center', wordBreak: 'break-all' }}>
+        {debugInfo}
+      </div>
+      <button
+        onClick={() => navigate('/', { replace: true })}
+        style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--color-card)', cursor: 'pointer' }}
+      >
+        Назад
+      </button>
+    </div>
+  )
 }
