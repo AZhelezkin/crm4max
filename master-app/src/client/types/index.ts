@@ -3,6 +3,7 @@ export interface Master {
   name: string
   photo: string | null
   description: string | null
+  phone: string | null
   location: string | null
   lat: number | null
   lng: number | null

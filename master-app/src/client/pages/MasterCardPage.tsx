@@ -201,7 +201,10 @@ export default function MasterCardPage() {
       <div style={{ display: 'flex', gap: 8, padding: '0 16px 16px' }}>
         {([
           { label: 'Запись',        Icon: IcoBook,       action: () => handleBook() },
-          { label: 'Звонок',        Icon: IcoCall,       action: () => {} },
+          { label: 'Звонок', Icon: IcoCall, action: () => {
+            if (master.phone)
+              window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
+          }, disabled: !master.phone },
           { label: 'Чат',           Icon: IcoChat,       action: () => navigate('/messages') },
           { label: 'Адрес', Icon: IcoDirections, action: () => {
             if (master.lat && master.lng)
