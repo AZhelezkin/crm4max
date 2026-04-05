@@ -1,7 +1,16 @@
 import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
+
+// Компонент внутри роутера: при старте с startapp=qr один раз редиректит на /qr
+function InitRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (startParam === 'qr') navigate('/qr', { replace: true })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
@@ -30,8 +39,9 @@ export default function ClientApp() {
 
   return (
     <HashRouter>
+      <InitRedirect />
       <Routes>
-        <Route path="/"                element={startParam === 'qr' ? <QRScanPage /> : <MasterCardPage />} />
+        <Route path="/"                element={<MasterCardPage />} />
         <Route path="/qr"              element={<QRScanPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
