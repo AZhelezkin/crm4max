@@ -31,7 +31,7 @@ async function geocode(address) {
         return null;
     }
 }
-export default function AddressSuggestInput({ value, onChange, confirmedAddress = '' }) {
+export default function AddressSuggestInput({ value, onChange, onGeocode, confirmedAddress = '' }) {
     const [inputValue, setInputValue] = useState(value);
     const [suggestions, setSuggestions] = useState([]);
     const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
@@ -129,8 +129,13 @@ export default function AddressSuggestInput({ value, onChange, confirmedAddress 
         if (geocodeAbortRef.current)
             geocodeAbortRef.current.abort();
         geocode(full).then((center) => {
-            if (center)
+            if (center) {
                 setMapCenter(center);
+                if (onGeocode) {
+                    const [lon, lat] = center.split(',').map(Number);
+                    onGeocode(lat, lon);
+                }
+            }
         });
     };
     return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative', overflow: 'hidden' }, children: [_jsx("img", { src: activeMapUrl, alt: "\u041A\u0430\u0440\u0442\u0430", style: {

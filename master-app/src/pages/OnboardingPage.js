@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import CategoriesServicesEditor from '@/components/CategoriesServicesEditor';
-import { Button as MaxButton, CellList, CellInput, Spinner, } from '@maxhub/max-ui';
+import { Button as MaxButton, CellList, CellInput, Spinner, Switch, } from '@maxhub/max-ui';
 import uploadIconUrl from '@/assets/upload-icon.svg';
 import locationAddImg from '@/assets/location-add.png';
 import { mastersApi } from '@/api/masters.api';
@@ -12,7 +12,7 @@ import { scheduleApi } from '@/api/schedule.api';
 import { uploadPhoto } from '@/api/upload.api';
 import { useAuthStore } from '@/store/auth.store';
 import AddressSuggestInput from '@/components/AddressSuggestInput';
-import { onboardingPortalContentStyle, onboardingSectionCardStyle, onboardingSectionLabelStyle, onboardingSelectChevronStyle, onboardingSelectStyle, onboardingSelectWrapStyle, onboardingTimeSelectStyle, onboardingTimeSelectWrapStyle, stepOneAddressButtonStyle, stepOneAddressContentStyle, stepOneAddressHintStyle, stepOneAddressTitleStyle, primaryActionButtonBaseStyle, stepOneCounterStyle, stepOneIntroTextStyle, stepOnePhotoButtonBaseStyle, stepOnePhotoContainerStyle, stepOnePhotoPlaceholderStyle, stepOnePhotoPreviewStyle, stepOneTextareaStyle, stepOneTextareaWrapStyle, } from '@/components/onboardingStepOne.styles';
+import { onboardingPortalContentStyle, onboardingSectionCardStyle, onboardingSectionLabelStyle, onboardingSelectChevronStyle, onboardingSelectStyle, onboardingSelectWrapStyle, onboardingTimeSelectStyle, onboardingTimeSelectWrapStyle, onboardingToggleLabelStyle, onboardingToggleRowStyle, stepOneAddressButtonStyle, stepOneAddressContentStyle, stepOneAddressHintStyle, stepOneAddressTitleStyle, primaryActionButtonBaseStyle, stepOneCounterStyle, stepOneIntroTextStyle, stepOnePhotoButtonBaseStyle, stepOnePhotoContainerStyle, stepOnePhotoPlaceholderStyle, stepOnePhotoPreviewStyle, stepOneTextareaStyle, stepOneTextareaWrapStyle, } from '@/components/onboardingStepOne.styles';
 const STEPS = ['Обо мне', 'График', 'Услуги'];
 const DAYS = [
     { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
@@ -35,8 +35,11 @@ export default function OnboardingPage() {
     const [submitError, setSubmitError] = useState(null);
     // ── Шаг 0: Обо мне ──
     const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [phoneError, setPhoneError] = useState(null);
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
+    const [coords, setCoords] = useState(null);
     const [addressDraft, setAddressDraft] = useState('');
     const [showAddressPortal, setShowAddressPortal] = useState(false);
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -48,6 +51,9 @@ export default function OnboardingPage() {
     const [startTime, setStartTime] = useState('09:00');
     const [endTime, setEndTime] = useState('18:00');
     const [buffer, setBuffer] = useState(30);
+    const [hasBreak, setHasBreak] = useState(false);
+    const [breakStart, setBreakStart] = useState('13:00');
+    const [breakEnd, setBreakEnd] = useState('14:00');
     // ── Шаг 2: Услуги ──
     const [servicesSubStep, setServicesSubStep] = useState('categories');
     const [servicesSelectedCatName, setServicesSelectedCatName] = useState('');
@@ -55,6 +61,36 @@ export default function OnboardingPage() {
     const editorRef = useRef(null);
     // ─── Хелперы ──────────────────────────────────────────────────────────────
     const toggleDay = (d) => setWorkingDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort());
+    const formatPhone = (raw) => {
+        const digits = raw.replace(/\D/g, '');
+        const d = digits.startsWith('8') ? '7' + digits.slice(1) : digits.startsWith('7') ? digits : digits;
+        const n = d.startsWith('7') ? d : d ? '7' + d : '';
+        if (!n)
+            return '';
+        let result = '+7';
+        if (n.length > 1)
+            result += ' (' + n.slice(1, 4);
+        if (n.length >= 4)
+            result += ') ' + n.slice(4, 7);
+        if (n.length >= 7)
+            result += '-' + n.slice(7, 9);
+        if (n.length >= 9)
+            result += '-' + n.slice(9, 11);
+        return result;
+    };
+    const isValidPhone = (val) => val.replace(/\D/g, '').length === 11;
+    const handlePhoneChange = (rawInput) => {
+        setPhoneError(null);
+        let digits = rawInput.replace(/\D/g, '');
+        if (digits.startsWith('8'))
+            digits = '7' + digits.slice(1);
+        digits = digits.slice(0, 11);
+        const prevDigits = phone.replace(/\D/g, '');
+        if (digits === prevDigits && rawInput.length < phone.length) {
+            digits = prevDigits.slice(0, -1);
+        }
+        setPhone(digits ? formatPhone(digits) : '');
+    };
     // Показывает локальный превью мгновенно, параллельно загружает в S3.
     // onUploaded(s3url) вызывается после успешной загрузки.
     const handlePhotoChange = async (e, setPreview, setUploading, onUploaded, folder = 'masters') => {
@@ -100,10 +136,17 @@ export default function OnboardingPage() {
                     setSaving(false);
                     return;
                 }
+                if (phone && !isValidPhone(phone)) {
+                    setPhoneError('Введите номер полностью: +7 (XXX) XXX-XX-XX');
+                    setSaving(false);
+                    return;
+                }
                 await mastersApi.updateProfile({
                     name: name.trim(),
+                    phone: phone || undefined,
                     description,
                     location,
+                    ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
                     contacts: undefined,
                     photo: photoUrl ?? undefined,
                     isOnboarded: false,
@@ -112,7 +155,16 @@ export default function OnboardingPage() {
                 return;
             }
             if (step === 1) {
-                await scheduleApi.upsert({ workingDays, startTime, endTime, bufferMinutes: buffer });
+                if (hasBreak && breakEnd <= breakStart) {
+                    setSubmitError('Конец обеда должен быть позже его начала');
+                    setSaving(false);
+                    return;
+                }
+                await scheduleApi.upsert({
+                    workingDays, startTime, endTime, bufferMinutes: buffer,
+                    breakStart: hasBreak ? breakStart : undefined,
+                    breakEnd: hasBreak ? breakEnd : undefined,
+                });
                 setStep(2);
                 return;
             }
@@ -158,7 +210,7 @@ export default function OnboardingPage() {
                                             cursor: photoUploading ? 'default' : 'pointer',
                                         }, children: [photoPreview
                                                 ? (_jsx("img", { src: photoPreview, alt: "\u0424\u043E\u0442\u043E \u043F\u0440\u043E\u0444\u0438\u043B\u044F", style: stepOnePhotoPreviewStyle }))
-                                                : _jsx("img", { src: uploadIconUrl, alt: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0444\u043E\u0442\u043E", style: stepOnePhotoPlaceholderStyle }), photoUploading && _jsx(UploadingOverlay, {})] }), _jsx("input", { ref: photoInputRef, type: "file", accept: "image/*", hidden: true, onChange: (e) => handlePhotoChange(e, setPhotoPreview, setPhotoUploading, (url) => setPhotoUrl(url), 'masters') })] }), _jsx(CellList, { mode: "island", children: _jsx(CellInput, { value: name, onChange: (e) => setName(e.target.value), placeholder: "\u0418\u043C\u044F \u0438\u043B\u0438 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0431\u0438\u0437\u043D\u0435\u0441\u0430" }) }), _jsx(CellList, { mode: "island", children: _jsxs("div", { style: stepOneTextareaWrapStyle, children: [_jsx("textarea", { value: description, onChange: (e) => setDescription(e.target.value.slice(0, 200)), placeholder: "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435", rows: 3, style: stepOneTextareaStyle }), _jsxs("span", { style: stepOneCounterStyle, children: [description.length, "/200"] })] }) }), _jsx(CellList, { mode: "island", children: _jsxs("button", { onClick: () => {
+                                                : _jsx("img", { src: uploadIconUrl, alt: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0444\u043E\u0442\u043E", style: stepOnePhotoPlaceholderStyle }), photoUploading && _jsx(UploadingOverlay, {})] }), _jsx("input", { ref: photoInputRef, type: "file", accept: "image/*", hidden: true, onChange: (e) => handlePhotoChange(e, setPhotoPreview, setPhotoUploading, (url) => setPhotoUrl(url), 'masters') })] }), _jsx(CellList, { mode: "island", children: _jsx(CellInput, { value: name, onChange: (e) => setName(e.target.value), placeholder: "\u0418\u043C\u044F \u0438\u043B\u0438 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0431\u0438\u0437\u043D\u0435\u0441\u0430*" }) }), _jsxs("div", { children: [_jsx(CellList, { mode: "island", children: _jsx(CellInput, { value: phone, onChange: (e) => handlePhoneChange(e.target.value), placeholder: "\u0422\u0435\u043B\u0435\u0444\u043E\u043D", inputMode: "tel" }) }), phoneError && (_jsx("div", { style: { fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }, children: phoneError }))] }), _jsx(CellList, { mode: "island", children: _jsxs("div", { style: stepOneTextareaWrapStyle, children: [_jsx("textarea", { value: description, onChange: (e) => setDescription(e.target.value.slice(0, 200)), placeholder: "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435", rows: 3, style: stepOneTextareaStyle }), _jsxs("span", { style: stepOneCounterStyle, children: [description.length, "/200"] })] }) }), _jsx(CellList, { mode: "island", children: _jsxs("button", { onClick: () => {
                                         setAddressDraft(location);
                                         setShowAddressPortal(true);
                                     }, style: stepOneAddressButtonStyle, children: [_jsx("img", { src: locationAddImg, alt: "location", style: { width: 24, height: 24, flexShrink: 0 } }), _jsxs("div", { style: stepOneAddressContentStyle, children: [_jsx("div", { style: stepOneAddressTitleStyle, children: "\u0410\u0434\u0440\u0435\u0441" }), _jsx("div", { style: stepOneAddressHintStyle, children: location || 'Куда приезжать клиентам' })] }), _jsx(ChevronIcon, {})] }) })] })), step === 1 && (_jsxs(_Fragment, { children: [_jsx("div", { style: stepOneIntroTextStyle, children: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u043D\u0438 \u0438 \u0432\u0440\u0435\u043C\u044F, \u043A\u043E\u0433\u0434\u0430 \u0432\u0430\u043C \u0443\u0434\u043E\u0431\u043D\u043E \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0442\u044C \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432" }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u0414\u041D\u0418 \u041D\u0415\u0414\u0415\u041B\u0418" }), _jsx("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }, children: DAYS.map((d) => (_jsx("button", { onClick: () => toggleDay(d.v), style: {
@@ -170,7 +222,7 @@ export default function OnboardingPage() {
                                                 cursor: 'pointer',
                                                 background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card2)',
                                                 color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text)',
-                                            }, children: d.l }, d.v))) })] }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u0412\u0420\u0415\u041C\u042F \u0420\u0410\u0411\u041E\u0422\u042B" }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 10 }, children: [_jsx(TimeSelect, { value: startTime, onChange: setStartTime }), _jsx("span", { style: { color: 'var(--color-text-secondary)', fontWeight: 600 }, children: "\u2014" }), _jsx(TimeSelect, { value: endTime, onChange: setEndTime })] })] }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u041F\u0415\u0420\u0415\u0420\u042B\u0412 \u041C\u0415\u0416\u0414\u0423 \u041F\u0420\u0418\u0415\u041C\u0410\u041C\u0418" }), _jsx(SelectField, { value: buffer, onChange: (v) => setBuffer(Number(v)), options: BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` })) })] })] }))] }), step === 2 && (_jsx(CategoriesServicesEditor, { ref: editorRef, onSubStepChange: (ss, catName) => {
+                                            }, children: d.l }, d.v))) })] }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u0412\u0420\u0415\u041C\u042F \u0420\u0410\u0411\u041E\u0422\u042B" }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 10 }, children: [_jsx(TimeSelect, { value: startTime, onChange: setStartTime }), _jsx("span", { style: { color: 'var(--color-text-secondary)', fontWeight: 600 }, children: "\u2014" }), _jsx(TimeSelect, { value: endTime, onChange: setEndTime })] })] }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u041F\u0415\u0420\u0415\u0420\u042B\u0412 \u041C\u0415\u0416\u0414\u0423 \u041F\u0420\u0418\u0415\u041C\u0410\u041C\u0418" }), _jsx(SelectField, { value: buffer, onChange: (v) => setBuffer(Number(v)), options: BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` })) })] }), _jsxs("div", { style: onboardingSectionCardStyle, children: [_jsxs("div", { style: onboardingToggleRowStyle, children: [_jsx("span", { style: { ...onboardingToggleLabelStyle, flex: 1 }, children: "\u041E\u0431\u0435\u0434" }), _jsx(Switch, { checked: hasBreak, onChange: () => setHasBreak((v) => !v) })] }), hasBreak && (_jsxs("div", { style: { marginTop: 12 }, children: [_jsx("div", { style: onboardingSectionLabelStyle, children: "\u0412\u0420\u0415\u041C\u042F \u041E\u0411\u0415\u0414\u0410" }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 10 }, children: [_jsx(TimeSelect, { value: breakStart, onChange: setBreakStart }), _jsx("span", { style: { color: 'var(--color-text-secondary)', fontWeight: 600 }, children: "\u2014" }), _jsx(TimeSelect, { value: breakEnd, onChange: setBreakEnd })] })] }))] })] }))] }), step === 2 && (_jsx(CategoriesServicesEditor, { ref: editorRef, onSubStepChange: (ss, catName) => {
                     setServicesSubStep(ss);
                     if (catName)
                         setServicesSelectedCatName(catName);
@@ -201,7 +253,7 @@ export default function OnboardingPage() {
                 }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', padding: '14px 20px', flexShrink: 0 }, children: [_jsx(MaxButton, { appearance: "themed", mode: "tertiary", size: "medium", onClick: () => setShowAddressPortal(false), children: "\u2190 \u041D\u0430\u0437\u0430\u0434" }), _jsx("span", { style: {
                                     position: 'absolute', left: '50%', transform: 'translateX(-50%)',
                                     fontSize: 16, fontWeight: 600, color: 'var(--color-text)', pointerEvents: 'none',
-                                }, children: "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0430\u0434\u0440\u0435\u0441\u0430" })] }), _jsx("div", { style: { flex: 1, minHeight: 0 }, children: _jsx(AddressSuggestInput, { value: addressDraft, onChange: setAddressDraft, confirmedAddress: addressDraft }) }), _jsx("div", { style: { padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }, children: _jsx("button", { type: "button", onClick: () => {
+                                }, children: "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0430\u0434\u0440\u0435\u0441\u0430" })] }), _jsx("div", { style: { flex: 1, minHeight: 0 }, children: _jsx(AddressSuggestInput, { value: addressDraft, onChange: setAddressDraft, onGeocode: (lat, lng) => setCoords({ lat, lng }), confirmedAddress: addressDraft }) }), _jsx("div", { style: { padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }, children: _jsx("button", { type: "button", onClick: () => {
                                 setLocation(addressDraft.trim());
                                 setShowAddressPortal(false);
                             }, style: {

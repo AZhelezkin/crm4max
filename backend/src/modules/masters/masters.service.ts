@@ -9,6 +9,7 @@ export const mastersService = {
         name: true,
         photo: true,
         description: true,
+        phone: true,
         location: true,
         lat: true,
         lng: true,

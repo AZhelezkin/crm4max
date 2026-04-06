@@ -7,6 +7,21 @@
 **Целевая аудитория:** ИП и самозанятые в сфере красоты — мастера маникюра, парикмахеры, стилисты, барберы
 **Цель:** Дать мастерам инструмент для онлайн-записи клиентов прямо через Max, без сторонних сервисов
 
+### Демо-ссылки
+
+- **Клиент к Анне Смирновой:** `https://max.ru/id9706002253_bot?startapp=ee5e98b7-0a08-4a01-bc38-4e3efaf165d7`
+- **Клиент к Дмитрию Козлову:** `https://max.ru/id9706002253_bot?startapp=f185d8cb-64d1-4dd1-be90-8e056c220889`
+- **Мастер:** `https://max.ru/id9706002253_bot?startapp=mmode`
+- **GitHub Pages:** `https://azhelezkin.github.io/crm4max/`
+
+### Точки входа (startapp)
+
+| payload | Сценарий |
+|---|---|
+| *(пусто)* / `qr` | Клиент → QR сканер |
+| UUID | Клиент → запись к мастеру |
+| `mmode` | Мастер → кабинет / онбординг |
+
 ---
 
 ## 2. Проблема
@@ -145,14 +160,15 @@
 
 | Сущность | Ключевые поля |
 |---|---|
-| Master | vk_user_id, имя, фото (S3 URL), описание, локация, рейтинг, card_number, vk_pay_linked |
+| CreatorMaster | max_user_id (PK), first_name, last_name, username, language_code, avatar |
+| Master | id (UUID), max_user_id, name, photo (S3 URL), phone, description, contacts, location, lat, lng, rating, is_onboarded |
 | MasterPhoto | master_id, url (S3), order |
 | Schedule | master_id, рабочие дни (1–7), часы начала/конца, перерыв, буфер |
 | Category | master_id, название, описание, фото (S3 URL) |
-| Service | category_id, название, описание, duration_min, duration_max, price (коп.), discount_percent (%), фото |
+| Service | category_id, название, описание, duration (мин), price (коп.), discount_percent (%), фото |
 | ServicePhoto | service_id, url (S3), order |
-| Client | vk_user_id, имя, телефон, фото |
-| Booking | master_id, client_id, service_id, дата, время, status, payment_status, deposit_amount |
+| Client | max_user_id, имя, телефон, фото |
+| Booking | master_id, client_id, service_id, дата, время, status, payment_status, remind |
 | Payment | booking_id, amount (коп.), method (CARD / VK_PAY), status |
 | Review | master_id, client_id, booking_id, rating (1–5), текст |
 

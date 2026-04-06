@@ -6,6 +6,8 @@ import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice, formatDuration } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 
+/* ── Иконки кнопок действий (stroke #007AFE, 24×24) ───────────────────────── */
+
 function IcoBook() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -30,18 +32,23 @@ function IcoChat() {
     </svg>
   )
 }
-function IcoDirections() {
+function IcoMore() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="12" cy="9" r="2.5" stroke="#007AFE" strokeWidth="2"/>
+      <circle cx="12" cy="5" r="2" fill="#007AFE"/>
+      <circle cx="12" cy="12" r="2" fill="#007AFE"/>
+      <circle cx="12" cy="19" r="2" fill="#007AFE"/>
     </svg>
   )
 }
 
+/* ── Типы ──────────────────────────────────────────────────────────────────── */
+
 const TABS = ['services', 'photo', 'reviews'] as const
 type Tab = typeof TABS[number]
 const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фото', reviews: 'Отзывы' }
+
+/* ── Страница ──────────────────────────────────────────────────────────────── */
 
 export default function MasterCardPage() {
   const [params] = useSearchParams()
@@ -76,7 +83,15 @@ export default function MasterCardPage() {
     }
   }
 
-  // Lightbox touch handlers (горизонтальный свайп для листания)
+  const tabBadge = (t: Tab) => {
+    if (!master) return 0
+    if (t === 'services') return master.categories.flatMap((c) => c.services).length
+    if (t === 'photo') return workPhotos.length
+    if (t === 'reviews') return master.reviews.length
+    return 0
+  }
+
+  /* ── Lightbox touch ────────────────────────────────────────────────────── */
   function onLbStart(e: React.TouchEvent) {
     e.stopPropagation()
     const t = e.touches[0]
@@ -121,93 +136,101 @@ export default function MasterCardPage() {
     }
   }
 
+  /* ── Загрузка / ошибки ─────────────────────────────────────────────────── */
+
   if (!masterId) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
-      <span style={{ color: 'var(--color-text-secondary)' }}>Откройте приложение через бота</span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: '#0F0F11' }}>
+      <span style={{ color: '#7D7D7F' }}>Откройте приложение через бота</span>
     </div>
   )
   if (!master) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
-      <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: '#0F0F11' }}>
+      <span style={{ color: '#7D7D7F' }}>Загрузка...</span>
     </div>
   )
 
-  const tabBadge = (t: Tab) => {
-    if (t === 'services') return master.categories.flatMap((c) => c.services).length
-    if (t === 'photo') return workPhotos.length
-    if (t === 'reviews') return master.reviews.length
-    return 0
-  }
+  /* ── Рендер ─────────────────────────────────────────────────────────────── */
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
 
-      {/* Аватар + рейтинг + имя */}
-      <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 16, textAlign: 'center' }}>
+      {/* ── Шапка: рейтинг ─────────────────────────────────────────────── */}
+      <div style={{ position: 'relative', padding: '16px 14px 0' }}>
         {master.rating > 0 && (
           <div style={{
-            position: 'absolute', top: 16, right: 16,
+            position: 'absolute', top: 16, right: 14,
             display: 'flex', alignItems: 'center', gap: 4,
-            background: 'var(--color-card)', borderRadius: 20,
+            background: '#25262B', borderRadius: 20,
             padding: '4px 10px',
           }}>
-            <span style={{ color: '#FFD60A', fontSize: 14 }}>★</span>
+            <span style={{ color: '#F0AF2D', fontSize: 14 }}>★</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#D3D4D6' }}>{master.rating.toFixed(1)}</span>
           </div>
         )}
+      </div>
 
+      {/* ── Аватар ────────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 28 }}>
         <div style={{
-          width: 110, height: 110, borderRadius: '50%',
-          background: 'var(--color-card)', overflow: 'hidden',
+          width: 104, height: 104, borderRadius: 52,
+          overflow: 'hidden', background: '#25262B',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 12px',
         }}>
           {master.photo
             ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 44, color: 'var(--color-text-secondary)' }}>👤</span>
+            : <span style={{ fontSize: 44, color: '#7D7D7F' }}>👤</span>
           }
         </div>
+      </div>
 
-        <div style={{ fontSize: 28, fontWeight: 600, color: '#D3D4D6', lineHeight: 1.2 }}>{master.name}</div>
+      {/* ── Имя + описание ────────────────────────────────────────────── */}
+      <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <div style={{ fontSize: 22, fontWeight: 600, color: '#D3D4D6', lineHeight: 1.2 }}>
+          {master.name}
+        </div>
         {master.description && (
-          <div style={{ fontSize: 15, color: '#7D7D7F', marginTop: 4, padding: '0 24px' }}>{master.description}</div>
+          <div style={{ fontSize: 15, color: '#7D7D7F', marginTop: 6, padding: '0 14px' }}>
+            {master.description}
+          </div>
         )}
       </div>
 
-      {/* 4 кнопки действий */}
-      <div style={{ display: 'flex', gap: 8, padding: '0 16px 16px' }}>
+      {/* ── 4 кнопки действий (89×69, gap 9, rx 18) ──────────────────── */}
+      <div style={{ display: 'flex', gap: 9, padding: '20px 14px 0' }}>
         {([
-          { label: 'Запись',        Icon: IcoBook,       action: () => handleBook() },
+          { label: 'Запись',  Icon: IcoBook, action: () => handleBook() },
           { label: 'Звонок', Icon: IcoCall, action: () => {
             if (master.phone)
               window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
           }, disabled: !master.phone },
-          { label: 'Чат',           Icon: IcoChat,       action: () => {}, disabled: true },
-          { label: 'Адрес', Icon: IcoDirections, action: () => {
-            if (master.lat && master.lng)
-              window.WebApp?.openLink(`geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`)
-          }, disabled: !master.lat || !master.lng },
-        ] as const).map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={'disabled' in btn ? btn.disabled : false}
-            style={{
-              flex: 1, height: 69, background: '#25262B', borderRadius: 18,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-              border: 'none', cursor: 'disabled' in btn && btn.disabled ? 'default' : 'pointer',
-              opacity: 'disabled' in btn && btn.disabled ? 0.4 : 1,
-            }}
-          >
-            <btn.Icon />
-            <span style={{ fontSize: 14, fontWeight: 400, color: '#007AFE' }}>{btn.label}</span>
-          </button>
-        ))}
+          { label: 'Чат',    Icon: IcoChat, action: () => {} },
+          { label: 'Ещё',    Icon: IcoMore, action: () => {} },
+        ] as const).map((btn) => {
+          const dis = 'disabled' in btn ? btn.disabled : false
+          return (
+            <button
+              key={btn.label}
+              onClick={btn.action}
+              disabled={dis}
+              style={{
+                flex: 1, height: 69, background: '#25262B', borderRadius: 18,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                border: 'none', cursor: dis ? 'default' : 'pointer',
+                opacity: dis ? 0.4 : 1, padding: 0,
+              }}
+            >
+              <btn.Icon />
+              <span style={{ fontSize: 14, fontWeight: 400, color: '#007AFE' }}>{btn.label}</span>
+            </button>
+          )
+        })}
       </div>
 
-      {/* Табы */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', scrollbarWidth: 'none', paddingLeft: 16 }}>
-        {TABS.map((key, idx) => {
+      {/* ── Табы (Услуги / Фото / Отзывы) ─────────────────────────────── */}
+      <div style={{
+        display: 'flex', gap: 0, padding: '20px 14px 0',
+      }}>
+        {TABS.map((key) => {
           const active = tab === key
           const badge = tabBadge(key)
           return (
@@ -215,23 +238,23 @@ export default function MasterCardPage() {
               key={key}
               onClick={() => setTab(key)}
               style={{
-                flexShrink: 0,
-                paddingTop: 10, paddingBottom: 14,
-                paddingLeft: idx === 0 ? 0 : 20, paddingRight: 20,
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 17, fontWeight: 500,
-                color: active ? '#007AFE' : '#7D7D7F',
-                borderBottom: active ? '2px solid #007AFE' : '2px solid transparent',
-                display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+                flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
+                padding: '0 12px 12px', display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              {TAB_LABELS[key]}
+              <span style={{
+                fontSize: 17, fontWeight: 500,
+                color: active ? '#007AFE' : '#7D7D7F',
+              }}>
+                {TAB_LABELS[key]}
+              </span>
               {badge > 0 && (
                 <span style={{
-                  background: active ? '#007AFE' : '#45475B',
-                  color: active ? '#fff' : '#7D7D7F',
-                  borderRadius: 20, fontSize: 13, fontWeight: 400,
-                  padding: '1px 7px', minWidth: 23, textAlign: 'center',
+                  background: active ? 'rgba(0,122,254,0.3)' : '#454757',
+                  color: active ? '#007AFE' : '#7D7D7F',
+                  borderRadius: 11.5, fontSize: 13, fontWeight: 500,
+                  padding: '2px 8px', minWidth: 24, textAlign: 'center',
+                  lineHeight: '19px',
                 }}>
                   {badge}
                 </span>
@@ -241,8 +264,8 @@ export default function MasterCardPage() {
         })}
       </div>
 
-      {/* Контент табов */}
-      <div style={{ padding: '12px 16px 0' }}>
+      {/* ── Контент табов ──────────────────────────────────────────────── */}
+      <div style={{ padding: '10px 14px 0' }}>
 
         {tab === 'services' && (
           <ServicesList categories={master.categories} onBook={handleBook} />
@@ -250,9 +273,9 @@ export default function MasterCardPage() {
 
         {tab === 'photo' && (
           workPhotos.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 40 }}>Нет фотографий</div>
+            <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Нет фотографий</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -14px' }}>
               {workPhotos.map((p: any, i: number) => (
                 <div key={p.id} style={{ aspectRatio: '134/170', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxIndex(i)}>
                   <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -265,26 +288,26 @@ export default function MasterCardPage() {
         {tab === 'reviews' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {master.reviews.length === 0 && (
-              <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 32 }}>Пока нет отзывов</div>
+              <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 32 }}>Пока нет отзывов</div>
             )}
             {master.reviews.map((r) => (
               <div key={r.id} style={{ background: '#25262B', borderRadius: 20, padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: 'var(--color-border)', overflow: 'hidden',
+                    width: 46, height: 46, borderRadius: 23,
+                    background: '#454757', overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>
                     {r.client.photo
                       ? <img src={r.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 20 }}>👤</span>
+                      : <span style={{ fontSize: 20, color: '#7D7D7F' }}>👤</span>
                     }
                   </div>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 500, color: '#D3D4D6' }}>{r.client.name}</div>
                     <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < r.rating ? '#FF9500' : '#3A3A3C'}>
+                        <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < r.rating ? '#F0AF2D' : '#454757'}>
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                       ))}
@@ -300,7 +323,7 @@ export default function MasterCardPage() {
 
       <BottomNav />
 
-      {/* Лайтбокс */}
+      {/* ── Лайтбокс ──────────────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <div
           onTouchStart={onLbStart}
@@ -309,7 +332,6 @@ export default function MasterCardPage() {
           onClick={(e) => e.stopPropagation()}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }}
         >
-          {/* Крестик */}
           <button
             onTouchEnd={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
             onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
@@ -317,15 +339,13 @@ export default function MasterCardPage() {
               position: 'absolute', top: 16, right: 16, zIndex: 10,
               width: 36, height: 36, borderRadius: '50%',
               background: 'rgba(255,255,255,0.15)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M1 1l14 14M15 1L1 15" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
-
           <div
             ref={lbStripRef}
             style={{ display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }}
@@ -356,7 +376,7 @@ export default function MasterCardPage() {
   )
 }
 
-// ─── ServicesList ──────────────────────────────────────────────────────────────
+/* ── ServicesList ──────────────────────────────────────────────────────────── */
 
 function ServicesList({ categories, onBook }: { categories: Category[]; onBook: (s: Service) => void }) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -369,7 +389,7 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
     })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {categories.map((cat) => {
         const expanded = expandedIds.has(cat.id)
         const hasDiscount = cat.services.some((s) => s.discountPercent)
@@ -377,7 +397,6 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
 
         return (
           <div key={cat.id}>
-            {/* Заголовок категории */}
             <div
               onClick={() => toggle(cat.id)}
               style={{
@@ -388,9 +407,10 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
                 cursor: 'pointer',
               }}
             >
+              {/* Аватар категории 46×46 */}
               <div style={{
-                width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                overflow: 'hidden', background: 'var(--color-border)',
+                width: 46, height: 46, borderRadius: 23, flexShrink: 0,
+                overflow: 'hidden', background: '#454757',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 12px 0 16px',
               }}>
@@ -399,27 +419,42 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
                   : <span style={{ fontSize: 22 }}>✂️</span>
                 }
               </div>
+
+              {/* Название + описание */}
               <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{cat.name}</span>
                   {hasDiscount && (
-                    <span style={{ background: 'rgba(206,66,89,0.3)', color: '#CE4259', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '2px 6px' }}>
+                    <span style={{
+                      background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                      fontSize: 11, fontWeight: 700, borderRadius: 6,
+                      padding: '2px 8px', lineHeight: '18px',
+                    }}>
                       % скидки
                     </span>
                   )}
                 </div>
-                <div style={{ color: '#7D7D7F', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{
+                  color: '#7D7D7F', fontSize: 13,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
                   {cat.description || preview}
                 </div>
               </div>
-              <div style={{ flexShrink: 0, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 8 }}>
+
+              {/* Шеврон */}
+              <div style={{
+                flexShrink: 0, marginLeft: 8,
+                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
+              }}>
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
 
-            {/* Услуги */}
+            {/* Развёрнутые услуги */}
             {expanded && (
               <div style={{ background: '#25262B', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
                 {cat.services.map((s) => {
@@ -431,9 +466,9 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center',
                         padding: '12px 16px',
-                        borderTop: '1px solid var(--color-border)',
+                        borderTop: '1px solid rgba(255,255,255,0.08)',
                         background: 'none', cursor: 'pointer', textAlign: 'left',
-                        gap: 12,
+                        gap: 12, border: 'none', borderTopStyle: 'solid', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
                       }}
                     >
                       {s.photo && (
@@ -443,7 +478,10 @@ function ServicesList({ categories, onBook }: { categories: Category[]; onBook: 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 14, fontWeight: 500, color: '#D3D4D6' }}>{s.name}</span>
                           {s.discountPercent && (
-                            <span style={{ background: 'rgba(206,66,89,0.3)', color: '#CE4259', fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px' }}>
+                            <span style={{
+                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                              fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
+                            }}>
                               -{s.discountPercent}%
                             </span>
                           )}
