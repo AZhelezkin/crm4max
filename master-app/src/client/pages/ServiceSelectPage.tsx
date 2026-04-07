@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Master, Service } from '@client/types'
-import { discountedPrice } from '@client/types'
-import PageHeader from '@client/components/PageHeader'
+import type { Category, Master, Service } from '@client/types'
+import { discountedPrice, formatPrice, formatDuration } from '@client/types'
+import BottomNav from '@client/components/BottomNav'
 
 export default function ServiceSelectPage() {
   const navigate = useNavigate()
   const { masterId, setService } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'))
@@ -20,102 +21,207 @@ export default function ServiceSelectPage() {
     navigate('/book/calendar')
   }
 
-  return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      <PageHeader title="Выберите услугу" />
+  const toggleCategory = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
 
-      <div style={{ padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {master?.categories.map((cat) => (
-          <div key={cat.id}>
-            {cat.name && (
-              <div style={{
-                fontSize: 13, fontWeight: 600,
-                color: 'var(--color-text-secondary)',
-                marginBottom: 8, marginTop: 8,
-                textTransform: 'uppercase', letterSpacing: 0.5,
-              }}>
-                {cat.name}
+  return (
+    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
+
+      {/* ── Шапка 116px ──────────────────────────────────────────────── */}
+      <div style={{
+        height: 116, background: '#0F0F11',
+        display: 'flex', alignItems: 'center', padding: '0 14px',
+        gap: 12, position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        {/* Стрелка назад */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Аватар + имя */}
+        {master && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 22, overflow: 'hidden',
+              background: '#25262B', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {master.photo
+                ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 20, color: '#7D7D7F' }}>👤</span>
+              }
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#D3D4D6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {master.name}
               </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {cat.services.map((s) => {
-                const discounted = discountedPrice(s.price, s.discountPercent)
-                const displayPrice = discounted ?? s.price
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => handleSelect(s)}
-                    style={{
-                      background: 'var(--color-card)',
-                      borderRadius: 'var(--radius)',
-                      padding: '14px 16px',
-                      display: 'flex', alignItems: 'center',
-                      gap: 12, textAlign: 'left',
-                      width: '100%',
-                    }}
-                  >
-                    {s.photo && (
-                      <img src={s.photo} alt="" style={{
-                        width: 56, height: 56, borderRadius: 12,
-                        objectFit: 'cover', flexShrink: 0,
-                      }} />
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 500, fontSize: 17, color: 'var(--color-text)' }}>
-                          {s.name}
-                        </span>
-                        {s.discountPercent && (
-                          <span style={{
-                            background: 'var(--color-danger)', color: '#fff',
-                            borderRadius: 6, fontSize: 10, fontWeight: 700,
-                            padding: '2px 6px', flexShrink: 0,
-                          }}>
-                            -{s.discountPercent}%
-                          </span>
-                        )}
-                      </div>
-                      {s.description && (
-                        <div style={{
-                          color: 'var(--color-text-secondary)', fontSize: 13, marginTop: 3,
-                          overflow: 'hidden', display: '-webkit-box',
-                          WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-                        }}>
-                          {s.description}
-                        </div>
-                      )}
-                      <div style={{
-                        display: 'flex', alignItems: 'center',
-                        justifyContent: 'space-between', marginTop: 4,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 17, fontWeight: 400, color: 'var(--color-text)' }}>
-                            {(displayPrice / 100).toLocaleString('ru-RU')} ₽
-                          </span>
-                          {s.discountPercent && (
-                            <span style={{
-                              fontSize: 13, color: 'var(--color-text-secondary)',
-                              textDecoration: 'line-through',
-                            }}>
-                              {(s.price / 100).toLocaleString('ru-RU')} ₽
-                            </span>
-                          )}
-                        </div>
-                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
-                          {s.duration} мин
-                        </span>
-                      </div>
-                    </div>
-                    <svg width="9" height="16" viewBox="0 0 9 16" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M1 1l7 7-7 7" stroke="#7D7D7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                )
-              })}
+              {master.description && (
+                <div style={{ fontSize: 13, color: '#7D7D7F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {master.description}
+                </div>
+              )}
             </div>
           </div>
+        )}
+
+        {/* Иконка чата */}
+        <button
+          onClick={() => {
+            window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
+          }}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7 8H17M7 13H13" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Список категорий ─────────────────────────────────────────── */}
+      <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {master?.categories.map((cat) => (
+          <CategoryCard
+            key={cat.id}
+            category={cat}
+            expanded={expandedIds.has(cat.id)}
+            onToggle={() => toggleCategory(cat.id)}
+            onSelect={handleSelect}
+          />
         ))}
       </div>
+
+      <BottomNav />
+    </div>
+  )
+}
+
+/* ── CategoryCard ──────────────────────────────────────────────────────── */
+
+function CategoryCard({ category: cat, expanded, onToggle, onSelect }: {
+  category: Category
+  expanded: boolean
+  onToggle: () => void
+  onSelect: (s: Service) => void
+}) {
+  const hasDiscount = cat.services.some((s) => s.discountPercent)
+  const preview = cat.services.map((s) => s.name).join(' • ')
+
+  return (
+    <div>
+      {/* Заголовок категории — 108px */}
+      <div
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center',
+          background: '#25262B',
+          borderRadius: expanded ? '20px 20px 0 0' : 20,
+          minHeight: 108, padding: '0 16px 0 0',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0, padding: '16px 0 16px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{cat.name}</span>
+            {hasDiscount && (
+              <span style={{
+                background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                fontSize: 11, fontWeight: 700, borderRadius: 6,
+                padding: '2px 8px', lineHeight: '18px',
+              }}>
+                % скидки
+              </span>
+            )}
+          </div>
+          <div style={{
+            color: '#7D7D7F', fontSize: 13,
+            overflow: 'hidden', display: '-webkit-box',
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          }}>
+            {cat.description || preview}
+          </div>
+        </div>
+
+        {/* Шеврон */}
+        <div style={{
+          flexShrink: 0, marginLeft: 8,
+          transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Услуги */}
+      {expanded && (
+        <div style={{ background: '#25262B', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
+          {cat.services.map((s) => {
+            const dPrice = discountedPrice(s.price, s.discountPercent)
+            return (
+              <button
+                key={s.id}
+                onClick={() => onSelect(s)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  padding: '12px 16px',
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  background: 'none', cursor: 'pointer', textAlign: 'left',
+                  gap: 12, border: 'none', borderTopStyle: 'solid', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                {s.photo && (
+                  <img src={s.photo} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#D3D4D6' }}>{s.name}</span>
+                    {s.discountPercent && (
+                      <span style={{
+                        background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                        fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
+                      }}>
+                        -{s.discountPercent}%
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ color: '#7D7D7F', fontSize: 12, marginTop: 2 }}>
+                    {formatDuration(s.duration)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: dPrice !== null ? '#007AFE' : '#D3D4D6' }}>
+                      {formatPrice(dPrice ?? s.price)}
+                    </span>
+                    {dPrice !== null && (
+                      <span style={{ fontSize: 12, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                        {formatPrice(s.price)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <svg width="9" height="16" viewBox="0 0 9 16" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M1 1l7 7-7 7" stroke="#007AFE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
