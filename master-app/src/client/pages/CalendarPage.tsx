@@ -79,9 +79,9 @@ export default function CalendarPage() {
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Header 116px ── */}
+      {/* ── Header 66px ── */}
       <div style={{
-        height: 116, background: '#0F0F11',
+        height: 66, background: '#0F0F11',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -96,8 +96,8 @@ export default function CalendarPage() {
           </svg>
         </button>
 
-        {/* Service info center */}
-        <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
+        {/* Service info — centered */}
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
           <div style={{
             fontWeight: 600, fontSize: 17, color: '#D3D4D6',
             lineHeight: '22px',
@@ -151,10 +151,10 @@ export default function CalendarPage() {
                 display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
                 marginBottom: 8,
               }}>
-                {DAY_NAMES.map((d, di) => (
+                {DAY_NAMES.map((d) => (
                   <div key={d} style={{
                     textAlign: 'center', fontSize: 14, fontWeight: 500,
-                    color: di >= 5 ? '#58585A' : '#58585A',
+                    color: '#6E6E70',
                     padding: '4px 0',
                   }}>
                     {d}
@@ -178,18 +178,18 @@ export default function CalendarPage() {
                     const disabled = isPast || !working
                     const isWeekend = di >= 5 // Сб, Вс
 
-                    // Cell background
+                    // Cell background:
+                    // dark blue = working day with slots, gray = no free slots, black = past or non-working
                     let bg = 'transparent'
                     let cellOpacity = 1
                     if (isSelected) {
                       bg = '#007AFE'
-                    } else if (isPast) {
+                    } else if (isPast || !working) {
+                      // Black — past or non-working
                       bg = 'transparent'
                       cellOpacity = 0.5
-                    } else if (!working) {
-                      bg = '#454757'
-                      cellOpacity = 0.5
                     } else {
+                      // Dark blue — future working day (has potential slots)
                       bg = 'rgba(0, 122, 254, 0.3)'
                     }
 
