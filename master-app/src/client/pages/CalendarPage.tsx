@@ -150,6 +150,11 @@ export default function CalendarPage() {
         </button>
       </div>
 
+      {/* DEBUG — временный блок */}
+      <div style={{ padding: '4px 14px', fontSize: 10, color: '#7D7D7F', background: '#1a1a1c' }}>
+        masterId: {masterId || 'null'} | service: {service?.id?.slice(0, 8) || 'null'} | avail keys: {Object.keys(availability).length} | schedule: {schedule ? schedule.workingDays.join(',') : 'null'}
+      </div>
+
       {/* ── Date step — Calendar ── */}
       {step === 'date' && (
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px', paddingBottom: 32 }}>
