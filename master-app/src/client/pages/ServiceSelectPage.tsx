@@ -86,24 +86,15 @@ export default function ServiceSelectPage() {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Название + бейдж скидки */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{s.name}</span>
-                        {s.discountPercent && (
-                          <span style={{
-                            background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                            fontSize: 11, fontWeight: 700, borderRadius: 6,
-                            padding: '2px 8px', lineHeight: '18px',
-                          }}>
-                            % скидки
-                          </span>
-                        )}
+                      {/* Название */}
+                      <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6', marginBottom: 4 }}>
+                        {s.name}
                       </div>
 
                       {/* Описание */}
                       {s.description && (
                         <div style={{
-                          color: '#7D7D7F', fontSize: 13, marginBottom: 8,
+                          color: '#7D7D7F', fontSize: 13, marginBottom: 10,
                           overflow: 'hidden', display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                         }}>
@@ -111,10 +102,7 @@ export default function ServiceSelectPage() {
                         </div>
                       )}
 
-                      {/* Разделитель */}
-                      <div style={{ height: 0.6, background: '#7D7D7F', opacity: 0.3, marginBottom: 8 }} />
-
-                      {/* Цена */}
+                      {/* Цена + бейдж скидки */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{
                           fontWeight: 600, fontSize: 15,
@@ -125,6 +113,15 @@ export default function ServiceSelectPage() {
                         {dPrice !== null && (
                           <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
                             {formatPrice(s.price)}
+                          </span>
+                        )}
+                        {s.discountPercent && (
+                          <span style={{
+                            background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                            fontSize: 11, fontWeight: 700, borderRadius: 6,
+                            padding: '2px 8px', lineHeight: '18px',
+                          }}>
+                            % скидки
                           </span>
                         )}
                       </div>
