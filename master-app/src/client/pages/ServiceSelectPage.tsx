@@ -35,9 +35,9 @@ export default function ServiceSelectPage() {
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
 
-      {/* -- Header 116px (from design mockup) -- */}
+      {/* -- Header 96px -- */}
       <div style={{
-        height: 116, background: '#0F0F11',
+        height: 96, background: '#0F0F11',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
