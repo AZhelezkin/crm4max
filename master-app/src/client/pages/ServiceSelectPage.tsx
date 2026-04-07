@@ -79,63 +79,63 @@ export default function ServiceSelectPage() {
                       background: '#25262B', borderRadius: 20,
                       padding: '14px 20px 12px 22px', border: 'none',
                       cursor: 'pointer', textAlign: 'left',
-                      position: 'relative',
-                      display: 'block',
+                      display: 'flex', alignItems: 'flex-start',
                     }}
                   >
-                    {/* Название — 1 строка */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center',
-                    }}>
+                    {/* Контент слева */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Название — 1 строка */}
                       <div style={{
-                        flex: 1, fontWeight: 600, fontSize: 15, color: '#D3D4D6',
+                        fontWeight: 600, fontSize: 15, color: '#D3D4D6',
                         lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
                         {s.name}
                       </div>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8 }}>
-                        <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
 
-                    {/* Описание — ровно 2 строки (34px) */}
-                    <div style={{
-                      color: '#7D7D7F', fontSize: 13, marginTop: 2,
-                      height: 34, overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      lineHeight: '17px',
-                    }}>
-                      {s.description || '\u00A0'}
-                    </div>
-
-                    {/* Цена + старая цена + бейдж скидки */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
-                      lineHeight: '18px',
-                    }}>
-                      <span style={{
-                        fontWeight: 600, fontSize: 15,
-                        color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                      {/* Описание — 2 строки (34px) */}
+                      <div style={{
+                        color: '#7D7D7F', fontSize: 13, marginTop: 2,
+                        height: 34, overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                        lineHeight: '17px',
                       }}>
-                        {formatPrice(dPrice ?? s.price)}
-                      </span>
-                      {dPrice !== null && (
-                        <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
-                          {formatPrice(s.price)}
-                        </span>
-                      )}
-                      {s.discountPercent && (
+                        {s.description || '\u00A0'}
+                      </div>
+
+                      {/* Цена + старая цена + бейдж скидки */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
+                        lineHeight: '18px',
+                      }}>
                         <span style={{
-                          marginLeft: 'auto',
-                          background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                          fontSize: 11, fontWeight: 700, borderRadius: 6,
-                          padding: '2px 8px', lineHeight: '18px',
+                          fontWeight: 600, fontSize: 15,
+                          color: dPrice !== null ? '#CE4259' : '#D3D4D6',
                         }}>
-                          % скидки
+                          {formatPrice(dPrice ?? s.price)}
                         </span>
-                      )}
+                        {dPrice !== null && (
+                          <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                            {formatPrice(s.price)}
+                          </span>
+                        )}
+                        {s.discountPercent && (
+                          <span style={{
+                            marginLeft: 'auto',
+                            background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                            fontSize: 11, fontWeight: 700, borderRadius: 6,
+                            padding: '2px 8px', lineHeight: '18px',
+                          }}>
+                            % скидки
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Шеврон — по центру блока название+описание */}
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
+                      <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
                 )
               })}

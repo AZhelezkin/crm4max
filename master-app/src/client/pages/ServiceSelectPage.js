@@ -34,30 +34,27 @@ export default function ServiceSelectPage() {
                                             background: '#25262B', borderRadius: 20,
                                             padding: '14px 20px 12px 22px', border: 'none',
                                             cursor: 'pointer', textAlign: 'left',
-                                            position: 'relative',
-                                            display: 'block',
-                                        }, children: [_jsxs("div", { style: {
-                                                    display: 'flex', alignItems: 'center',
-                                                }, children: [_jsx("div", { style: {
-                                                            flex: 1, fontWeight: 600, fontSize: 15, color: '#D3D4D6',
+                                            display: 'flex', alignItems: 'flex-start',
+                                        }, children: [_jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [_jsx("div", { style: {
+                                                            fontWeight: 600, fontSize: 15, color: '#D3D4D6',
                                                             lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                                        }, children: s.name }), _jsx("svg", { width: "18", height: "18", viewBox: "0 0 18 18", fill: "none", style: { flexShrink: 0, marginLeft: 8 }, children: _jsx("path", { d: "M7 5L11 9L7 13", stroke: "#7D7D7F", strokeWidth: "1.75", strokeLinecap: "round", strokeLinejoin: "round" }) })] }), _jsx("div", { style: {
-                                                    color: '#7D7D7F', fontSize: 13, marginTop: 2,
-                                                    height: 34, overflow: 'hidden',
-                                                    display: '-webkit-box',
-                                                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                                                    lineHeight: '17px',
-                                                }, children: s.description || '\u00A0' }), _jsxs("div", { style: {
-                                                    display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
-                                                    lineHeight: '18px',
-                                                }, children: [_jsx("span", { style: {
-                                                            fontWeight: 600, fontSize: 15,
-                                                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
-                                                        }, children: formatPrice(dPrice ?? s.price) }), dPrice !== null && (_jsx("span", { style: { fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }, children: formatPrice(s.price) })), s.discountPercent && (_jsx("span", { style: {
-                                                            marginLeft: 'auto',
-                                                            background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                                                            fontSize: 11, fontWeight: 700, borderRadius: 6,
-                                                            padding: '2px 8px', lineHeight: '18px',
-                                                        }, children: "% \u0441\u043A\u0438\u0434\u043A\u0438" }))] })] }, s.id));
+                                                        }, children: s.name }), _jsx("div", { style: {
+                                                            color: '#7D7D7F', fontSize: 13, marginTop: 2,
+                                                            height: 34, overflow: 'hidden',
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                                            lineHeight: '17px',
+                                                        }, children: s.description || '\u00A0' }), _jsxs("div", { style: {
+                                                            display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
+                                                            lineHeight: '18px',
+                                                        }, children: [_jsx("span", { style: {
+                                                                    fontWeight: 600, fontSize: 15,
+                                                                    color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                                                                }, children: formatPrice(dPrice ?? s.price) }), dPrice !== null && (_jsx("span", { style: { fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }, children: formatPrice(s.price) })), s.discountPercent && (_jsx("span", { style: {
+                                                                    marginLeft: 'auto',
+                                                                    background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                                                                    fontSize: 11, fontWeight: 700, borderRadius: 6,
+                                                                    padding: '2px 8px', lineHeight: '18px',
+                                                                }, children: "% \u0441\u043A\u0438\u0434\u043A\u0438" }))] })] }), _jsx("svg", { width: "18", height: "18", viewBox: "0 0 18 18", fill: "none", style: { flexShrink: 0, marginLeft: 8, marginTop: 10 }, children: _jsx("path", { d: "M7 5L11 9L7 13", stroke: "#7D7D7F", strokeWidth: "1.75", strokeLinecap: "round", strokeLinejoin: "round" }) })] }, s.id));
                                 }) })] }, cat.id)))] }), _jsx(BottomNav, {})] }));
 }
