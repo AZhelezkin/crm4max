@@ -78,32 +78,34 @@ export default function ServiceSelectPage() {
                     key={s.id}
                     onClick={() => handleSelect(s)}
                     style={{
-                      width: '100%', minHeight: 108,
+                      width: '100%', height: 106,
                       background: '#25262B', borderRadius: 20,
-                      padding: '16px 16px', border: 'none',
+                      padding: '0 16px 0 22px', border: 'none',
                       display: 'flex', alignItems: 'center',
-                      cursor: 'pointer', textAlign: 'left', gap: 12,
+                      cursor: 'pointer', textAlign: 'left',
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       {/* Название */}
-                      <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>
                         {s.name}
                       </div>
 
                       {/* Описание */}
-                      {s.description && (
-                        <div style={{
-                          color: '#7D7D7F', fontSize: 13, marginBottom: 10,
-                          overflow: 'hidden', display: '-webkit-box',
-                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                        }}>
-                          {s.description}
-                        </div>
-                      )}
+                      <div style={{
+                        color: '#7D7D7F', fontSize: 13, marginTop: 6,
+                        overflow: 'hidden', display: '-webkit-box',
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                        lineHeight: '17px',
+                      }}>
+                        {s.description || '\u00A0'}
+                      </div>
+
+                      {/* Разделитель */}
+                      <div style={{ height: 0.6, background: '#7D7D7F', opacity: 0.3, marginTop: 10 }} />
 
                       {/* Цена + бейдж скидки */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                         <span style={{
                           fontWeight: 600, fontSize: 15,
                           color: dPrice !== null ? '#CE4259' : '#D3D4D6',
@@ -128,7 +130,7 @@ export default function ServiceSelectPage() {
                     </div>
 
                     {/* Шеврон */}
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8 }}>
                       <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
