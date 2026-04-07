@@ -55,9 +55,15 @@ export default function CalendarPage() {
     if (masterId && service) {
       const from = today.format('YYYY-MM-DD')
       const to = today.startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
+      console.log('[availability] loading', { masterId, serviceId: service.id, from, to })
       mastersApi.getAvailability(masterId, from, to, service.id)
-        .then(setAvailability)
-        .catch(() => {})
+        .then((data) => {
+          console.log('[availability] loaded', Object.keys(data).length, 'days, sample:', JSON.stringify(data).slice(0, 200))
+          setAvailability(data)
+        })
+        .catch((err) => console.error('[availability] error', err))
+    } else {
+      console.log('[availability] skip: masterId=', masterId, 'service=', service?.id)
     }
   }, [masterId, service])
 
