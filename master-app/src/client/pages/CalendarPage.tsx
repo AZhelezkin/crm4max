@@ -55,15 +55,9 @@ export default function CalendarPage() {
     if (masterId && service) {
       const from = today.format('YYYY-MM-DD')
       const to = today.startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
-      console.log('[availability] loading', { masterId, serviceId: service.id, from, to })
       mastersApi.getAvailability(masterId, from, to, service.id)
-        .then((data) => {
-          console.log('[availability] loaded', Object.keys(data).length, 'days, sample:', JSON.stringify(data).slice(0, 200))
-          setAvailability(data)
-        })
-        .catch((err) => console.error('[availability] error', err))
-    } else {
-      console.log('[availability] skip: masterId=', masterId, 'service=', service?.id)
+        .then(setAvailability)
+        .catch(() => {})
     }
   }, [masterId, service])
 
@@ -148,11 +142,6 @@ export default function CalendarPage() {
             <path d="M2 2L8 8M8 2L2 8" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-      </div>
-
-      {/* DEBUG — временный блок */}
-      <div style={{ padding: '4px 14px', fontSize: 10, color: '#7D7D7F', background: '#1a1a1c' }}>
-        masterId: {masterId || 'null'} | service: {service?.id?.slice(0, 8) || 'null'} | avail keys: {Object.keys(availability).length} | schedule: {schedule ? schedule.workingDays.join(',') : 'null'}
       </div>
 
       {/* ── Date step — Calendar ── */}
