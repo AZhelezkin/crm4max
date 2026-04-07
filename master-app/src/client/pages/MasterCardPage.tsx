@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Category, Master, Service } from '@client/types'
-import { discountedPrice, formatPrice, formatDuration } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 
 /* ── Иконки кнопок действий (stroke #007AFE, 24×24) ───────────────────────── */
@@ -277,7 +276,10 @@ export default function MasterCardPage() {
       <div style={{ padding: '10px 14px 0' }}>
 
         {tab === 'services' && (
-          <ServicesList categories={master.categories} onBook={handleBook} />
+          <ServicesList categories={master.categories} onCategoryClick={(cat) => {
+            setMasterId(masterId)
+            navigate(`/book/services?categoryId=${cat.id}`)
+          }} />
         )}
 
         {tab === 'photo' && (
@@ -387,136 +389,66 @@ export default function MasterCardPage() {
 
 /* ── ServicesList ──────────────────────────────────────────────────────────── */
 
-function ServicesList({ categories, onBook }: { categories: Category[]; onBook: (s: Service) => void }) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-
-  const toggle = (id: string) =>
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-
+function ServicesList({ categories, onCategoryClick }: { categories: Category[]; onCategoryClick: (cat: Category) => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {categories.map((cat) => {
-        const expanded = expandedIds.has(cat.id)
         const hasDiscount = cat.services.some((s) => s.discountPercent)
         const preview = cat.services.map((s) => s.name).join(' • ')
 
         return (
-          <div key={cat.id}>
-            <div
-              onClick={() => toggle(cat.id)}
-              style={{
-                display: 'flex', alignItems: 'center',
-                background: '#25262B',
-                borderRadius: expanded ? '20px 20px 0 0' : 20,
-                minHeight: 78, padding: '0 16px 0 0',
-                cursor: 'pointer',
-              }}
-            >
-              {/* Аватар категории 46×46 */}
-              <div style={{
-                width: 46, height: 46, borderRadius: 23, flexShrink: 0,
-                overflow: 'hidden', background: '#454757',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 12px 0 16px',
-              }}>
-                {cat.photo
-                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: 22 }}>✂️</span>
-                }
-              </div>
+          <div
+            key={cat.id}
+            onClick={() => onCategoryClick(cat)}
+            style={{
+              display: 'flex', alignItems: 'center',
+              background: '#25262B',
+              borderRadius: 20,
+              minHeight: 78, padding: '0 16px 0 0',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Аватар категории 46×46 */}
+            <div style={{
+              width: 46, height: 46, borderRadius: 23, flexShrink: 0,
+              overflow: 'hidden', background: '#454757',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 12px 0 16px',
+            }}>
+              {cat.photo
+                ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 22 }}>✂️</span>
+              }
+            </div>
 
-              {/* Название + описание */}
-              <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{cat.name}</span>
-                  {hasDiscount && (
-                    <span style={{
-                      background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                      fontSize: 11, fontWeight: 700, borderRadius: 6,
-                      padding: '2px 8px', lineHeight: '18px',
-                    }}>
-                      % скидки
-                    </span>
-                  )}
-                </div>
-                <div style={{
-                  color: '#7D7D7F', fontSize: 13,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {cat.description || preview}
-                </div>
+            {/* Название + описание */}
+            <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{cat.name}</span>
+                {hasDiscount && (
+                  <span style={{
+                    background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                    fontSize: 11, fontWeight: 700, borderRadius: 6,
+                    padding: '2px 8px', lineHeight: '18px',
+                  }}>
+                    % скидки
+                  </span>
+                )}
               </div>
-
-              {/* Шеврон */}
               <div style={{
-                flexShrink: 0, marginLeft: 8,
-                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s',
+                color: '#7D7D7F', fontSize: 13,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                {cat.description || preview}
               </div>
             </div>
 
-            {/* Развёрнутые услуги */}
-            {expanded && (
-              <div style={{ background: '#25262B', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
-                {cat.services.map((s) => {
-                  const dPrice = discountedPrice(s.price, s.discountPercent)
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => onBook(s)}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center',
-                        padding: '12px 16px',
-                        borderTop: '1px solid rgba(255,255,255,0.08)',
-                        background: 'none', cursor: 'pointer', textAlign: 'left',
-                        gap: 12, border: 'none', borderTopStyle: 'solid', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      {s.photo && (
-                        <img src={s.photo} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 14, fontWeight: 500, color: '#D3D4D6' }}>{s.name}</span>
-                          {s.discountPercent && (
-                            <span style={{
-                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                              fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
-                            }}>
-                              -{s.discountPercent}%
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ color: '#7D7D7F', fontSize: 12, marginTop: 2 }}>
-                          {formatDuration(s.duration)}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
-                          <span style={{ fontWeight: 600, fontSize: 14, color: dPrice !== null ? '#007AFE' : '#D3D4D6' }}>
-                            {formatPrice(dPrice ?? s.price)}
-                          </span>
-                          {dPrice !== null && (
-                            <span style={{ fontSize: 12, color: '#7D7D7F', textDecoration: 'line-through' }}>
-                              {formatPrice(s.price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <svg width="9" height="16" viewBox="0 0 9 16" fill="none" style={{ flexShrink: 0 }}>
-                        <path d="M1 1l7 7-7 7" stroke="#007AFE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            {/* Шеврон */}
+            <div style={{ flexShrink: 0, marginLeft: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
         )
       })}
