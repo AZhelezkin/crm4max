@@ -35,53 +35,44 @@ export default function ServiceSelectPage() {
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
 
-      {/* -- Header -- */}
+      {/* -- Header 116px (from design mockup) -- */}
       <div style={{
-        background: '#0F0F11',
+        height: 116, background: '#0F0F11',
+        display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        {/* Top bar with back arrow */}
-        <div style={{
-          height: 58,
-          display: 'flex', alignItems: 'center', padding: '0 14px',
-        }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+        {/* Back arrow */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
 
-          <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
-            {singleCategory ? '' : 'Выберите услугу'}
-          </div>
-
-          <div style={{ width: 40 }} />
-        </div>
-
-        {/* Category info block (photo + name + description) when single category */}
-        {singleCategory && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '0 14px 14px',
-          }}>
+        {singleCategory ? (
+          <>
+            {/* Category avatar 44×44 */}
             <div style={{
               width: 44, height: 44, borderRadius: 22, flexShrink: 0,
               overflow: 'hidden', background: '#454757',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginLeft: 8,
             }}>
               {singleCategory.photo
                 ? <img src={singleCategory.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ fontSize: 20 }}>✂️</span>
               }
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Category name + description */}
+            <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
               <div style={{
                 fontWeight: 600, fontSize: 17, color: '#D3D4D6',
                 lineHeight: '22px',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {singleCategory.name}
               </div>
@@ -95,7 +86,22 @@ export default function ServiceSelectPage() {
                 </div>
               )}
             </div>
-          </div>
+
+            {/* Chat icon (from design) */}
+            <div style={{ flexShrink: 0, marginLeft: 8 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 8H17M7 13H13" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
+              Выберите услугу
+            </div>
+            <div style={{ width: 40 }} />
+          </>
         )}
       </div>
 
