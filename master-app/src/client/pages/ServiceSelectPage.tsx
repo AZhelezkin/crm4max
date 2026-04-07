@@ -25,9 +25,9 @@ export default function ServiceSelectPage() {
 
       {/* ── Шапка 116px ──────────────────────────────────────────────── */}
       <div style={{
-        height: 116, background: '#0F0F11',
+        height: 58, background: '#0F0F11',
         display: 'flex', alignItems: 'center', padding: '0 14px',
-        gap: 12, position: 'sticky', top: 0, zIndex: 10,
+        position: 'sticky', top: 0, zIndex: 10,
       }}>
         <button
           onClick={() => navigate(-1)}
@@ -43,17 +43,7 @@ export default function ServiceSelectPage() {
           Выберите услугу
         </div>
 
-        <button
-          onClick={() => {
-            window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
-          }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M7 8H17M7 13H13" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+        <div style={{ width: 40 }} />
       </div>
 
       {/* ── Список услуг ─────────────────────────────────────────────── */}
@@ -80,43 +70,52 @@ export default function ServiceSelectPage() {
                     style={{
                       width: '100%', height: 106,
                       background: '#25262B', borderRadius: 20,
-                      padding: '0 16px 0 22px', border: 'none',
-                      display: 'flex', alignItems: 'center',
+                      padding: '16px 16px 14px 22px', border: 'none',
+                      display: 'flex', alignItems: 'flex-start',
                       cursor: 'pointer', textAlign: 'left',
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0, position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      {/* Название */}
-                      <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>
-                        {s.name}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Название + шеврон в одной строке */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Название */}
+                          <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6', lineHeight: '20px' }}>
+                            {s.name}
+                          </div>
+
+                          {/* Описание */}
+                          <div style={{
+                            color: '#7D7D7F', fontSize: 13, marginTop: 4,
+                            overflow: 'hidden', display: '-webkit-box',
+                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                            lineHeight: '17px',
+                          }}>
+                            {s.description || '\u00A0'}
+                          </div>
+                        </div>
+
+                        {/* Шеврон — по центру блока название+описание */}
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
+                          <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       </div>
 
-                      {/* Описание */}
-                      <div style={{
-                        color: '#7D7D7F', fontSize: 13, marginTop: 6,
-                        overflow: 'hidden', display: '-webkit-box',
-                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                        lineHeight: '17px',
-                      }}>
-                        {s.description || '\u00A0'}
-                      </div>
-
-                      {/* Разделитель */}
-                      <div style={{ height: 0.6, background: '#7D7D7F', opacity: 0.3, marginTop: 10 }} />
-
-                      {/* Цена + бейдж скидки */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                        <span style={{
-                          fontWeight: 600, fontSize: 15,
-                          color: dPrice !== null ? '#CE4259' : '#D3D4D6',
-                        }}>
-                          {formatPrice(dPrice ?? s.price)}
-                        </span>
-                        {dPrice !== null && (
-                          <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
-                            {formatPrice(s.price)}
+                      {/* Цена слева + бейдж скидки справа */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{
+                            fontWeight: 600, fontSize: 15,
+                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                          }}>
+                            {formatPrice(dPrice ?? s.price)}
                           </span>
-                        )}
+                          {dPrice !== null && (
+                            <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                              {formatPrice(s.price)}
+                            </span>
+                          )}
+                        </div>
                         {s.discountPercent && (
                           <span style={{
                             background: 'rgba(206,66,89,0.3)', color: '#CE4259',
@@ -128,11 +127,6 @@ export default function ServiceSelectPage() {
                         )}
                       </div>
                     </div>
-
-                    {/* Шеврон */}
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8 }}>
-                      <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
                   </button>
                 )
               })}
