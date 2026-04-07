@@ -108,7 +108,7 @@ export const scheduleService = {
       const dayOfWeek = d.day() || 7
 
       if (!schedule.workingDays.includes(dayOfWeek)) {
-        result[dateStr] = false
+        // Нерабочие дни НЕ включаем в ответ — фронт отличит их от "занятых"
         d = d.add(1, 'day')
         continue
       }

@@ -190,24 +190,25 @@ export default function CalendarPage() {
                     const disabled = isPast || !working
                     const isWeekend = di >= 5 // Сб, Вс
 
-                    // Cell background:
-                    // dark blue = есть свободные слоты, gray = нет слотов, black = прошёл или нерабочий
-                    const hasSlots = availability[val]
+                    // Цвета ячеек:
+                    //   dark blue = есть свободные слоты (availability[val] === true)
+                    //   gray      = нет свободных слотов (availability[val] === false)
+                    //   black     = прошёл, нерабочий, или данные не загружены
+                    const hasSlots = availability[val] // true | false | undefined
                     let bg = 'transparent'
                     let cellOpacity = 1
                     if (isSelected) {
                       bg = '#007AFE'
-                    } else if (isPast || !working) {
-                      // Black — прошедший день или нерабочий
-                      bg = 'transparent'
+                    } else if (isPast) {
                       cellOpacity = 0.5
+                    } else if (hasSlots === true) {
+                      bg = 'rgba(0, 122, 254, 0.3)'
                     } else if (hasSlots === false) {
-                      // Gray — рабочий день, но нет свободных слотов
                       bg = '#454757'
                       cellOpacity = 0.5
                     } else {
-                      // Dark blue — есть свободные слоты (или ещё не загружено)
-                      bg = 'rgba(0, 122, 254, 0.3)'
+                      // undefined — нерабочий день или данные ещё грузятся
+                      cellOpacity = 0.5
                     }
 
                     // Text color
