@@ -70,21 +70,19 @@ export default function ServiceSelectPage() {
                     style={{
                       width: '100%', height: 106,
                       background: '#25262B', borderRadius: 20,
-                      padding: '16px 16px 14px 22px', border: 'none',
+                      padding: '16px 20px 15px 22px', border: 'none',
                       display: 'flex', alignItems: 'flex-start',
                       cursor: 'pointer', textAlign: 'left',
+                      position: 'relative',
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Название + шеврон в одной строке */}
+                      {/* Название + шеврон */}
                       <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          {/* Название */}
                           <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6', lineHeight: '20px' }}>
                             {s.name}
                           </div>
-
-                          {/* Описание */}
                           <div style={{
                             color: '#7D7D7F', fontSize: 13, marginTop: 4,
                             overflow: 'hidden', display: '-webkit-box',
@@ -94,39 +92,38 @@ export default function ServiceSelectPage() {
                             {s.description || '\u00A0'}
                           </div>
                         </div>
-
-                        {/* Шеврон — по центру блока название+описание */}
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
                           <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </div>
 
-                      {/* Цена слева + бейдж скидки справа */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{
-                            fontWeight: 600, fontSize: 15,
-                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
-                          }}>
-                            {formatPrice(dPrice ?? s.price)}
-                          </span>
-                          {dPrice !== null && (
-                            <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
-                              {formatPrice(s.price)}
-                            </span>
-                          )}
-                        </div>
-                        {s.discountPercent && (
-                          <span style={{
-                            background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                            fontSize: 11, fontWeight: 700, borderRadius: 6,
-                            padding: '2px 8px', lineHeight: '18px',
-                          }}>
-                            % скидки
+                      {/* Цена */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                        <span style={{
+                          fontWeight: 600, fontSize: 15,
+                          color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                        }}>
+                          {formatPrice(dPrice ?? s.price)}
+                        </span>
+                        {dPrice !== null && (
+                          <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                            {formatPrice(s.price)}
                           </span>
                         )}
                       </div>
                     </div>
+
+                    {/* Бейдж скидки — правый нижний угол (right:20, bottom:15) */}
+                    {s.discountPercent && (
+                      <span style={{
+                        position: 'absolute', right: 20, bottom: 15,
+                        background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                        fontSize: 11, fontWeight: 700, borderRadius: 6,
+                        padding: '2px 8px', lineHeight: '18px',
+                      }}>
+                        % скидки
+                      </span>
+                    )}
                   </button>
                 )
               })}
