@@ -10,8 +10,11 @@ export default function ServiceSelectPage() {
     const { masterId, setService } = useBookingStore();
     const [master, setMaster] = useState(null);
     useEffect(() => {
-        if (masterId)
-            mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'));
+        if (!masterId) {
+            navigate('/');
+            return;
+        }
+        mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'));
     }, [masterId, navigate]);
     const handleSelect = (service) => {
         setService(service);

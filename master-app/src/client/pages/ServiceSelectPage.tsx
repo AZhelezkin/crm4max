@@ -12,7 +12,8 @@ export default function ServiceSelectPage() {
   const [master, setMaster] = useState<Master | null>(null)
 
   useEffect(() => {
-    if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'))
+    if (!masterId) { navigate('/'); return }
+    mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'))
   }, [masterId, navigate])
 
   const handleSelect = (service: Service) => {
