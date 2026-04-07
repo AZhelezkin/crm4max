@@ -48,6 +48,12 @@ export default function ServiceSelectPage() {
 
       {/* ── Список услуг ─────────────────────────────────────────────── */}
       <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {!master && (
+          <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Загрузка...</div>
+        )}
+        {master && (!master.categories || master.categories.length === 0) && (
+          <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Нет услуг</div>
+        )}
         {master?.categories.map((cat) => (
           <div key={cat.id}>
             {/* Заголовок категории (добавление) */}
