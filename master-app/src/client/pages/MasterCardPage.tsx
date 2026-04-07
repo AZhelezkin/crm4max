@@ -203,7 +203,9 @@ export default function MasterCardPage() {
             if (master.phone)
               window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
           }, disabled: !master.phone },
-          { label: 'Чат',    Icon: IcoChat, action: () => {} },
+          { label: 'Чат',    Icon: IcoChat, action: () => {
+            window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
+          } },
           { label: 'Ещё',    Icon: IcoMore, action: () => {} },
         ] as const).map((btn) => {
           const dis = 'disabled' in btn ? btn.disabled : false
@@ -239,26 +241,33 @@ export default function MasterCardPage() {
               onClick={() => setTab(key)}
               style={{
                 flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
-                padding: '0 12px 12px', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '0 12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
               }}
             >
-              <span style={{
-                fontSize: 17, fontWeight: 500,
-                color: active ? '#007AFE' : '#7D7D7F',
-              }}>
-                {TAB_LABELS[key]}
-              </span>
-              {badge > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 12 }}>
                 <span style={{
-                  background: active ? 'rgba(0,122,254,0.3)' : '#454757',
+                  fontSize: 17, fontWeight: 500,
                   color: active ? '#007AFE' : '#7D7D7F',
-                  borderRadius: 11.5, fontSize: 13, fontWeight: 500,
-                  padding: '2px 8px', minWidth: 24, textAlign: 'center',
-                  lineHeight: '19px',
                 }}>
-                  {badge}
+                  {TAB_LABELS[key]}
                 </span>
-              )}
+                {badge > 0 && (
+                  <span style={{
+                    background: active ? 'rgba(0,122,254,0.3)' : '#454757',
+                    color: active ? '#007AFE' : '#7D7D7F',
+                    borderRadius: 11.5, fontSize: 13, fontWeight: 500,
+                    padding: '2px 8px', minWidth: 24, textAlign: 'center',
+                    lineHeight: '19px',
+                  }}>
+                    {badge}
+                  </span>
+                )}
+              </div>
+              <div style={{
+                width: '100%', height: 3,
+                background: active ? '#007AFE' : 'transparent',
+                borderRadius: '3px 3px 0 0',
+              }} />
             </button>
           )
         })}

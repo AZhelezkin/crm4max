@@ -136,7 +136,9 @@ export default function MasterCardPage() {
                             if (master.phone)
                                 window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`);
                         }, disabled: !master.phone },
-                    { label: 'Чат', Icon: IcoChat, action: () => { } },
+                    { label: 'Чат', Icon: IcoChat, action: () => {
+                            window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24');
+                        } },
                     { label: 'Ещё', Icon: IcoMore, action: () => { } },
                 ].map((btn) => {
                     const dis = 'disabled' in btn ? btn.disabled : false;
@@ -153,17 +155,21 @@ export default function MasterCardPage() {
                     const badge = tabBadge(key);
                     return (_jsxs("button", { onClick: () => setTab(key), style: {
                             flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
-                            padding: '0 12px 12px', display: 'flex', alignItems: 'center', gap: 6,
-                        }, children: [_jsx("span", { style: {
-                                    fontSize: 17, fontWeight: 500,
-                                    color: active ? '#007AFE' : '#7D7D7F',
-                                }, children: TAB_LABELS[key] }), badge > 0 && (_jsx("span", { style: {
-                                    background: active ? 'rgba(0,122,254,0.3)' : '#454757',
-                                    color: active ? '#007AFE' : '#7D7D7F',
-                                    borderRadius: 11.5, fontSize: 13, fontWeight: 500,
-                                    padding: '2px 8px', minWidth: 24, textAlign: 'center',
-                                    lineHeight: '19px',
-                                }, children: badge }))] }, key));
+                            padding: '0 12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+                        }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 12 }, children: [_jsx("span", { style: {
+                                            fontSize: 17, fontWeight: 500,
+                                            color: active ? '#007AFE' : '#7D7D7F',
+                                        }, children: TAB_LABELS[key] }), badge > 0 && (_jsx("span", { style: {
+                                            background: active ? 'rgba(0,122,254,0.3)' : '#454757',
+                                            color: active ? '#007AFE' : '#7D7D7F',
+                                            borderRadius: 11.5, fontSize: 13, fontWeight: 500,
+                                            padding: '2px 8px', minWidth: 24, textAlign: 'center',
+                                            lineHeight: '19px',
+                                        }, children: badge }))] }), _jsx("div", { style: {
+                                    width: '100%', height: 3,
+                                    background: active ? '#007AFE' : 'transparent',
+                                    borderRadius: '3px 3px 0 0',
+                                } })] }, key));
                 }) }), _jsxs("div", { style: { padding: '10px 14px 0' }, children: [tab === 'services' && (_jsx(ServicesList, { categories: master.categories, onBook: handleBook })), tab === 'photo' && (workPhotos.length === 0 ? (_jsx("div", { style: { textAlign: 'center', color: '#7D7D7F', marginTop: 40 }, children: "\u041D\u0435\u0442 \u0444\u043E\u0442\u043E\u0433\u0440\u0430\u0444\u0438\u0439" })) : (_jsx("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -14px' }, children: workPhotos.map((p, i) => (_jsx("div", { style: { aspectRatio: '134/170', overflow: 'hidden', cursor: 'pointer' }, onClick: () => setLightboxIndex(i), children: _jsx("img", { src: p.url, alt: "", style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }) }, p.id))) }))), tab === 'reviews' && (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 }, children: [master.reviews.length === 0 && (_jsx("div", { style: { textAlign: 'center', color: '#7D7D7F', marginTop: 32 }, children: "\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u043E\u0442\u0437\u044B\u0432\u043E\u0432" })), master.reviews.map((r) => (_jsxs("div", { style: { background: '#25262B', borderRadius: 20, padding: 16 }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }, children: [_jsx("div", { style: {
                                                     width: 46, height: 46, borderRadius: 23,
                                                     background: '#454757', overflow: 'hidden',

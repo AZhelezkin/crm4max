@@ -15,6 +15,7 @@ declare global {
       requestContact: () => Promise<{ phone_number: string }>
       shareContent: (params: { text: string }) => void
       openLink: (url: string) => void
+      openMaxLink: (url: string) => void
       openCodeReader: (fileSelect: boolean) => Promise<string | { data?: string; result?: string; text?: string }>
     }
   }
