@@ -7,4 +7,7 @@ export const mastersApi = {
 
   getSlots: (masterId: string, date: string, serviceId: string) =>
     api.get<string[]>(`/schedule/${masterId}/slots`, { params: { date, serviceId } }).then((r) => r.data),
+
+  getAvailability: (masterId: string, from: string, to: string, serviceId: string) =>
+    api.get<Record<string, boolean>>(`/schedule/${masterId}/availability`, { params: { from, to, serviceId } }).then((r) => r.data),
 }

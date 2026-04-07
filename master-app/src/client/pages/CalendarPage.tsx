@@ -40,6 +40,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(date || today.format('YYYY-MM-DD'))
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [availability, setAvailability] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (masterId) {
@@ -48,6 +49,17 @@ export default function CalendarPage() {
         .catch(() => {})
     }
   }, [masterId])
+
+  // Batch-загрузка доступности слотов для всех 3 месяцев
+  useEffect(() => {
+    if (masterId && service) {
+      const from = today.format('YYYY-MM-DD')
+      const to = today.startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
+      mastersApi.getAvailability(masterId, from, to, service.id)
+        .then(setAvailability)
+        .catch(() => {})
+    }
+  }, [masterId, service])
 
   useEffect(() => {
     if (step === 'time' && masterId && service && selectedDate) {
@@ -179,17 +191,22 @@ export default function CalendarPage() {
                     const isWeekend = di >= 5 // Сб, Вс
 
                     // Cell background:
-                    // dark blue = working day with slots, gray = no free slots, black = past or non-working
+                    // dark blue = есть свободные слоты, gray = нет слотов, black = прошёл или нерабочий
+                    const hasSlots = availability[val]
                     let bg = 'transparent'
                     let cellOpacity = 1
                     if (isSelected) {
                       bg = '#007AFE'
                     } else if (isPast || !working) {
-                      // Black — past or non-working
+                      // Black — прошедший день или нерабочий
                       bg = 'transparent'
                       cellOpacity = 0.5
+                    } else if (hasSlots === false) {
+                      // Gray — рабочий день, но нет свободных слотов
+                      bg = '#454757'
+                      cellOpacity = 0.5
                     } else {
-                      // Dark blue — future working day (has potential slots)
+                      // Dark blue — есть свободные слоты (или ещё не загружено)
                       bg = 'rgba(0, 122, 254, 0.3)'
                     }
 
