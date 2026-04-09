@@ -82,6 +82,12 @@
     inset: 0;
     border-radius: 50%;
     overflow: hidden;
+    /* Dark bg hides the normal text underneath — only distorted version shows */
+    background: radial-gradient(circle,
+      #071020 0%,
+      #050d1c 60%,
+      #030a18 100%
+    );
   }
 
   .refract-text {
@@ -93,14 +99,16 @@
     font-weight: 800;
     font-size: 72px;
     letter-spacing: 2px;
-    color: rgba(255,255,255, 0.65);
+    color: #ffffff;
+    text-shadow: 0 0 15px rgba(255,255,255,0.1);
     filter: url(#refract-filter);
     transform-origin: center center;
-    transform: scale(1.12);
+    /* Magnification — lens effect */
+    transform: scale(1.15);
   }
 
   .refract-text .sep {
-    color: rgba(255,255,255, 0.25);
+    color: rgba(255,255,255, 0.3);
     font-weight: 300;
     font-size: 48px;
     margin: 0 4px;
@@ -214,11 +222,13 @@
 <body>
 
 <!-- SVG filter for water-like refraction -->
-<svg class="svg-filters">
+<svg class="svg-filters" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="refract-filter">
-      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="2" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    <filter id="refract-filter" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.02 0.015" numOctaves="3" seed="3" result="noise">
+        <animate attributeName="seed" from="1" to="100" dur="8s" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>
 </svg>
