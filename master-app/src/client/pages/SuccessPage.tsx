@@ -31,92 +31,74 @@ export default function SuccessPage() {
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Header: green check + "Вы записаны!" + close button ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 14px 12px',
-      }}>
-        {/* Green check circle + text */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 22,
-            background: 'linear-gradient(180deg, #32D9B9 0%, #09CA3E 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M6 12.875C11.0268 12.875 15.125 16.973 15.125 22C15.125 27.027 11.0268 31.125 6 31.125" stroke="white" strokeWidth="0" />
-              <path d="M7.275 17.91C6.681 17.427 5.818 17.427 5.225 17.91L5.102 18.021L0.579 22.542L-1.102 20.861L-1.225 20.75C-1.819 20.267 -2.682 20.267 -3.276 20.75L-3.398 20.861C-4.03 21.493 -4.03 22.527 -3.398 23.159L-0.568 25.988C-0.266 26.291 0.145 26.465 0.58 26.465C1.015 26.465 1.426 26.29 1.729 25.988L7.398 20.318L7.404 20.313L7.409 20.309C7.983 19.715 8.032 18.785 7.511 18.146L7.398 18.021L7.275 17.91Z" fill="white" stroke="white" strokeWidth="0" transform="translate(6, -6) scale(0.85)" />
-              {/* Simplified checkmark */}
-              <path d="M8 12.5l3 3 5-5.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 17, color: '#D3D4D6' }}>Вы записаны!</div>
-            <div style={{ color: '#7D7D7F', fontSize: 13, marginTop: 2 }}>Не опаздывайте 😏</div>
-          </div>
+      {/* ── Header area (h=202): banner overlay + green check + close btn ── */}
+      <div style={{ position: 'relative', height: 202 }}>
+        {/* Banner photo area (h=134) — master photo or gradient */}
+        <div style={{
+          height: 134, width: '100%',
+          background: master?.photo ? `url(${master.photo}) center/cover` : 'linear-gradient(135deg, #1a1a2e, #16213e)',
+        }} />
+        {/* Dark overlay over banner */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 202, background: '#0F0F11' }} />
+
+        {/* Green circle with checkmark — x=20 y=144 44x44 */}
+        <div style={{
+          position: 'absolute', left: 20, top: 144,
+          width: 44, height: 44, borderRadius: 22,
+          background: 'linear-gradient(180deg, #32D9B9 0%, #09CA3E 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M6 11.5L9.5 15L16 8" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
 
-        {/* Close button — square with rounded corners + X */}
+        {/* Title text — next to green circle */}
+        <div style={{ position: 'absolute', left: 76, top: 150, color: '#D3D4D6' }}>
+          <div style={{ fontWeight: 700, fontSize: 17, lineHeight: '22px' }}>Вы записаны!</div>
+          <div style={{ color: '#7D7D7F', fontSize: 13, marginTop: 2 }}>Не опаздывайте 😏</div>
+        </div>
+
+        {/* Close button — top right, square with X */}
         <button
           onClick={handleClose}
           style={{
-            width: 30, height: 30, borderRadius: 10,
-            border: '2px solid #D3D4D6', background: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', padding: 0, flexShrink: 0,
+            position: 'absolute', right: 14, top: 156,
+            width: 24, height: 24, background: 'none',
+            border: 'none', cursor: 'pointer', padding: 0,
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 2L10 10M10 2L2 10" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M7 7L17 17M17 7L7 17" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <rect x="2" y="2" width="20" height="20" rx="7" stroke="#D3D4D6" strokeWidth="2"/>
           </svg>
         </button>
       </div>
 
-      {/* ── Content cards ── */}
-      <div style={{ flex: 1, padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* ── Cards section ── */}
+      <div style={{ flex: 1, padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* Card 1: Master info */}
+        {/* Card 1: Master — h=78, rx=20 */}
         {master && (
           <div style={{
             background: 'rgba(240, 243, 255, 0.1)', borderRadius: 20,
-            padding: '16px 16px', minHeight: 78,
+            height: 78, padding: '0 16px',
             display: 'flex', alignItems: 'center',
           }}>
-            {/* Avatar with green progress arc */}
+            {/* Avatar circle */}
             <div style={{
-              position: 'relative', width: 46, height: 46,
-              flexShrink: 0, marginRight: 12,
+              width: 46, height: 46, borderRadius: 23, flexShrink: 0,
+              overflow: 'hidden', background: '#454757',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginRight: 12,
             }}>
-              <svg width="46" height="46" viewBox="0 0 46 46" style={{ position: 'absolute', top: 0, left: 0 }}>
-                {/* Background arc (gray) */}
-                <circle cx="23" cy="23" r="21" stroke="#7D7D7F" strokeWidth="1" fill="none" strokeLinecap="round"
-                  strokeDasharray="132" strokeDashoffset="0" opacity="0.3" />
-                {/* Green progress arc */}
-                <circle cx="23" cy="23" r="21" stroke="url(#greenGrad)" strokeWidth="2" fill="none" strokeLinecap="round"
-                  strokeDasharray="132" strokeDashoffset="44"
-                  transform="rotate(-90, 23, 23)" />
-                <defs>
-                  <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#32D9B9"/>
-                    <stop offset="100%" stopColor="#09CA3E"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div style={{
-                position: 'absolute', top: 3, left: 3,
-                width: 40, height: 40, borderRadius: 20,
-                overflow: 'hidden', background: '#454757',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {master.photo
-                  ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: 20, color: '#7D7D7F' }}>👤</span>
-                }
-              </div>
+              {master.photo
+                ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 20, color: '#7D7D7F' }}>👤</span>
+              }
             </div>
 
-            {/* Master name + description */}
+            {/* Name + description */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
                 fontWeight: 600, fontSize: 15, color: '#D3D4D6',
@@ -134,21 +116,20 @@ export default function SuccessPage() {
 
             {/* Rating */}
             {master.rating > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                flexShrink: 0, marginLeft: 8,
-              }}>
-                <span style={{ color: '#F0AF2D', fontSize: 14 }}>★</span>
-                <span style={{ color: '#7D7D7F', fontSize: 13 }}>{master.rating.toFixed(1)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 8 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="#F0AF2D">
+                  <path d="M8 1l2.245 4.549L15 6.255l-3.5 3.412.826 4.815L8 12.343l-4.326 2.139.826-4.815L1 6.255l4.755-.706L8 1z"/>
+                </svg>
+                <span style={{ color: '#7D7D7F', fontSize: 13, fontWeight: 500 }}>{master.rating.toFixed(1)}</span>
               </div>
             )}
           </div>
         )}
 
-        {/* Card 2: Service info */}
+        {/* Card 2: Service — h=142, rx=20 */}
         <div style={{
           background: 'rgba(240, 243, 255, 0.1)', borderRadius: 20,
-          padding: '16px 16px',
+          minHeight: 142, padding: '16px 16px',
         }}>
           <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6', marginBottom: 4 }}>
             {service.name}
@@ -172,10 +153,12 @@ export default function SuccessPage() {
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>
                   {formatPrice(service.price)}
                 </span>
+                {/* Discount badge: x offset, w=86, h=22, rx=6 */}
                 <span style={{
+                  marginLeft: 'auto',
                   background: 'rgba(206,66,89,0.3)', color: '#CE4259',
                   fontSize: 11, fontWeight: 700, borderRadius: 6,
-                  padding: '2px 8px', lineHeight: '18px', marginLeft: 'auto',
+                  padding: '2px 8px', lineHeight: '18px',
                 }}>
                   % скидки
                 </span>
@@ -184,10 +167,11 @@ export default function SuccessPage() {
           </div>
         </div>
 
-        {/* Card 3: Date + time */}
+        {/* Card 3: Date + time — h=71, rx=20 */}
         <div style={{
           background: 'rgba(240, 243, 255, 0.1)', borderRadius: 20,
-          padding: '14px 16px',
+          height: 71, padding: '0 16px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}>
           <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>
             {formattedDate}, {time}
@@ -197,11 +181,11 @@ export default function SuccessPage() {
           </div>
         </div>
 
-        {/* Card 4: Total */}
+        {/* Card 4: Total — h=71, rx=20 */}
         <div style={{
           background: 'rgba(240, 243, 255, 0.1)', borderRadius: 20,
-          padding: '14px 16px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          height: 71, padding: '0 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>Итого</div>
@@ -215,12 +199,12 @@ export default function SuccessPage() {
         </div>
       </div>
 
-      {/* ── Bottom: 4 action buttons + big close button ── */}
-      <div style={{ padding: '12px 14px 32px' }}>
+      {/* ── Bottom section: 4 action buttons + big button ── */}
+      <div style={{ padding: '24px 14px 32px' }}>
 
-        {/* 4 action buttons grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
-          {/* 1. Share / Go to profile */}
+        {/* 4 action buttons — each 91.25×60, rx=18, gap between = ~10px */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 36 }}>
+          {/* 1. Share / Open link */}
           <button
             onClick={() => { reset(); navigate('/') }}
             style={{
@@ -230,9 +214,9 @@ export default function SuccessPage() {
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M14.825 6.8L20.825 12.8" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M21.625 8.8V4H16.825" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12.625 4H10.625C5.625 4 3.625 6 3.625 11V17C3.625 22 5.625 24 10.625 24H16.625C21.625 24 23.625 22 23.625 17V15" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.85) translate(1, 1)"/>
+              <path d="M14.83 13L20.83 7" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M21.63 8.8V3H15.83" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12.63 3H10.63C5.63 3 3.63 5 3.63 10V16C3.63 21 5.63 23 10.63 23H16.63C21.63 23 23.63 21 23.63 16V14" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.82) translate(2, 1)"/>
             </svg>
           </button>
 
@@ -246,9 +230,9 @@ export default function SuccessPage() {
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M15.135 5.6L7.925 13.29C7.615 13.62 7.315 14.27 7.255 14.72L6.885 17.96C6.755 19.13 7.595 19.93 8.755 19.73L11.975 19.18C12.425 19.1 13.055 18.77 13.365 18.43L20.575 10.74C21.995 9.24 22.635 7.53 20.425 5.44C18.225 3.37 16.555 4.1 15.135 5.6Z" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M13.765 7.05C14.195 9.81 16.435 11.92 19.215 12.2" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M4.875 24H22.875" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.85) translate(1, 1)"/>
+              <path d="M13.14 5.6L5.92 13.29C5.61 13.62 5.32 14.27 5.26 14.72L4.89 17.96C4.76 19.13 5.6 19.93 6.76 19.73L9.98 19.18C10.43 19.1 11.06 18.77 11.37 18.43L18.58 10.74C19.99 9.24 20.64 7.53 18.43 5.44C16.23 3.37 14.56 4.1 13.14 5.6Z" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M11.77 7.05C12.2 9.81 14.44 11.92 17.22 12.2" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3.88 22H21.88" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
@@ -284,7 +268,7 @@ export default function SuccessPage() {
           </button>
         </div>
 
-        {/* Big blue button: "Отлично! Закрыть" */}
+        {/* Big blue button — w=392, h=60, rx=20, fill=#007AFE */}
         <button
           onClick={handleClose}
           style={{
@@ -295,14 +279,15 @@ export default function SuccessPage() {
             border: 'none', cursor: 'pointer',
           }}
         >
-          {/* Diamond/rhombus icon from mockup */}
+          {/* Diamond icon from mockup */}
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M9.93 5.879L7.88 8.199" stroke="white" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12.793 5.589L13.183 2.199" stroke="white" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M9.601 8.239L16.241 1.599C18.361 -0.521 19.421 -0.531 21.521 1.569L22.431 6.479C24.531 8.579 24.521 9.639 22.401 11.759L15.761 18.399C13.641 20.519 12.581 20.529 10.481 18.429L9.571 13.519C7.471 11.419 7.471 10.369 9.601 8.239Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7) translate(3, 3)"/>
-            <path d="M8 20H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7.93 13.879L19.88 1.929" stroke="white" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15.1 16.279L16.3 15.079" stroke="white" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M17.79 13.589L20.18 11.199" stroke="white" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7.6 8.239L14.24 1.599C16.36 -0.521 17.42 -0.531 19.52 1.569L24.43 6.479C26.53 8.579 26.52 9.639 24.4 11.759L17.76 18.399C15.64 20.519 14.58 20.529 12.48 18.429L7.57 13.519C5.47 11.419 5.47 10.369 7.6 8.239Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.65) translate(3, 4)"/>
+            <path d="M6 19.999H26" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="scale(0.65) translate(3, 4)"/>
           </svg>
-          Отлично! Закрыть
+          Закрыть
         </button>
       </div>
     </div>
