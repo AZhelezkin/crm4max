@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
 import { uploadPhoto } from '@/api/upload.api'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
+import AppHeader from '@/components/AppHeader'
 import uploadIconUrl from '@/assets/upload-icon.svg'
 import locationAddImg from '@/assets/location-add.png'
 import {
@@ -23,14 +24,6 @@ import {
   stepOneAddressTitleStyle,
   stepOneAddressHintStyle,
 } from '@/components/onboardingStepOne.styles'
-
-function BackArrowIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 function ChevronIcon() {
   return (
@@ -140,18 +133,7 @@ export default function AboutMePage() {
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Заголовок */}
-      <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          <BackArrowIcon />
-        </button>
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-          Обо мне
-        </div>
-        <div style={{ width: 56 }} />
-      </div>
+      <AppHeader title="Обо мне" onBack={() => navigate(-1)} />
 
       {/* Контент */}
       <div style={onboardingPortalContentStyle}>

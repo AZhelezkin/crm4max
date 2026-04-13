@@ -24,6 +24,7 @@ import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressPickerPortal, { type AddressPickerCoords } from '@/components/AddressPickerPortal'
+import AppHeader from '@/components/AppHeader'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
 import { type LocalWorkPhoto, getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
@@ -305,81 +306,32 @@ export default function OnboardingPage() {
       {/* Заголовок */}
       {true && (
         <>
-          {/* Шаг 0: шапка в стиле клиентского кабинета (height 72, #0F0F11 / #D3D4D6 17/600) */}
           {step === 0 && (
-            <div
-              style={{
-                height: 56,
-                background: '#000000',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 14px',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-              }}
-            >
-              <button
-                onClick={() => navigate('/welcome')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 8,
-                  flexShrink: 0,
-                }}
-                aria-label="Назад"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
-                Каким будет твой бизнес?
-              </div>
-              {/* Пустой слот для центровки заголовка (равен ширине кнопки 40) */}
-              <div style={{ width: 40, flexShrink: 0 }} />
-            </div>
+            <AppHeader
+              title="Каким будет твой бизнес?"
+              onBack={() => navigate('/welcome')}
+            />
           )}
 
-          {/* Шаг 1: кастомный заголовок */}
           {step === 1 && (
-            <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
-              <button
-                onClick={() => setStep(0)}
-                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
-              >
-                <BackArrowIcon />
-              </button>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-                Настройте график работы
-              </div>
-              <div style={{ width: 56 }} />
-            </div>
+            <AppHeader
+              title="Настройте график работы"
+              onBack={() => setStep(0)}
+            />
           )}
 
-          {/* Шаг 2: кастомный заголовок */}
           {step === 2 && (
-            <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
-              <button
-                onClick={() => {
-                  if (servicesSubStep === 'services') {
-                    editorRef.current?.goToCategories()
-                    setServicesSubStep('categories')
-                  } else {
-                    setStep(1)
-                  }
-                }}
-                style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
-              >
-                <BackArrowIcon />
-              </button>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-                {servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
-              </div>
-              <div style={{ width: 56 }} />
-            </div>
+            <AppHeader
+              title={servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
+              onBack={() => {
+                if (servicesSubStep === 'services') {
+                  editorRef.current?.goToCategories()
+                  setServicesSubStep('categories')
+                } else {
+                  setStep(1)
+                }
+              }}
+            />
           )}
         </>
       )}
@@ -772,14 +724,6 @@ function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path d="M9 18l6-6-6-6" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function BackArrowIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

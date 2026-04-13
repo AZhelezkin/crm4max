@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
+import AppHeader from '@/components/AppHeader'
 
 export default function ServicesPage() {
   const navigate = useNavigate()
@@ -17,18 +18,7 @@ export default function ServicesPage() {
 
   return (
     <div style={{ height: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px', flexShrink: 0 }}>
-        <button
-          onClick={handleBack}
-          style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
-        >
-          <BackArrowIcon />
-        </button>
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
-          {title}
-        </div>
-        <div style={{ width: 56 }} />
-      </div>
+      <AppHeader title={title} onBack={handleBack} />
       <CategoriesServicesEditor
         ref={editorRef}
         onSubStepChange={(ss, catName) =>
@@ -36,13 +26,5 @@ export default function ServicesPage() {
         }
       />
     </div>
-  )
-}
-
-function BackArrowIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }

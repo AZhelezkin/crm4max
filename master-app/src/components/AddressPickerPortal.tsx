@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
+import AppHeader from '@/components/AppHeader'
 import { primaryActionButtonBaseStyle } from '@/components/onboardingStepOne.styles'
 
 export interface AddressPickerCoords {
@@ -40,38 +41,7 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
         flexDirection: 'column',
       }}
     >
-      {/* Шапка как в клиентском кабинете */}
-      <div
-        style={{
-          height: 56,
-          background: '#0F0F11',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 14px',
-          flexShrink: 0,
-        }}
-      >
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 8,
-            flexShrink: 0,
-          }}
-          aria-label="Назад"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
-          Добавление адреса
-        </div>
-        <div style={{ width: 40, flexShrink: 0 }} />
-      </div>
+      <AppHeader title="Добавление адреса" onBack={onClose} />
 
       {/* Поле ввода с подсказками */}
       <div style={{ flex: 1, minHeight: 0 }}>
