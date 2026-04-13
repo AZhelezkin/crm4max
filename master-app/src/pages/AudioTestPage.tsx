@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type RecState = 'idle' | 'recording' | 'recorded' | 'playing'
@@ -19,6 +19,26 @@ export default function AudioTestPage() {
   const addLog = (msg: string) => {
     setLog((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`])
   }
+
+  useEffect(() => {
+    const wa = (window as any).WebApp
+    if (!wa) {
+      setLog((prev) => [...prev, 'window.WebApp: undefined'])
+      return
+    }
+    const keys: string[] = []
+    for (const k in wa) keys.push(k)
+    const proto = Object.getPrototypeOf(wa)
+    const protoKeys = proto ? Object.getOwnPropertyNames(proto).filter((k) => k !== 'constructor') : []
+    const all = Array.from(new Set([...keys, ...protoKeys])).sort()
+    setLog((prev) => [
+      ...prev,
+      `WebApp keys (${all.length}): ${all.join(', ')}`,
+      `navigator.mediaDevices: ${!!navigator.mediaDevices}`,
+      `MediaRecorder: ${typeof MediaRecorder !== 'undefined'}`,
+      `isSecureContext: ${window.isSecureContext}`,
+    ])
+  }, [])
 
   const startRecording = async () => {
     setError(null)
