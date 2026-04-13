@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
@@ -24,7 +23,7 @@ import { scheduleApi } from '@/api/schedule.api'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
-import AddressSuggestInput from '@/components/AddressSuggestInput'
+import AddressPickerPortal, { type AddressPickerCoords } from '@/components/AddressPickerPortal'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
 import { type LocalWorkPhoto, getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
@@ -126,7 +125,6 @@ export default function OnboardingPage() {
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
-  const [addressDraft, setAddressDraft] = useState('')
   const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
@@ -474,10 +472,7 @@ export default function OnboardingPage() {
             {/* Адрес */}
             <CellList mode="island">
               <button
-                onClick={() => {
-                  setAddressDraft(location)
-                  setShowAddressPortal(true)
-                }}
+                onClick={() => setShowAddressPortal(true)}
                 style={stepOneAddressButtonStyle}
               >
                 <img
@@ -633,62 +628,15 @@ export default function OnboardingPage() {
 
 
       {/* ── Портал: Ввод адреса ── */}
-      {showAddressPortal && createPortal(
-        <div style={{
-          position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200,
-          display: 'flex', flexDirection: 'column',
-        }}>
-          <div style={{
-            height: 56,
-            background: '#0F0F11',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 14px',
-            flexShrink: 0,
-          }}>
-            <button
-              onClick={() => setShowAddressPortal(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-              aria-label="Назад"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
-              Добавление адреса
-            </div>
-            <div style={{ width: 40, flexShrink: 0 }} />
-          </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <AddressSuggestInput
-              value={addressDraft}
-              onChange={setAddressDraft}
-              onGeocode={(lat, lng) => setCoords({ lat, lng })}
-              confirmedAddress={addressDraft}
-            />
-          </div>
-          <div style={{ padding: '16px 20px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', marginTop: 'auto' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setLocation(addressDraft.trim())
-                setShowAddressPortal(false)
-              }}
-              style={{
-                ...primaryActionButtonBaseStyle,
-                cursor: 'pointer',
-                background: 'var(--color-primary)',
-                color: '#fff',
-              }}
-            >
-              Готово
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
+      <AddressPickerPortal
+        open={showAddressPortal}
+        value={location}
+        onClose={() => setShowAddressPortal(false)}
+        onConfirm={(address, pickedCoords) => {
+          setLocation(address)
+          if (pickedCoords) setCoords(pickedCoords)
+        }}
+      />
 
     </div>
   )
