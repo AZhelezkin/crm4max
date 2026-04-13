@@ -40,8 +40,8 @@ function IconContacts({ active }: { active: boolean }) {
 }
 
 const NAV_ITEMS = [
-  { key: 'catalog', label: 'Каталог', path: '/', Icon: IconCatalog },
-  { key: 'bookings', label: 'Записи', path: '/my-bookings', Icon: IconCalendar },
+  { key: 'catalog', label: 'Профиль', path: '/', Icon: IconCatalog },
+  { key: 'bookings', label: 'Мои записи', path: '/my-bookings', Icon: IconCalendar },
   { key: 'messages', label: 'Сообщения', path: '/messages', Icon: IconMessages },
   { key: 'contacts', label: 'Контакты', path: '/contacts', Icon: IconContacts },
 ]

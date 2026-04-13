@@ -17,8 +17,8 @@ function IconContacts({ active }) {
     return (_jsx("svg", { width: "28", height: "28", viewBox: "0 0 28 28", fill: "none", children: _jsx("path", { d: "M24.056 9.858C22.831 4.468 18.13 2.042 14 2.042c0 0 0 0-.012 0-4.118 0-8.832 2.415-10.057 7.805C2.566 15.867 6.253 20.965 9.59 24.173c1.236 1.19 2.823 1.785 4.41 1.785 1.586 0 3.173-.595 4.398-1.785 3.337-3.208 7.023-8.295 5.658-14.315ZM14 15.703c-2.03 0-3.675-1.645-3.675-3.675 0-2.03 1.645-3.675 3.675-3.675s3.675 1.645 3.675 3.675c0 2.03-1.645 3.675-3.675 3.675Z", fill: c }) }));
 }
 const NAV_ITEMS = [
-    { key: 'catalog', label: 'Каталог', path: '/', Icon: IconCatalog },
-    { key: 'bookings', label: 'Записи', path: '/my-bookings', Icon: IconCalendar },
+    { key: 'catalog', label: 'Профиль', path: '/', Icon: IconCatalog },
+    { key: 'bookings', label: 'Мои записи', path: '/my-bookings', Icon: IconCalendar },
     { key: 'messages', label: 'Сообщения', path: '/messages', Icon: IconMessages },
     { key: 'contacts', label: 'Контакты', path: '/contacts', Icon: IconContacts },
 ];

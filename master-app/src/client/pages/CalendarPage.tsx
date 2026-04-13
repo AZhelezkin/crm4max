@@ -338,7 +338,7 @@ export default function CalendarPage() {
                 background: remind ? '#007AFE' : '#3A3A3C',
                 position: 'relative', transition: 'background 0.2s',
                 flexShrink: 0, border: 'none', cursor: 'pointer', padding: 0,
-              }}
+              }}  
             >
               <span style={{
                 position: 'absolute', top: 3,
