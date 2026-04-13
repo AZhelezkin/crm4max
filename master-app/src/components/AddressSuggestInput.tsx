@@ -289,14 +289,21 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         <CenterPin />
       </div>
 
-      {/* Поле ввода */}
+      {/* Поле ввода — обёртка пропускает клики вниз, активен только сам пилюль-инпут */}
       <div style={{
         position: 'relative', zIndex: 3,
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '12px 16px',
         flexShrink: 0,
+        pointerEvents: 'none',
       }}>
-        <div style={{ flex: 1, ...stepOneAddressInputWrapStyle, background: 'rgba(15,15,17,0.68)', backdropFilter: 'blur(6px)' }}>
+        <div style={{
+          flex: 1,
+          ...stepOneAddressInputWrapStyle,
+          background: 'rgba(15,15,17,0.68)',
+          backdropFilter: 'blur(6px)',
+          pointerEvents: 'auto',
+        }}>
           <div style={stepOneAddressInputIconStyle}><SearchIcon /></div>
           <input
             value={inputValue}
@@ -349,13 +356,11 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
           padding: '18px 16px', textAlign: 'center',
           color: 'var(--color-text-secondary)', fontSize: 14,
           background: 'rgba(15,15,17,0.82)',
+          pointerEvents: 'none',
         }}>
           Ничего не найдено
         </div>
       )}
-
-      {/* Растягиваем зону клика на карту, занимая всё оставшееся место */}
-      <div style={{ flex: 1, minHeight: 0 }} />
 
       {/* Экран инициализации */}
       {!mapReady && !mapFailed && (
