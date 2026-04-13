@@ -18,6 +18,7 @@ import BookingDetailPage from '@/pages/BookingDetailPage'
 import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
+import MapTestPage from '@/pages/MapTestPage'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   ""      → клиент, QR сканер (нативная кнопка или бот без startapp)
@@ -28,7 +29,16 @@ const isClientMode = startParam !== 'mmode'
 
 document.documentElement.dataset.theme = isClientMode ? 'client' : 'master'
 
+// Отдельный эскейп для отладки карты в обычном браузере: #/map-test
+// открывается в любом режиме, минуя Max WebApp / client-mode ветку.
+function isMapTestHash() {
+  if (typeof window === 'undefined') return false
+  const hash = window.location.hash || ''
+  return hash.startsWith('#/map-test')
+}
+
 export default function App() {
+  if (isMapTestHash()) return <MapTestPage />
   if (isClientMode) return <ClientApp />
   return <MasterApp />
 }

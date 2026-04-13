@@ -131,23 +131,18 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
     let cancelled = false
 
     loadYmaps()
-      .then(async (ymaps3) => {
+      .then((ymaps3) => {
         if (cancelled || !mapContainerRef.current) return
         ymapsRef.current = ymaps3
 
-        // Стартовый центр: пытаемся геокодировать существующий адрес, иначе DEFAULT_CENTER
-        let startCenter: [number, number] = DEFAULT_CENTER
-        const initial = confirmedAddress?.trim() || value?.trim()
-        if (initial) {
-          const coords = await geocodeAddress(initial)
-          if (coords) startCenter = coords
-        }
-        if (cancelled || !mapContainerRef.current) return
-
         const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener } = ymaps3
+
+        // Создаём карту сразу с DEFAULT_CENTER, чтобы контейнер не стоял пустым,
+        // а нужный центр подтянем асинхронно после forward-geocode.
         const map = new YMap(mapContainerRef.current, {
-          location: { center: startCenter, zoom: DEFAULT_ZOOM },
+          location: { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM },
           theme: 'dark',
+          behaviors: ['drag', 'pinchZoom', 'scrollZoom', 'dblClick', 'oneFingerZoom'],
         })
         map.addChild(new YMapDefaultSchemeLayer({}))
         map.addChild(new YMapDefaultFeaturesLayer({}))
@@ -162,7 +157,6 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             const loc = map.center as [number, number] | undefined
             if (!loc) return
             const [lon, lat] = loc
-            // Отменяем предыдущий reverse
             if (reverseAbortRef.current) reverseAbortRef.current.abort()
             const ctrl = new AbortController()
             reverseAbortRef.current = ctrl
@@ -181,6 +175,16 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
 
         mapInstanceRef.current = map
         setMapReady(true)
+
+        // Асинхронно центрируем на существующем адресе
+        const initial = confirmedAddress?.trim() || value?.trim()
+        if (initial) {
+          geocodeAddress(initial).then((coords) => {
+            if (cancelled || !coords) return
+            skipNextActionEndRef.current = true
+            try { map.update({ location: { center: coords, zoom: DEFAULT_ZOOM } }) } catch { /* ignore */ }
+          })
+        }
       })
       .catch(() => {
         if (!cancelled) setMapFailed(true)
@@ -264,7 +268,15 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
       {!mapFailed && (
         <div
           ref={mapContainerRef}
-          style={{ position: 'absolute', inset: 0, background: '#0F0F11' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: '#0F0F11',
+            touchAction: 'none',
+            pointerEvents: 'auto',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+          }}
         />
       )}
       {mapFailed && (
