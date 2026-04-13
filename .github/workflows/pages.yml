@@ -37,6 +37,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_YANDEX_SUGGEST_KEY: ${{ secrets.VITE_YANDEX_SUGGEST_KEY }}
           VITE_YANDEX_GEOCODE_KEY: ${{ secrets.VITE_YANDEX_GEOCODE_KEY }}
+          VITE_YANDEX_JSMAPS_KEY: ${{ secrets.VITE_YANDEX_JSMAPS_KEY }}
         run: npm install && npm run build
 
       - uses: actions/configure-pages@v5
