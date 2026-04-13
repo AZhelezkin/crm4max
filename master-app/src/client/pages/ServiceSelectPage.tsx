@@ -58,21 +58,29 @@ export default function ServiceSelectPage() {
   const globalSearch = isSearchMode && !categoryId
   const q = query.trim().toLowerCase()
   const searchResults = useMemo(() => {
-    if (!master || !q) return []
+    if (!master || !q) return [] as { category: Category; services: Service[] }[]
     const searchIn = globalSearch ? master.categories : categories
-    const results: { service: Service; category: Category }[] = []
-    for (const cat of searchIn) {
-      for (const s of cat.services) {
-        if (
-          s.name.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q) ||
-          (globalSearch && cat.name.toLowerCase().includes(q))
-        ) {
-          results.push({ service: s, category: cat })
-        }
+    if (globalSearch) {
+      // Group by category
+      const grouped: { category: Category; services: Service[] }[] = []
+      for (const cat of searchIn) {
+        const matched = cat.services.filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            s.description?.toLowerCase().includes(q) ||
+            cat.name.toLowerCase().includes(q),
+        )
+        if (matched.length > 0) grouped.push({ category: cat, services: matched })
       }
+      return grouped
     }
-    return results
+    // Flat for per-category search
+    const matched = searchIn.flatMap((cat) =>
+      cat.services
+        .filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q))
+        .map((s) => ({ category: cat, services: [s] })),
+    )
+    return matched
   }, [master, q, globalSearch, categories])
 
   const isSearching = isSearchMode && q.length > 0
@@ -156,80 +164,84 @@ export default function ServiceSelectPage() {
           {searchResults.length === 0 && (
             <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Ничего не найдено</div>
           )}
-          {searchResults.map(({ service: s, category: cat }) => {
-            const dPrice = discountedPrice(s.price, s.discountPercent)
-            return (
-              <button
-                key={s.id}
-                onClick={() => handleSelect(s)}
-                style={{
-                  width: '100%',
-                  background: '#25262B', borderRadius: 20,
-                  padding: '14px 20px 12px 22px', border: 'none',
-                  cursor: 'pointer', textAlign: 'left',
-                  display: 'flex', alignItems: 'flex-start',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Category name — only in global search */}
-                  {globalSearch && (
-                    <div style={{
-                      fontSize: 11, fontWeight: 600, color: '#7D7D7F',
-                      textTransform: 'uppercase', letterSpacing: 0.5,
-                      marginBottom: 4,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      <Highlight text={cat.name} query={q} />
-                    </div>
-                  )}
-                  <div style={{
-                    fontWeight: 600, fontSize: 15, color: '#D3D4D6',
-                    lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    <Highlight text={s.name} query={q} />
-                  </div>
-                  <div style={{
-                    color: '#7D7D7F', fontSize: 13, marginTop: 2,
-                    height: 34, overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    lineHeight: '17px',
-                  }}>
-                    {s.description ? <Highlight text={s.description} query={q} /> : '\u00A0'}
-                  </div>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
-                    lineHeight: '18px',
-                  }}>
-                    <span style={{
-                      fontWeight: 600, fontSize: 15,
-                      color: dPrice !== null ? '#CE4259' : '#D3D4D6',
-                    }}>
-                      {formatPrice(dPrice ?? s.price)}
-                    </span>
-                    {dPrice !== null && (
-                      <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
-                        {formatPrice(s.price)}
-                      </span>
-                    )}
-                    {s.discountPercent && (
-                      <span style={{
-                        marginLeft: 'auto',
-                        background: 'rgba(206,66,89,0.3)', color: '#CE4259',
-                        fontSize: 11, fontWeight: 700, borderRadius: 6,
-                        padding: '2px 8px', lineHeight: '18px',
-                      }}>
-                        % скидки
-                      </span>
-                    )}
-                  </div>
+          {searchResults.map(({ category: cat, services }) => (
+            <div key={cat.id}>
+              {/* Category header — only in global search */}
+              {globalSearch && (
+                <div style={{
+                  fontSize: 13, fontWeight: 600, color: '#7D7D7F',
+                  marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
+                }}>
+                  <Highlight text={cat.name} query={q} />
                 </div>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
-                  <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            )
-          })}
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {services.map((s) => {
+                  const dPrice = discountedPrice(s.price, s.discountPercent)
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => handleSelect(s)}
+                      style={{
+                        width: '100%', height: 106,
+                        background: '#25262B', borderRadius: 20,
+                        padding: '14px 20px 12px 22px', border: 'none',
+                        cursor: 'pointer', textAlign: 'left',
+                        display: 'flex', alignItems: 'flex-start',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontWeight: 600, fontSize: 15, color: '#D3D4D6',
+                          lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          <Highlight text={s.name} query={q} />
+                        </div>
+                        <div style={{
+                          color: '#7D7D7F', fontSize: 13, marginTop: 2,
+                          height: 34, overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                          lineHeight: '17px',
+                        }}>
+                          {s.description ? <Highlight text={s.description} query={q} /> : '\u00A0'}
+                        </div>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
+                          lineHeight: '18px',
+                        }}>
+                          <span style={{
+                            fontWeight: 600, fontSize: 15,
+                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                          }}>
+                            {formatPrice(dPrice ?? s.price)}
+                          </span>
+                          {dPrice !== null && (
+                            <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                              {formatPrice(s.price)}
+                            </span>
+                          )}
+                          {s.discountPercent && (
+                            <span style={{
+                              marginLeft: 'auto',
+                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                              fontSize: 11, fontWeight: 700, borderRadius: 6,
+                              padding: '2px 8px', lineHeight: '18px',
+                            }}>
+                              % скидки
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
+                        <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
