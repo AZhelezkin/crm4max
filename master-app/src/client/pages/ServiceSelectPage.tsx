@@ -52,8 +52,6 @@ export default function ServiceSelectPage() {
         : master.categories)
     : []
 
-  const singleCategory = categoryId && categories.length === 1 ? categories[0] : null
-
   /* ── Search mode: filter services across all categories ────────────── */
   const q = query.trim().toLowerCase()
   const searchResults = useMemo(() => {
@@ -130,48 +128,20 @@ export default function ServiceSelectPage() {
               </button>
             )}
           </div>
-        ) : singleCategory ? (
-          <>
-            <div style={{
-              width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-              overflow: 'hidden', background: '#454757',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginLeft: 8,
-            }}>
-              {singleCategory.photo
-                ? <img src={singleCategory.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: 20 }}>✂️</span>
-              }
-            </div>
-            <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
-              <div style={{
-                fontWeight: 600, fontSize: 17, color: '#D3D4D6', lineHeight: '22px',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {singleCategory.name}
-              </div>
-              {singleCategory.description && (
-                <div style={{
-                  color: '#7D7D7F', fontSize: 13, marginTop: 2, lineHeight: '17px',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {singleCategory.description}
-                </div>
-              )}
-            </div>
-            <div style={{ flexShrink: 0, marginLeft: 8 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M7 8H17M7 13H13" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </>
         ) : (
           <>
             <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
               Выберите услугу
             </div>
-            <div style={{ width: 40 }} />
+            <button
+              onClick={() => navigate('/book/services?search=1')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="#D3D4D6" strokeWidth="1.5"/>
+                <path d="M16 16L20 20" stroke="#D3D4D6" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
           </>
         )}
       </div>
@@ -259,7 +229,7 @@ export default function ServiceSelectPage() {
           )}
           {!isSearchMode && categories.map((cat) => (
             <div key={cat.id}>
-              {!singleCategory && cat.name && (
+              {cat.name && (
                 <div style={{
                   fontSize: 13, fontWeight: 600, color: '#7D7D7F',
                   marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
