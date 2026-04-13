@@ -91,8 +91,9 @@ export default function ShareLinkPage() {
 
       {/* Шапка */}
       <div style={{
+        height: 56,
         display: 'flex', alignItems: 'center',
-        padding: '12px 8px 12px 4px',
+        padding: '0 8px 0 4px',
         position: 'sticky', top: 0,
         background: 'var(--color-bg)',
         zIndex: 10,

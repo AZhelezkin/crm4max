@@ -142,7 +142,7 @@ export default function AboutMePage() {
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Заголовок */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
         <button
           onClick={() => navigate(-1)}
           style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -255,7 +255,7 @@ export default function AboutMePage() {
       {/* Портал адреса */}
       {showAddressPortal && createPortal(
         <div style={{ position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', flexShrink: 0 }}>
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 20px', flexShrink: 0 }}>
             <button
               onClick={() => setShowAddressPortal(false)}
               style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}

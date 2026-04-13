@@ -88,7 +88,7 @@ export default function ServiceSelectPage() {
 
       {/* -- Header -- */}
       <div style={{
-        height: 72, background: '#0F0F11',
+        height: 56, background: '#0F0F11',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>

@@ -17,7 +17,7 @@ export default function ServicesPage() {
 
   return (
     <div style={{ height: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px', flexShrink: 0 }}>
         <button
           onClick={handleBack}
           style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}

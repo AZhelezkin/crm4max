@@ -312,7 +312,7 @@ export default function OnboardingPage() {
           {step === 0 && (
             <div
               style={{
-                height: 72,
+                height: 56,
                 background: '#0F0F11',
                 display: 'flex',
                 alignItems: 'center',
@@ -348,7 +348,7 @@ export default function OnboardingPage() {
 
           {/* Шаг 1: кастомный заголовок */}
           {step === 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+            <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
               <button
                 onClick={() => setStep(0)}
                 style={{ width: 56, display: 'flex', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 0 }}
@@ -364,7 +364,7 @@ export default function OnboardingPage() {
 
           {/* Шаг 2: кастомный заголовок */}
           {step === 2 && (
-            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
+            <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
               <button
                 onClick={() => {
                   if (servicesSubStep === 'services') {
@@ -639,7 +639,7 @@ export default function OnboardingPage() {
           position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200,
           display: 'flex', flexDirection: 'column',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', flexShrink: 0 }}>
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 20px', flexShrink: 0 }}>
             <MaxButton appearance="themed" mode="tertiary" size="medium" onClick={() => setShowAddressPortal(false)}>
               ← Назад
             </MaxButton>

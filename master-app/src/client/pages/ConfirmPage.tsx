@@ -40,7 +40,7 @@ export default function ConfirmPage() {
     <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
 
       <div style={{
-        height: 66, background: '#0F0F11',
+        height: 56, background: '#0F0F11',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
