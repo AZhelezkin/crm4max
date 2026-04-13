@@ -15,6 +15,7 @@ import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
+import AudioTestPage     from '@/pages/AudioTestPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -54,6 +55,7 @@ export default function ClientApp() {
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
+        <Route path="/audio-test"      element={<AudioTestPage />} />
         <Route path="*"                element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
