@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
 import {
-  Button as MaxButton,
   CellList,
   CellSimple,
   CellInput,
@@ -313,7 +312,7 @@ export default function OnboardingPage() {
             <div
               style={{
                 height: 56,
-                background: '#0F0F11',
+                background: '#000000',
                 display: 'flex',
                 alignItems: 'center',
                 padding: '0 14px',
@@ -639,16 +638,28 @@ export default function OnboardingPage() {
           position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200,
           display: 'flex', flexDirection: 'column',
         }}>
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 20px', flexShrink: 0 }}>
-            <MaxButton appearance="themed" mode="tertiary" size="medium" onClick={() => setShowAddressPortal(false)}>
-              ← Назад
-            </MaxButton>
-            <span style={{
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-              fontSize: 16, fontWeight: 600, color: 'var(--color-text)', pointerEvents: 'none',
-            }}>
+          <div style={{
+            height: 56,
+            background: '#0F0F11',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 14px',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setShowAddressPortal(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+              aria-label="Назад"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
               Добавление адреса
-            </span>
+            </div>
+            <div style={{ width: 40, flexShrink: 0 }} />
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             <AddressSuggestInput
