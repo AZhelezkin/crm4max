@@ -275,7 +275,7 @@ export default function MasterCardPage() {
           { label: 'Чат',    Icon: IcoChat, action: () => {
             window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
           } },
-          { label: 'Ещё',    Icon: IcoMore, action: () => navigate('/audio-test') },
+          { label: 'Ещё',    Icon: IcoMore, action: () => {} },
         ] as const).map((btn) => {
           const dis = 'disabled' in btn ? btn.disabled : false
           return (
