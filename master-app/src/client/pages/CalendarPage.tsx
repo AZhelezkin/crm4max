@@ -80,9 +80,8 @@ export default function CalendarPage() {
 
   const handleSelectTime = (t: string) => {
     setDateTime(selectedDate, t)
+    navigate('/book/confirm')
   }
-
-  const handleNext = () => navigate('/book/confirm')
 
   const selectedTime = time && date === selectedDate ? time : ''
   const selectedDayjs = dayjs(selectedDate)
@@ -128,20 +127,7 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {/* Close button — X in rounded square */}
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            width: 20, height: 20, flexShrink: 0, marginLeft: 8,
-            background: 'none', border: '2px solid #D3D4D6', borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', padding: 0,
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 2L8 8M8 2L2 8" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+        <div style={{ width: 36 }} />
       </div>
 
       {/* ── Date step — Calendar ── */}
@@ -349,20 +335,6 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          {/* Continue button */}
-          <button
-            onClick={handleNext}
-            disabled={!selectedTime}
-            style={{
-              width: '100%', padding: 16, borderRadius: 18,
-              background: selectedTime ? '#007AFE' : '#25262B',
-              color: selectedTime ? '#fff' : '#7D7D7F',
-              fontWeight: 600, fontSize: 17,
-              border: 'none', cursor: selectedTime ? 'pointer' : 'default',
-            }}
-          >
-            Продолжить
-          </button>
         </div>
       )}
     </div>

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
-import BottomNav from '@client/components/BottomNav'
 
 export default function CategorySelectPage() {
   const navigate = useNavigate()
@@ -16,7 +15,7 @@ export default function CategorySelectPage() {
   }, [masterId, navigate])
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 20 }}>
 
       {/* Header: back arrow + title + search icon */}
       <div style={{
@@ -116,7 +115,6 @@ export default function CategorySelectPage() {
         })}
       </div>
 
-      <BottomNav />
     </div>
   )
 }

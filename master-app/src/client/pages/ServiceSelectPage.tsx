@@ -4,7 +4,6 @@ import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
-import BottomNav from '@client/components/BottomNav'
 
 /* ── Highlight matching substring in blue (#007AFE) ──────────────────────── */
 
@@ -67,8 +66,7 @@ export default function ServiceSelectPage() {
         const matched = cat.services.filter(
           (s) =>
             s.name.toLowerCase().includes(q) ||
-            s.description?.toLowerCase().includes(q) ||
-            cat.name.toLowerCase().includes(q),
+                        cat.name.toLowerCase().includes(q),
         )
         if (matched.length > 0) grouped.push({ category: cat, services: matched })
       }
@@ -86,7 +84,7 @@ export default function ServiceSelectPage() {
   const isSearching = isSearchMode && q.length > 0
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 20 }}>
 
       {/* -- Header -- */}
       <div style={{
@@ -204,7 +202,7 @@ export default function ServiceSelectPage() {
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                           lineHeight: '17px',
                         }}>
-                          {s.description ? <Highlight text={s.description} query={q} /> : '\u00A0'}
+                          {s.description || '\u00A0'}
                         </div>
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
@@ -335,7 +333,6 @@ export default function ServiceSelectPage() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }
