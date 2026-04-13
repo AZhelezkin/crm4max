@@ -4,6 +4,7 @@ import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
+import CategorySelectPage from '@client/pages/CategorySelectPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
 import CalendarPage      from '@client/pages/CalendarPage'
 import ConfirmPage       from '@client/pages/ConfirmPage'
@@ -43,6 +44,7 @@ export default function ClientApp() {
     <HashRouter>
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
+        <Route path="/book/categories" element={<CategorySelectPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />

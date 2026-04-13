@@ -34,9 +34,9 @@ function IcoChat() {
 function IcoMore() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="5" r="2" fill="#007AFE"/>
+      <circle cx="5" cy="12" r="2" fill="#007AFE"/>
       <circle cx="12" cy="12" r="2" fill="#007AFE"/>
-      <circle cx="12" cy="19" r="2" fill="#007AFE"/>
+      <circle cx="19" cy="12" r="2" fill="#007AFE"/>
     </svg>
   )
 }
@@ -78,7 +78,7 @@ export default function MasterCardPage() {
       setService(service)
       navigate('/book/calendar')
     } else {
-      navigate('/book/services')
+      navigate('/book/categories')
     }
   }
 
