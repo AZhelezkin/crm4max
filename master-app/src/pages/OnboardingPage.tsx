@@ -308,16 +308,41 @@ export default function OnboardingPage() {
       {/* Заголовок */}
       {true && (
         <>
-          {/* Шаг 0: кастомный заголовок */}
+          {/* Шаг 0: шапка в стиле клиентского кабинета (height 72, #0F0F11 / #D3D4D6 17/600) */}
           {step === 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0' }}>
-              <div style={{ width: 56, display: 'flex', justifyContent: 'center' }}>
-                {/* back arrow — не активен на шаге 0 */}
-              </div>
-              <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+            <div
+              style={{
+                height: 72,
+                background: '#0F0F11',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 14px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <button
+                onClick={() => navigate('/welcome')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 8,
+                  flexShrink: 0,
+                }}
+                aria-label="Назад"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
                 Каким будет твой бизнес?
               </div>
-              <div style={{ width: 56 }} />
+              {/* Пустой слот для центровки заголовка (равен ширине кнопки 40) */}
+              <div style={{ width: 40, flexShrink: 0 }} />
             </div>
           )}
 
