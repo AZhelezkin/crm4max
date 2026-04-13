@@ -19,6 +19,19 @@ interface Suggestion {
   subtitle: string
 }
 
+/**
+ * Отрезаем страну/регион/город от полного адреса — оставляем только улицу + дом.
+ * Полная строка у Yandex обычно вида "Россия, Москва, Тверская улица, 7":
+ * берём последние две запятые, остальное отбрасываем. Для коротких адресов
+ * (<= 2 частей) ничего не трогаем.
+ */
+function shortenAddress(full: string): string {
+  if (!full) return ''
+  const parts = full.split(',').map((s) => s.trim()).filter(Boolean)
+  if (parts.length <= 2) return parts.join(', ')
+  return parts.slice(-2).join(', ')
+}
+
 // Прямое геокодирование: адрес → координаты (lon, lat)
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
   const params = new URLSearchParams({
@@ -96,7 +109,9 @@ interface Props {
 }
 
 export default function AddressSuggestInput({ value, onChange, onGeocode, confirmedAddress = '' }: Props) {
-  const [inputValue, setInputValue] = useState(value)
+  // inputValue — «короткий» адрес, который видит пользователь (улица + дом).
+  // Полный адрес отдаём наверх через onChange — он и летит в БД.
+  const [inputValue, setInputValue] = useState(() => shortenAddress(value))
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [suggestEnabled, setSuggestEnabled] = useState(false)
   const [mapReady, setMapReady] = useState(false)
@@ -108,18 +123,21 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reverseAbortRef = useRef<AbortController | null>(null)
   const skipNextActionEndRef = useRef(false)
-  // Текущее значение, которое мы отдали наружу — нужно, чтобы на drag end обновить onChange, не ломая локальный ввод
+  // Полный адрес, который мы в последний раз отдали через onChange — чтобы value-sync эффект
+  // игнорировал эхо нашего же апдейта и не перезатирал «короткий» display.
+  const lastEmittedFullRef = useRef<string>(value)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   const onGeocodeRef = useRef(onGeocode)
   onGeocodeRef.current = onGeocode
 
   // Синхронизация value → inputValue при смене снаружи.
-  // Пропускаем, если изменение — эхо нашего же onChange (value уже совпадает с inputValue),
-  // иначе бы сбрасывали suggestEnabled на каждом нажатии и подсказки никогда не показывались.
+  // Пропускаем, если это эхо нашего onChange (value === lastEmittedFullRef),
+  // иначе рендерим короткий вариант.
   useEffect(() => {
-    if (value === inputValue) return
-    setInputValue(value)
+    if (value === lastEmittedFullRef.current) return
+    lastEmittedFullRef.current = value
+    setInputValue(shortenAddress(value))
     setSuggestEnabled(false)
     setSuggestions([])
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,11 +180,13 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             reverseAbortRef.current = ctrl
             reverseGeocode(lon, lat, ctrl.signal).then((text) => {
               if (ctrl.signal.aborted) return
-              const nextValue = text ?? ''
-              setInputValue(nextValue)
+              const nextFull = text ?? ''
+              const nextDisplay = shortenAddress(nextFull)
+              lastEmittedFullRef.current = nextFull
+              setInputValue(nextDisplay)
               setSuggestEnabled(false)
               setSuggestions([])
-              onChangeRef.current(nextValue)
+              onChangeRef.current(nextFull)
               onGeocodeRef.current?.(lat, lon)
             })
           },
@@ -238,8 +258,11 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   }
 
   const handleSelect = (s: Suggestion) => {
+    // Yandex Suggest уже разбивает на title (улица + дом) и subtitle (город/страна)
     const full = s.subtitle ? `${s.title}, ${s.subtitle}` : s.title
-    setInputValue(full)
+    const display = s.title
+    lastEmittedFullRef.current = full
+    setInputValue(display)
     onChange(full)
     setSuggestEnabled(false)
     setSuggestions([])
@@ -332,6 +355,8 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
               } else {
                 setSuggestEnabled(true)
               }
+              // При ручном вводе full === display: пользователь сам знает, что печатает
+              lastEmittedFullRef.current = next
               onChange(next)
             }}
             placeholder="Адрес"
