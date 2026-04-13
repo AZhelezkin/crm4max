@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
+import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Category, Master, Service } from '@client/types'
+import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+
+dayjs.locale('ru')
 
 /* ── Иконки кнопок действий (stroke #007AFE, 24×24) ───────────────────────── */
 
@@ -55,9 +60,10 @@ export default function MasterCardPage() {
   const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
   const masterId = (UUID_REGEX.test(startParam) ? startParam : null) ?? params.get('masterId') ?? ''
   const navigate = useNavigate()
-  const { setMasterId, setService } = useBookingStore()
+  const { setMasterId, setService, setDateTime } = useBookingStore()
 
   const [master, setMaster] = useState<Master | null>(null)
+  const [nextBooking, setNextBooking] = useState<Booking | null>(null)
   const [tab, setTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const lbStripRef = useRef<HTMLDivElement>(null)
@@ -65,6 +71,17 @@ export default function MasterCardPage() {
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
+  }, [masterId])
+
+  useEffect(() => {
+    if (!masterId) return
+    const today = dayjs().format('YYYY-MM-DD')
+    bookingsApi.list({ status: 'CONFIRMED', from: today }).then((bookings) => {
+      const forMaster = bookings
+        .filter((b) => b.master.id === masterId)
+        .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
+      setNextBooking(forMaster[0] ?? null)
+    }).catch(() => {})
   }, [masterId])
 
   const workPhotos = (master?.categories ?? [])
@@ -193,6 +210,59 @@ export default function MasterCardPage() {
           </div>
         )}
       </div>
+
+      {/* ── Блок ближайшей записи ─────────────────────────────────────── */}
+      {nextBooking && (
+        <div
+          onClick={() => {
+            setMasterId(masterId)
+            setService(nextBooking.service)
+            setDateTime(nextBooking.date, nextBooking.time)
+            navigate('/book/success', { state: { bookingId: nextBooking.id } })
+          }}
+          style={{
+            margin: '20px 14px 0', height: 106, borderRadius: 20,
+            background: 'linear-gradient(135deg, #844BB6 0%, #5F68E2 100%)',
+            display: 'flex', alignItems: 'center', padding: '0 20px',
+            cursor: 'pointer', position: 'relative', overflow: 'hidden',
+          }}
+        >
+          {/* Calendar icon */}
+          <div style={{
+            width: 44, height: 44, borderRadius: 22, flexShrink: 0,
+            background: 'linear-gradient(180deg, #32D9B9 0%, #09CA3E 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M16.75 3.56V2C16.75 1.59 16.41 1.25 16 1.25C15.59 1.25 15.25 1.59 15.25 2V3.5H8.75V2C8.75 1.59 8.41 1.25 8 1.25C7.59 1.25 7.25 1.59 7.25 2V3.56C4.55 3.81 3.24 5.42 3.04 7.81C3.02 8.1 3.26 8.34 3.54 8.34H20.46C20.75 8.34 20.99 8.09 20.96 7.81C20.76 5.42 19.45 3.81 16.75 3.56Z" fill="white"/>
+              <path d="M19 15C16.79 15 15 16.79 15 19C15 19.75 15.21 20.46 15.58 21.06C16.27 22.22 17.54 23 19 23C20.46 23 21.73 22.22 22.42 21.06C22.79 20.46 23 19.75 23 19C23 16.79 21.21 15 19 15ZM21.07 18.57L18.94 20.54C18.8 20.67 18.61 20.74 18.43 20.74C18.24 20.74 18.05 20.67 17.9 20.52L16.91 19.53C16.62 19.24 16.62 18.76 16.91 18.47C17.2 18.18 17.68 18.18 17.97 18.47L18.45 18.95L20.05 17.47C20.35 17.19 20.83 17.21 21.11 17.51C21.39 17.81 21.37 18.28 21.07 18.57Z" fill="white"/>
+              <path d="M20 9.84H4C3.45 9.84 3 10.29 3 10.84V17C3 20 4.5 22 8 22H12.93C13.62 22 14.1 21.33 13.88 20.68C13.68 20.1 13.51 19.46 13.51 19C13.51 15.97 15.98 13.5 19.01 13.5C19.3 13.5 19.59 13.52 19.87 13.57C20.47 13.66 21.01 13.19 21.01 12.59V10.85C21 10.29 20.55 9.84 20 9.84ZM9.21 18.21C9.02 18.39 8.76 18.5 8.5 18.5C8.24 18.5 7.98 18.39 7.79 18.21C7.61 18.02 7.5 17.76 7.5 17.5C7.5 17.24 7.61 16.98 7.79 16.79C7.89 16.7 7.99 16.63 8.12 16.58C8.49 16.42 8.93 16.51 9.21 16.79C9.39 16.98 9.5 17.24 9.5 17.5C9.5 17.76 9.39 18.02 9.21 18.21ZM9.21 14.71C9.16 14.75 9.11 14.79 9.06 14.83C9 14.87 8.94 14.9 8.88 14.92C8.82 14.95 8.76 14.97 8.7 14.98C8.63 14.99 8.56 15 8.5 15C8.24 15 7.98 14.89 7.79 14.71C7.61 14.52 7.5 14.26 7.5 14C7.5 13.74 7.61 13.48 7.79 13.29C8.02 13.06 8.37 12.95 8.7 13.02C8.76 13.03 8.82 13.05 8.88 13.08C8.94 13.1 9 13.13 9.06 13.17C9.11 13.21 9.16 13.25 9.21 13.29C9.39 13.48 9.5 13.74 9.5 14C9.5 14.26 9.39 14.52 9.21 14.71ZM12.71 14.71C12.52 14.89 12.26 15 12 15C11.74 15 11.48 14.89 11.29 14.71C11.11 14.52 11 14.26 11 14C11 13.74 11.11 13.48 11.29 13.29C11.67 12.92 12.34 12.92 12.71 13.29C12.89 13.48 13 13.74 13 14C13 14.26 12.89 14.52 12.71 14.71Z" fill="white"/>
+            </svg>
+          </div>
+          {/* Text — 3 lines (gaps from mockup: 22.6px, 33.4px between glyph tops) */}
+          <div style={{ flex: 1, marginLeft: 16, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: '20px' }}>
+              Вы записаны
+            </div>
+            <div style={{ fontSize: 13, color: '#fff', marginTop: 3, lineHeight: '18px' }}>
+              {nextBooking.service.name}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 19, marginTop: 15 }}>
+              <span style={{ fontSize: 13, color: '#D3D4D6', lineHeight: '18px' }}>
+                {dayjs(nextBooking.date).format('D MMMM')} в {nextBooking.time}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M10.894 8.327l-.667-1.107c-.14-.247-.267-.713-.267-.987V4.547c0-1.567-.92-2.92-2.247-3.553A1.76 1.76 0 006.994.007c-.727 0-1.38.393-1.727 1.013-1.3.647-2.2 1.987-2.2 3.533v1.687c0 .273-.127.74-.267.98l-.673 1.113c-.267.447-.327.94-.16 1.393.16.447.54.793 1.033.96 1.294.44 2.654.653 4.014.653s2.72-.213 4.013-.647c.467-.153.827-.507 1-.967.173-.46.127-.967-.133-1.393z" fill="#29C643"/>
+                <path d="M8.887 12.007c-.28.773-1.02 1.327-1.887 1.327-.527 0-1.047-.214-1.413-.594a2.03 2.03 0 01-.467-.74c.087.014.173.02.267.034.153.02.313.04.473.053.38.033.767.053 1.153.053.38 0 .76-.02 1.134-.053.14-.013.28-.02.413-.04.107-.013.213-.027.327-.04z" fill="#29C643"/>
+              </svg>
+            </div>
+          </div>
+          {/* Chevron */}
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M1.94 16.28L6.287 11.933C6.8 11.42 6.8 10.58 6.287 10.067L1.94 5.72" stroke="white" strokeOpacity="0.6" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      )}
 
       {/* ── 4 кнопки действий (89×69, gap 9, rx 18) ──────────────────── */}
       <div style={{ display: 'flex', gap: 9, padding: '20px 14px 0' }}>

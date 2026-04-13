@@ -1,0 +1,121 @@
+<svg width="420" height="900" viewBox="0 0 420 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="420" height="900" fill="#0F0F11"/>
+
+  <!-- ── Rating badge (top right) ── -->
+  <rect x="340" y="16" width="66" height="28" rx="14" fill="#25262B"/>
+  <path fill="#F0AF2D" d="m357 26.34 1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187l-1.653 1.653c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207l-1.653-1.653c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7l1.173-2.347c.64-1.273 1.68-1.273 2.313 0"/>
+  <text x="378" y="35" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="14" fill="#D3D4D6">4.8</text>
+
+  <!-- ── Avatar ── -->
+  <circle cx="210" cy="96" r="52" fill="#25262B"/>
+  <text x="210" y="110" text-anchor="middle" font-size="44">&#x1F464;</text>
+
+  <!-- ── Name + description ── -->
+  <text x="210" y="176" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="22" fill="#D3D4D6">Валерия Жданова</text>
+  <text x="210" y="198" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="15" fill="#7D7D7F">Ногтевой сервис</text>
+
+  <!-- ── Booking block (gradient purple) ── -->
+  <defs>
+    <linearGradient id="purpleGrad" x1="406" y1="230" x2="313" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#844BB6"/>
+      <stop offset="1" stop-color="#5F68E2"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#32D9B9"/>
+      <stop offset="100%" stop-color="#09CA3E"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="220" width="392" height="106" rx="20" fill="url(#purpleGrad)"/>
+  <!-- Green calendar icon circle -->
+  <circle cx="56" cy="273" r="22" fill="url(#greenGrad)"/>
+  <!-- Calendar icon (simplified) -->
+  <g transform="translate(44, 261)">
+    <path d="M16.75 3.56V2C16.75 1.59 16.41 1.25 16 1.25C15.59 1.25 15.25 1.59 15.25 2V3.5H8.75V2C8.75 1.59 8.41 1.25 8 1.25C7.59 1.25 7.25 1.59 7.25 2V3.56C4.55 3.81 3.24 5.42 3.04 7.81C3.02 8.1 3.26 8.34 3.54 8.34H20.46C20.75 8.34 20.99 8.09 20.96 7.81C20.76 5.42 19.45 3.81 16.75 3.56Z" fill="white"/>
+    <path d="M19 15C16.79 15 15 16.79 15 19C15 19.75 15.21 20.46 15.58 21.06C16.27 22.22 17.54 23 19 23C20.46 23 21.73 22.22 22.42 21.06C22.79 20.46 23 19.75 23 19C23 16.79 21.21 15 19 15ZM21.07 18.57L18.94 20.54C18.8 20.67 18.61 20.74 18.43 20.74C18.24 20.74 18.05 20.67 17.9 20.52L16.91 19.53C16.62 19.24 16.62 18.76 16.91 18.47C17.2 18.18 17.68 18.18 17.97 18.47L18.45 18.95L20.05 17.47C20.35 17.19 20.83 17.21 21.11 17.51C21.39 17.81 21.37 18.28 21.07 18.57Z" fill="white"/>
+    <path d="M20 9.84H4C3.45 9.84 3 10.29 3 10.84V17C3 20 4.5 22 8 22H12.93C13.62 22 14.1 21.33 13.88 20.68C13.68 20.1 13.51 19.46 13.51 19C13.51 15.97 15.98 13.5 19.01 13.5C19.3 13.5 19.59 13.52 19.87 13.57C20.47 13.66 21.01 13.19 21.01 12.59V10.85C21 10.29 20.55 9.84 20 9.84Z" fill="white"/>
+  </g>
+  <!-- Booking text — 3 lines (offsets from card top: +27, +50, +83) -->
+  <text x="90" y="247" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="700" font-size="15" fill="white">Вы записаны</text>
+  <text x="90" y="270" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="white">Маникюр с покрытием</text>
+  <text x="90" y="305" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#D3D4D6">15 апреля в 14:00</text>
+  <!-- Green bell icon (right of date text, same line) -->
+  <g transform="translate(228, 293)">
+    <path d="M10.894 8.327l-.667-1.107c-.14-.247-.267-.713-.267-.987V4.547c0-1.567-.92-2.92-2.247-3.553A1.76 1.76 0 006.994.007c-.727 0-1.38.393-1.727 1.013-1.3.647-2.2 1.987-2.2 3.533v1.687c0 .273-.127.74-.267.98l-.673 1.113c-.267.447-.327.94-.16 1.393.16.447.54.793 1.033.96 1.294.44 2.654.653 4.014.653s2.72-.213 4.013-.647c.467-.153.827-.507 1-.967.173-.46.127-.967-.133-1.393z" fill="#29C643"/>
+    <path d="M8.887 12.007c-.28.773-1.02 1.327-1.887 1.327-.527 0-1.047-.214-1.413-.594a2.03 2.03 0 01-.467-.74c.087.014.173.02.267.034.153.02.313.04.473.053.38.033.767.053 1.153.053.38 0 .76-.02 1.134-.053.14-.013.28-.02.413-.04.107-.013.213-.027.327-.04z" fill="#29C643"/>
+  </g>
+  <!-- Chevron right -->
+  <path d="M383.94 278.28L388.287 273.933C388.8 273.42 388.8 272.58 388.287 272.067L383.94 267.72" stroke="white" stroke-opacity="0.6" stroke-width="1.75" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ── 4 Action Buttons ── -->
+  <!-- Запись -->
+  <rect x="14" y="346" width="93" height="69" rx="18" fill="#25262B"/>
+  <g transform="translate(45, 358)">
+    <path d="M8 2V5M16 2V5M3.5 9.09H20.5" stroke="#007AFE" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="#007AFE" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 13.7H12.01M8.3 13.7H8.31M8.3 16.7H8.31" stroke="#007AFE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="60.5" y="407" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="14" fill="#007AFE">Запись</text>
+
+  <!-- Звонок -->
+  <rect x="116" y="346" width="93" height="69" rx="18" fill="#25262B"/>
+  <text x="162.5" y="407" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="14" fill="#007AFE">Звонок</text>
+  <g transform="translate(150, 358) scale(0.85)">
+    <path d="M21.97 18.33C21.97 18.69 21.89 19.06 21.72 19.42C21.55 19.78 21.33 20.12 21.04 20.44C20.55 20.98 20.01 21.37 19.4 21.62C18.8 21.87 18.15 22 17.45 22C16.43 22 15.34 21.76 14.19 21.27C13.04 20.78 11.89 20.12 10.75 19.29C9.6 18.45 8.51 17.52 7.47 16.49C6.44 15.45 5.51 14.36 4.68 13.22C3.86 12.08 3.2 10.94 2.72 9.81C2.24 8.67 2 7.58 2 6.54C2 5.86 2.12 5.21 2.36 4.61C2.6 4 2.98 3.44 3.51 2.94C4.15 2.31 4.85 2 5.59 2C5.87 2 6.15 2.06 6.4 2.18C6.66 2.3 6.89 2.48 7.07 2.74L9.39 6.01C9.57 6.26 9.7 6.49 9.79 6.71C9.88 6.92 9.93 7.13 9.93 7.32C9.93 7.56 9.86 7.8 9.72 8.03C9.59 8.26 9.4 8.5 9.16 8.74L8.4 9.53C8.29 9.64 8.24 9.77 8.24 9.93C8.24 10.01 8.25 10.08 8.27 10.16C8.3 10.24 8.33 10.3 8.35 10.36C8.53 10.69 8.84 11.12 9.28 11.64C9.73 12.16 10.21 12.69 10.73 13.22C11.27 13.75 11.79 14.24 12.32 14.69C12.84 15.13 13.27 15.43 13.61 15.61L13.79 15.69C13.87 15.72 13.95 15.73 14.04 15.73C14.21 15.73 14.34 15.67 14.45 15.56L15.21 14.81C15.46 14.56 15.7 14.37 15.93 14.25C16.16 14.11 16.39 14.04 16.64 14.04C16.83 14.04 17.03 14.08 17.25 14.17C17.47 14.26 17.7 14.39 17.95 14.56L21.26 16.91C21.52 17.09 21.7 17.3 21.81 17.55C21.91 17.8 21.97 18.05 21.97 18.33Z" stroke="#007AFE" stroke-width="2" stroke-miterlimit="10"/>
+  </g>
+
+  <!-- Чат -->
+  <rect x="218" y="346" width="93" height="69" rx="18" fill="#25262B"/>
+  <g transform="translate(249, 358)">
+    <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#007AFE" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 8H17M7 13H13" stroke="#007AFE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="264.5" y="407" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="14" fill="#007AFE">Чат</text>
+
+  <!-- Ещё -->
+  <rect x="320" y="346" width="93" height="69" rx="18" fill="#25262B"/>
+  <circle cx="353" cy="374" r="2" fill="#007AFE"/>
+  <circle cx="366" cy="374" r="2" fill="#007AFE"/>
+  <circle cx="379" cy="374" r="2" fill="#007AFE"/>
+  <text x="366.5" y="407" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="14" fill="#007AFE">Ещё</text>
+
+  <!-- ── Tabs ── -->
+  <text x="36" y="452" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="17" fill="#007AFE">Услуги</text>
+  <rect x="24" y="460" width="48" height="3" rx="1.5" fill="#007AFE"/>
+  <text x="110" y="452" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="17" fill="#7D7D7F">Фото</text>
+  <text x="178" y="452" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="17" fill="#7D7D7F">Отзывы</text>
+
+  <!-- Tab badges -->
+  <rect x="66" y="438" width="28" height="23" rx="11.5" fill="rgba(0,122,254,0.3)"/>
+  <text x="80" y="454" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="13" fill="#007AFE">5</text>
+  <rect x="146" y="438" width="28" height="23" rx="11.5" fill="#454757"/>
+  <text x="160" y="454" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="13" fill="#7D7D7F">8</text>
+  <rect x="226" y="438" width="28" height="23" rx="11.5" fill="#454757"/>
+  <text x="240" y="454" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="13" fill="#7D7D7F">3</text>
+
+  <!-- ── Service categories ── -->
+  <!-- Category 1 -->
+  <rect x="14" y="480" width="392" height="78" rx="20" fill="#25262B"/>
+  <circle cx="52" cy="519" r="23" fill="#454757"/>
+  <text x="52" y="525" text-anchor="middle" font-size="22">&#9986;&#65039;</text>
+  <text x="82" y="512" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">Маникюр</text>
+  <text x="82" y="530" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#7D7D7F">Классический · Аппаратный · Гель</text>
+  <path d="M389 513L393 519L389 525" stroke="#7D7D7F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Category 2 -->
+  <rect x="14" y="568" width="392" height="78" rx="20" fill="#25262B"/>
+  <circle cx="52" cy="607" r="23" fill="#454757"/>
+  <text x="52" y="613" text-anchor="middle" font-size="22">&#128133;</text>
+  <text x="82" y="600" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">Педикюр</text>
+  <rect x="148" y="591" width="68" height="22" rx="6" fill="#CE4259" fill-opacity="0.3"/>
+  <text x="182" y="606" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="700" font-size="11" fill="#CE4259">% скидки</text>
+  <text x="82" y="618" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#7D7D7F">Классический · Аппаратный</text>
+  <path d="M389 601L393 607L389 613" stroke="#7D7D7F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ── Bottom Nav (simplified) ── -->
+  <rect x="0" y="850" width="420" height="50" fill="#0F0F11"/>
+  <rect x="14" y="850" width="392" height="1" fill="#25262B"/>
+  <text x="70" y="880" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="11" fill="#7D7D7F">Мастера</text>
+  <text x="210" y="880" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="11" fill="#007AFE">Записи</text>
+  <text x="350" y="880" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-size="11" fill="#7D7D7F">Контакты</text>
+</svg>

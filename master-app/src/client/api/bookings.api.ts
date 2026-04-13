@@ -5,7 +5,7 @@ export const bookingsApi = {
   create: (data: { masterId: string; serviceId: string; date: string; time: string; remind?: boolean }) =>
     api.post<Booking>('/bookings', data).then((r) => r.data),
 
-  list: (params?: { status?: string }) =>
+  list: (params?: { status?: string; from?: string; to?: string }) =>
     api.get<Booking[]>('/bookings', { params }).then((r) => r.data),
 
   getById: (id: string) =>
