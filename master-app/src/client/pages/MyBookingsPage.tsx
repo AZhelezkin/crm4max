@@ -31,6 +31,7 @@ function buildMonthGrid(year: number, month: number): (dayjs.Dayjs | null)[][] {
 export default function MyBookingsPage() {
   const navigate = useNavigate()
   const storeMasterId = useBookingStore((s) => s.masterId)
+  const setStoreMasterId = useBookingStore((s) => s.setMasterId)
   const currentMasterId = UUID_REGEX.test(startParam) ? startParam : storeMasterId
 
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -108,7 +109,12 @@ export default function MyBookingsPage() {
             </svg>
           </button>
           <button
-            onClick={() => navigate('/book/categories')}
+            onClick={() => {
+              if (!currentMasterId) return
+              setStoreMasterId(currentMasterId)
+              navigate('/book/categories')
+            }}
+            disabled={!currentMasterId}
             style={{
               width: 36, height: 36, borderRadius: '50%',
               background: '#007AFE', border: 'none', cursor: 'pointer',
