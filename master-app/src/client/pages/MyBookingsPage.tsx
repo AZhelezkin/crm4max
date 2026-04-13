@@ -238,13 +238,13 @@ export default function MyBookingsPage() {
         }}>
           МОИ ЗАПИСИ
         </div>
-        {upcomingCount > 0 && (
+        {displayedBookings.length > 0 && (
           <span style={{
             background: '#007AFE', color: '#FFFFFF',
             borderRadius: 12, padding: '1px 9px',
             fontSize: 13, fontWeight: 600, minWidth: 22, textAlign: 'center',
           }}>
-            {upcomingCount}
+            {displayedBookings.length}
           </span>
         )}
       </div>
