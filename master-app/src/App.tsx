@@ -53,9 +53,10 @@ function MasterApp() {
 
   // Новый мастер, не прошедший онбординг; или мастер не авторизован
   const needsOnboarding = !master || !master.isOnboarded
-  // Велком-страница показывается один раз, перед онбордингом
-  const welcomeSeen = localStorage.getItem('welcomeSeen') === '1'
-  const firstStopForNewMaster = welcomeSeen ? '/onboarding' : '/welcome'
+  // Велком-сплэш — только если мастер ещё не начал заполнять профиль.
+  // Как только имя сохранено (шаг 0 онбординга), возвращаемся сразу на /onboarding.
+  const masterAlreadyStarted = Boolean(master?.name && master.name.trim().length > 0)
+  const firstStopForNewMaster = masterAlreadyStarted ? '/onboarding' : '/welcome'
 
   return (
     <BrowserRouter>

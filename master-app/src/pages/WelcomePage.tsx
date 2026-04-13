@@ -7,7 +7,6 @@ export default function WelcomePage() {
   const navigate = useNavigate()
 
   const handleJoin = () => {
-    localStorage.setItem('welcomeSeen', '1')
     navigate('/onboarding', { replace: true })
   }
 
