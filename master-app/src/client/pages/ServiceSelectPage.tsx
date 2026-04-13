@@ -52,24 +52,28 @@ export default function ServiceSelectPage() {
         : master.categories)
     : []
 
-  /* ── Search mode: filter services across all categories ────────────── */
+  /* ── Search mode ────────────────────────────────────────────────────── */
+  // With categoryId → search only within that category (from ServiceSelect)
+  // Without categoryId → search across all categories (from CategorySelect)
+  const globalSearch = isSearchMode && !categoryId
   const q = query.trim().toLowerCase()
   const searchResults = useMemo(() => {
     if (!master || !q) return []
+    const searchIn = globalSearch ? master.categories : categories
     const results: { service: Service; category: Category }[] = []
-    for (const cat of master.categories) {
+    for (const cat of searchIn) {
       for (const s of cat.services) {
         if (
           s.name.toLowerCase().includes(q) ||
           s.description?.toLowerCase().includes(q) ||
-          cat.name.toLowerCase().includes(q)
+          (globalSearch && cat.name.toLowerCase().includes(q))
         ) {
           results.push({ service: s, category: cat })
         }
       }
     }
     return results
-  }, [master, q])
+  }, [master, q, globalSearch, categories])
 
   const isSearching = isSearchMode && q.length > 0
 
@@ -134,7 +138,7 @@ export default function ServiceSelectPage() {
               Выберите услугу
             </div>
             <button
-              onClick={() => navigate('/book/services?search=1')}
+              onClick={() => navigate(`/book/services?search=1${categoryId ? `&categoryId=${categoryId}` : ''}`)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -159,7 +163,7 @@ export default function ServiceSelectPage() {
                 key={s.id}
                 onClick={() => handleSelect(s)}
                 style={{
-                  width: '100%', height: 106,
+                  width: '100%',
                   background: '#25262B', borderRadius: 20,
                   padding: '14px 20px 12px 22px', border: 'none',
                   cursor: 'pointer', textAlign: 'left',
@@ -167,6 +171,17 @@ export default function ServiceSelectPage() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Category name — only in global search */}
+                  {globalSearch && (
+                    <div style={{
+                      fontSize: 11, fontWeight: 600, color: '#7D7D7F',
+                      textTransform: 'uppercase', letterSpacing: 0.5,
+                      marginBottom: 4,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      <Highlight text={cat.name} query={q} />
+                    </div>
+                  )}
                   <div style={{
                     fontWeight: 600, fontSize: 15, color: '#D3D4D6',
                     lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
