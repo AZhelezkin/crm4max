@@ -226,21 +226,17 @@ export default function SuccessPage() {
           ))}
         </div>
 
-        {/* Close button */}
+        {/* Close button — same style as ConfirmPage "Записаться" */}
         <button
           onClick={handleClose}
           style={{
-            width: '100%', height: 60, borderRadius: 20,
-            background: '#007AFE', color: '#fff',
-            fontWeight: 600, fontSize: 17,
+            width: '100%', padding: 16, borderRadius: 14,
+            background: '#2688EB', color: '#fff',
+            fontWeight: 600, fontSize: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             border: 'none', cursor: 'pointer',
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M3.93 14.88L15.88 2.93m-4.78 14.35 1.2-1.2m1.49-1.49 2.39-2.39" stroke="#fff" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M3.6 9.24l6.64-6.64c2.12-2.12 3.18-2.13 5.28-.03l4.91 4.91c2.1 2.1 2.09 3.16-.03 5.28l-6.64 6.64c-2.12 2.12-3.18 2.13-5.28.03l-4.91-4.91c-2.1-2.1-2.1-3.15.03-5.28M2 21h20" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
           Закрыть
         </button>
       </div>
