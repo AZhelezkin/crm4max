@@ -114,11 +114,15 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   const onGeocodeRef = useRef(onGeocode)
   onGeocodeRef.current = onGeocode
 
-  // Синхронизация value → inputValue при смене снаружи
+  // Синхронизация value → inputValue при смене снаружи.
+  // Пропускаем, если изменение — эхо нашего же onChange (value уже совпадает с inputValue),
+  // иначе бы сбрасывали suggestEnabled на каждом нажатии и подсказки никогда не показывались.
   useEffect(() => {
+    if (value === inputValue) return
     setInputValue(value)
     setSuggestEnabled(false)
     setSuggestions([])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   // Инициализация интерактивной карты
