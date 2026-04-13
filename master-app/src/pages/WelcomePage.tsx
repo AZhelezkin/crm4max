@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import slotoLogoUrl from '@/assets/sloto-logo.svg'
 
 export default function WelcomePage() {
   const navigate = useNavigate()
@@ -38,8 +39,7 @@ export default function WelcomePage() {
         ведения бизнеса
       </div>
 
-      {/* ── Логотип sloto с blur-пузырями ── */}
-      {/* SVG: 4 ellipse r≈34.8, blur stdDev=50, центр (210, 405); red dot #FF6783 r=7.19 @ (297, 401.563); ring r=22.5 @ (297, 424.989) */}
+      {/* ── Логотип sloto (blur-пузыри + буквы + акценты — как единая картинка) ── */}
       <div
         style={{
           flex: '1 1 auto',
@@ -49,106 +49,16 @@ export default function WelcomePage() {
           minHeight: 0,
         }}
       >
-        <svg
-          width="320"
-          height="220"
-          viewBox="60 280 300 250"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ display: 'block', maxWidth: '100%' }}
-        >
-          <defs>
-            <filter
-              id="welcomeBlur"
-              x="-100%"
-              y="-100%"
-              width="300%"
-              height="300%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feGaussianBlur stdDeviation="50" />
-            </filter>
-            <linearGradient
-              id="welcomePurpleTop"
-              x1="245.22"
-              y1="340.021"
-              x2="175.698"
-              y2="380.48"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#844BB6" />
-              <stop offset="1" stopColor="#5F68E2" />
-            </linearGradient>
-            <linearGradient
-              id="welcomePurpleBottom"
-              x1="245.22"
-              y1="423.417"
-              x2="175.698"
-              y2="463.877"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="#844BB6" />
-              <stop offset="1" stopColor="#5F68E2" />
-            </linearGradient>
-            <linearGradient
-              id="welcomeRingStroke"
-              x1="297.031"
-              y1="415.429"
-              x2="320.043"
-              y2="447.934"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="white" />
-              <stop offset="1" stopColor="#152149" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Блюр-пузыри (центр 210, 405) */}
-          <g filter="url(#welcomeBlur)">
-            <ellipse cx="258.28" cy="405.5" rx="34.8" ry="34.72" fill="#007AFE" />
-            <ellipse
-              cx="210.5"
-              cy="363.802"
-              rx="34.72"
-              ry="34.8"
-              fill="url(#welcomePurpleTop)"
-            />
-            <ellipse cx="162.72" cy="405.5" rx="34.8" ry="34.72" fill="#007AFE" />
-            <ellipse
-              cx="210.5"
-              cy="447.198"
-              rx="34.72"
-              ry="34.8"
-              fill="url(#welcomePurpleBottom)"
-            />
-          </g>
-
-          {/* Декоративное кольцо (под точкой, чуть ниже базовой линии) */}
-          <circle
-            cx="297"
-            cy="424.989"
-            r="22.5"
-            fill="#F0F3FF"
-            fillOpacity="0.1"
-            stroke="url(#welcomeRingStroke)"
-          />
-
-          {/* Красная точка-акцент */}
-          <circle cx="297.123" cy="401.563" r="7.19" fill="#FF6783" />
-
-          {/* Название бренда: s·l·o·t·o */}
-          <text
-            x="210.5"
-            y="420"
-            textAnchor="middle"
-            fontSize="34"
-            fontWeight="700"
-            fill="#fff"
-            fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-            letterSpacing="2"
-          >
-            s·l·o·t·o
-          </text>
-        </svg>
+        <img
+          src={slotoLogoUrl}
+          alt="sloto"
+          style={{
+            display: 'block',
+            width: '100%',
+            maxWidth: 360,
+            height: 'auto',
+          }}
+        />
       </div>
 
       {/* ── Список фич ── */}
