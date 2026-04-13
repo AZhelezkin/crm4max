@@ -11,15 +11,15 @@
     </linearGradient>
   </defs>
   <circle cx="36" cy="33" r="22" fill="url(#greenGrad)"/>
-  <path d="M27 33.5L31.5 38L40 30" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="36" cy="33" r="10" fill="#fff"/>
+  <path d="M41.275 29.535a1.63 1.63 0 0 0-2.05 0l-.123.111-4.523 4.521-1.68-1.681-.124-.111a1.63 1.63 0 0 0-2.05 0l-.123.111a1.63 1.63 0 0 0 0 2.298l2.83 2.829a1.62 1.62 0 0 0 2.296 0l5.67-5.67.006-.005.005-.004a1.63 1.63 0 0 0 .102-2.163l-.113-.125z" fill="#09CA3E"/>
 
   <!-- Title (left-aligned, next to checkmark) -->
   <text x="68" y="30" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="700" font-size="17" fill="#D3D4D6">Вы записаны!</text>
   <text x="68" y="48" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#7D7D7F">Не опаздывайте</text>
 
-  <!-- Close button (right, simple X) -->
-  <line x1="389" y1="25" x2="401" y2="41" stroke="#D3D4D6" stroke-width="2" stroke-linecap="round"/>
-  <line x1="401" y1="25" x2="389" y2="41" stroke="#D3D4D6" stroke-width="2" stroke-linecap="round"/>
+  <!-- Close button (right, rounded square with X — from Done.svg) -->
+  <path stroke="#D3D4D6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m389.17 24.83 5.66-5.66m0 5.66-5.66-5.66M389 32h6c5 0 7-2 7-7v-6c0-5-2-7-7-7H389c-5 0-7 2-7 7v6c0 5 2 7 7 7" fill="none"/>
 
   <!-- ── Card 1: Master (y=74) ── -->
   <rect x="16" y="74" width="388" height="72" rx="14" fill="#1C1C1E"/>
@@ -30,7 +30,9 @@
   <text x="82" y="104" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">Валерия Жданова</text>
   <text x="82" y="122" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#8E8E93">Ногтевой сервис</text>
   <!-- Rating -->
-  <text x="370" y="112" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="14" fill="#FF9500">&#9733; 4.8</text>
+  <!-- Rating star + number -->
+  <path fill="#F0AF2D" d="M352.153 103.34l1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187l-1.653 1.653c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207l-1.653-1.653c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7l1.173-2.347c.64-1.273 1.68-1.273 2.313 0"/>
+  <text x="370" y="115" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="500" font-size="13" fill="#7D7D7F">4.8</text>
 
   <!-- ── Card 2: Service (y=156) ── -->
   <rect x="16" y="156" width="388" height="100" rx="14" fill="#1C1C1E"/>
@@ -43,16 +45,16 @@
   <rect x="304" y="231" width="86" height="22" rx="6" fill="#CE4259" fill-opacity="0.3"/>
   <text x="347" y="246" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="11" fill="#CE4259">Не оплачено</text>
 
-  <!-- ── Card 3: Date + time (y=266) ── -->
+  <!-- ── Card 3: Date (y=266) ── -->
   <rect x="16" y="266" width="388" height="62" rx="14" fill="#1C1C1E"/>
-  <text x="32" y="293" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">15 апреля, вторник, 14:00</text>
-  <text x="32" y="314" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#8E8E93">Напомним за 1 час · 90 мин</text>
+  <text x="32" y="293" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">15 апреля, вторник</text>
+  <text x="32" y="314" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#8E8E93">Дата</text>
 
-  <!-- ── Card 4: Total (y=338) ── -->
+  <!-- ── Card 4: Time (y=338) ── -->
   <rect x="16" y="338" width="388" height="62" rx="14" fill="#1C1C1E"/>
-  <text x="32" y="365" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">Итого</text>
-  <text x="32" y="386" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#8E8E93">Оплатить у мастера</text>
-  <text x="388" y="372" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="17" fill="#D3D4D6">2 500 &#8381;</text>
+  <text x="32" y="365" font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="15" fill="#D3D4D6">14:00</text>
+  <text x="32" y="386" font-family="SF Pro Display, -apple-system, sans-serif" font-size="13" fill="#8E8E93">Напомним за 1 час</text>
+
 
   <!-- ── 4 Action Buttons (from Done.svg: y=708, 91.25×60, rx=18, gap ~9px) ── -->
   <!-- Button 1: Поделиться (open link icon) -->
