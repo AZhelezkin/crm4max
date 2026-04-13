@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import slotoLogoUrl from '@/assets/sloto-logo.svg'
+import slotoHeaderUrl from '@/assets/sloto-welcome-header.svg'
+import slotoFeaturesUrl from '@/assets/sloto-welcome-features.svg'
 
 export default function WelcomePage() {
   const navigate = useNavigate()
@@ -20,23 +22,19 @@ export default function WelcomePage() {
         alignItems: 'stretch',
       }}
     >
-      {/* ── Заголовок ── */}
-      {/* SVG: 3 строки y=283,305,327; lineHeight = 305-283 = 22; cap ≈ 15 */}
+      {/* ── Заголовок (path-картинка из макета: шрифт и межстрочные точные) ── */}
       <div
         style={{
           paddingTop: 'calc(56px + env(safe-area-inset-top))',
-          paddingLeft: 24,
-          paddingRight: 24,
-          textAlign: 'center',
-          fontSize: 15,
-          lineHeight: '22px',
-          fontWeight: 400,
-          color: '#fff',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        Добро пожаловать в<br />
-        самую простую платформу<br />
-        ведения бизнеса
+        <img
+          src={slotoHeaderUrl}
+          alt="Добро пожаловать в самую простую платформу ведения бизнеса"
+          style={{ display: 'block', width: 260, height: 'auto' }}
+        />
       </div>
 
       {/* ── Логотип sloto (blur-пузыри + буквы + акценты — как единая картинка) ── */}
@@ -61,22 +59,19 @@ export default function WelcomePage() {
         />
       </div>
 
-      {/* ── Список фич ── */}
-      {/* SVG: 5 строк y=583,615,647,679,711; lineHeight = 32; первая белая, остальные 0.5 */}
+      {/* ── Список фич (path-картинка, шрифт и интервалы из макета) ── */}
       <div
         style={{
           padding: '0 24px 40px',
-          textAlign: 'center',
-          fontSize: 16,
-          lineHeight: '32px',
-          fontWeight: 500,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        <div style={{ color: '#fff' }}>Каталог ваших услуг</div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Календарь записей</div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Оплата услуг</div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Автоматическая уплата налогов</div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Напоминания</div>
+        <img
+          src={slotoFeaturesUrl}
+          alt="Каталог ваших услуг, календарь записей, оплата услуг, автоматическая уплата налогов, напоминания"
+          style={{ display: 'block', width: 300, height: 'auto' }}
+        />
       </div>
 
       {/* ── Кнопка «Присоединиться» ── */}
