@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Switch } from '@maxhub/max-ui'
+import ToggleSwitch from '@/components/ToggleSwitch'
 import { useAuthStore } from '@/store/auth.store'
 import { scheduleApi } from '@/api/schedule.api'
 import { mastersApi } from '@/api/masters.api'
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                   <div style={onboardingSectionCardStyle}>
                     <div style={onboardingToggleRowStyle}>
                       <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Обед</span>
-                      <Switch checked={hasBreak} onChange={() => setHasBreak((v) => !v)} />
+                      <ToggleSwitch checked={hasBreak} onChange={setHasBreak} aria-label="Обед" />
                     </div>
                     {hasBreak && (
                       <div style={{ marginTop: 12 }}>

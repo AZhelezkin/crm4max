@@ -11,10 +11,10 @@ import {
   Flex,
   Grid,
   Spinner,
-  Switch,
   Typography,
   Container,
 } from '@maxhub/max-ui'
+import ToggleSwitch from '@/components/ToggleSwitch'
 import maskIconUrl from '@/assets/mask-icon.svg'
 import uploadIconUrl from '@/assets/upload-icon.svg'
 import locationAddImg from '@/assets/location-add.png'
@@ -552,9 +552,10 @@ export default function OnboardingPage() {
             <div style={onboardingSectionCardStyle}>
               <div style={onboardingToggleRowStyle}>
                 <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Обед</span>
-                <Switch
+                <ToggleSwitch
                   checked={hasBreak}
-                  onChange={() => setHasBreak((v) => !v)}
+                  onChange={setHasBreak}
+                  aria-label="Обед"
                 />
               </div>
               {hasBreak && (

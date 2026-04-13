@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Schedule } from '@client/types'
+import ToggleSwitch from '@/components/ToggleSwitch'
 
 dayjs.locale('ru')
 
@@ -317,22 +318,11 @@ export default function CalendarPage() {
               <div style={{ fontWeight: 500, fontSize: 17, color: '#D3D4D6' }}>Напомнить за 1 час</div>
               <div style={{ color: '#7D7D7F', fontSize: 13, marginTop: 2 }}>Бот напишет в MAX</div>
             </div>
-            <button
-              onClick={() => setRemind(!remind)}
-              style={{
-                width: 51, height: 31, borderRadius: 16,
-                background: remind ? '#007AFE' : '#3A3A3C',
-                position: 'relative', transition: 'background 0.2s',
-                flexShrink: 0, border: 'none', cursor: 'pointer', padding: 0,
-              }}  
-            >
-              <span style={{
-                position: 'absolute', top: 3,
-                left: remind ? 23 : 3,
-                width: 25, height: 25, borderRadius: '50%',
-                background: '#fff', transition: 'left 0.2s',
-              }} />
-            </button>
+            <ToggleSwitch
+              checked={remind}
+              onChange={setRemind}
+              aria-label="Напомнить за 1 час"
+            />
           </div>
 
         </div>
