@@ -10,6 +10,7 @@ import ChatsPage from '@/pages/ChatsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 
 import OnboardingPage from '@/pages/OnboardingPage'
+import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
@@ -52,10 +53,19 @@ function MasterApp() {
 
   // Новый мастер, не прошедший онбординг; или мастер не авторизован
   const needsOnboarding = !master || !master.isOnboarded
+  // Велком-страница показывается один раз, перед онбордингом
+  const welcomeSeen = localStorage.getItem('welcomeSeen') === '1'
+  const firstStopForNewMaster = welcomeSeen ? '/onboarding' : '/welcome'
 
   return (
     <BrowserRouter>
       <Routes>
+        {/* Велком-сплэш — только для новых мастеров, до первого клика по «Присоединиться» */}
+        <Route
+          path="/welcome"
+          element={needsOnboarding ? <WelcomePage /> : <Navigate to="/" replace />}
+        />
+
         {/* Онбординг — доступен только до завершения */}
         <Route
           path="/onboarding"
@@ -63,7 +73,7 @@ function MasterApp() {
         />
 
         {/* Все остальные роуты — только после онбординга */}
-        <Route element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <Outlet />}>
+        <Route element={needsOnboarding ? <Navigate to={firstStopForNewMaster} replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
             <Route index element={<ProfilePage />} />
             <Route path="bookings" element={<BookingsPage />} />
