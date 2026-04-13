@@ -187,7 +187,7 @@ export default function MyBookingsPage() {
               const dotColor = rec
                 ? rec.hasFuture
                   ? '#CE4259'
-                  : '#8E8E93'
+                  : '#4A4B53'
                 : null
 
               return (
@@ -196,28 +196,32 @@ export default function MyBookingsPage() {
                   onClick={() => setSelectedDate(isSelected ? null : val)}
                   style={{
                     position: 'relative',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-                    height: 54, paddingTop: 6,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    height: 54,
                     background: isSelected ? 'rgba(0,122,254,0.15)' : 'transparent',
                     border: 'none', borderRadius: 12, cursor: 'pointer',
                   }}
                 >
-                  {/* Booking dot above the number */}
                   <span style={{
-                    width: 5, height: 5, borderRadius: '50%',
-                    background: dotColor ?? 'transparent',
-                    marginBottom: 3,
-                  }} />
-                  <span style={{
+                    position: 'relative',
                     fontSize: 17, fontWeight: 400, lineHeight: 1,
                     color: isWeekend ? '#CE4259' : '#FFFFFF',
                   }}>
                     {day.date()}
+                    {dotColor && (
+                      <span style={{
+                        position: 'absolute',
+                        top: -6, right: -9,
+                        width: 9, height: 9, borderRadius: '50%',
+                        background: dotColor,
+                      }} />
+                    )}
                   </span>
                   {isToday && (
                     <span style={{
+                      position: 'absolute', bottom: 10,
                       width: 16, height: 2, borderRadius: 1,
-                      background: '#CE4259', marginTop: 4,
+                      background: '#CE4259',
                     }} />
                   )}
                 </button>
