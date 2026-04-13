@@ -71,15 +71,15 @@ export default function SuccessPage() {
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        {/* Green circle with white check badge */}
+        {/* Green circle with white circle + green checkmark */}
         <div style={{
           width: 44, height: 44, borderRadius: 22, flexShrink: 0,
           background: 'linear-gradient(180deg, #32D9B9 0%, #09CA3E 100%)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-            <circle cx="13" cy="13" r="10" fill="#fff"/>
-            <path d="M17.275 9.535a1.63 1.63 0 0 0-2.05 0l-.123.111-4.523 4.521-1.68-1.681-.124-.111a1.63 1.63 0 0 0-2.05 0l-.123.111a1.63 1.63 0 0 0 0 2.298l2.83 2.829a1.62 1.62 0 0 0 2.296 0l5.67-5.67.006-.005.005-.004a1.63 1.63 0 0 0 .102-2.163l-.113-.125z" fill="#09CA3E"/>
+            <circle cx="13" cy="13" r="9.125" fill="#fff"/>
+            <path d="M18.275 8.91a1.63 1.63 0 0 0-2.05 0l-.123.111-4.523 4.521-1.68-1.681-.124-.111a1.63 1.63 0 0 0-2.05 0l-.123.111a1.63 1.63 0 0 0 0 2.298l2.83 2.829a1.62 1.62 0 0 0 2.296 0l5.67-5.67.006-.005.005-.004a1.63 1.63 0 0 0 .102-2.163l-.113-.125z" fill="#09CA3E" stroke="#09CA3E" strokeWidth="0.5"/>
           </svg>
         </div>
         {/* Title */}
@@ -100,7 +100,7 @@ export default function SuccessPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M9.17 14.83L14.83 9.17m0 5.66L9.17 9.17M9 20h6c5 0 7-2 7-7v-6c0-5-2-7-7-7H9c-5 0-7 2-7 7v6c0 5 2 7 7 7" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="m9.17 14.83 5.66-5.66m0 5.66-5.66-5.66M9 22h6c5 0 7-2 7-7v-6c0-5-2-7-7-7H9c-5 0-7 2-7 7v6c0 5 2 7 7 7" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
@@ -135,8 +135,8 @@ export default function SuccessPage() {
               </div>
               {master.rating > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path fill="#F0AF2D" d="M6.153 1.34l1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187L9.447 8.58c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207L.9 6.927c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7L5.84 1.34c.64-1.273 1.68-1.273 2.313 0"/>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path fill="#F0AF2D" d="m11.153 3.34 1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187l-1.653 1.653c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207L4.9 8.927c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7l1.173-2.347c.64-1.273 1.68-1.273 2.313 0"/>
                   </svg>
                   <span style={{ color: '#7D7D7F', fontWeight: 500, fontSize: 13 }}>{master.rating.toFixed(1)}</span>
                 </div>
