@@ -1,241 +1,331 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
+import { useAuthStore } from '@/store/auth.store'
 import type { Booking } from '@/types'
-import PageHeader from '@/components/PageHeader'
-import Card from '@/components/Card'
 
 dayjs.locale('ru')
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING:   'Ожидает',
-  CONFIRMED: 'Подтверждена',
-  COMPLETED: 'Завершена',
-  CANCELLED: 'Отменена',
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING:   '#FF9500',
-  CONFIRMED: 'var(--color-primary)',
-  COMPLETED: 'var(--color-success)',
-  CANCELLED: 'var(--color-text-secondary)',
+function formatRub(kop: number): string {
+  return (kop / 100).toLocaleString('ru-RU') + ' ₽'
 }
 
-const sortByDateTime = (a: Booking, b: Booking) => {
-  const cmp = b.date.localeCompare(a.date)
-  return cmp !== 0 ? cmp : b.time.localeCompare(a.time)
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
+
+interface GridCell {
+  day: number
+  date: string
+  dow: number // 0=Пн .. 6=Вс
 }
 
 export default function BookingsPage() {
   const navigate = useNavigate()
+  const master = useAuthStore((s) => s.master)
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [view, setView]         = useState<'list' | 'calendar'>('list')
-  const [refreshing, setRefreshing] = useState(false)
+  const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
+  const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
 
-  const load = () => bookingsApi.list().then(setBookings).catch(() => {})
+  useEffect(() => {
+    bookingsApi.list().then(setBookings).catch(() => {})
+  }, [])
 
-  useEffect(() => { load() }, [])
+  // Рабочие минуты в день по расписанию мастера (минус обед)
+  const workMinutes = useMemo(() => {
+    if (!master?.schedule) return 8 * 60
+    const s = master.schedule
+    const startM = timeToMinutes(s.startTime)
+    const endM = timeToMinutes(s.endTime)
+    const breakM =
+      s.breakStart && s.breakEnd
+        ? timeToMinutes(s.breakEnd) - timeToMinutes(s.breakStart)
+        : 0
+    return Math.max(1, endM - startM - breakM)
+  }, [master?.schedule])
 
-  const refresh = () => {
-    setRefreshing(true)
-    bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setRefreshing(false))
-  }
+  // % загрузки по дате (0..100)
+  const loadByDate = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const b of bookings) {
+      if (b.status === 'CANCELLED') continue
+      totals.set(b.date, (totals.get(b.date) ?? 0) + b.service.duration)
+    }
+    const result = new Map<string, number>()
+    for (const [date, mins] of totals) {
+      result.set(date, Math.min(100, (mins / workMinutes) * 100))
+    }
+    return result
+  }, [bookings, workMinutes])
+
+  // Записи выбранного дня (без CANCELLED), по возрастанию времени
+  const dayBookings = useMemo(() => {
+    return bookings
+      .filter((b) => b.date === selectedDate && b.status !== 'CANCELLED')
+      .sort((a, b) => a.time.localeCompare(b.time))
+  }, [bookings, selectedDate])
+
+  // Сетка дней месяца с пустыми ячейками в начале и конце
+  const gridDays = useMemo<Array<GridCell | null>>(() => {
+    const startOfMonth = currentMonth.startOf('month')
+    const daysInMonth = currentMonth.daysInMonth()
+    // dayjs .day(): 0=Вс, 1=Пн .. 6=Сб. Переводим в ISO 0=Пн..6=Вс.
+    const startDow = (startOfMonth.day() + 6) % 7
+    const totalCells = Math.ceil((daysInMonth + startDow) / 7) * 7
+    const days: Array<GridCell | null> = []
+    for (let i = 0; i < totalCells; i++) {
+      const dayNum = i - startDow + 1
+      if (dayNum < 1 || dayNum > daysInMonth) {
+        days.push(null)
+      } else {
+        const date = currentMonth.date(dayNum).format('YYYY-MM-DD')
+        const dow = i % 7
+        days.push({ day: dayNum, date, dow })
+      }
+    }
+    return days
+  }, [currentMonth])
 
   const today = dayjs().format('YYYY-MM-DD')
-  const upcoming = bookings
-    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && b.date >= today)
-    .sort(sortByDateTime)
-  const past = bookings
-    .filter((b) => b.status === 'COMPLETED' || b.date < today)
-    .sort(sortByDateTime)
+  const now = dayjs()
 
-  const headerRight = (
-    <>
-      <button
-        onClick={refresh}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--color-primary)', WebkitTapHighlightColor: 'transparent' }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-          style={{ display: 'block', transform: refreshing ? 'rotate(360deg)' : 'none', transition: refreshing ? 'transform 0.5s linear' : 'none' }}>
-          <path d="M2 12C2 6.477 6.477 2 12 2c3.09 0 5.859 1.352 7.75 3.5L22 8M22 2v6h-6M22 12c0 5.523-4.477 10-10 10-3.09 0-5.859-1.352-7.75-3.5L2 16M2 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      <button
-        onClick={() => navigate('/bookings/new')}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--color-primary)', WebkitTapHighlightColor: 'transparent' }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-        </svg>
-      </button>
-    </>
-  )
+  // Свайп месяца
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX)
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX
+    if (Math.abs(dx) > 50) {
+      setCurrentMonth((m) => (dx > 0 ? m.subtract(1, 'month') : m.add(1, 'month')))
+    }
+    setTouchStartX(null)
+  }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      <PageHeader title="Записи" back={false} right={headerRight} />
+    <div style={{ minHeight: '100dvh', background: '#0F0F11', color: '#D3D4D6', paddingBottom: 95 }}>
+      {/* Header: только "+" кнопка справа */}
+      <header
+        style={{
+          height: 56,
+          position: 'sticky',
+          top: 0,
+          background: '#0F0F11',
+          zIndex: 10,
+        }}
+      >
+        <button
+          aria-label="Создать запись"
+          onClick={() => navigate('/bookings/new')}
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            background: '#007AFE',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8H13" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+            <path d="M8 3V13" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </header>
 
-      <div style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
-        {(['list', 'calendar'] as const).map((v) => (
+      {/* Селектор месяца */}
+      <div
+        style={{
+          marginTop: 35,
+          padding: '0 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 15,
+            fontWeight: 500,
+            color: '#D3D4D6',
+          }}
+        >
+          <span>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
+          <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+            <path
+              d="M0 0L4 4L8 0"
+              stroke="#D3D4D6"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <div style={{ display: 'flex' }}>
           <button
-            key={v}
-            onClick={() => setView(v)}
+            aria-label="Предыдущий месяц"
+            onClick={() => setCurrentMonth((m) => m.subtract(1, 'month'))}
             style={{
-              flex: 1, padding: '8px 0', borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 500,
-              background: view === v ? 'var(--color-primary)' : 'var(--color-card)',
-              color: view === v ? '#fff' : 'var(--color-text)',
-              border: '1px solid var(--color-border)',
+              width: 40,
+              height: 40,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {v === 'list' ? 'Список' : 'Календарь'}
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
+              <path
+                d="M7 1L1 6L7 11"
+                stroke="#D3D4D6"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
-        ))}
-      </div>
-
-      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {view === 'calendar' ? (
-          <CalendarView bookings={bookings} onBookingClick={(id) => navigate(`/bookings/${id}`)} />
-        ) : (
-          <>
-            {upcoming.length > 0 && (
-              <Section title="Предстоящие">
-                {upcoming.map((b) => <BookingCard key={b.id} booking={b} onClick={() => navigate(`/bookings/${b.id}`)} />)}
-              </Section>
-            )}
-
-            {past.length > 0 && (
-              <Section title="Прошлые">
-                {past.map((b) => <BookingCard key={b.id} booking={b} onClick={() => navigate(`/bookings/${b.id}`)} />)}
-              </Section>
-            )}
-
-            {bookings.length === 0 && (
-              <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 40 }}>
-                Нет записей
-              </div>
-            )}
-          </>
-        )}
-
-      </div>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 8, textTransform: 'uppercase' }}>
-        {title}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
-    </div>
-  )
-}
-
-function BookingCard({ booking: b, onClick }: { booking: Booking; onClick: () => void }) {
-  return (
-    <Card onClick={onClick}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontWeight: 600 }}>{b.client.name}</div>
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, marginTop: 2 }}>
-            {b.service.name} · {dayjs(b.date).format('D MMM')} в {b.time}
-          </div>
+          <button
+            aria-label="Следующий месяц"
+            onClick={() => setCurrentMonth((m) => m.add(1, 'month'))}
+            style={{
+              width: 40,
+              height: 40,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
+              <path
+                d="M1 1L7 6L1 11"
+                stroke="#D3D4D6"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 500, color: STATUS_COLORS[b.status] }}>
-          {STATUS_LABELS[b.status]}
-        </span>
-      </div>
-    </Card>
-  )
-}
-
-function CalendarView({ bookings, onBookingClick }: { bookings: Booking[]; onBookingClick: (id: string) => void }) {
-  const [current, setCurrent] = useState(dayjs())
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
-
-  const startOfMonth = current.startOf('month')
-  const daysInMonth  = current.daysInMonth()
-  // ISO: 1=Пн, 7=Вс — сдвиг стартового дня
-  const startDow = startOfMonth.day() === 0 ? 6 : startOfMonth.day() - 1
-
-  const bookingsByDate = bookings.reduce<Record<string, Booking[]>>((acc, b) => {
-    if (!acc[b.date]) acc[b.date] = []
-    acc[b.date].push(b)
-    return acc
-  }, {})
-
-  const selectedBookings = selectedDate ? (bookingsByDate[selectedDate] ?? []) : []
-
-  return (
-    <div>
-      {/* Заголовок месяца */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button
-          onClick={() => setCurrent(c => c.subtract(1, 'month'))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--color-primary)', padding: '4px 8px' }}
-        >‹</button>
-        <span style={{ fontWeight: 600, fontSize: 16, textTransform: 'capitalize' }}>
-          {current.format('MMMM YYYY')}
-        </span>
-        <button
-          onClick={() => setCurrent(c => c.add(1, 'month'))}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--color-primary)', padding: '4px 8px' }}
-        >›</button>
       </div>
 
-      {/* Дни недели */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
-        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-secondary)', padding: '4px 0' }}>{d}</div>
+      {/* Заголовок дней недели */}
+      <div
+        style={{
+          marginTop: 34,
+          padding: '0 14px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+        }}
+      >
+        {WEEKDAYS.map((d) => (
+          <div
+            key={d}
+            style={{
+              textAlign: 'center',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#58585A',
+              lineHeight: 1,
+            }}
+          >
+            {d}
+          </div>
         ))}
       </div>
 
-      {/* Ячейки */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-        {Array.from({ length: startDow }).map((_, i) => <div key={`e${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day  = i + 1
-          const date = current.date(day).format('YYYY-MM-DD')
-          const isToday    = date === dayjs().format('YYYY-MM-DD')
-          const isSelected = date === selectedDate
-          const hasBkg     = !!bookingsByDate[date]
-          const count      = bookingsByDate[date]?.filter(b => b.status !== 'CANCELLED').length ?? 0
+      {/* Сетка дней */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          marginTop: 20,
+          padding: '0 14px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+        }}
+      >
+        {gridDays.map((cell, idx) => {
+          if (!cell) return <div key={`e${idx}`} style={{ height: 54 }} />
+          const isToday = cell.date === today
+          const isSelected = cell.date === selectedDate
+          const isPast = cell.date < today
+          const isWeekend = cell.dow >= 5
+          const load = loadByDate.get(cell.date) ?? 0
 
           return (
             <div
-              key={day}
-              onClick={() => setSelectedDate(isSelected ? null : date)}
+              key={cell.date}
+              onClick={() => setSelectedDate(cell.date)}
               style={{
-                aspectRatio: '1',
+                height: 54,
+                position: 'relative',
+                borderRadius: 12,
+                background: isToday ? '#007AFE' : 'transparent',
+                border: !isToday && isSelected ? '2px solid #007AFE' : '2px solid transparent',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 8,
                 cursor: 'pointer',
-                background: isSelected
-                  ? 'var(--color-primary)'
-                  : isToday
-                    ? 'var(--color-card2)'
-                    : 'transparent',
-                border: isToday && !isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
-                position: 'relative',
+                opacity: isPast && !isToday ? 0.5 : 1,
+                boxSizing: 'border-box',
               }}
             >
-              <span style={{
-                fontSize: 14,
-                fontWeight: isToday || isSelected ? 600 : 400,
-                color: isSelected ? '#fff' : 'var(--color-text)',
-              }}>{day}</span>
-              {count > 0 && (
-                <div style={{
-                  width: 5, height: 5, borderRadius: '50%', marginTop: 1,
-                  background: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--color-primary)',
-                }} />
+              <span
+                style={{
+                  fontSize: 16,
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  marginTop: 18,
+                  color: isToday ? '#FFFFFF' : isWeekend ? '#CE4259' : '#D3D4D6',
+                }}
+              >
+                {cell.day}
+              </span>
+              {load > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: 9,
+                    width: 40,
+                    marginLeft: -20,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${load}%`,
+                      height: 3,
+                      borderRadius: 1.5,
+                      background: isToday ? '#FFFFFF' : '#29C643',
+                    }}
+                  />
+                </div>
               )}
             </div>
           )
@@ -243,19 +333,72 @@ function CalendarView({ bookings, onBookingClick }: { bookings: Booking[]; onBoo
       </div>
 
       {/* Записи выбранного дня */}
-      {selectedDate && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 8, textTransform: 'uppercase' }}>
-            {dayjs(selectedDate).format('D MMMM')}
-          </div>
-          {selectedBookings.length === 0
-            ? <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>Нет записей</div>
-            : selectedBookings.map(b => (
-                <BookingCard key={b.id} booking={b} onClick={() => onBookingClick(b.id)} />
-              ))
-          }
-        </div>
-      )}
+      <div style={{ marginTop: 20, padding: '0 14px' }}>
+        {dayBookings.map((b) => {
+          const endTime = dayjs(`${b.date}T${b.time}`).add(b.service.duration, 'minute')
+          const isCompleted = b.status === 'COMPLETED' || endTime.isBefore(now)
+          const textColor = isCompleted ? '#7D7D7F' : '#D3D4D6'
+          const line = isCompleted ? ('line-through' as const) : ('none' as const)
+
+          return (
+            <div
+              key={b.id}
+              onClick={() => navigate(`/bookings/${b.id}`)}
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                minHeight: 57,
+                borderTop: '1px solid #25262B',
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                style={{
+                  width: 71,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1, color: textColor }}>{b.time}</span>
+              </div>
+              <div style={{ width: 1, background: '#25262B' }} />
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  paddingLeft: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    lineHeight: 1,
+                    color: textColor,
+                    textDecoration: line,
+                  }}
+                >
+                  {b.service.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1,
+                    color: '#7D7D7F',
+                    marginTop: 6,
+                    textDecoration: line,
+                  }}
+                >
+                  {formatRub(b.service.price)}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

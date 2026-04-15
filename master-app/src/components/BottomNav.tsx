@@ -51,7 +51,7 @@ function NavIcon({ path, color }: { path: string; color: string }) {
 
 const TABS = [
   { path: '/', label: 'Профиль' },
-  { path: '/bookings', label: 'Мои записи' },
+  { path: '/bookings', label: 'Расписание' },
   { path: '/clients', label: 'Клиенты' },
   { path: '/income', label: 'Доход' },
 ]
