@@ -48,6 +48,27 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [tab, setTab] = useState<Tab>('income')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const blob = await paymentsApi.exportXlsx()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `payments_${dayjs().format('YYYY-MM-DD')}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      // ignore
+    } finally {
+      setExporting(false)
+    }
+  }
 
   useEffect(() => {
     paymentsApi.list().then(setPayments).catch(() => {})
@@ -128,6 +149,8 @@ export default function PaymentsPage() {
         <h1 style={{ fontSize: 17, fontWeight: 600, color: '#D3D4D6', margin: 0 }}>Доход</h1>
         <button
           aria-label="Экспорт"
+          onClick={handleExport}
+          disabled={exporting}
           style={{
             position: 'absolute',
             right: 14,
@@ -137,7 +160,8 @@ export default function PaymentsPage() {
             background: 'none',
             border: 'none',
             padding: 0,
-            cursor: 'pointer',
+            cursor: exporting ? 'default' : 'pointer',
+            opacity: exporting ? 0.5 : 1,
           }}
         >
           <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
