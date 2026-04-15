@@ -197,32 +197,40 @@ export default function ProfilePage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', overflowX: 'hidden' }}>
 
-      {/* Шапка */}
-      <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center' }}>
+      {/* Header: Поделиться + Карандаш */}
+      <div style={{
+        height: 56,
+        background: '#0F0F11',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 8,
+        padding: '0 14px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        flexShrink: 0,
+      }}>
+        <button
+          type="button"
+          onClick={() => navigate('/share')}
+          aria-label="Поделиться"
+          style={headerIconButtonStyle}
+        >
+          <ProfileShareIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/about')}
+          aria-label="Редактировать профиль"
+          style={headerIconButtonStyle}
+        >
+          <ProfilePencilIcon />
+        </button>
+      </div>
 
-        {/* Иконки действий в правом верхнем углу: Поделиться + Карандаш */}
-        <div style={{
-          position: 'absolute', top: 16, right: 16,
-          display: 'flex', alignItems: 'center', gap: 8,
-          zIndex: 1,
-        }}>
-          <button
-            type="button"
-            onClick={() => navigate('/share')}
-            aria-label="Поделиться"
-            style={headerIconButtonStyle}
-          >
-            <ShareIcon active />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/about')}
-            aria-label="Редактировать профиль"
-            style={headerIconButtonStyle}
-          >
-            <EditIcon active />
-          </button>
-        </div>
+      {/* Шапка профиля */}
+      <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center' }}>
 
         {/* Аватар — 104×104 (из Profile_info.svg) */}
         <div style={{
@@ -243,46 +251,14 @@ export default function ProfilePage() {
 
         {/* Специальность */}
         {master?.description && (
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, marginTop: 14 }}>
+          <div style={{
+            color: 'var(--color-text-secondary)', fontSize: 14,
+            marginTop: 14, padding: '0 24px',
+          }}>
             {master.description}
           </div>
         )}
 
-        {/* Кнопки действий */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, padding: '0 16px' }}>
-          {[
-            {
-              label: 'Услуги', action: () => navigate('/services'),
-              icon: <CatalogIcon active />,
-            },
-            {
-              label: 'Профиль', action: () => navigate('/about'),
-              icon: <EditIcon active />,
-            },
-            {
-              label: 'Поделиться', action: () => navigate('/share'),
-              icon: <ShareIcon active />,
-            },
-            { label: 'Расписание', action: () => setShowSchedule(true), icon: <ScheduleIcon active /> },
-          ].map(({ label, icon, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              style={{
-                flex: 1,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 6,
-                background: 'var(--color-card)',
-                border: 'none', borderRadius: 'var(--radius-sm)',
-                padding: '10px 4px',
-                cursor: 'pointer',
-              }}
-            >
-              {icon}
-              <span style={{ fontSize: 11, color: 'var(--color-primary)', fontWeight: 500 }}>{label}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Табы */}
@@ -794,6 +770,46 @@ function ChevronRightIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ProfileShareIcon() {
+  const c = '#2688EB'
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M9.32031 6.49994L11.8803 3.93994L14.4403 6.49994"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <path
+        d="M11.8799 14.18V4.01001"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <path
+        d="M4 12C4 16.42 7 20 12 20C17 20 20 16.42 20 12"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ProfilePencilIcon() {
+  const c = '#2688EB'
+  return (
+    <svg width="20" height="22" viewBox="382 154 20 23" fill="none">
+      <path
+        d="M393.26 157.6L385.05 166.29C384.74 166.62 384.44 167.27 384.38 167.72L384.01 170.96C383.88 172.13 384.72 172.93 385.88 172.73L389.1 172.18C389.55 172.1 390.18 171.77 390.49 171.43L398.7 162.74C400.12 161.24 400.76 159.53 398.55 157.44C396.35 155.37 394.68 156.1 393.26 157.6Z"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <path
+        d="M391.89 159.05C392.32 161.81 394.56 163.92 397.34 164.2"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <path
+        d="M383 176H401"
+        stroke={c} strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"
+      />
     </svg>
   )
 }
