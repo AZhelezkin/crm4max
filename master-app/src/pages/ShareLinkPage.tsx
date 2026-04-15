@@ -95,7 +95,7 @@ export default function ShareLinkPage() {
         display: 'flex', alignItems: 'center',
         padding: '0 8px 0 4px',
         position: 'sticky', top: 0,
-        background: 'var(--color-bg)',
+        background: '#0F0F11',
         zIndex: 10,
       }}>
         <button

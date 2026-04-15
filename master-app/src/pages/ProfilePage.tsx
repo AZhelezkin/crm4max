@@ -27,8 +27,8 @@ const DAYS = [
 const BUFFER_OPTIONS = [0, 10, 15, 20, 30, 45, 60]
 
 const headerIconButtonStyle: CSSProperties = {
-  width: 36, height: 36, borderRadius: 18,
-  background: 'var(--color-card)', border: 'none',
+  width: 36, height: 36,
+  background: 'none', border: 'none',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', padding: 0,
 }
@@ -775,7 +775,7 @@ function ChevronRightIcon() {
 }
 
 function ProfileShareIcon() {
-  const c = '#2688EB'
+  const c = '#FFFFFF'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path
@@ -795,7 +795,7 @@ function ProfileShareIcon() {
 }
 
 function ProfilePencilIcon() {
-  const c = '#2688EB'
+  const c = '#FFFFFF'
   return (
     <svg width="20" height="22" viewBox="382 154 20 23" fill="none">
       <path

@@ -13,7 +13,7 @@ export default function PageHeader({ title, back = true, right }: Props) {
       height: 56,
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '0 16px',
-      background: 'var(--color-card)',
+      background: '#0F0F11',
       borderBottom: '1px solid var(--color-border)',
       position: 'sticky', top: 0, zIndex: 10,
     }}>
