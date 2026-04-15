@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import ToggleSwitch from '@/components/ToggleSwitch'
@@ -25,6 +25,13 @@ const DAYS = [
   { v: 4, l: 'ЧТ' }, { v: 5, l: 'ПТ' }, { v: 6, l: 'СБ' }, { v: 7, l: 'ВС' },
 ]
 const BUFFER_OPTIONS = [0, 10, 15, 20, 30, 45, 60]
+
+const headerIconButtonStyle: CSSProperties = {
+  width: 36, height: 36, borderRadius: 18,
+  background: 'var(--color-card)', border: 'none',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', padding: 0,
+}
 
 type Tab = 'services' | 'photos' | 'reviews'
 
@@ -193,24 +200,35 @@ export default function ProfilePage() {
       {/* Шапка */}
       <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center' }}>
 
-        {/* Рейтинг */}
-        {!!master?.rating && (
-          <div style={{
-            position: 'absolute', top: 16, right: 16,
-            display: 'flex', alignItems: 'center', gap: 4,
-            background: 'var(--color-card)', borderRadius: 20,
-            padding: '4px 10px',
-          }}>
-            <span style={{ color: '#FFD60A', fontSize: 14 }}>★</span>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>{master.rating.toFixed(1)}</span>
-          </div>
-        )}
-
-        {/* Аватар */}
+        {/* Иконки действий в правом верхнем углу: Поделиться + Карандаш */}
         <div style={{
-          width: 90, height: 90, borderRadius: '50%',
+          position: 'absolute', top: 16, right: 16,
+          display: 'flex', alignItems: 'center', gap: 8,
+          zIndex: 1,
+        }}>
+          <button
+            type="button"
+            onClick={() => navigate('/share')}
+            aria-label="Поделиться"
+            style={headerIconButtonStyle}
+          >
+            <ShareIcon active />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/about')}
+            aria-label="Редактировать профиль"
+            style={headerIconButtonStyle}
+          >
+            <EditIcon active />
+          </button>
+        </div>
+
+        {/* Аватар — 104×104 (из Profile_info.svg) */}
+        <div style={{
+          width: 104, height: 104, borderRadius: '50%',
           border: '3px solid var(--color-primary)',
-          overflow: 'hidden', margin: '0 auto 12px',
+          overflow: 'hidden', margin: '0 auto 27px',
           background: 'var(--color-card2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -225,7 +243,7 @@ export default function ProfilePage() {
 
         {/* Специальность */}
         {master?.description && (
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, marginTop: 4 }}>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, marginTop: 14 }}>
             {master.description}
           </div>
         )}
