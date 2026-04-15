@@ -8,6 +8,7 @@ import ProfilePage from '@/pages/ProfilePage'
 import BookingsPage from '@/pages/BookingsPage'
 import ChatsPage from '@/pages/ChatsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
+import PaymentsDayPage from '@/pages/PaymentsDayPage'
 
 import OnboardingPage from '@/pages/OnboardingPage'
 import WelcomePage from '@/pages/WelcomePage'
@@ -97,6 +98,7 @@ function MasterApp() {
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/income/:date" element={<PaymentsDayPage />} />
           <Route path="/payment-settings" element={<PaymentSettingsPage />} />
           <Route path="/share" element={<ShareLinkPage />} />
         </Route>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
@@ -23,6 +24,7 @@ interface DayEntry {
   monthShort: string
   total: number
   tax: number
+  paymentCount: number
   hasUnpaid: boolean
 }
 
@@ -40,6 +42,7 @@ function capitalize(s: string) {
 }
 
 export default function PaymentsPage() {
+  const navigate = useNavigate()
   const [payments, setPayments] = useState<Payment[]>([])
   const [tab, setTab] = useState<Tab>('income')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
@@ -51,7 +54,7 @@ export default function PaymentsPage() {
   const months = useMemo<MonthSummary[]>(() => {
     const map = new Map<string, number>()
     for (const p of payments) {
-      if (p.status !== 'PAID') continue
+      if (p.status === 'UNPAID') continue
       const key = dayjs(p.createdAt).format('YYYY-MM')
       map.set(key, (map.get(key) || 0) + p.amount)
     }
@@ -84,6 +87,7 @@ export default function PaymentsPage() {
           monthShort: d.format('MMM').replace('.', ''),
           total: 0,
           tax: 0,
+          paymentCount: 0,
           hasUnpaid: false,
         }
         map.set(dateKey, entry)
@@ -92,6 +96,7 @@ export default function PaymentsPage() {
         entry.hasUnpaid = true
       } else {
         entry.total += p.amount
+        entry.paymentCount += 1
       }
     }
     for (const e of map.values()) e.tax = Math.round(e.total * TAX_RATE)
@@ -214,11 +219,13 @@ export default function PaymentsPage() {
         {days.map((d) => (
           <div
             key={d.date}
+            onClick={() => navigate(`/income/${d.date}`)}
             style={{
               display: 'flex',
               alignItems: 'stretch',
               minHeight: 57,
               borderTop: '1px solid #25262B',
+              cursor: 'pointer',
             }}
           >
             <div
@@ -229,11 +236,11 @@ export default function PaymentsPage() {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: 16, fontWeight: 600, lineHeight: 1, color: '#D3D4D6' }}>
-                {d.day}
+              <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>
+                {d.day} {d.monthShort}
               </span>
-              <span style={{ fontSize: 11, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
-                {d.monthShort}
+              <span style={{ fontSize: 14, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+                {d.paymentCount}
               </span>
             </div>
             <div style={{ width: 1, background: '#25262B' }} />

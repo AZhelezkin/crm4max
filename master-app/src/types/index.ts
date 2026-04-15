@@ -73,6 +73,14 @@ export interface Payment {
   method: 'CARD' | 'VK_PAY'
   status: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
   createdAt: string
+  booking?: {
+    id: string
+    date: string
+    time: string
+    paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
+    client: { id: string; name: string; photo: string | null }
+    service: { id: string; name: string; price: number }
+  }
 }
 
 export interface Review {
