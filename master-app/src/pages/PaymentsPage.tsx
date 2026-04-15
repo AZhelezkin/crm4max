@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
+
+type Toast = { kind: 'success' | 'error'; text: string } | null
 
 dayjs.locale('ru')
 
@@ -49,6 +52,19 @@ export default function PaymentsPage() {
   const [tab, setTab] = useState<Tab>('income')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
   const [exporting, setExporting] = useState(false)
+  const [toast, setToast] = useState<Toast>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = (t: Toast) => {
+    setToast(t)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    if (t) toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+  }, [])
+
   // Pre-signed URL на xlsx хранится в state, потому что
   // window.WebApp.downloadFile требует активного user-gesture
   // (клика), а любой await разорвал бы цепочку. Поэтому URL
@@ -80,19 +96,19 @@ export default function PaymentsPage() {
           ret.then(
             (r) => {
               if (r?.status === 'downloading') {
-                alert('Файл сохранён в папку Max — проверьте «Файлы» → Max')
+                showToast({ kind: 'success', text: 'Файл сохранён в папку Max' })
               }
               // status === 'cancelled' — пользователь передумал, молчим.
             },
             (e) => {
               console.error('[payments] downloadFile rejected', e)
-              alert('Не удалось скачать файл. Попробуйте ещё раз.')
+              showToast({ kind: 'error', text: 'Не удалось скачать файл. Попробуйте ещё раз.' })
             },
           )
         }
       } catch (err) {
         console.error('[payments] downloadFile threw', err)
-        alert('Не удалось скачать файл.')
+        showToast({ kind: 'error', text: 'Не удалось скачать файл.' })
       }
       // Сразу готовим URL под следующее нажатие.
       fetchExportUrl()
@@ -102,7 +118,7 @@ export default function PaymentsPage() {
     setExporting(true)
     fetchExportUrl().finally(() => {
       setExporting(false)
-      alert('Файл готов — нажмите «Скачать» ещё раз.')
+      showToast({ kind: 'success', text: 'Файл готов — нажмите «Скачать» ещё раз' })
     })
   }
 
@@ -585,6 +601,70 @@ export default function PaymentsPage() {
           Раздел в разработке
         </div>
       )}
+
+      {toast && createPortal(
+        <ToastView toast={toast} onClose={() => setToast(null)} />,
+        document.body,
+      )}
+    </div>
+  )
+}
+
+function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; text: string }; onClose: () => void }) {
+  const isSuccess = toast.kind === 'success'
+  const accent = isSuccess ? '#34C759' : '#FF453A'
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 'calc(12px + env(safe-area-inset-top))',
+        left: 12,
+        right: 12,
+        zIndex: 1000,
+        background: '#1C1C1E',
+        border: '1px solid #2C2C2E',
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+        animation: 'crm4max-toast-in 0.22s ease-out',
+      }}
+    >
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          flexShrink: 0,
+          borderRadius: '50%',
+          background: `${accent}22`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          {isSuccess ? (
+            <path
+              d="M5 12.5l4.5 4.5L19 7.5"
+              stroke={accent}
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : (
+            <>
+              <path d="M12 8v5" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
+              <circle cx="12" cy="16.5" r="1.2" fill={accent} />
+              <circle cx="12" cy="12" r="9" stroke={accent} strokeWidth="2" />
+            </>
+          )}
+        </svg>
+      </div>
+      <div style={{ flex: 1, fontSize: 14, lineHeight: 1.35, color: '#D3D4D6' }}>{toast.text}</div>
+      <style>{`@keyframes crm4max-toast-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
     </div>
   )
 }
