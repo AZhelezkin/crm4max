@@ -136,8 +136,8 @@ export default function PaymentsPage() {
         </button>
       </header>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 36, padding: '0 14px', marginTop: 40 }}>
+      {/* Tabs: 23px gap from header → tab text; underline 13px below text */}
+      <div style={{ display: 'flex', gap: 36, padding: '0 14px', marginTop: 23 }}>
         <TabButton label="Доход" active={tab === 'income'} onClick={() => setTab('income')} />
         <TabButton label="Налоги" active={tab === 'taxes'} onClick={() => setTab('taxes')} />
         <TabButton label="Карта" active={tab === 'card'} onClick={() => setTab('card')} />
@@ -164,7 +164,7 @@ export default function PaymentsPage() {
                 height: 106,
                 background: active ? '#007AFE' : '#25262B',
                 borderRadius: 20,
-                padding: '18px 16px',
+                padding: '18px 16px 10px',
                 color: '#fff',
                 cursor: 'pointer',
                 boxSizing: 'border-box',
@@ -174,18 +174,28 @@ export default function PaymentsPage() {
                 style={{
                   fontSize: 14,
                   fontWeight: 400,
+                  lineHeight: 1,
                   color: active ? '#fff' : '#D3D4D6',
                 }}
               >
                 {m.label}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, color: '#fff' }}>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  marginTop: 22,
+                  color: '#fff',
+                }}
+              >
                 {formatRub(m.total)}
               </div>
               <div
                 style={{
                   fontSize: 12,
-                  marginTop: 6,
+                  lineHeight: 1,
+                  marginTop: 10,
                   color: active ? 'rgba(255,255,255,0.6)' : '#7D7D7F',
                 }}
               >
@@ -215,12 +225,16 @@ export default function PaymentsPage() {
               style={{
                 width: 71,
                 display: 'flex',
-                alignItems: 'center',
-                paddingLeft: 0,
+                flexDirection: 'column',
+                justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: 17, fontWeight: 600, color: '#D3D4D6' }}>{d.day}</span>
-              <span style={{ fontSize: 11, color: '#7D7D7F', marginLeft: 4 }}>{d.monthShort}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, lineHeight: 1, color: '#D3D4D6' }}>
+                {d.day}
+              </span>
+              <span style={{ fontSize: 11, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+                {d.monthShort}
+              </span>
             </div>
             <div style={{ width: 1, background: '#25262B' }} />
             <div
@@ -233,10 +247,10 @@ export default function PaymentsPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 15, fontWeight: 500, color: '#D3D4D6' }}>
+                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1, color: '#D3D4D6' }}>
                   {formatRub(d.total)}
                 </div>
-                <div style={{ fontSize: 11, color: '#7D7D7F', marginTop: 3 }}>
+                <div style={{ fontSize: 11, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
                   {formatRub(d.tax)}
                 </div>
               </div>
@@ -283,8 +297,9 @@ function TabButton({
       style={{
         background: 'none',
         border: 'none',
-        padding: '14px 2px 16px',
+        padding: '0 0 16px',
         fontSize: 17,
+        lineHeight: '17px',
         fontWeight: active ? 600 : 400,
         color: active ? '#007AFE' : '#7D7D7F',
         position: 'relative',
