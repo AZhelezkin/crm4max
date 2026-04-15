@@ -14,6 +14,8 @@ type Tab = 'income' | 'taxes' | 'card'
 interface MonthSummary {
   key: string
   label: string
+  monthAbbr: string
+  year: string
   total: number
   tax: number
 }
@@ -60,12 +62,17 @@ export default function PaymentsPage() {
     }
     return Array.from(map.entries())
       .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([key, total]) => ({
-        key,
-        label: capitalize(dayjs(key + '-01').format("MMMM 'YY")),
-        total,
-        tax: Math.round(total * TAX_RATE),
-      }))
+      .map(([key, total]) => {
+        const d = dayjs(key + '-01')
+        return {
+          key,
+          label: capitalize(d.format("MMMM 'YY")),
+          monthAbbr: capitalize(d.format('MMM').replace('.', '')),
+          year: d.format('YYYY'),
+          total,
+          tax: Math.round(total * TAX_RATE),
+        }
+      })
   }, [payments])
 
   useEffect(() => {
@@ -148,6 +155,8 @@ export default function PaymentsPage() {
         <TabButton label="Карта" active={tab === 'card'} onClick={() => setTab('card')} />
       </div>
 
+      {tab === 'income' && (
+      <>
       {/* Months horizontal scroll */}
       <div
         style={{
@@ -285,6 +294,236 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {tab === 'taxes' && (
+        <>
+          {/* ИНН card */}
+          <div style={{ padding: '20px 14px 0' }}>
+            <div
+              style={{
+                background: '#25262B',
+                borderRadius: 20,
+                height: 108,
+                boxSizing: 'border-box',
+                padding: '20px 22px 12px 23px',
+                position: 'relative',
+              }}
+            >
+              {/* Row 1: label + badge + pencil */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>ИНН</span>
+                <div
+                  style={{
+                    background: 'rgba(66, 206, 89, 0.3)',
+                    color: '#29C643',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    lineHeight: 1,
+                  }}
+                >
+                  ПРОВЕРЕНО
+                </div>
+              </div>
+              <button
+                aria-label="Изменить ИНН"
+                style={{
+                  position: 'absolute',
+                  top: 18,
+                  right: 18,
+                  width: 14,
+                  height: 14,
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="14" height="14" viewBox="370 277 16 18" fill="none">
+                  <path
+                    d="M378.84 280.4L373.366 286.193C373.16 286.413 372.96 286.846 372.92 287.146L372.673 289.306C372.586 290.086 373.146 290.62 373.92 290.486L376.066 290.12C376.366 290.066 376.786 289.846 376.993 289.62L382.466 283.826C383.413 282.826 383.84 281.686 382.366 280.293C380.9 278.913 379.786 279.4 378.84 280.4Z"
+                    stroke="#7D7D7F"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M377.927 281.366C378.213 283.206 379.707 284.613 381.56 284.8"
+                    stroke="#7D7D7F"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M372 292.667H384"
+                    stroke="#7D7D7F"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {/* Row 2: number */}
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 600,
+                  lineHeight: 1,
+                  color: '#FFFFFF',
+                  marginTop: 24,
+                  letterSpacing: 0.5,
+                }}
+              >
+                77 22 123456 78
+              </div>
+              {/* Row 3: name */}
+              <div style={{ fontSize: 13, lineHeight: 1, color: '#7D7D7F', marginTop: 6 }}>
+                Олег Алексеевич С.
+              </div>
+            </div>
+          </div>
+
+          {/* Section header */}
+          <div
+            style={{
+              marginTop: 26,
+              padding: '0 14px',
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: 0.5,
+              color: '#7D7D7F',
+              textTransform: 'uppercase',
+            }}
+          >
+            Суммы чеков, отправленные в ФНС
+          </div>
+
+          {/* Tax rows */}
+          <div style={{ marginTop: 15, padding: '0 14px' }}>
+            {months.map((m, idx) => {
+              const isPaid = idx > 0
+              const dueLabel = isPaid
+                ? null
+                : `ОПЛАТА ${dayjs(m.key + '-01').add(1, 'month').date(28).format('D MMMM').toUpperCase()}`
+              return (
+                <div
+                  key={m.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'stretch',
+                    minHeight: 57,
+                    borderTop: '1px solid #25262B',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 71,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>
+                      {m.monthAbbr}
+                    </span>
+                    <span style={{ fontSize: 14, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+                      {m.year}
+                    </span>
+                  </div>
+                  <div style={{ width: 1, background: '#25262B' }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      paddingLeft: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 17,
+                          fontWeight: 500,
+                          lineHeight: 1,
+                          color: '#D3D4D6',
+                        }}
+                      >
+                        {formatRub(m.tax, 2)}
+                      </div>
+                      {isPaid ? (
+                        <div
+                          style={{
+                            background: 'rgba(66, 206, 89, 0.3)',
+                            color: '#29C643',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: 0.5,
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          ОПЛАЧЕНО
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            color: 'rgba(211, 212, 214, 0.8)',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: 0.5,
+                            padding: '5px 12px',
+                            borderRadius: 6,
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {dueLabel}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        lineHeight: 1,
+                        color: '#7D7D7F',
+                        marginTop: 8,
+                      }}
+                    >
+                      Доход: {formatRub(m.total, 2)}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {months.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>
+                Пока нет данных
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'card' && (
+        <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 60 }}>
+          Раздел в разработке
+        </div>
+      )}
     </div>
   )
 }
