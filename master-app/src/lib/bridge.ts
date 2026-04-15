@@ -17,6 +17,7 @@ declare global {
       openLink: (url: string) => void
       openMaxLink: (url: string) => void
       openCodeReader: (fileSelect: boolean) => Promise<string | { data?: string; result?: string; text?: string }>
+      downloadFile: (url: string, fileName: string) => void | Promise<void>
     }
   }
 }

@@ -56,12 +56,9 @@ export default function PaymentsPage() {
     try {
       const blob = await paymentsApi.exportXlsx()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `payments_${dayjs().format('YYYY-MM-DD')}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      const filename = `payments_${dayjs().format('YYYY-MM-DD')}.xlsx`
+      // Max WebView не умеет <a download>, используем нативный мост.
+      await window.WebApp?.downloadFile?.(url, filename)
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('[payments] xlsx export failed', err)
