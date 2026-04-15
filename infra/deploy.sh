@@ -40,12 +40,15 @@ echo "==> Пуш образа в реестр"
 docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 docker push "${IMAGE_NAME}:latest"
 
+echo "==> Получение IAM-токена (локально)"
+YC_IAM_TOKEN="$(yc iam create-token)"
+
 echo "==> Деплой на VM (${VM_HOST})"
 ssh ${SSH_OPTS} "${VM_USER}@${VM_HOST}" bash <<EOF
   set -e
 
-  # Авторизация Docker на VM
-  yc iam create-token | docker login \
+  # Авторизация Docker на VM (токен получен локально — на VM нет yc CLI)
+  echo "${YC_IAM_TOKEN}" | docker login \
     --username iam \
     --password-stdin \
     cr.yandex
