@@ -7,6 +7,6 @@ export const paymentsApi = {
 
   exportXlsx: () =>
     api
-      .get<Blob>('/payments/export', { responseType: 'blob' })
+      .get<{ url: string; filename: string }>('/payments/export')
       .then((r) => r.data),
 }

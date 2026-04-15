@@ -54,12 +54,10 @@ export default function PaymentsPage() {
     if (exporting) return
     setExporting(true)
     try {
-      const blob = await paymentsApi.exportXlsx()
-      const url = URL.createObjectURL(blob)
-      const filename = `payments_${dayjs().format('YYYY-MM-DD')}.xlsx`
-      // Max WebView не умеет <a download>, используем нативный мост.
+      // Бэк кладёт xlsx в S3 и возвращает pre-signed URL (5 мин TTL).
+      // Max native bridge скачивает его напрямую.
+      const { url, filename } = await paymentsApi.exportXlsx()
       await window.WebApp?.downloadFile?.(url, filename)
-      URL.revokeObjectURL(url)
     } catch (err) {
       console.error('[payments] xlsx export failed', err)
       const status = (err as { response?: { status?: number } })?.response?.status
