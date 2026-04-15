@@ -73,10 +73,24 @@ export default function PaymentsPage() {
       // Синхронный вызов внутри click handler — Max-мост видит user gesture.
       const { url, filename } = exportRef.current
       try {
-        window.WebApp?.downloadFile?.(url, filename)
+        const ret = window.WebApp?.downloadFile?.(url, filename) as
+          | Promise<{ status?: string }>
+          | undefined
+        if (ret && typeof ret.then === 'function') {
+          ret.then(
+            (r) => {
+              if (r?.status && r.status !== 'downloading') {
+                alert(`downloadFile status: ${r.status}`)
+              }
+            },
+            (e) => alert(`downloadFile rejected: ${e?.message ?? e}`),
+          )
+        } else {
+          alert(`downloadFile returned: ${String(ret)}`)
+        }
       } catch (err) {
         console.error('[payments] downloadFile threw', err)
-        alert('Не удалось выгрузить Excel.')
+        alert(`downloadFile threw: ${(err as Error)?.message ?? err}`)
       }
       // Сразу обновляем URL в фоне под следующее нажатие.
       fetchExportUrl()
