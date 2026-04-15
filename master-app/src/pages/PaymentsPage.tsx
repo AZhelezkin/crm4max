@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -49,30 +49,50 @@ export default function PaymentsPage() {
   const [tab, setTab] = useState<Tab>('income')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
   const [exporting, setExporting] = useState(false)
+  // Pre-signed URL на xlsx хранится в state, потому что
+  // window.WebApp.downloadFile требует активного user-gesture
+  // (клика), а любой await разорвал бы цепочку. Поэтому URL
+  // тянем заранее (на маунте и после «протухания» ~4 мин),
+  // а на клике синхронно отдаём его нативному мосту.
+  const exportRef = useRef<{ url: string; filename: string; fetchedAt: number } | null>(null)
 
-  const handleExport = async () => {
-    if (exporting) return
-    setExporting(true)
+  const fetchExportUrl = async () => {
     try {
-      // Бэк кладёт xlsx в S3 и возвращает pre-signed URL (5 мин TTL).
-      // Max native bridge скачивает его напрямую.
-      const { url, filename } = await paymentsApi.exportXlsx()
-      await window.WebApp?.downloadFile?.(url, filename)
+      const res = await paymentsApi.exportXlsx()
+      exportRef.current = { ...res, fetchedAt: Date.now() }
     } catch (err) {
-      console.error('[payments] xlsx export failed', err)
-      const status = (err as { response?: { status?: number } })?.response?.status
-      alert(
-        status
-          ? `Не удалось выгрузить Excel (HTTP ${status})`
-          : 'Не удалось выгрузить Excel. Проверьте соединение.'
-      )
-    } finally {
-      setExporting(false)
+      console.error('[payments] pre-fetch export url failed', err)
+      exportRef.current = null
     }
+  }
+
+  const handleExport = () => {
+    if (exporting) return
+    const fresh = exportRef.current && Date.now() - exportRef.current.fetchedAt < 4 * 60 * 1000
+    if (fresh && exportRef.current) {
+      // Синхронный вызов внутри click handler — Max-мост видит user gesture.
+      const { url, filename } = exportRef.current
+      try {
+        window.WebApp?.downloadFile?.(url, filename)
+      } catch (err) {
+        console.error('[payments] downloadFile threw', err)
+        alert('Не удалось выгрузить Excel.')
+      }
+      // Сразу обновляем URL в фоне под следующее нажатие.
+      fetchExportUrl()
+      return
+    }
+    // URL не готов — тянем и просим кликнуть ещё раз.
+    setExporting(true)
+    fetchExportUrl().finally(() => {
+      setExporting(false)
+      alert('Файл готов — нажмите «Скачать» ещё раз.')
+    })
   }
 
   useEffect(() => {
     paymentsApi.list().then(setPayments).catch(() => {})
+    fetchExportUrl()
   }, [])
 
   const months = useMemo<MonthSummary[]>(() => {
