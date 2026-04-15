@@ -72,19 +72,29 @@ export default function PaymentsPage() {
     if (fresh && exportRef.current) {
       // Синхронный вызов внутри click handler — Max-мост видит user gesture.
       const { url, filename } = exportRef.current
-      alert(`[dbg v2] calling downloadFile\nurl=${url.slice(0, 80)}…\nfilename=${filename}\ntype=${typeof window.WebApp?.downloadFile}`)
       try {
-        const ret = window.WebApp?.downloadFile?.(url, filename) as unknown
-        alert(`[dbg v2] returned type=${typeof ret}; has then=${!!(ret as { then?: unknown })?.then}`)
-        if (ret && typeof (ret as { then?: unknown }).then === 'function') {
-          ;(ret as Promise<unknown>).then(
-            (r) => alert(`[dbg v2] resolved: ${JSON.stringify(r)}`),
-            (e) => alert(`[dbg v2] rejected: ${(e as Error)?.message ?? JSON.stringify(e)}`),
+        const ret = window.WebApp?.downloadFile?.(url, filename) as
+          | Promise<{ status?: string }>
+          | undefined
+        if (ret && typeof ret.then === 'function') {
+          ret.then(
+            (r) => {
+              if (r?.status === 'downloading') {
+                alert('Файл сохранён в папку Max — проверьте «Файлы» → Max')
+              }
+              // status === 'cancelled' — пользователь передумал, молчим.
+            },
+            (e) => {
+              console.error('[payments] downloadFile rejected', e)
+              alert('Не удалось скачать файл. Попробуйте ещё раз.')
+            },
           )
         }
       } catch (err) {
-        alert(`[dbg v2] threw: ${(err as Error)?.message ?? err}`)
+        console.error('[payments] downloadFile threw', err)
+        alert('Не удалось скачать файл.')
       }
+      // Сразу готовим URL под следующее нажатие.
       fetchExportUrl()
       return
     }
