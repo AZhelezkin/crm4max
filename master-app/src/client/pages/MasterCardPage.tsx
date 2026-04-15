@@ -75,10 +75,12 @@ export default function MasterCardPage() {
 
   useEffect(() => {
     if (!masterId) return
-    const today = dayjs().format('YYYY-MM-DD')
+    const now = dayjs()
+    const today = now.format('YYYY-MM-DD')
     bookingsApi.list({ status: 'CONFIRMED', from: today }).then((bookings) => {
       const forMaster = bookings
         .filter((b) => b.master.id === masterId)
+        .filter((b) => dayjs(`${b.date} ${b.time}`).isAfter(now))
         .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
       setNextBooking(forMaster[0] ?? null)
     }).catch(() => {})
