@@ -63,8 +63,14 @@ export default function PaymentsPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('[payments] xlsx export failed', err)
+      const status = (err as { response?: { status?: number } })?.response?.status
+      alert(
+        status
+          ? `Не удалось выгрузить Excel (HTTP ${status})`
+          : 'Не удалось выгрузить Excel. Проверьте соединение.'
+      )
     } finally {
       setExporting(false)
     }
