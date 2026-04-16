@@ -33,13 +33,15 @@ interface DayEntry {
   hasUnpaid: boolean
 }
 
+function formatNum(kop: number, fractionDigits = 0): string {
+  return (kop / 100).toLocaleString('ru-RU', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+}
+
 function formatRub(kop: number, fractionDigits = 0): string {
-  return (
-    (kop / 100).toLocaleString('ru-RU', {
-      minimumFractionDigits: fractionDigits,
-      maximumFractionDigits: fractionDigits,
-    }) + ' ₽'
-  )
+  return formatNum(kop, fractionDigits) + ' ₽'
 }
 
 function capitalize(s: string) {
@@ -511,7 +513,7 @@ export default function PaymentsPage() {
                       {m.year}
                     </span>
                   </div>
-                  <div style={{ width: 1, background: '#25262B' }} />
+                  <div style={{ width: 3, background: '#25262B' }} />
                   <div
                     style={{
                       flex: 1,
@@ -537,7 +539,7 @@ export default function PaymentsPage() {
                           color: '#D3D4D6',
                         }}
                       >
-                        {formatRub(m.tax, 2)}
+                        {formatNum(m.tax, 2)}<span style={{ opacity: 0.6 }}> Руб.</span>
                       </div>
                       {isPaid ? (
                         <div
@@ -559,7 +561,7 @@ export default function PaymentsPage() {
                         <div
                           style={{
                             background: 'rgba(255, 255, 255, 0.2)',
-                            color: 'rgba(211, 212, 214, 0.8)',
+                            color: 'rgba(211, 212, 214, 0.6)',
                             fontSize: 11,
                             fontWeight: 600,
                             letterSpacing: 0.5,
@@ -581,7 +583,7 @@ export default function PaymentsPage() {
                         marginTop: 8,
                       }}
                     >
-                      Доход: {formatRub(m.total, 2)}
+                      Доход: {formatNum(m.total, 2)}<span style={{ color: '#D3D4D6', opacity: 0.6 }}> Руб.</span>
                     </div>
                   </div>
                 </div>
