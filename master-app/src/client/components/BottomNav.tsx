@@ -66,6 +66,7 @@ export default function BottomNav({ badge = {} }: Props) {
       borderTop: '1px solid var(--color-border)',
       display: 'flex',
       zIndex: 50,
+      paddingBottom: 19,
     }}>
       {NAV_ITEMS.map(({ key, label, path, Icon }) => {
         const active = isActive(path)
