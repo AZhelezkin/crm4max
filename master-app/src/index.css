@@ -7,6 +7,7 @@
 
 /* Тема мастера (по умолчанию) */
 :root {
+  color-scheme: dark;
   --color-primary: #2688EB;
   --color-primary-light: rgba(38, 136, 235, 0.12);
   --color-danger: #FF3B30;
