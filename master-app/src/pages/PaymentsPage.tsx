@@ -384,9 +384,9 @@ export default function PaymentsPage() {
               style={{
                 background: '#25262B',
                 borderRadius: 20,
-                height: 108,
+                height: 116,
                 boxSizing: 'border-box',
-                padding: '19px 22px 11px 23px',
+                padding: '19px 22px 19px 23px',
                 position: 'relative',
               }}
             >
@@ -539,7 +539,7 @@ export default function PaymentsPage() {
                           color: '#D3D4D6',
                         }}
                       >
-                        {formatNum(m.tax, 2)}<span style={{ opacity: 0.6 }}> Руб.</span>
+                        {formatNum(m.tax, 2)}<span style={{ opacity: 0.6 }}> ₽</span>
                       </div>
                       {isPaid ? (
                         <div
@@ -583,7 +583,7 @@ export default function PaymentsPage() {
                         marginTop: 8,
                       }}
                     >
-                      Доход: {formatNum(m.total, 2)}<span style={{ color: '#D3D4D6', opacity: 0.6 }}> Руб.</span>
+                      Доход: {formatNum(m.total, 2)}<span style={{ color: '#D3D4D6', opacity: 0.6 }}> ₽</span>
                     </div>
                   </div>
                 </div>
