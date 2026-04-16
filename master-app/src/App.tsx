@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import ClientApp from '@client/ClientApp'
@@ -22,16 +22,19 @@ import ShareLinkPage from '@/pages/ShareLinkPage'
 import MapTestPage from '@/pages/MapTestPage'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
-//   ""      → клиент, QR сканер (нативная кнопка или бот без startapp)
-//   <UUID>  → клиент, запись к конкретному мастеру
-//   "mmode" → мастер (кабинет / онбординг)
+//   "mmode" → мастер (кабинет / онбординг) — быстрый путь
+//   <UUID>  → клиент, запись к конкретному мастеру — быстрый путь
+//   ""      → авто-определение: бэкенд проверяет max_user_id по БД
 export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
-const isClientMode = startParam !== 'mmode'
 
-document.documentElement.dataset.theme = isClientMode ? 'client' : 'master'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// Отдельный эскейп для отладки карты в обычном браузере: #/map-test
-// открывается в любом режиме, минуя Max WebApp / client-mode ветку.
+function resolveInitialMode(): 'master' | 'client' | null {
+  if (startParam === 'mmode') return 'master'
+  if (UUID_RE.test(startParam)) return 'client'
+  return null
+}
+
 function isMapTestHash() {
   if (typeof window === 'undefined') return false
   const hash = window.location.hash || ''
@@ -39,8 +42,59 @@ function isMapTestHash() {
 }
 
 export default function App() {
+  const [mode, setMode] = useState<'master' | 'client' | null>(resolveInitialMode)
+
+  useEffect(() => {
+    if (mode !== null) return
+
+    async function detect() {
+      try {
+        const initData = window.WebApp?.initData
+        if (!initData) { setMode('client'); return }
+        window.WebApp?.ready()
+
+        const apiUrl = import.meta.env.VITE_API_URL ?? ''
+        const res = await fetch(`${apiUrl}/api/auth/max`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: initData }),
+        })
+        if (!res.ok) { setMode('client'); return }
+
+        const data = await res.json() as { token: string; role: string }
+        if (data.role === 'master') {
+          localStorage.setItem('masterToken', data.token)
+          setMode('master')
+        } else {
+          setMode('client')
+        }
+      } catch {
+        setMode('client')
+      }
+    }
+    detect()
+  }, [mode])
+
+  useEffect(() => {
+    if (mode) {
+      document.documentElement.dataset.theme = mode === 'master' ? 'master' : 'client'
+    }
+  }, [mode])
+
   if (isMapTestHash()) return <MapTestPage />
-  if (isClientMode) return <ClientApp />
+
+  if (mode === null) {
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        height: '100dvh', background: '#0F0F11',
+      }}>
+        <span style={{ color: '#7D7D7F' }}>Загрузка...</span>
+      </div>
+    )
+  }
+
+  if (mode === 'client') return <ClientApp />
   return <MasterApp />
 }
 
