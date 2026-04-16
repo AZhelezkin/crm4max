@@ -386,7 +386,7 @@ export default function PaymentsPage() {
                 borderRadius: 20,
                 height: 108,
                 boxSizing: 'border-box',
-                padding: '20px 22px 12px 23px',
+                padding: '19px 22px 11px 23px',
                 position: 'relative',
               }}
             >
@@ -453,7 +453,7 @@ export default function PaymentsPage() {
                   fontWeight: 600,
                   lineHeight: 1,
                   color: '#FFFFFF',
-                  marginTop: 24,
+                  marginTop: 23,
                   letterSpacing: 0.5,
                 }}
               >
