@@ -48,16 +48,15 @@ body {
   min-height: 100dvh;
 }
 
+button, input, textarea, select {
+  color: inherit;
+  font-family: inherit;
+  outline: none;
+}
+
 button {
   cursor: pointer;
   border: none;
-  outline: none;
-  font-family: inherit;
-}
-
-input, textarea {
-  font-family: inherit;
-  outline: none;
 }
 
 a {
