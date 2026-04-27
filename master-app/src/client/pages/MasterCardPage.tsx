@@ -630,10 +630,15 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                   </span>
                 )}
               </div>
-              {/* Description — Figma «Caption 2» (14/16/500). */}
+              {/* Description — Figma «Caption 2» (14/16/500). До 2 строк, далее ellipsis;
+                  обрезка идёт по доступной ширине между аватаром и шевроном. */}
               <div style={{
                 color: 'var(--color-on-surface-secondary)', ...text.caption2,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}>
                 {cat.description || preview}
               </div>
