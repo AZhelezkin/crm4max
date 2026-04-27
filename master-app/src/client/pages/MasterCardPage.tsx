@@ -412,13 +412,9 @@ export default function MasterCardPage() {
             Counter pill: min-w 24, padding 3, rounded 20.
             Активный: text=primarySurface, counter bg=activeSurface, текст внутри counter=primarySurface.
             Неактивный: text=onSurfaceSecondary, counter bg=secondarySurface.
-            Подчёркивание 3px primarySurface (rounded 20px top), divider 1px dividerLow по всей ширине. */}
-      <div style={{ position: 'relative', marginTop: 24 }}>
-        <div style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0,
-          height: 1, background: 'var(--color-divider-low)',
-        }} />
-        <div style={{ display: 'flex', gap: 32, padding: '0 30px', position: 'relative' }}>
+            Под активным — 3px-полоска primarySurface (rounded 20px top); сплошного divider нет. */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ display: 'flex', gap: 32, padding: '0 30px' }}>
           {TABS.map((key) => {
             const active = tab === key
             const badge = tabBadge(key)
