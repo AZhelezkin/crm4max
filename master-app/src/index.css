@@ -186,6 +186,17 @@ body {
   min-height: 100dvh;
 }
 
+/*
+ * MaxUI (@maxhub/max-ui) оборачивает приложение в <div class="MaxUI__…">
+ * с background-color: var(--background-surface-primary). Без prop colorScheme
+ * эта переменная не определена — обёртка падает в светлый дефолт и
+ * перекрывает body на тёмной теме («пропала подложка»). Явно зануляем bg
+ * MaxUI-обёртки на наш семантический --color-background.
+ */
+#root > div {
+  background-color: var(--color-background);
+}
+
 button, input, textarea, select {
   color: inherit;
   font-family: inherit;
