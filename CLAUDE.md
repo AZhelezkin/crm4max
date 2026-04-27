@@ -98,16 +98,21 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
 - При добавлении нового семантического токена: обновлять синхронно `Dark.tokens.json`, `Light.tokens.json`, `theme.ts` (`darkTheme` + `lightTheme`) и `index.css` (`:root[data-theme="dark"]` + `[data-theme="light"]`).
 - **Типографика — только через text-стили** из `master-app/src/styles/typography.ts` (`import { text } from '@/styles/typography'`). Не писать `fontSize`/`fontWeight`/`lineHeight` руками.
   - `text.display` — 32/38/700, крупный hero-заголовок (Welcome, Deposit)
+  - `text.h2` — 28/36/800 ls −0.84, имя в hero-карточке мастера (Figma «H2»)
   - `text.title` — 24/30/700, заголовок страницы
   - `text.titleSmall` — 20/26/700, заголовок раздела/портала
   - `text.headline` — 18/24/600, заголовок карточки
+  - `text.callout1` — 17/24/700 ls −0.17, заголовок в карточке-листе (Figma «Callout 1»)
+  - `text.body2` — 17/24/400 ls −0.17, крупный обычный текст, табы (Figma «Body 2»)
   - `text.subhead` — 16/22/600, подзаголовок, ярлык поля
   - `text.body` — 15/20/400, основной текст
   - `text.bodyStrong` — 15/20/600, выделенный основной текст (имя клиента, цена)
-  - `text.action` — 14/18/500, текст кнопок, чипов, табов
+  - `text.action` — 14/18/500, текст кнопок, чипов, табов (legacy)
+  - `text.caption2` — 14/16/500 ls −0.028, компактный второстепенный — chip-label, описания, счётчики (Figma «Caption 2»)
   - `text.footnote` — 13/18/400, пояснения под полями
   - `text.caption` — 12/16/500, бейджи, мелкие подписи
   - `text.overline` — 11/14/600 UPPERCASE + letter-spacing, лейблы секций
+  - `text.label3Caps` — 10/14/800 UPPERCASE ls −0.2, узкий статус-бейдж «% СКИДКИ» (Figma «label 3 CAPS»)
   - Использование: `<div style={{ ...text.title, color: 'var(--color-on-surface)' }}>...</div>`. Цвет НЕ кладётся в text-стили — задаётся отдельно через CSS-переменную, иначе разные темы сломаются.
   - При добавлении нового размера обновлять `typography.ts` И таблицу выше синхронно.
 - Максимально используй компоненты из MAX UI (https://dev.max.ru/ui) если имеются подходящие

@@ -16,6 +16,9 @@ export const text = {
   /** 32 / 38 / 700 — крупные заголовки экрана (Welcome, Onboarding, Deposit). */
   display:        { fontSize: 32, lineHeight: '38px', fontWeight: 700 },
 
+  /** 28 / 36 / 800 letterSpacing -0.84px — Figma «H2», hero-имя в карточке мастера. */
+  h2:             { fontSize: 28, lineHeight: '36px', fontWeight: 800, letterSpacing: -0.84 },
+
   /** 24 / 30 / 700 — заголовок страницы. */
   title:          { fontSize: 24, lineHeight: '30px', fontWeight: 700 },
 
@@ -30,6 +33,12 @@ export const text = {
 
   /** 17 / 22 / 400 — крупный обычный текст (callout в iOS-смысле). */
   callout:        { fontSize: 17, lineHeight: '22px', fontWeight: 400 },
+
+  /** 17 / 24 / 700 letterSpacing -0.17px — Figma «Callout 1», заголовок в карточке-листе (служба, мастер). */
+  callout1:       { fontSize: 17, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.17 },
+
+  /** 17 / 24 / 400 letterSpacing -0.17px — Figma «Body 2», крупный обычный (табы, заметные подписи). */
+  body2:          { fontSize: 17, lineHeight: '24px', fontWeight: 400, letterSpacing: -0.17 },
 
   /** 16 / 22 / 600 — подзаголовок, активный пункт списка, ярлык поля. */
   subhead:        { fontSize: 16, lineHeight: '22px', fontWeight: 600 },
@@ -49,6 +58,9 @@ export const text = {
   /** 14 / 18 / 500 — текст кнопок, чипов, табов, второстепенных меток. */
   action:         { fontSize: 14, lineHeight: '18px', fontWeight: 500 },
 
+  /** 14 / 16 / 500 letterSpacing -0.028px — Figma «Caption 2», компактный второстепенный (chip-label, описания, счётчики). */
+  caption2:       { fontSize: 14, lineHeight: '16px', fontWeight: 500, letterSpacing: -0.028 },
+
   /** 13 / 18 / 400 — пояснения, подписи под полями, мета-информация. */
   footnote:       { fontSize: 13, lineHeight: '18px', fontWeight: 400 },
 
@@ -65,6 +77,12 @@ export const text = {
   overline:       {
     fontSize: 11, lineHeight: '14px', fontWeight: 600,
     letterSpacing: 0.4, textTransform: 'uppercase',
+  },
+
+  /** 10 / 14 / 800 UPPERCASE letterSpacing -0.2px — Figma «label 3 CAPS», узкий статус-бейдж (% СКИДКИ). */
+  label3Caps:     {
+    fontSize: 10, lineHeight: '14px', fontWeight: 800,
+    letterSpacing: -0.2, textTransform: 'uppercase',
   },
 } as const satisfies Record<string, TextStyle>
 

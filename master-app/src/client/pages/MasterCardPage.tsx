@@ -233,7 +233,7 @@ export default function MasterCardPage() {
             <svg width="18" height="16" viewBox="346 144 18 16" fill="none">
               <path d="M356.442 144.925L357.909 147.859C358.109 148.267 358.642 148.659 359.092 148.734L361.75 149.175C363.45 149.459 363.85 150.692 362.625 151.909L360.559 153.975C360.209 154.325 360.017 155 360.125 155.484L360.717 158.042C361.184 160.067 360.109 160.85 358.317 159.792L355.825 158.317C355.375 158.05 354.634 158.05 354.175 158.317L351.684 159.792C349.9 160.85 348.817 160.059 349.284 158.042L349.875 155.484C349.984 155 349.792 154.325 349.442 153.975L347.375 151.909C346.159 150.692 346.55 149.459 348.25 149.175L350.909 148.734C351.35 148.659 351.884 148.267 352.084 147.859L353.55 144.925C354.35 143.334 355.65 143.334 356.442 144.925" fill="var(--color-warning-surface-accented)"/>
             </svg>
-            <span style={{ ...text.action, color: 'var(--color-on-surface-secondary)' }}>
+            <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>
               {master.rating.toFixed(1)}
             </span>
           </div>
@@ -292,21 +292,20 @@ export default function MasterCardPage() {
           </div>
         </div>
 
-        {/* Имя — text.title (24/30/700). SVG y=270 → page y=146; от низа аватара (y=120) gap=26.
-            Контейнер задаёт paddingTop:16 + аватар 104, итого y=120, далее marginTop:25 = y=145. */}
+        {/* Имя — Figma «H2»: Nunito Sans ExtraBold 28/36 letterSpacing −0.84. */}
         <div style={{
-          position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 25,
-          ...text.title, color: 'var(--color-on-surface)',
+          position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 18,
+          ...text.h2, color: 'var(--color-on-surface)',
           padding: '0 16px',
         }}>
           {master.name}
         </div>
 
-        {/* Подзаголовок — text.footnote (13/18/400). SVG y=302 → page y=178; от низа имени (y=170) gap=8 (включая разницу line-height). */}
+        {/* Подзаголовок — Figma «Caption 2»: Nunito Sans Medium 14/16 letterSpacing −0.028. */}
         {master.description && (
           <div style={{
-            position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 7,
-            ...text.footnote, color: 'var(--color-on-surface-secondary)',
+            position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 0,
+            ...text.caption2, color: 'var(--color-on-surface-secondary)',
             padding: '0 16px',
           }}>
             {master.description}
@@ -390,28 +389,32 @@ export default function MasterCardPage() {
               style={{
                 flex: 1, height: 69, borderRadius: 18,
                 background: 'var(--color-surface-transparent)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                 border: 'none', cursor: dis ? 'default' : 'pointer',
-                opacity: dis ? 0.4 : 1, padding: 0,
+                opacity: dis ? 0.4 : 1, padding: '12px 8px',
               }}
             >
               <btn.Icon />
-              <span style={{ ...text.action, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
+              {/* Label — Figma «Caption 2»: Nunito Sans Medium 14/16 ls −0.028. */}
+              <span style={{ ...text.caption2, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
             </button>
           )
         })}
       </div>
 
-      {/* ── Табы (Услуги / Фото / Отзывы). Макет:
-            text.action + бейдж-пилюля 24×22 r=11. Активный: text=primarySurface, badge bg=activeSurface.
-            Неактивный: text=onSurfaceSecondary, badge bg=secondarySurface.
-            Под табами — divider (dividerLow), под активным — линия 3px primarySurface. */}
-      <div style={{ position: 'relative', marginTop: 31 }}>
+      {/* ── Табы (Услуги / Фото / Отзывы). Макет (Figma):
+            tabs container: gap=32, px=30; tab item: gap=4 (text↔counter), py=7 (внутри label-row).
+            Лейбл — text.body2 (17/24/400 ls −0.17), счётчик — text.caption2 (14/16/500 ls −0.028).
+            Counter pill: min-w 24, padding 3, rounded 20.
+            Активный: text=primarySurface, counter bg=activeSurface, текст внутри counter=primarySurface.
+            Неактивный: text=onSurfaceSecondary, counter bg=secondarySurface.
+            Подчёркивание 3px primarySurface (rounded 20px top), divider 1px dividerLow по всей ширине. */}
+      <div style={{ position: 'relative', marginTop: 24 }}>
         <div style={{
           position: 'absolute', left: 0, right: 0, bottom: 0,
           height: 1, background: 'var(--color-divider-low)',
         }} />
-        <div style={{ display: 'flex', gap: 24, padding: '0 16px', position: 'relative' }}>
+        <div style={{ display: 'flex', gap: 32, padding: '0 30px', position: 'relative' }}>
           {TABS.map((key) => {
             const active = tab === key
             const badge = tabBadge(key)
@@ -421,22 +424,22 @@ export default function MasterCardPage() {
                 onClick={() => setTab(key)}
                 style={{
                   flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
-                  padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+                  padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, padding: '7px 0' }}>
                   <span style={{
-                    ...text.action,
+                    ...text.body2,
                     color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
                   }}>
                     {TAB_LABELS[key]}
                   </span>
                   {badge > 0 && (
                     <span style={{
-                      width: 24, height: 22, borderRadius: 11,
+                      minWidth: 24, padding: 3, borderRadius: 20,
                       background: active ? 'var(--color-active-surface)' : 'var(--color-secondary-surface)',
                       color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-                      ...text.caption,
+                      ...text.caption2,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {badge}
@@ -446,7 +449,7 @@ export default function MasterCardPage() {
                 <div style={{
                   width: '100%', height: 3,
                   background: active ? 'var(--color-primary-surface)' : 'transparent',
-                  borderRadius: '3px 3px 0 0',
+                  borderRadius: '20px 20px 0 0',
                 }} />
               </button>
             )
@@ -604,35 +607,38 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
               }
             </div>
 
-            {/* Название + (опц. бейдж скидки) + описание */}
+            {/* Название + (опц. бейдж скидки) + описание.
+                Title — Figma «Callout 1» (17/24/700 ls −0.17), gap=6 между title и tag. */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ ...text.bodyStrong, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
-                  /* Макет: rect 69×20, rx=4, fill=errorSurfaceLite. Текст «% СКИДКИ» — text.overline. */
+                  /* Tag: rounded=4, padding (Figma) pt-7 pb-6 px-6, bg=errorSurfaceLite,
+                     text «label 3 CAPS» (10/14/800 ls −0.2 uppercase) onErrorSurfaceLite. */
                   <span style={{
-                    height: 20, borderRadius: 4,
-                    padding: '0 8px',
+                    borderRadius: 4,
+                    padding: '7px 6px 6px',
                     background: 'var(--color-error-surface-lite)',
                     color: 'var(--color-on-error-surface-lite)',
-                    ...text.overline,
+                    ...text.label3Caps,
                     display: 'inline-flex', alignItems: 'center',
                   }}>
                     % скидки
                   </span>
                 )}
               </div>
+              {/* Description — Figma «Caption 2» (14/16/500). */}
               <div style={{
-                color: 'var(--color-on-surface-secondary)', ...text.footnote,
+                color: 'var(--color-on-surface-secondary)', ...text.caption2,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {cat.description || preview}
               </div>
             </div>
 
-            {/* Шеврон → (interactiveElementSecondary) */}
-            <svg width="10" height="14" viewBox="0 0 10 14" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M1.5 1L7.5 7L1.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+            {/* Chevron → 16×16 (interactiveElementSecondary) */}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M5.5 3L10.5 8L5.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         )
