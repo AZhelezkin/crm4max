@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useTheme } from '@/styles/useTheme'
+import { useTheme, debugThemeSource } from '@/styles/useTheme'
 
 const TAPS_TO_TOGGLE = 7
 const TAP_TIMEOUT_MS = 1500
@@ -55,6 +55,31 @@ export default function ThemeSwitcher() {
           Тема: {theme === 'dark' ? 'тёмная' : 'светлая'}
         </div>
       )}
+      <ThemeDebugPanel />
     </>
+  )
+}
+
+function ThemeDebugPanel() {
+  const enabled = typeof window !== 'undefined' &&
+    (/[?&]themedebug\b/.test(window.location.search) || /\bthemedebug\b/.test(window.location.hash))
+  if (!enabled) return null
+  const info = debugThemeSource()
+  return (
+    <div
+      style={{
+        position: 'fixed', bottom: 16, left: 16, right: 16, zIndex: 10001,
+        background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
+        padding: 12, borderRadius: 'var(--radius)', fontSize: 12, lineHeight: 1.4,
+        fontFamily: 'monospace', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+        whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>theme debug</div>
+      detected: <b>{info.theme}</b> (via {info.source}){'\n'}
+      data-theme: {document.documentElement.dataset.theme}{'\n'}
+      prefers-light: {String(info.mediaLight)}{'\n'}
+      WebApp keys: {info.webAppKeys.join(', ') || '—'}
+    </div>
   )
 }
