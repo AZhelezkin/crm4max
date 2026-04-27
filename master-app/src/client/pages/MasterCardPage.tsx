@@ -184,7 +184,9 @@ export default function MasterCardPage() {
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
       }}>
 
-        {/* Декор: 2 круга + полупрозрачный overlay c blur. paint0 наследуется от <body>. */}
+        {/* Декор: 2 круга с filter:blur (вместо backdrop-filter — блюр-фильтр на самом
+            элементе кешируется композитором и не глючит при скролле в iOS WebView)
+            + полупрозрачный overlay для затемнения. paint0 наследуется от <body>. */}
         <div aria-hidden="true" style={{
           position: 'absolute', inset: 0, overflow: 'hidden',
           pointerEvents: 'none', zIndex: 0,
@@ -194,18 +196,18 @@ export default function MasterCardPage() {
             position: 'absolute', left: '50%', top: -299, transform: 'translateX(-50%)',
             width: 454, height: 454, borderRadius: '50%',
             background: 'var(--color-hero-circle-1)',
+            filter: 'blur(60px)',
           }} />
           {/* Малый круг gradMint100: SVG cx=210 cy=90 r=124 → ø248, top=-(124+34)=-158 */}
           <div style={{
             position: 'absolute', left: '50%', top: -158, transform: 'translateX(-50%)',
             width: 248, height: 248, borderRadius: '50%',
             background: 'var(--color-hero-circle-2)',
+            filter: 'blur(60px)',
           }} />
-          {/* Blur overlay (как в SVG: backdrop-filter blur(60) + чёрная плёнка 10%) */}
+          {/* Тёмный overlay (как в SVG: чёрная плёнка 10%). */}
           <div style={{
             position: 'absolute', inset: 0,
-            backdropFilter: 'blur(60px)',
-            WebkitBackdropFilter: 'blur(60px)',
             background: 'var(--color-background-blur)',
           }} />
         </div>

@@ -177,6 +177,12 @@
   /* --gradient-hero-background наследуется — стопы (surface, background) уже переопределены выше */
 }
 
+/* iOS Safari: при overscroll/rubber-band показывает фон <html>, а не <body>,
+   игнорируя body { background }. Фиксим — задаём фон на корне. */
+html {
+  background: var(--color-background);
+}
+
 body {
   font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--color-background);
