@@ -139,7 +139,7 @@ export default function MyBookingsPage() {
           style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
-            color: 'var(--color-on-surface-secondary)', fontSize: 15, fontWeight: 500, textTransform: 'capitalize',
+            color: 'var(--color-on-surface-secondary)', ...text.bodyMedium, textTransform: 'capitalize',
           }}
         >
           {viewMonth.format('MMMM YYYY')}
@@ -172,7 +172,7 @@ export default function MyBookingsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
           {DAY_NAMES.map((d) => (
             <div key={d} style={{
-              textAlign: 'center', fontSize: 13, color: 'var(--color-on-surface-secondary)',
+              textAlign: 'center', ...text.footnote, color: 'var(--color-on-surface-secondary)',
               padding: '6px 0', fontWeight: 400,
             }}>
               {d}
@@ -211,7 +211,7 @@ export default function MyBookingsPage() {
                 >
                   <span style={{
                     position: 'relative',
-                    fontSize: 17, fontWeight: 400, lineHeight: 1,
+                    ...text.callout, lineHeight: 1,
                     color: isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-on-primary-surface)',
                   }}>
                     {day.date()}
@@ -241,7 +241,7 @@ export default function MyBookingsPage() {
       {/* Bookings list header */}
       <div style={{ padding: '24px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 400, letterSpacing: 0.2,
+          ...text.footnote, color: 'var(--color-on-surface-secondary)', fontWeight: 400, letterSpacing: 0.2,
         }}>
           МОИ ЗАПИСИ
         </div>
@@ -249,7 +249,7 @@ export default function MyBookingsPage() {
           <span style={{
             background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
             borderRadius: 12, padding: '1px 9px',
-            fontSize: 13, fontWeight: 600, minWidth: 22, textAlign: 'center',
+            ...text.footnoteStrong, minWidth: 22, textAlign: 'center',
           }}>
             {displayedBookings.length}
           </span>
@@ -258,7 +258,7 @@ export default function MyBookingsPage() {
 
       {/* Bookings list */}
       {displayedBookings.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 24, fontSize: 14 }}>
+        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 24, ...text.action }}>
           {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
         </div>
       ) : (
@@ -284,13 +284,13 @@ export default function MyBookingsPage() {
                   minWidth: 54, flexShrink: 0, color: 'var(--color-on-surface-secondary)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'center',
                 }}>
-                  <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.3 }}>{dateLabel}</div>
-                  <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.3 }}>{b.time}</div>
+                  <div style={{ ...text.footnote, lineHeight: 1.3 }}>{dateLabel}</div>
+                  <div style={{ ...text.footnote, lineHeight: 1.3 }}>{b.time}</div>
                 </div>
                 <div style={{ width: 1, background: 'var(--color-divider-low)', margin: '2px 14px 2px 2px' }} />
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div style={{
-                    fontSize: 17, fontWeight: 500, lineHeight: 1.3,
+                    ...text.subheadline, lineHeight: 1.3,
                     color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-primary-surface)',
                     textDecoration: past ? 'line-through' : 'none',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -298,7 +298,7 @@ export default function MyBookingsPage() {
                     {b.service.name}
                   </div>
                   <div style={{
-                    fontSize: 14, fontWeight: 400, color: 'var(--color-on-surface-secondary)', marginTop: 4,
+                    ...text.action, color: 'var(--color-on-surface-secondary)', marginTop: 4,
                   }}>
                     {priceLabel(b)}
                   </div>

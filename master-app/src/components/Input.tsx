@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 interface Props {
   label?: string
   value: string
@@ -13,7 +14,7 @@ export default function Input({ label, value, onChange, placeholder, type = 'tex
     padding: '12px 14px',
     border: '1px solid var(--color-divider-low)',
     borderRadius: 'var(--radius-sm)',
-    fontSize: 15,
+    ...text.body,
     background: 'var(--color-on-primary-surface)',
     color: 'var(--color-on-surface)',
     resize: 'none' as const,
@@ -21,7 +22,7 @@ export default function Input({ label, value, onChange, placeholder, type = 'tex
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {label && <label style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 500 }}>{label}</label>}
+      {label && <label style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', fontWeight: 500 }}>{label}</label>}
       {multiline ? (
         <textarea
           value={value}

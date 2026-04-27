@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import slotoLogoUrl from '@/assets/sloto-logo.svg'
 import slotoHeaderUrl from '@/assets/sloto-welcome-header.svg'
 import slotoFeaturesUrl from '@/assets/sloto-welcome-features.svg'
+import { text } from '@/styles/typography'
 
 export default function WelcomePage() {
   const navigate = useNavigate()
@@ -91,7 +92,7 @@ export default function WelcomePage() {
             border: 'none',
             background: 'var(--color-primary-surface)',
             color: 'var(--color-on-primary-surface)',
-            fontSize: 20,
+            ...text.titleSmall,
             fontWeight: 600,
             letterSpacing: -0.3,
             cursor: 'pointer',

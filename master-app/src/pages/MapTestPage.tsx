@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
+import { text } from '@/styles/typography'
 
 /**
  * Изолированная страница для отладки карты Yandex Maps v3.
@@ -25,8 +26,8 @@ export default function MapTestPage() {
         flexDirection: 'column',
       }}
     >
-      <div style={{ fontSize: 16, fontWeight: 600 }}>Map test page</div>
-      <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', maxWidth: 320 }}>
+      <div style={{ ...text.subhead }}>Map test page</div>
+      <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', maxWidth: 320 }}>
         Выбранный адрес: <b style={{ color: 'var(--color-on-primary-surface)' }}>{address || '—'}</b>
       </div>
       <button
@@ -38,7 +39,7 @@ export default function MapTestPage() {
           border: 'none',
           borderRadius: 14,
           padding: '12px 24px',
-          fontSize: 15,
+          ...text.body,
           fontWeight: 600,
           cursor: 'pointer',
         }}

@@ -4,6 +4,7 @@ import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
+import { text } from '@/styles/typography'
 
 /* ── Highlight matching substring in blue (var(--color-primary-surface)) ──────────────────────── */
 
@@ -121,7 +122,7 @@ export default function ServiceSelectPage() {
               placeholder="Поиск услуг..."
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: 'var(--color-on-surface)', fontSize: 15, fontFamily: 'inherit', padding: 0,
+                color: 'var(--color-on-surface)', ...text.body, fontFamily: 'inherit', padding: 0,
               }}
             />
             {query && (
@@ -140,7 +141,7 @@ export default function ServiceSelectPage() {
           </div>
         ) : (
           <>
-            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', textAlign: 'center' }}>
+            <div style={{ flex: 1, ...text.subheadline, color: 'var(--color-on-surface)', textAlign: 'center' }}>
               Выберите услугу
             </div>
             <button
@@ -167,7 +168,7 @@ export default function ServiceSelectPage() {
               {/* Category header — only in global search */}
               {globalSearch && (
                 <div style={{
-                  fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-secondary)',
+                  ...text.footnoteStrong, color: 'var(--color-on-surface-secondary)',
                   marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
                 }}>
                   <Highlight text={cat.name} query={q} />
@@ -190,13 +191,13 @@ export default function ServiceSelectPage() {
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)',
+                          ...text.body, color: 'var(--color-on-surface)',
                           lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                           <Highlight text={s.name} query={q} />
                         </div>
                         <div style={{
-                          color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
+                          color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
                           height: 34, overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -209,13 +210,13 @@ export default function ServiceSelectPage() {
                           lineHeight: '18px',
                         }}>
                           <span style={{
-                            fontWeight: 600, fontSize: 15,
+                            ...text.body,
                             color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
                           }}>
                             {formatPrice(dPrice ?? s.price)}
                           </span>
                           {dPrice !== null && (
-                            <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
+                            <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </span>
                           )}
@@ -223,7 +224,7 @@ export default function ServiceSelectPage() {
                             <span style={{
                               marginLeft: 'auto',
                               background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                              fontSize: 11, fontWeight: 700, borderRadius: 6,
+                              ...text.overline, borderRadius: 6,
                               padding: '2px 8px', lineHeight: '18px',
                             }}>
                               % скидки
@@ -256,7 +257,7 @@ export default function ServiceSelectPage() {
             <div key={cat.id}>
               {cat.name && (
                 <div style={{
-                  fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-secondary)',
+                  ...text.footnoteStrong, color: 'var(--color-on-surface-secondary)',
                   marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
                 }}>
                   {cat.name}
@@ -280,13 +281,13 @@ export default function ServiceSelectPage() {
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)',
+                          ...text.body, color: 'var(--color-on-surface)',
                           lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                           {s.name}
                         </div>
                         <div style={{
-                          color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
+                          color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
                           height: 34, overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -299,13 +300,13 @@ export default function ServiceSelectPage() {
                           lineHeight: '18px',
                         }}>
                           <span style={{
-                            fontWeight: 600, fontSize: 15,
+                            ...text.body,
                             color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
                           }}>
                             {formatPrice(dPrice ?? s.price)}
                           </span>
                           {dPrice !== null && (
-                            <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
+                            <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </span>
                           )}
@@ -313,7 +314,7 @@ export default function ServiceSelectPage() {
                             <span style={{
                               marginLeft: 'auto',
                               background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                              fontSize: 11, fontWeight: 700, borderRadius: 6,
+                              ...text.overline, borderRadius: 6,
                               padding: '2px 8px', lineHeight: '18px',
                             }}>
                               % скидки

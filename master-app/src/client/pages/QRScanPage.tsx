@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
+import { text } from '@/styles/typography'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -51,8 +52,8 @@ export default function QRScanPage() {
       background: 'var(--color-background)', color: 'var(--color-on-surface)',
       padding: '0 24px', textAlign: 'center',
     }}>
-      <h2 style={{ margin: 0, fontSize: 20 }}>Сканировать QR-код</h2>
-      <p style={{ margin: 0, color: 'var(--color-on-surface-secondary)', fontSize: 14 }}>
+      <h2 style={{ margin: 0, ...text.titleSmall }}>Сканировать QR-код</h2>
+      <p style={{ margin: 0, color: 'var(--color-on-surface-secondary)', ...text.action }}>
         Для записи к конкреному мастеру попросите его показать или переслать вам QR-код.</p>
       <button
         onClick={handleScan}
@@ -61,7 +62,7 @@ export default function QRScanPage() {
           marginTop: 8,
           background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
           border: 'none', borderRadius: 12, padding: '14px 40px',
-          fontSize: 16, fontWeight: 600,
+          ...text.subhead,
           cursor: scanning ? 'default' : 'pointer',
           opacity: scanning ? 0.7 : 1,
         }}

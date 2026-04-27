@@ -4,6 +4,7 @@ import type { Schedule } from '@/types'
 import PageHeader from '@/components/PageHeader'
 import Button from '@/components/Button'
 import Input from '@/components/Input'
+import { text } from '@/styles/typography'
 
 const DAYS = [
   { value: 1, label: 'Пн' },
@@ -68,7 +69,7 @@ export default function SchedulePage() {
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Рабочие дни */}
         <div>
-          <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginBottom: 8, fontWeight: 500 }}>
+          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 8, fontWeight: 500 }}>
             Рабочие дни
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -80,7 +81,7 @@ export default function SchedulePage() {
                   flex: 1,
                   padding: '10px 0',
                   borderRadius: 'var(--radius-sm)',
-                  fontSize: 14,
+                  ...text.action,
                   fontWeight: 500,
                   background: workingDays.includes(d.value) ? 'var(--color-primary-surface)' : 'var(--color-surface)',
                   color: workingDays.includes(d.value) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',

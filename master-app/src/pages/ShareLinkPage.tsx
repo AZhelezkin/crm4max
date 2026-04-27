@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
 import { colors } from '@/styles/tokens'
+import { text } from '@/styles/typography'
 
 function BackArrowIcon() {
   return (
@@ -105,14 +106,14 @@ export default function ShareLinkPage() {
         >
           <BackArrowIcon />
         </button>
-        <span style={{ fontSize: 17, fontWeight: 600, flex: 1 }}>Ссылка для записи</span>
+        <span style={{ ...text.subheadline, flex: 1 }}>Ссылка для записи</span>
       </div>
 
       {/* Контент */}
       <div style={{ padding: '8px 16px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Описание */}
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5 }}>
+        <p style={{ margin: 0, ...text.action, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5 }}>
           Поделитесь этой ссылкой или QR-кодом — клиенты смогут записаться к вам через мессенджер Max
         </p>
 
@@ -125,9 +126,9 @@ export default function ShareLinkPage() {
           gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--color-on-surface-secondary)', marginBottom: 4 }}>Ссылка</div>
+            <div style={{ ...text.captionSmall, color: 'var(--color-on-surface-secondary)', marginBottom: 4 }}>Ссылка</div>
             <div style={{
-              fontSize: 13, fontFamily: 'monospace',
+              ...text.footnote, fontFamily: 'monospace',
               color: 'var(--color-primary-surface)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
@@ -163,7 +164,7 @@ export default function ShareLinkPage() {
             padding: '12px 16px',
             cursor: 'pointer',
             color: copied ? 'var(--color-primary-surface)' : 'var(--color-on-surface)',
-            fontSize: 15, fontWeight: 500,
+            ...text.bodyMedium,
             transition: 'all 0.15s',
           }}
         >
@@ -174,7 +175,7 @@ export default function ShareLinkPage() {
         {/* Разделитель */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
-          <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)' }}>или QR-код</span>
+          <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)' }}>или QR-код</span>
           <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
         </div>
 
@@ -206,7 +207,7 @@ export default function ShareLinkPage() {
               <div style={{
                 width: 200, height: 200,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--color-on-surface-muted)', fontSize: 13, textAlign: 'center', padding: 16,
+                color: 'var(--color-on-surface-muted)', ...text.footnote, textAlign: 'center', padding: 16,
               }}>
                 QR-код появится после авторизации
               </div>
@@ -214,10 +215,10 @@ export default function ShareLinkPage() {
           </div>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+            <div style={{ ...text.action, marginBottom: 4 }}>
               {master?.name ?? 'Мастер'}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--color-on-surface-secondary)' }}>
+            <div style={{ ...text.caption, color: 'var(--color-on-surface-secondary)' }}>
               Отсканируйте, чтобы записаться
             </div>
           </div>
@@ -231,7 +232,7 @@ export default function ShareLinkPage() {
               borderRadius: 10, padding: '8px 16px',
               cursor: 'pointer',
               color: 'var(--color-on-surface-secondary)',
-              fontSize: 13, fontWeight: 500,
+              ...text.footnote,
             }}
           >
             <DownloadIcon />

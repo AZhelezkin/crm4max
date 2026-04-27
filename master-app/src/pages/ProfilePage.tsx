@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useState, useRef, useEffect, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
@@ -7,7 +8,6 @@ import { scheduleApi } from '@/api/schedule.api'
 import { mastersApi } from '@/api/masters.api'
 import type { Category, Review } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
-import { text } from '@/styles/typography'
 import {
   onboardingSectionCardStyle,
   onboardingSectionLabelStyle,
@@ -306,7 +306,7 @@ export default function ProfilePage() {
               padding: '12px 0', cursor: 'pointer',
               borderBottom: activeTab === tab.key ? '2px solid var(--color-primary-surface)' : '2px solid transparent',
               color: activeTab === tab.key ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-              fontSize: 14, fontWeight: 500,
+              ...text.action,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}
           >
@@ -315,7 +315,7 @@ export default function ProfilePage() {
               <span style={{
                 background: activeTab === tab.key ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
                 color: activeTab === tab.key ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface-secondary)',
-                borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 600,
+                borderRadius: 10, padding: '1px 6px', ...text.overline,
               }}>
                 {tab.count}
               </span>
@@ -330,13 +330,13 @@ export default function ProfilePage() {
           master?.categories.length
             ? <ServicesList categories={master.categories} />
             : <EmptyState
-                text="Услуги ещё не добавлены"
+                label="Услуги ещё не добавлены"
                 action={{ label: '+ Добавить услуги', onClick: () => navigate('/services') }}
               />
         )}
         {activeTab === 'photos' && (
           !allPhotos.length
-            ? <EmptyState text="Фото работ появятся здесь" />
+            ? <EmptyState label="Фото работ появятся здесь" />
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, margin: '0 -16px' }}>
                 {allPhotos.map((p, i) => (
                   <div key={p.id} style={{ aspectRatio: '1', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxIndex(i)}>
@@ -347,7 +347,7 @@ export default function ProfilePage() {
         )}
         {activeTab === 'reviews' && (
           reviews.length === 0
-            ? <EmptyState text={reviewsLoaded ? 'Пока нет отзывов' : 'Загрузка…'} />
+            ? <EmptyState label={reviewsLoaded ? 'Пока нет отзывов' : 'Загрузка…'} />
             : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {reviews.map((r) => (
                   <div key={r.id} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 14 }}>
@@ -363,7 +363,7 @@ export default function ProfilePage() {
                         }
                       </div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500 }}>{r.client.name}</div>
+                        <div style={{ ...text.action }}>{r.client.name}</div>
                         <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                           {Array.from({ length: 5 }).map((_, i) => (
                             <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < r.rating ? 'var(--color-warning-surface-accented)' : 'var(--color-secondary-surface)'}>
@@ -373,7 +373,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     </div>
-                    {r.text && <p style={{ fontSize: 14, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
+                    {r.text && <p style={{ ...text.action, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
                   </div>
                 ))}
               </div>
@@ -414,7 +414,7 @@ export default function ProfilePage() {
                           onClick={() => toggleDay(d.v)}
                           style={{
                             border: 'none', borderRadius: 12, height: 36,
-                            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            ...text.footnoteStrong, cursor: 'pointer',
                             background: workingDays.includes(d.v) ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
                             color: workingDays.includes(d.v) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                           }}
@@ -462,7 +462,7 @@ export default function ProfilePage() {
                   </div>
 
                   {schError && (
-                    <div style={{ fontSize: 14, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 4px' }}>{schError}</div>
+                    <div style={{ ...text.action, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 4px' }}>{schError}</div>
                   )}
                 </>
             }
@@ -593,23 +593,23 @@ function ServicesList({ categories }: { categories: Category[] }) {
               }}>
                 {cat.photo
                   ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: 22 }}>✂️</span>
+                  : <span style={{ ...text.titleSmall }}>✂️</span>
                 }
               </div>
 
               {/* Текст */}
               <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</span>
+                  <span style={{ ...text.body }}>{cat.name}</span>
                   {hasDiscount && (
                     <span style={{
                       background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                      fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
+                      ...text.overline, borderRadius: 6, padding: '2px 6px',
                     }}>% скидки</span>
                   )}
                 </div>
                 <div style={{
-                  color: 'var(--color-on-surface-secondary)', fontSize: 13,
+                  color: 'var(--color-on-surface-secondary)', ...text.footnote,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {cat.description || preview}
@@ -642,29 +642,29 @@ function ServicesList({ categories }: { categories: Category[] }) {
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
-                        <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 12, marginTop: 2 }}>
+                        <div style={{ ...text.action }}>{s.name}</div>
+                        <div style={{ color: 'var(--color-on-surface-secondary)', ...text.caption, marginTop: 2 }}>
                           {formatDuration(s.duration)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                         {dPrice !== null ? (
                           <>
-                            <div style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>
+                            <div style={{ color: 'var(--color-primary-surface)', ...text.action }}>
                               {formatPrice(dPrice)}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
+                            <div style={{ ...text.captionSmall, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </div>
                             <div style={{
                               background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                              fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
+                              ...text.captionSmall, borderRadius: 6, padding: '1px 5px',
                             }}>
                               -{s.discountPercent}%
                             </div>
                           </>
                         ) : (
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</div>
+                          <div style={{ ...text.action }}>{formatPrice(s.price)}</div>
                         )}
                       </div>
                     </div>
@@ -679,17 +679,17 @@ function ServicesList({ categories }: { categories: Category[] }) {
   )
 }
 
-function EmptyState({ text, action }: { text: string; action?: { label: string; onClick: () => void } }) {
+function EmptyState({ label, action }: { label: string; action?: { label: string; onClick: () => void } }) {
   return (
     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-      <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 15 }}>{text}</div>
+      <div style={{ color: 'var(--color-on-surface-secondary)', ...text.body }}>{label}</div>
       {action && (
         <button
           onClick={action.onClick}
           style={{
             marginTop: 16, background: 'var(--color-primary-surface)',
             color: 'var(--color-on-primary-surface)', border: 'none', borderRadius: 'var(--radius)',
-            padding: '10px 20px', fontSize: 15, fontWeight: 500, cursor: 'pointer',
+            padding: '10px 20px', ...text.bodyMedium, cursor: 'pointer',
           }}
         >
           {action.label}

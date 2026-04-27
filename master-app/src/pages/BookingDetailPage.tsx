@@ -8,6 +8,7 @@ import type { Booking } from '@/types'
 import PageHeader from '@/components/PageHeader'
 import Card from '@/components/Card'
 import Button from '@/components/Button'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -96,7 +97,7 @@ export default function BookingDetailPage() {
                         key={s}
                         onClick={() => setNewTime(s)}
                         style={{
-                          padding: '8px 14px', borderRadius: 8, fontSize: 14, fontWeight: 500,
+                          padding: '8px 14px', borderRadius: 8, ...text.action,
                           background: newTime === s ? 'var(--color-primary-surface)' : 'var(--color-background)',
                           color: newTime === s ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                           border: '1px solid var(--color-divider-low)',
@@ -137,7 +138,7 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
       padding: '10px 0',
       borderBottom: last ? 'none' : '1px solid var(--color-divider-low)',
     }}>
-      <span style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14 }}>{label}</span>
+      <span style={{ color: 'var(--color-on-surface-secondary)', ...text.action }}>{label}</span>
       <span style={{ fontWeight: 500 }}>{value}</span>
     </div>
   )

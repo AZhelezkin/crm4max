@@ -8,6 +8,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { colors } from '@/styles/tokens'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -86,12 +87,12 @@ export default function SuccessPage() {
         {/* Title */}
         <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
           <div style={{
-            fontWeight: 700, fontSize: 17, color: 'var(--color-on-surface)',
+            ...text.callout, color: 'var(--color-on-surface)',
             lineHeight: '22px',
           }}>
             Вы записаны!
           </div>
-          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2 }}>
+          <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>
             Не опаздывайте 😏
           </div>
         </div>
@@ -116,17 +117,17 @@ export default function SuccessPage() {
               <div style={{
                 width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
                 background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
+                ...text.titleSmall, flexShrink: 0,
               }}>
                 {master.photo
                   ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : '👤'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{master.name}</div>
+                <div style={{ ...text.body }}>{master.name}</div>
                 {master.description && (
                   <div style={{
-                    color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 1,
+                    color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 1,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
                   }}>
@@ -139,7 +140,7 @@ export default function SuccessPage() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path fill="var(--color-warning-surface-accented)" d="m11.153 3.34 1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187l-1.653 1.653c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207L4.9 8.927c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7l1.173-2.347c.64-1.273 1.68-1.273 2.313 0"/>
                   </svg>
-                  <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 500, fontSize: 13 }}>{master.rating.toFixed(1)}</span>
+                  <span style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>{master.rating.toFixed(1)}</span>
                 </div>
               )}
             </div>
@@ -148,25 +149,25 @@ export default function SuccessPage() {
 
         {/* Service */}
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{service.name}</div>
+          <div style={{ ...text.body, marginBottom: 4 }}>{service.name}</div>
           {service.description && (
-            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.action, lineHeight: 1.5, marginBottom: 8 }}>
               {service.description}
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 600, fontSize: 16 }}>
+            <span style={{ ...text.subheadRegular }}>
               {formatPrice(price)}
             </span>
             {service.discountPercent && (
-              <span style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, textDecoration: 'line-through' }}>
+              <span style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, textDecoration: 'line-through' }}>
                 {formatPrice(service.price)}
               </span>
             )}
             <span style={{
               marginLeft: 'auto',
               background: 'rgba(206, 66, 89, 0.3)', color: 'var(--color-error-surface-accented)',
-              fontSize: 11, fontWeight: 600, borderRadius: 6,
+              ...text.overline, borderRadius: 6,
               padding: '2px 10px', lineHeight: '18px',
             }}>
               Не оплачено
@@ -181,7 +182,7 @@ export default function SuccessPage() {
         }}>
           <div>
             <div style={{ fontWeight: 600 }}>{formattedDate}</div>
-            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Дата</div>
+            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>Дата</div>
           </div>
         </div>
 
@@ -192,7 +193,7 @@ export default function SuccessPage() {
         }}>
           <div>
             <div style={{ fontWeight: 600 }}>{time}</div>
-            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>
               {remind ? 'Напомним за 1 час' : 'Без напоминания'}
             </div>
           </div>
@@ -233,7 +234,7 @@ export default function SuccessPage() {
           style={{
             width: '100%', padding: 16, borderRadius: 14,
             background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
-            fontWeight: 600, fontSize: 16,
+            ...text.subheadRegular,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             border: 'none', cursor: 'pointer',
           }}

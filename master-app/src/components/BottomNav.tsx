@@ -1,4 +1,5 @@
 ﻿import { useLocation, useNavigate } from 'react-router-dom'
+import { text } from '@/styles/typography'
 
 const ACTIVE = 'var(--color-primary-surface)'
 const INACTIVE = 'var(--color-on-surface-secondary)'
@@ -87,7 +88,7 @@ export default function BottomNav() {
             }}
           >
             <NavIcon path={tab.path} color={color} />
-            <span style={{ fontSize: 10, fontWeight: 500, color }}>
+            <span style={{ ...text.captionSmall, color }}>
               {tab.label}
             </span>
           </button>

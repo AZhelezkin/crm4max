@@ -36,7 +36,7 @@ export default function DepositPage() {
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Card style={{ textAlign: 'center', padding: '24px 16px' }}>
-          <div style={{ fontSize: 14, color: 'var(--color-on-surface-secondary)', marginBottom: 8 }}>
+          <div style={{ ...text.action, color: 'var(--color-on-surface-secondary)', marginBottom: 8 }}>
             Для бронирования требуется депозит
           </div>
           <div style={text.display}>
@@ -51,7 +51,7 @@ export default function DepositPage() {
         <div style={{ textAlign: 'center' }}>
           <button
             onClick={() => navigate(-1)}
-            style={{ background: 'none', color: 'var(--color-on-surface-secondary)', fontSize: 14 }}
+            style={{ background: 'none', color: 'var(--color-on-surface-secondary)', ...text.action }}
           >
             Правила отмены
           </button>

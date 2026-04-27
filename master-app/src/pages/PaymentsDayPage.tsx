@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -74,7 +75,7 @@ export default function PaymentsDayPage() {
             <path d="M9 1L1 8L9 15" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>{titleDate}</h1>
+        <h1 style={{ ...text.subheadline, color: 'var(--color-on-surface)', margin: 0 }}>{titleDate}</h1>
         <button
           aria-label="Экспорт"
           style={{
@@ -139,7 +140,7 @@ function DayCard({ payment }: { payment: Payment }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
         <div
           style={{
-            fontSize: 14,
+            ...text.action,
             fontWeight: 600,
             lineHeight: 1,
             color: 'var(--color-on-surface)',
@@ -151,7 +152,7 @@ function DayCard({ payment }: { payment: Payment }) {
         >
           {serviceName}
         </div>
-        <div style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{time}</div>
+        <div style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{time}</div>
       </div>
 
       {/* Row 2: avatar + client name */}
@@ -172,14 +173,14 @@ function DayCard({ payment }: { payment: Payment }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 11,
+              ...text.captionSmall,
               color: 'var(--color-on-surface-secondary)',
             }}
           >
             {clientName ? clientName[0].toUpperCase() : ''}
           </div>
         )}
-        <span style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{clientName}</span>
+        <span style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{clientName}</span>
       </div>
 
       {/* Row 3: amount + badge */}
@@ -191,14 +192,14 @@ function DayCard({ payment }: { payment: Payment }) {
           marginTop: 'auto',
         }}
       >
-        <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1, color: amountColor }}>
+        <div style={{ ...text.subheadline, lineHeight: 1, color: amountColor }}>
           {formatRub(payment.amount)}
         </div>
         <div
           style={{
             background: badgeBg,
             color: badgeColor,
-            fontSize: 11,
+            ...text.captionSmall,
             fontWeight: 600,
             letterSpacing: 0.5,
             padding: '5px 12px',

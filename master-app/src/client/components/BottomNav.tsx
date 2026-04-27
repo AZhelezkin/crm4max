@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { text } from '@/styles/typography'
 
 function IconCatalog({ active }: { active: boolean }) {
   const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
@@ -88,7 +89,7 @@ export default function BottomNav({ badge = {} }: Props) {
                 <span style={{
                   position: 'absolute', top: -4, right: -6,
                   background: 'var(--color-error-surface-accented)', borderRadius: '50%',
-                  minWidth: 12, height: 12, fontSize: 9, fontWeight: 700,
+                  minWidth: 12, height: 12, ...text.captionSmall,
                   color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '0 2px',
                 }}>
@@ -105,7 +106,7 @@ export default function BottomNav({ badge = {} }: Props) {
               )}
             </div>
             <span style={{
-              fontSize: 12, fontWeight: 500,
+              ...text.caption,
               color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
             }}>
               {label}

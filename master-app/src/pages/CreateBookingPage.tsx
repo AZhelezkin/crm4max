@@ -7,6 +7,7 @@ import type { Service } from '@/types'
 import PageHeader from '@/components/PageHeader'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
+import { text } from '@/styles/typography'
 
 export default function CreateBookingPage() {
   const navigate = useNavigate()
@@ -56,11 +57,11 @@ export default function CreateBookingPage() {
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Услуга */}
         <div>
-          <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Услуга</div>
+          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Услуга</div>
           <select
             value={serviceId}
             onChange={(e) => setServiceId(e.target.value)}
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-divider-low)', fontSize: 15 }}
+            style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-divider-low)', ...text.body }}
           >
             <option value="">Выберите услугу</option>
             {services.map((s) => (
@@ -74,26 +75,26 @@ export default function CreateBookingPage() {
 
         {/* Дата */}
         <div>
-          <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Дата</div>
+          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Дата</div>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid var(--color-divider-low)', fontSize: 15 }}
+            style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid var(--color-divider-low)', ...text.body }}
           />
         </div>
 
         {/* Время */}
         {slots.length > 0 && (
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Время</div>
+            <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Время</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {slots.map((s) => (
                 <button
                   key={s}
                   onClick={() => setTime(s)}
                   style={{
-                    padding: '10px 16px', borderRadius: 8, fontSize: 15, fontWeight: 500,
+                    padding: '10px 16px', borderRadius: 8, ...text.bodyMedium,
                     background: time === s ? 'var(--color-primary-surface)' : 'var(--color-surface)',
                     color: time === s ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                     border: '1px solid var(--color-divider-low)',

@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
+import { text } from '@/styles/typography'
 
 type Toast = { kind: 'success' | 'error'; text: string } | null
 
@@ -201,7 +202,7 @@ export default function PaymentsPage() {
           justifyContent: 'center',
         }}
       >
-        <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>Доход</h1>
+        <h1 style={{ ...text.subheadline, color: 'var(--color-on-surface)', margin: 0 }}>Доход</h1>
         <button
           aria-label="Экспорт"
           onClick={handleExport}
@@ -265,7 +266,7 @@ export default function PaymentsPage() {
             >
               <div
                 style={{
-                  fontSize: 14,
+                  ...text.action,
                   fontWeight: 400,
                   lineHeight: 1,
                   color: active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
@@ -275,7 +276,7 @@ export default function PaymentsPage() {
               </div>
               <div
                 style={{
-                  fontSize: 20,
+                  ...text.titleSmall,
                   fontWeight: 700,
                   lineHeight: 1,
                   marginTop: 22,
@@ -286,7 +287,7 @@ export default function PaymentsPage() {
               </div>
               <div
                 style={{
-                  fontSize: 12,
+                  ...text.caption,
                   lineHeight: 1,
                   marginTop: 10,
                   color: active ? 'rgba(255,255,255,0.6)' : 'var(--color-on-surface-secondary)',
@@ -324,10 +325,10 @@ export default function PaymentsPage() {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>
+              <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                 {d.day} {d.monthShort}
               </span>
-              <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
+              <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                 {d.paymentCount}
               </span>
             </div>
@@ -342,10 +343,10 @@ export default function PaymentsPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1, color: 'var(--color-on-surface)' }}>
+                <div style={{ ...text.bodyMedium, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                   {formatRub(d.total)}
                 </div>
-                <div style={{ fontSize: 11, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
+                <div style={{ ...text.captionSmall, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                   {formatRub(d.tax)}
                 </div>
               </div>
@@ -354,7 +355,7 @@ export default function PaymentsPage() {
                   style={{
                     background: 'rgba(206, 66, 89, 0.3)',
                     color: 'var(--color-error-surface-accented)',
-                    fontSize: 11,
+                    ...text.captionSmall,
                     fontWeight: 500,
                     padding: '4px 10px',
                     borderRadius: 6,
@@ -392,12 +393,12 @@ export default function PaymentsPage() {
             >
               {/* Row 1: label + badge + pencil */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>ИНН</span>
+                <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>ИНН</span>
                 <div
                   style={{
                     background: 'rgba(66, 206, 89, 0.3)',
                     color: 'var(--color-success-surface-accented)',
-                    fontSize: 11,
+                    ...text.captionSmall,
                     fontWeight: 600,
                     letterSpacing: 0.5,
                     padding: '5px 12px',
@@ -449,7 +450,7 @@ export default function PaymentsPage() {
               {/* Row 2: number */}
               <div
                 style={{
-                  fontSize: 22,
+                  ...text.titleSmall,
                   fontWeight: 600,
                   lineHeight: 1,
                   color: 'var(--color-on-primary-surface)',
@@ -460,7 +461,7 @@ export default function PaymentsPage() {
                 77 22 123456 78
               </div>
               {/* Row 3: name */}
-              <div style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 6 }}>
+              <div style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 6 }}>
                 Олег Алексеевич С.
               </div>
             </div>
@@ -471,7 +472,7 @@ export default function PaymentsPage() {
             style={{
               marginTop: 26,
               padding: '0 14px',
-              fontSize: 11,
+              ...text.captionSmall,
               fontWeight: 500,
               letterSpacing: 0.5,
               color: 'var(--color-on-surface-secondary)',
@@ -506,10 +507,10 @@ export default function PaymentsPage() {
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>
+                    <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                       {m.monthAbbr}
                     </span>
-                    <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
+                    <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                       {m.year}
                     </span>
                   </div>
@@ -533,7 +534,7 @@ export default function PaymentsPage() {
                     >
                       <div
                         style={{
-                          fontSize: 17,
+                          ...text.callout,
                           fontWeight: 500,
                           lineHeight: 1,
                           color: 'var(--color-on-surface)',
@@ -546,7 +547,7 @@ export default function PaymentsPage() {
                           style={{
                             background: 'rgba(66, 206, 89, 0.3)',
                             color: 'var(--color-success-surface-accented)',
-                            fontSize: 11,
+                            ...text.captionSmall,
                             fontWeight: 600,
                             letterSpacing: 0.5,
                             padding: '5px 12px',
@@ -562,7 +563,7 @@ export default function PaymentsPage() {
                           style={{
                             background: 'rgba(255, 255, 255, 0.2)',
                             color: 'rgba(211, 212, 214, 0.6)',
-                            fontSize: 11,
+                            ...text.captionSmall,
                             fontWeight: 600,
                             letterSpacing: 0.5,
                             padding: '5px 12px',
@@ -577,7 +578,7 @@ export default function PaymentsPage() {
                     </div>
                     <div
                       style={{
-                        fontSize: 11,
+                        ...text.captionSmall,
                         lineHeight: 1,
                         color: 'var(--color-on-surface-secondary)',
                         marginTop: 8,
@@ -665,7 +666,7 @@ function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; tex
           )}
         </svg>
       </div>
-      <div style={{ flex: 1, fontSize: 14, lineHeight: 1.35, color: 'var(--color-on-surface)' }}>{toast.text}</div>
+      <div style={{ flex: 1, ...text.action, lineHeight: 1.35, color: 'var(--color-on-surface)' }}>{toast.text}</div>
       <style>{`@keyframes crm4max-toast-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
     </div>
   )
@@ -687,7 +688,7 @@ function TabButton({
         background: 'none',
         border: 'none',
         padding: '0 0 16px',
-        fontSize: 17,
+        ...text.callout,
         lineHeight: '17px',
         fontWeight: active ? 600 : 400,
         color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',

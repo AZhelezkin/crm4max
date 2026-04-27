@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTheme } from '@/styles/useTheme'
+import { text } from '@/styles/typography'
 
 const TAPS_TO_TOGGLE = 7
 const TAP_TIMEOUT_MS = 1500
@@ -47,7 +48,7 @@ export default function ThemeSwitcher() {
             position: 'fixed', top: 56, left: '50%', transform: 'translateX(-50%)',
             background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
             padding: '10px 18px', borderRadius: 'var(--radius)',
-            fontSize: 14, fontWeight: 500,
+            ...text.action,
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
             zIndex: 10000, pointerEvents: 'none',
           }}

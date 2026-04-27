@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode } from 'react'
+import { text } from '@/styles/typography'
 
 interface Props {
   children: ReactNode
@@ -26,7 +27,7 @@ export default function Button({ children, onClick, variant = 'primary', fullWid
         width: fullWidth ? '100%' : undefined,
         padding: '13px 20px',
         borderRadius: 'var(--radius)',
-        fontSize: 15, fontWeight: 600,
+        ...text.bodyStrong,
         opacity: disabled ? 0.5 : 1,
         transition: 'opacity 0.15s',
         ...style,

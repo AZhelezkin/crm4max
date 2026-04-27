@@ -6,6 +6,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { mastersApi } from '@client/api/masters.api'
 import type { Booking } from '@client/types'
 import bridge from '@vkontakte/vk-bridge'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -71,8 +72,8 @@ export default function BookingDetailPage() {
             </svg>
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>Вы записаны!</div>
-            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Не опаздывайте 😉</div>
+            <div style={{ ...text.subheadRegular }}>Вы записаны!</div>
+            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>Не опаздывайте 😉</div>
           </div>
         </div>
         <button onClick={() => navigate('/my-bookings')} style={{ background: 'none', color: 'var(--color-on-surface-secondary)', fontSize: 18 }}>✕</button>
@@ -83,7 +84,7 @@ export default function BookingDetailPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-              background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
+              background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.titleSmall, flexShrink: 0,
             }}>
               {booking.master.photo
                 ? <img src={booking.master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -92,14 +93,14 @@ export default function BookingDetailPage() {
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>{booking.master.name}</div>
             </div>
-            <div style={{ color: 'var(--color-warning-surface-accented)', fontWeight: 600, fontSize: 14 }}>★</div>
+            <div style={{ color: 'var(--color-warning-surface-accented)', ...text.action }}>★</div>
           </div>
         </div>
 
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{booking.service.name}</div>
+          <div style={{ ...text.subheadRegular, marginBottom: 4 }}>{booking.service.name}</div>
           {booking.service.description && (
-            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.action, lineHeight: 1.5, marginBottom: 8 }}>
               {booking.service.description}
             </div>
           )}
@@ -107,7 +108,7 @@ export default function BookingDetailPage() {
             <span style={{ fontWeight: 600 }}>
               {(booking.service.price / 100).toLocaleString('ru-RU')} ₽
             </span>
-            <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, fontSize: 11, fontWeight: 700, padding: '2px 8px' }}>
+            <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, ...text.overline, padding: '2px 8px' }}>
               {badge.label}
             </span>
           </div>
@@ -115,12 +116,12 @@ export default function BookingDetailPage() {
 
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px' }}>
           <div style={{ fontWeight: 600 }}>{formattedDate}</div>
-          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Дата</div>
+          <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>Дата</div>
         </div>
 
         <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px' }}>
           <div style={{ fontWeight: 600 }}>{booking.time}</div>
-          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Напомним за 1 час</div>
+          <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>Напомним за 1 час</div>
         </div>
 
         {reschedule && (
@@ -133,7 +134,7 @@ export default function BookingDetailPage() {
               min={dayjs().format('YYYY-MM-DD')}
               style={{
                 width: '100%', padding: 12, borderRadius: 10,
-                border: '1px solid var(--color-divider-low)', marginBottom: 12, fontSize: 15,
+                border: '1px solid var(--color-divider-low)', marginBottom: 12, ...text.body,
                 background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)',
               }}
             />
@@ -144,7 +145,7 @@ export default function BookingDetailPage() {
                     key={s}
                     onClick={() => setNewTime(s)}
                     style={{
-                      padding: '12px 0', borderRadius: 10, fontSize: 14, fontWeight: 500,
+                      padding: '12px 0', borderRadius: 10, ...text.action,
                       background: newTime === s ? 'var(--color-primary-surface)' : 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)',
                     }}
                   >
@@ -217,7 +218,7 @@ export default function BookingDetailPage() {
           <button
             style={{
               width: '100%', padding: 16, borderRadius: 14,
-              background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16,
+              background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', ...text.subheadRegular,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               marginBottom: 32,
             }}
@@ -240,8 +241,8 @@ export default function BookingDetailPage() {
             style={{ background: 'var(--color-surface)', borderRadius: '20px 20px 0 0', width: '100%', padding: '20px 16px 32px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>Правила отмены</h2>
-            <p style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            <h2 style={{ ...text.subheadline, marginBottom: 10 }}>Правила отмены</h2>
+            <p style={{ color: 'var(--color-on-surface-secondary)', ...text.action, lineHeight: 1.6, marginBottom: 20 }}>
               При отмене записи менее чем за 24 часа депозит не возвращается.
               При отмене за 24 часа и более — депозит возвращается в полном объёме.
             </p>
@@ -249,14 +250,14 @@ export default function BookingDetailPage() {
               onClick={handleCancel}
               style={{
                 width: '100%', padding: 15, borderRadius: 14,
-                background: 'var(--color-error-surface-accented)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16, marginBottom: 8,
+                background: 'var(--color-error-surface-accented)', color: 'var(--color-on-primary-surface)', ...text.subheadRegular, marginBottom: 8,
               }}
             >
               Отменить запись
             </button>
             <button
               onClick={() => setShowCancelSheet(false)}
-              style={{ width: '100%', padding: 15, borderRadius: 14, background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16 }}
+              style={{ width: '100%', padding: 15, borderRadius: 14, background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)', ...text.subheadRegular }}
             >
               Назад
             </button>

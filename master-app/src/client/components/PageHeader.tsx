@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { text } from '@/styles/typography'
 
 interface Props {
   title: string
@@ -18,11 +19,11 @@ export default function PageHeader({ title, back = true, right }: Props) {
       position: 'sticky', top: 0, zIndex: 10,
     }}>
       {back && (
-        <button onClick={() => navigate(-1)} style={{ background: 'none', fontSize: 20, color: 'var(--color-primary-surface)' }}>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', ...text.titleSmall, color: 'var(--color-primary-surface)' }}>
           ←
         </button>
       )}
-      <h1 style={{ fontSize: 17, fontWeight: 600, flex: 1 }}>{title}</h1>
+      <h1 style={{ ...text.subheadline, flex: 1 }}>{title}</h1>
       {right}
     </header>
   )

@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Spinner } from '@maxhub/max-ui'
@@ -73,7 +74,7 @@ export default function CategoryFormPortal({
         </button>
         <div style={{
           flex: 1, textAlign: 'center',
-          fontSize: 20, fontWeight: 600,
+          ...text.titleSmall,
           color: 'var(--color-on-surface)', letterSpacing: -0.3,
         }}>
           {isEdit ? 'Редактирование категории' : 'Добавление категории'}

@@ -8,6 +8,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 import { colors } from '@/styles/tokens'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -182,8 +183,8 @@ export default function MasterCardPage() {
             background: 'var(--color-surface)', borderRadius: 20,
             padding: '4px 10px',
           }}>
-            <span style={{ color: 'var(--color-warning-surface-accented)', fontSize: 14 }}>★</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-on-surface)' }}>{master.rating.toFixed(1)}</span>
+            <span style={{ color: 'var(--color-warning-surface-accented)', ...text.action }}>★</span>
+            <span style={{ ...text.action, color: 'var(--color-on-surface)' }}>{master.rating.toFixed(1)}</span>
           </div>
         )}
       </div>
@@ -204,11 +205,11 @@ export default function MasterCardPage() {
 
       {/* ── Имя + описание ────────────────────────────────────────────── */}
       <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--color-on-surface)', lineHeight: 1.2 }}>
+        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)', lineHeight: 1.2 }}>
           {master.name}
         </div>
         {master.description && (
-          <div style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)', marginTop: 6, padding: '0 14px' }}>
+          <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)', marginTop: 6, padding: '0 14px' }}>
             {master.description}
           </div>
         )}
@@ -244,14 +245,14 @@ export default function MasterCardPage() {
           </div>
           {/* Text — 3 lines (gaps from mockup: 22.6px, 33.4px between glyph tops) */}
           <div style={{ flex: 1, marginLeft: 16, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-on-primary-surface)', lineHeight: '20px' }}>
+            <div style={{ ...text.body, color: 'var(--color-on-primary-surface)', lineHeight: '20px' }}>
               Вы записаны
             </div>
-            <div style={{ fontSize: 13, color: 'var(--color-on-primary-surface)', marginTop: 3, lineHeight: '18px' }}>
+            <div style={{ ...text.footnote, color: 'var(--color-on-primary-surface)', marginTop: 3, lineHeight: '18px' }}>
               {nextBooking.service.name}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 19, marginTop: 15 }}>
-              <span style={{ fontSize: 13, color: 'var(--color-on-surface)', lineHeight: '18px' }}>
+              <span style={{ ...text.footnote, color: 'var(--color-on-surface)', lineHeight: '18px' }}>
                 {dayjs(nextBooking.date).format('D MMMM')} в {nextBooking.time}
               </span>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
@@ -294,7 +295,7 @@ export default function MasterCardPage() {
               }}
             >
               <btn.Icon />
-              <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
+              <span style={{ ...text.action, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
             </button>
           )
         })}
@@ -318,7 +319,7 @@ export default function MasterCardPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 12 }}>
                 <span style={{
-                  fontSize: 17, fontWeight: 500,
+                  ...text.subheadline,
                   color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
                 }}>
                   {TAB_LABELS[key]}
@@ -327,7 +328,7 @@ export default function MasterCardPage() {
                   <span style={{
                     background: active ? 'rgba(0,122,254,0.3)' : 'var(--color-divider-low)',
                     color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-                    borderRadius: 11.5, fontSize: 13, fontWeight: 500,
+                    borderRadius: 11.5, ...text.footnote,
                     padding: '2px 8px', minWidth: 24, textAlign: 'center',
                     lineHeight: '19px',
                   }}>
@@ -384,11 +385,11 @@ export default function MasterCardPage() {
                   }}>
                     {r.client.photo
                       ? <img src={r.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 20, color: 'var(--color-on-surface-secondary)' }}>👤</span>
+                      : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>👤</span>
                     }
                   </div>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-on-surface)' }}>{r.client.name}</div>
+                    <div style={{ ...text.bodyMedium, color: 'var(--color-on-surface)' }}>{r.client.name}</div>
                     <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                       {Array.from({ length: 5 }).map((_, i) => (
                         <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < r.rating ? 'var(--color-warning-surface-accented)' : 'var(--color-divider-low)'}>
@@ -398,7 +399,7 @@ export default function MasterCardPage() {
                     </div>
                   </div>
                 </div>
-                {r.text && <p style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
+                {r.text && <p style={{ ...text.body, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
               </div>
             ))}
           </div>
@@ -490,18 +491,18 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             }}>
               {cat.photo
                 ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: 22 }}>✂️</span>
+                : <span style={{ ...text.titleSmall }}>✂️</span>
               }
             </div>
 
             {/* Название + описание */}
             <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+                <span style={{ ...text.body, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
                   <span style={{
                     background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                    fontSize: 11, fontWeight: 700, borderRadius: 6,
+                    ...text.overline, borderRadius: 6,
                     padding: '2px 8px', lineHeight: '18px',
                   }}>
                     % скидки
@@ -509,7 +510,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                 )}
               </div>
               <div style={{
-                color: 'var(--color-on-surface-secondary)', fontSize: 13,
+                color: 'var(--color-on-surface-secondary)', ...text.footnote,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {cat.description || preview}

@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Button as MaxButton } from '@maxhub/max-ui'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -193,7 +194,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                     <div style={onboardingListMediaStyle}>
                       {cat.photo
                         ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: 22 }}>✂️</span>
+                        : <span style={{ ...text.titleSmall }}>✂️</span>
                       }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -218,7 +219,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); void handleDeleteCategory(cat.id) }}
-                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', fontSize: 20, lineHeight: 1 }}
+                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
                       >
                         ×
                       </button>
@@ -257,12 +258,12 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                         <div style={onboardingPriceRowStyle}>
                           {dPrice !== null ? (
                             <>
-                              <span style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>{formatPrice(dPrice)}</span>
-                              <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
+                              <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>{formatPrice(dPrice)}</span>
+                              <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
                               <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
                             </>
                           ) : (
-                            <span style={{ fontWeight: 600, fontSize: 14 }}>{formatPrice(s.price)}</span>
+                            <span style={{ ...text.action }}>{formatPrice(s.price)}</span>
                           )}
                         </div>
                       </div>
@@ -277,7 +278,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); void handleDeleteService(s.id) }}
-                          style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', fontSize: 20, lineHeight: 1 }}
+                          style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
                         >
                           ×
                         </button>

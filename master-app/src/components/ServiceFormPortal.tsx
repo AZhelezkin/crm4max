@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Spinner } from '@maxhub/max-ui'
@@ -104,7 +105,7 @@ export default function ServiceFormPortal({
         </button>
         <div style={{
           flex: 1, textAlign: 'center',
-          fontSize: 20, fontWeight: 600,
+          ...text.titleSmall,
           color: 'var(--color-on-surface)', letterSpacing: -0.3,
         }}>
           {isEdit ? 'Редактирование услуги' : 'Добавление услуги'}
@@ -152,7 +153,7 @@ export default function ServiceFormPortal({
                 style={onboardingFieldInputStyle}
               />
             </div>
-            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, fontSize: 15 }}>мин</span>
+            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, ...text.body }}>мин</span>
           </div>
 
           {/* Стоимость */}
@@ -166,7 +167,7 @@ export default function ServiceFormPortal({
                 style={onboardingFieldInputStyle}
               />
             </div>
-            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, fontSize: 15 }}>₽</span>
+            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, ...text.body }}>₽</span>
           </div>
         </div>
 
@@ -196,7 +197,7 @@ export default function ServiceFormPortal({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
               {discountedPriceNum !== null && (
                 <div style={onboardingPriceRowStyle}>
-                  <span style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>
                     {formatPrice(discountedPriceNum)}
                   </span>
                   <span style={onboardingDiscountBadgeStyle}>{discountPercent}%</span>
@@ -212,7 +213,7 @@ export default function ServiceFormPortal({
                 </select>
                 <span style={onboardingSelectChevronStyle}>⌄</span>
               </div>
-              <span style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)' }}>%</span>
+              <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>%</span>
             </div>
           )}
         </div>
@@ -255,7 +256,7 @@ export default function ServiceFormPortal({
                     position: 'absolute', top: -6, right: -6,
                     width: 20, height: 20, borderRadius: '50%',
                     background: 'var(--color-error-surface-accented)', border: 'none',
-                    color: 'var(--color-on-primary-surface)', fontSize: 12, lineHeight: 1,
+                    color: 'var(--color-on-primary-surface)', ...text.caption, lineHeight: 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', padding: 0,
                   }}

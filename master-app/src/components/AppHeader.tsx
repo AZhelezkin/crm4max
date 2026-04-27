@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { text } from '@/styles/typography'
 
 interface Props {
   title: string
@@ -51,7 +52,7 @@ export default function AppHeader({ title, onBack, right }: Props) {
       <div
         style={{
           flex: 1,
-          fontSize: 17,
+          ...text.callout,
           fontWeight: 600,
           color: 'var(--color-on-surface)',
           textAlign: 'center',

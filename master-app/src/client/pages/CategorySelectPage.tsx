@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
+import { text } from '@/styles/typography'
 
 export default function CategorySelectPage() {
   const navigate = useNavigate()
@@ -32,7 +33,7 @@ export default function CategorySelectPage() {
             <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', textAlign: 'center' }}>
+        <div style={{ flex: 1, ...text.subheadline, color: 'var(--color-on-surface)', textAlign: 'center' }}>
           Выберите категорию
         </div>
         {/* Search icon → navigate to ServiceSelectPage in search mode */}
@@ -80,17 +81,17 @@ export default function CategorySelectPage() {
               }}>
                 {cat.photo
                   ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: 22 }}>✂️</span>
+                  : <span style={{ ...text.titleSmall }}>✂️</span>
                 }
               </div>
 
               <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+                  <span style={{ ...text.body, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                   {hasDiscount && (
                     <span style={{
                       background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                      fontSize: 11, fontWeight: 700, borderRadius: 6,
+                      ...text.overline, borderRadius: 6,
                       padding: '2px 8px', lineHeight: '18px',
                     }}>
                       % скидки
@@ -98,7 +99,7 @@ export default function CategorySelectPage() {
                   )}
                 </div>
                 <div style={{
-                  color: 'var(--color-on-surface-secondary)', fontSize: 13,
+                  color: 'var(--color-on-surface-secondary)', ...text.footnote,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {cat.description || preview}

@@ -6,6 +6,7 @@ import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Schedule } from '@client/types'
 import ToggleSwitch from '@/components/ToggleSwitch'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -111,7 +112,7 @@ export default function CalendarPage() {
         {/* Service info — centered */}
         <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
           <div style={{
-            fontWeight: 600, fontSize: 17, color: 'var(--color-on-surface)',
+            ...text.callout, color: 'var(--color-on-surface)',
             lineHeight: '22px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
@@ -119,7 +120,7 @@ export default function CalendarPage() {
           </div>
           {service && (
             <div style={{
-              color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
+              color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
               lineHeight: '17px',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
@@ -139,7 +140,7 @@ export default function CalendarPage() {
 
               {/* Month title */}
               <div style={{
-                fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface)',
+                ...text.footnoteStrong, color: 'var(--color-on-surface)',
                 marginBottom: 16, textTransform: 'capitalize',
               }}>
                 {monthStart.format('MMMM YYYY')}
@@ -152,7 +153,7 @@ export default function CalendarPage() {
               }}>
                 {DAY_NAMES.map((d) => (
                   <div key={d} style={{
-                    textAlign: 'center', fontSize: 14, fontWeight: 500,
+                    textAlign: 'center', ...text.action,
                     color: 'var(--color-on-surface-muted)',
                     padding: '4px 0',
                   }}>
@@ -213,7 +214,7 @@ export default function CalendarPage() {
                           borderRadius: 12,
                           display: 'flex', flexDirection: 'column',
                           alignItems: 'center', justifyContent: 'center',
-                          fontSize: 15, fontWeight: 600,
+                          ...text.bodyStrong,
                           background: bg,
                           color: textColor,
                           opacity: cellOpacity,
@@ -258,10 +259,10 @@ export default function CalendarPage() {
             marginTop: 16, marginBottom: 24,
           }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-on-surface)' }}>
+              <div style={{ ...text.callout, color: 'var(--color-on-surface)' }}>
                 {selectedDayjs.format('D MMMM, dddd')}
               </div>
-              <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2 }}>Дата</div>
+              <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>Дата</div>
             </div>
             <button onClick={() => setStep('date')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -273,7 +274,7 @@ export default function CalendarPage() {
 
           {/* Slots label */}
           <div style={{
-            fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 600,
+            ...text.footnote, color: 'var(--color-on-surface-secondary)', fontWeight: 600,
             marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5,
           }}>
             Свободные слоты
@@ -294,7 +295,7 @@ export default function CalendarPage() {
                     onClick={() => handleSelectTime(s)}
                     style={{
                       padding: '14px 0', borderRadius: 12,
-                      fontSize: 15, fontWeight: 500,
+                      ...text.bodyMedium,
                       background: isSel ? 'var(--color-primary-surface)' : 'var(--color-surface)',
                       color: isSel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                       border: 'none', cursor: 'pointer',
@@ -315,8 +316,8 @@ export default function CalendarPage() {
             marginBottom: 24,
           }}>
             <div>
-              <div style={{ fontWeight: 500, fontSize: 17, color: 'var(--color-on-surface)' }}>Напомнить за 1 час</div>
-              <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2 }}>Бот напишет в MAX</div>
+              <div style={{ ...text.callout, color: 'var(--color-on-surface)' }}>Напомнить за 1 час</div>
+              <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>Бот напишет в MAX</div>
             </div>
             <ToggleSwitch
               checked={remind}

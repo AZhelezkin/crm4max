@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
+import { text } from '@/styles/typography'
 
 export default function PaymentSettingsPage() {
   const { master, setMaster } = useAuthStore()
@@ -51,7 +52,7 @@ export default function PaymentSettingsPage() {
         </Card>
 
         <Card style={{ textAlign: 'center' }}>
-          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, marginBottom: 12 }}>
+          <div style={{ color: 'var(--color-on-surface-secondary)', ...text.action, marginBottom: 12 }}>
             {master?.vkPayLinked ? '✅ VK Pay привязан' : 'Привяжите VK Pay для приёма оплат'}
           </div>
           {!master?.vkPayLinked && (

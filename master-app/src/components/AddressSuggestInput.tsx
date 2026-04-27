@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useEffect, useRef, useState } from 'react'
 import {
   stepOneAddressInputIconStyle,
@@ -382,9 +383,9 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             >
               <LocationIcon />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, color: 'var(--color-on-surface)', fontWeight: 500 }}>{s.title}</div>
+                <div style={{ ...text.body, color: 'var(--color-on-surface)', fontWeight: 500 }}>{s.title}</div>
                 {s.subtitle && (
-                  <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>{s.subtitle}</div>
+                  <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>{s.subtitle}</div>
                 )}
               </div>
             </button>
@@ -395,7 +396,7 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         <div style={{
           position: 'relative', zIndex: 3,
           padding: '18px 16px', textAlign: 'center',
-          color: 'var(--color-on-surface-secondary)', fontSize: 14,
+          color: 'var(--color-on-surface-secondary)', ...text.action,
           background: 'rgba(15,15,17,0.82)',
           pointerEvents: 'none',
         }}>
@@ -408,7 +409,7 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         <div style={{
           position: 'absolute', inset: 0, zIndex: 4,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.55)', fontSize: 14,
+          color: 'rgba(255,255,255,0.55)', ...text.action,
           background: 'rgba(15,15,17,0.35)', pointerEvents: 'none',
         }}>
           Загружаем карту…

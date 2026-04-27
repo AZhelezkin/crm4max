@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CellList, CellInput, Spinner } from '@maxhub/max-ui'
@@ -179,7 +180,7 @@ export default function AboutMePage() {
             />
           </CellList>
           {phoneError && (
-            <div style={{ fontSize: 13, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
+            <div style={{ ...text.footnote, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
           )}
         </div>
 

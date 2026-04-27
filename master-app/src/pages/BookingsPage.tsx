@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking } from '@/types'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -164,7 +165,7 @@ export default function BookingsPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            fontSize: 15,
+            ...text.body,
             fontWeight: 500,
             color: 'var(--color-on-surface)',
           }}
@@ -248,7 +249,7 @@ export default function BookingsPage() {
             key={d}
             style={{
               textAlign: 'center',
-              fontSize: 14,
+              ...text.action,
               fontWeight: 500,
               color: 'var(--color-divider-mid)',
               lineHeight: 1,
@@ -298,7 +299,7 @@ export default function BookingsPage() {
             >
               <span
                 style={{
-                  fontSize: 16,
+                  ...text.subheadRegular,
                   fontWeight: 400,
                   lineHeight: 1,
                   marginTop: 18,
@@ -360,7 +361,7 @@ export default function BookingsPage() {
                   justifyContent: 'center',
                 }}
               >
-                <span style={{ fontSize: 14, lineHeight: 1, color: textColor }}>{b.time}</span>
+                <span style={{ ...text.action, lineHeight: 1, color: textColor }}>{b.time}</span>
               </div>
               <div style={{ width: 1, background: 'var(--color-surface)' }} />
               <div
@@ -374,7 +375,7 @@ export default function BookingsPage() {
               >
                 <div
                   style={{
-                    fontSize: 14,
+                    ...text.action,
                     fontWeight: 600,
                     lineHeight: 1,
                     color: textColor,
@@ -385,7 +386,7 @@ export default function BookingsPage() {
                 </div>
                 <div
                   style={{
-                    fontSize: 12,
+                    ...text.caption,
                     lineHeight: 1,
                     color: 'var(--color-on-surface-secondary)',
                     marginTop: 6,

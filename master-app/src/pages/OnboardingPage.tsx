@@ -1,3 +1,4 @@
+import { text } from '@/styles/typography'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
@@ -401,7 +402,7 @@ export default function OnboardingPage() {
                 />
               </CellList>
               {phoneError && (
-                <div style={{ fontSize: 13, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
+                <div style={{ ...text.footnote, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
               )}
             </div>
 
@@ -466,7 +467,7 @@ export default function OnboardingPage() {
                       border: 'none',
                       borderRadius: 12,
                       height: 36,
-                      fontSize: 13,
+                      ...text.footnote,
                       fontWeight: 600,
                       cursor: 'pointer',
                       background: workingDays.includes(d.v) ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
@@ -549,7 +550,7 @@ export default function OnboardingPage() {
               borderRadius: 14,
               background: 'rgba(209, 50, 50, 0.12)',
               color: 'var(--color-error-surface-accented)',
-              fontSize: 14,
+              ...text.action,
               lineHeight: 1.4,
             }}
           >
@@ -662,7 +663,7 @@ function BottomSheet({ title, children, onClose }: { title: string; children: Re
       >
         {/* Ручка */}
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-secondary-surface)', margin: '0 auto 16px' }} />
-        <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>{title}</h2>
+        <h2 style={{ ...text.subheadline, marginBottom: 16 }}>{title}</h2>
         {children}
       </div>
     </div>

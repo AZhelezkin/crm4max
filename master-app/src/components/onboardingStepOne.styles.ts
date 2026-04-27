@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react'
+import { text } from '@/styles/typography'
 
 export const stepOneIntroTextStyle: CSSProperties = {
-  fontSize: 14,
+  ...text.action,
   color: 'var(--color-on-surface-secondary)',
   textAlign: 'center',
   marginBottom: 4,
@@ -56,7 +57,7 @@ export const stepOneTextareaStyle: CSSProperties = {
   background: 'none',
   border: 'none',
   padding: '14px 16px 24px',
-  fontSize: 16,
+  ...text.subheadRegular,
   color: 'var(--color-on-surface)',
   resize: 'none',
   display: 'block',
@@ -67,7 +68,7 @@ export const stepOneCounterStyle: CSSProperties = {
   position: 'absolute',
   bottom: 8,
   right: 12,
-  fontSize: 12,
+  ...text.caption,
   color: 'var(--color-on-surface-secondary)',
 }
 
@@ -93,7 +94,7 @@ export const onboardingFieldInputStyle: CSSProperties = {
   outline: 'none',
   background: 'transparent',
   color: 'var(--color-on-surface)',
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -102,7 +103,7 @@ export const onboardingFieldInputStyle: CSSProperties = {
 
 export const onboardingFieldSuffixStyle: CSSProperties = {
   flexShrink: 0,
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -116,7 +117,7 @@ export const onboardingSectionCardStyle: CSSProperties = {
 }
 
 export const onboardingSectionLabelStyle: CSSProperties = {
-  fontSize: 12,
+  ...text.caption,
   fontWeight: 600,
   color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.5,
@@ -151,7 +152,7 @@ export const onboardingSelectStyle: CSSProperties = {
   border: 'none',
   borderRadius: 10,
   padding: '15px 44px 17px 16px',
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -184,7 +185,7 @@ export const onboardingTimeSelectWrapStyle: CSSProperties = {
 export const onboardingTimeSelectStyle: CSSProperties = {
   background: 'none',
   border: 'none',
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -203,7 +204,7 @@ export const onboardingToggleRowStyle: CSSProperties = {
 }
 
 export const onboardingToggleLabelStyle: CSSProperties = {
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -243,7 +244,7 @@ export const onboardingListMediaStyle: CSSProperties = {
 }
 
 export const onboardingListTitleStyle: CSSProperties = {
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -251,7 +252,7 @@ export const onboardingListTitleStyle: CSSProperties = {
 }
 
 export const onboardingListSubtitleStyle: CSSProperties = {
-  fontSize: 13,
+  ...text.footnote,
   color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.15,
   lineHeight: '16px',
@@ -302,15 +303,13 @@ export const stepOneAddressContentStyle: CSSProperties = {
 }
 
 export const stepOneAddressTitleStyle: CSSProperties = {
-  fontWeight: 500,
-  fontSize: 16,
+  ...text.subhead,
   color: 'var(--color-on-surface)',
   letterSpacing: -0.16,
-  lineHeight: '22px',
 }
 
 export const stepOneAddressHintStyle: CSSProperties = {
-  fontSize: 13,
+  ...text.footnote,
   color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.15,
   lineHeight: '16px',
@@ -330,7 +329,7 @@ export const stepOneAddressInputStyle: CSSProperties = {
   outline: 'none',
   background: 'transparent',
   color: 'var(--color-on-surface)',
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
@@ -353,6 +352,6 @@ export const primaryActionButtonBaseStyle: CSSProperties = {
   height: 48,
   border: 'none',
   borderRadius: 20,
-  fontSize: 16,
+  ...text.subheadRegular,
   fontWeight: 600,
 }
