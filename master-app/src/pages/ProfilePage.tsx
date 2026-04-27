@@ -230,11 +230,9 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* Шапка профиля — декоративный hero (из design/light/Profile_info.svg) */}
-      <div style={{
-        position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center',
-        background: 'var(--gradient-hero-background)',
-      }}>
+      {/* Шапка профиля — декоративный hero (из design/light/Profile_info.svg).
+          Базовый paint0-градиент задан на <body> через --gradient-hero-background. */}
+      <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center' }}>
 
         {/* Декоративный фон: 2 круга + blur overlay */}
         <div aria-hidden="true" style={{
