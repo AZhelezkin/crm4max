@@ -173,9 +173,13 @@ export default function MasterCardPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
 
-      {/* ── HERO: декор (animationV4 + gradMint100 + blur) + back + рейтинг + аватар + имя
-            Координаты — из design/dark/Profile_info.svg, page y = SVG y - 124. */}
-      <div style={{ position: 'relative', overflow: 'hidden', paddingTop: 16, paddingBottom: 24 }}>
+      {/* ── HERO: paint0 (surface→background) + декор (animationV4 + gradMint100 + blur)
+            + back + рейтинг + аватар + имя. Координаты — из design/dark/Profile_info.svg. */}
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        paddingTop: 16, paddingBottom: 24,
+        background: 'var(--gradient-hero-background)',
+      }}>
 
         {/* Декор: 2 круга + полупрозрачный overlay c blur. paint0 наследуется от <body>. */}
         <div aria-hidden="true" style={{
