@@ -174,11 +174,14 @@ export default function MasterCardPage() {
     <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
 
       {/* ── HERO: paint0 (surface→background) + декор (animationV4 + gradMint100 + blur)
-            + back + рейтинг + аватар + имя. Координаты — из design/dark/Profile_info.svg. */}
+            + back + рейтинг + аватар + имя. Координаты — из design/dark/Profile_info.svg.
+            borderTop{Left,Right}Radius:24 — Figma «corners» (M24 124.5 C 10.745 124.5, 0 135.245, 0 148.5
+            V 124.5 H 24 Z), четверть-круг радиуса 24 у каждого верхнего угла. */}
       <div style={{
         position: 'relative', overflow: 'hidden',
         paddingTop: 16, paddingBottom: 24,
         background: 'var(--gradient-hero-background)',
+        borderTopLeftRadius: 24, borderTopRightRadius: 24,
       }}>
 
         {/* Декор: 2 круга + полупрозрачный overlay c blur. paint0 наследуется от <body>. */}
