@@ -26,7 +26,19 @@ import ThemeSwitcher from '@/components/ThemeSwitcher'
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
 //   <UUID>  → клиент, запись к конкретному мастеру — быстрый путь
 //   ""      → авто-определение: бэкенд проверяет max_user_id по БД
-export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
+//
+// Браузерный фолбэк: ?masterId=<UUID> в URL открывает клиентский режим
+// для этого мастера (используется для шаринга ссылок вне Max).
+function resolveStartParam(): string {
+  const fromMax = window.WebApp?.initDataUnsafe?.start_param
+  if (fromMax) return fromMax
+  if (typeof window !== 'undefined') {
+    const masterId = new URLSearchParams(window.location.search).get('masterId')
+    if (masterId) return masterId
+  }
+  return ''
+}
+export const startParam = resolveStartParam()
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

@@ -7,6 +7,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+import { startParam } from '@/App'
 import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
 
@@ -59,7 +60,6 @@ const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фо
 export default function MasterCardPage() {
   const [params] = useSearchParams()
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const startParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
   const masterId = (UUID_REGEX.test(startParam) ? startParam : null) ?? params.get('masterId') ?? ''
   const navigate = useNavigate()
   const { setMasterId, setService, setDateTime } = useBookingStore()
