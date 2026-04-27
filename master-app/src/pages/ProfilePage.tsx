@@ -7,6 +7,7 @@ import { scheduleApi } from '@/api/schedule.api'
 import { mastersApi } from '@/api/masters.api'
 import type { Category, Review } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
+import { text } from '@/styles/typography'
 import {
   onboardingSectionCardStyle,
   onboardingSectionLabelStyle,
@@ -273,7 +274,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Имя */}
-        <div style={{ position: 'relative', zIndex: 1, fontSize: 20, fontWeight: 700 }}>
+        <div style={{ position: 'relative', zIndex: 1, ...text.titleSmall }}>
           {master?.name || 'Мастер'}
         </div>
 
@@ -281,7 +282,7 @@ export default function ProfilePage() {
         {master?.description && (
           <div style={{
             position: 'relative', zIndex: 1,
-            color: 'var(--color-on-surface-secondary)', fontSize: 14,
+            color: 'var(--color-on-surface-secondary)', ...text.action,
             marginTop: 14, padding: '0 24px',
           }}>
             {master.description}
@@ -391,7 +392,7 @@ export default function ProfilePage() {
             >
               <BackArrowIcon />
             </button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: -0.3 }}>
+            <div style={{ flex: 1, textAlign: 'center', ...text.titleSmall, color: 'var(--color-on-surface)', letterSpacing: -0.3 }}>
               Расписание
             </div>
             <div style={{ width: 56 }} />

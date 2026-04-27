@@ -8,6 +8,7 @@ import { formatPrice } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 import { startParam } from '@/App'
 import { useBookingStore } from '@client/store/booking.store'
+import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
@@ -92,7 +93,7 @@ export default function MyBookingsPage() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div style={{
-          fontSize: 22, fontWeight: 700, color: 'var(--color-on-primary-surface)',
+          ...text.titleSmall, color: 'var(--color-on-primary-surface)',
           letterSpacing: -0.3,
         }}>
           {today.format('D MMMM, YYYY')}

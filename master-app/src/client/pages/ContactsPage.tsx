@@ -3,6 +3,7 @@ import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+import { text } from '@/styles/typography'
 
 export default function ContactsPage() {
   const { masterId } = useBookingStore()
@@ -27,7 +28,7 @@ export default function ContactsPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 80 }}>
       <div style={{ padding: '16px 16px 0' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Контакты</h1>
+        <h1 style={{ ...text.titleSmall, margin: 0 }}>Контакты</h1>
       </div>
 
       {!master ? (

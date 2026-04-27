@@ -96,6 +96,20 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
     - Градиенты: `var(--color-grad-violet-0/100)`, `--color-grad-mint-0/100`, `--color-grad-peach-0/100`, `--color-grad-green-0/100`, `--color-grad-green-vibrance-0/100`
   - Прямой импорт `import { theme } from '@/styles/theme'` или `import { colors } from '@/styles/tokens'` — только там, где CSS var не работает: canvas API (QR-код).
 - При добавлении нового семантического токена: обновлять синхронно `Dark.tokens.json`, `Light.tokens.json`, `theme.ts` (`darkTheme` + `lightTheme`) и `index.css` (`:root[data-theme="dark"]` + `[data-theme="light"]`).
+- **Типографика — только через text-стили** из `master-app/src/styles/typography.ts` (`import { text } from '@/styles/typography'`). Не писать `fontSize`/`fontWeight`/`lineHeight` руками.
+  - `text.display` — 32/38/700, крупный hero-заголовок (Welcome, Deposit)
+  - `text.title` — 24/30/700, заголовок страницы
+  - `text.titleSmall` — 20/26/700, заголовок раздела/портала
+  - `text.headline` — 18/24/600, заголовок карточки
+  - `text.subhead` — 16/22/600, подзаголовок, ярлык поля
+  - `text.body` — 15/20/400, основной текст
+  - `text.bodyStrong` — 15/20/600, выделенный основной текст (имя клиента, цена)
+  - `text.action` — 14/18/500, текст кнопок, чипов, табов
+  - `text.footnote` — 13/18/400, пояснения под полями
+  - `text.caption` — 12/16/500, бейджи, мелкие подписи
+  - `text.overline` — 11/14/600 UPPERCASE + letter-spacing, лейблы секций
+  - Использование: `<div style={{ ...text.title, color: 'var(--color-on-surface)' }}>...</div>`. Цвет НЕ кладётся в text-стили — задаётся отдельно через CSS-переменную, иначе разные темы сломаются.
+  - При добавлении нового размера обновлять `typography.ts` И таблицу выше синхронно.
 - Максимально используй компоненты из MAX UI (https://dev.max.ru/ui) если имеются подходящие
 ## Запуск и тесты
 

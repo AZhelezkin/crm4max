@@ -4,6 +4,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import PageHeader from '@client/components/PageHeader'
 import Card from '@client/components/Card'
 import Button from '@client/components/Button'
+import { text } from '@/styles/typography'
 
 export default function DepositPage() {
   const navigate = useNavigate()
@@ -38,7 +39,7 @@ export default function DepositPage() {
           <div style={{ fontSize: 14, color: 'var(--color-on-surface-secondary)', marginBottom: 8 }}>
             Для бронирования требуется депозит
           </div>
-          <div style={{ fontSize: 32, fontWeight: 700 }}>
+          <div style={text.display}>
             {(depositAmount / 100).toLocaleString('ru-RU')} ₽
           </div>
         </Card>
