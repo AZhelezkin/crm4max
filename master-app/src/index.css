@@ -92,9 +92,9 @@
   --color-service-surface:        rgba(14, 15, 17, 0.60);
   --color-background-blur:        rgba(0, 0, 0, 0.10);
 
-  /* Декоративные круги в hero-блоке профиля */
-  --color-hero-circle-1: #5F68E2; /* gradViolet0 */
-  --color-hero-circle-2: #5295B4; /* mintbright1 */
+  /* Декоративные круги в hero-блоке профиля (из design/dark/Profile_info.svg) */
+  --color-hero-circle-1: #2A2F99; /* animationV4 */
+  --color-hero-circle-2: #449395; /* gradMint100 / mintbright2 */
 
   /* Фон hero-блока профиля — paint0 из design/Profile_info.svg */
   --gradient-hero-background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%);

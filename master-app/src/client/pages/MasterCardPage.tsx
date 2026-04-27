@@ -8,7 +8,6 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 import { startParam } from '@/App'
-import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
@@ -159,12 +158,12 @@ export default function MasterCardPage() {
   /* ── Загрузка / ошибки ─────────────────────────────────────────────────── */
 
   if (!masterId) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
       <span style={{ color: 'var(--color-on-surface-secondary)' }}>Откройте приложение через бота</span>
     </div>
   )
   if (!master) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
       <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
     </div>
   )
@@ -172,44 +171,144 @@ export default function MasterCardPage() {
   /* ── Рендер ─────────────────────────────────────────────────────────────── */
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
 
-      {/* ── Шапка: рейтинг ─────────────────────────────────────────────── */}
-      <div style={{ position: 'relative', padding: '16px 14px 0' }}>
+      {/* ── HERO: декор (animationV4 + gradMint100 + blur) + back + рейтинг + аватар + имя
+            Координаты — из design/dark/Profile_info.svg, page y = SVG y - 124. */}
+      <div style={{ position: 'relative', overflow: 'hidden', paddingTop: 16, paddingBottom: 24 }}>
+
+        {/* Декор: 2 круга + полупрозрачный overlay c blur. paint0 наследуется от <body>. */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, overflow: 'hidden',
+          pointerEvents: 'none', zIndex: 0,
+        }}>
+          {/* Большой круг animationV4: SVG cx=210 cy=52 r=227 → ø454, top=-(227+72)=-299 */}
+          <div style={{
+            position: 'absolute', left: '50%', top: -299, transform: 'translateX(-50%)',
+            width: 454, height: 454, borderRadius: '50%',
+            background: 'var(--color-hero-circle-1)',
+          }} />
+          {/* Малый круг gradMint100: SVG cx=210 cy=90 r=124 → ø248, top=-(124+34)=-158 */}
+          <div style={{
+            position: 'absolute', left: '50%', top: -158, transform: 'translateX(-50%)',
+            width: 248, height: 248, borderRadius: '50%',
+            background: 'var(--color-hero-circle-2)',
+          }} />
+          {/* Blur overlay (как в SVG: backdrop-filter blur(60) + чёрная плёнка 10%) */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
+            background: 'var(--color-background-blur)',
+          }} />
+        </div>
+
+        {/* Back-кнопка: SVG (12, 130) → page (12, 6); 44×44, bg=background, arrow=onSurfaceSoften */}
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Назад"
+          style={{
+            position: 'absolute', top: 6, left: 12, zIndex: 2,
+            width: 44, height: 44, borderRadius: 22,
+            background: 'var(--color-background)',
+            border: 'none', cursor: 'pointer', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {/* Стрелка ← из макета: M31.57 145.93 L 25.5 152 L 31.57 158.07 + M42.5 152 H 25.67,
+              переведено в 17×13 viewBox (origin = 25.5, 145.93). */}
+          <svg width="17" height="13" viewBox="0 0 17 13" fill="none">
+            <path d="M6.07 0L0 6.07L6.07 12.14" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M17 6.07H0.17" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+
+        {/* Рейтинг (top-right): звезда + число, без подложки.
+            Star 18×16 fill=warningSurfaceAccented (#F0AF2D), text onSurfaceSecondary. */}
         {master.rating > 0 && (
           <div style={{
-            position: 'absolute', top: 16, right: 14,
-            display: 'flex', alignItems: 'center', gap: 4,
-            background: 'var(--color-surface)', borderRadius: 20,
-            padding: '4px 10px',
+            position: 'absolute', top: 21, right: 18, zIndex: 2,
+            display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            <span style={{ color: 'var(--color-warning-surface-accented)', ...text.action }}>★</span>
-            <span style={{ ...text.action, color: 'var(--color-on-surface)' }}>{master.rating.toFixed(1)}</span>
+            <svg width="18" height="16" viewBox="346 144 18 16" fill="none">
+              <path d="M356.442 144.925L357.909 147.859C358.109 148.267 358.642 148.659 359.092 148.734L361.75 149.175C363.45 149.459 363.85 150.692 362.625 151.909L360.559 153.975C360.209 154.325 360.017 155 360.125 155.484L360.717 158.042C361.184 160.067 360.109 160.85 358.317 159.792L355.825 158.317C355.375 158.05 354.634 158.05 354.175 158.317L351.684 159.792C349.9 160.85 348.817 160.059 349.284 158.042L349.875 155.484C349.984 155 349.792 154.325 349.442 153.975L347.375 151.909C346.159 150.692 346.55 149.459 348.25 149.175L350.909 148.734C351.35 148.659 351.884 148.267 352.084 147.859L353.55 144.925C354.35 143.334 355.65 143.334 356.442 144.925" fill="var(--color-warning-surface-accented)"/>
+            </svg>
+            <span style={{ ...text.action, color: 'var(--color-on-surface-secondary)' }}>
+              {master.rating.toFixed(1)}
+            </span>
           </div>
         )}
-      </div>
 
-      {/* ── Аватар ────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 28 }}>
+        {/* Аватар + декоративное кольцо. Аватар 104×104 (rect 153.5,140), кольцо — 3 stroke-арки
+            из SVG: gray (top-right) + 2× mint→green gradient. Контейнер 108×108 (по 2px overshoot). */}
         <div style={{
-          width: 104, height: 104, borderRadius: 52,
-          overflow: 'hidden', background: 'var(--color-surface)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', zIndex: 1,
+          width: 108, height: 108, margin: '0 auto',
         }}>
-          {master.photo
-            ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 44, color: 'var(--color-on-surface-secondary)' }}>👤</span>
-          }
-        </div>
-      </div>
+          <svg
+            width="108" height="108"
+            viewBox="151 138 108 108"
+            fill="none"
+            aria-hidden="true"
+            style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+          >
+            <defs>
+              <linearGradient id="masterRingGradBottom" x1="183.053" y1="222.351" x2="187.834" y2="253.309" gradientUnits="userSpaceOnUse">
+                <stop stopColor="var(--color-grad-green-vibrance-0)"/>
+                <stop offset="1" stopColor="var(--color-grad-green-vibrance-100)"/>
+              </linearGradient>
+              <linearGradient id="masterRingGradTopLeft" x1="165.911" y1="138.15" x2="217.52" y2="195.274" gradientUnits="userSpaceOnUse">
+                <stop stopColor="var(--color-grad-green-vibrance-0)"/>
+                <stop offset="1" stopColor="var(--color-grad-green-vibrance-100)"/>
+              </linearGradient>
+            </defs>
+            {/* Gray arc (top-right): «пустая» часть кольца, stroke=onSurfaceMuted */}
+            <path
+              d="M209.419 138.143C218.204 138.782 226.7 141.562 234.164 146.238C241.629 150.914 247.837 157.346 252.246 164.972C256.655 172.598 259.131 181.186 259.459 189.989C259.787 198.791 257.957 207.54 254.128 215.473"
+              stroke="var(--color-on-surface-muted)" strokeLinecap="round"
+            />
+            {/* Bottom arc (gradient mint→green) */}
+            <path
+              d="M250.155 222.354C245.203 229.639 238.545 235.603 230.76 239.724C222.975 243.846 214.3 246.001 205.492 246C196.683 246 188.008 243.845 180.224 239.723C172.439 235.601 165.781 229.637 160.83 222.352"
+              stroke="url(#masterRingGradBottom)" strokeWidth="2" strokeLinecap="round"
+            />
+            {/* Top-left arc (gradient mint→green) */}
+            <path
+              d="M156.905 215.561C153.062 207.635 151.216 198.889 151.528 190.086C151.84 181.283 154.302 172.69 158.697 165.056C163.092 157.422 169.288 150.98 176.745 146.29C184.201 141.6 192.691 138.806 201.476 138.15"
+              stroke="url(#masterRingGradTopLeft)" strokeWidth="2" strokeLinecap="round"
+            />
+          </svg>
 
-      {/* ── Имя + описание ────────────────────────────────────────────── */}
-      <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)', lineHeight: 1.2 }}>
+          <div style={{
+            position: 'absolute', top: 2, left: 2,
+            width: 104, height: 104, borderRadius: 52,
+            overflow: 'hidden', background: 'var(--color-surface)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {master.photo
+              ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 44, color: 'var(--color-on-surface-secondary)' }}>👤</span>
+            }
+          </div>
+        </div>
+
+        {/* Имя — text.title (24/30/700). SVG y=270 → page y=146; от низа аватара (y=120) gap=26.
+            Контейнер задаёт paddingTop:16 + аватар 104, итого y=120, далее marginTop:25 = y=145. */}
+        <div style={{
+          position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 25,
+          ...text.title, color: 'var(--color-on-surface)',
+          padding: '0 16px',
+        }}>
           {master.name}
         </div>
+
+        {/* Подзаголовок — text.footnote (13/18/400). SVG y=302 → page y=178; от низа имени (y=170) gap=8 (включая разницу line-height). */}
         {master.description && (
-          <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)', marginTop: 6, padding: '0 14px' }}>
+          <div style={{
+            position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 7,
+            ...text.footnote, color: 'var(--color-on-surface-secondary)',
+            padding: '0 16px',
+          }}>
             {master.description}
           </div>
         )}
@@ -225,8 +324,8 @@ export default function MasterCardPage() {
             navigate('/book/success', { state: { bookingId: nextBooking.id } })
           }}
           style={{
-            margin: '20px 14px 0', height: 106, borderRadius: 20,
-            background: `linear-gradient(135deg, ${colors.violetbright2} 0%, ${colors.violetbright1} 100%)`,
+            margin: '0 16px 24px', height: 106, borderRadius: 20,
+            background: 'linear-gradient(135deg, var(--color-grad-violet-100) 0%, var(--color-grad-violet-0) 100%)',
             display: 'flex', alignItems: 'center', padding: '0 20px',
             cursor: 'pointer', position: 'relative', overflow: 'hidden',
           }}
@@ -234,7 +333,7 @@ export default function MasterCardPage() {
           {/* Calendar icon */}
           <div style={{
             width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-            background: `linear-gradient(180deg, ${colors.freshgreen50} 0%, var(--color-success-surface-accented) 100%)`,
+            background: 'var(--color-success-surface-accented)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -268,8 +367,9 @@ export default function MasterCardPage() {
         </div>
       )}
 
-      {/* ── 4 кнопки действий (89×69, gap 9, rx 18) ──────────────────── */}
-      <div style={{ display: 'flex', gap: 9, padding: '20px 14px 0' }}>
+      {/* ── 4 действия. Макет: 4 карточки 91.75×69, gap 4, rx 18, fill=surfaceTransparent.
+            Иконка 24×24 (stroke=primarySurface) + label text.action (primarySurface). */}
+      <div style={{ display: 'flex', gap: 4, padding: '0 16px' }}>
         {([
           { label: 'Запись',  Icon: IcoBook, action: () => handleBook() },
           { label: 'Звонок', Icon: IcoCall, action: () => {
@@ -288,7 +388,8 @@ export default function MasterCardPage() {
               onClick={btn.action}
               disabled={dis}
               style={{
-                flex: 1, height: 69, background: 'var(--color-surface)', borderRadius: 18,
+                flex: 1, height: 69, borderRadius: 18,
+                background: 'var(--color-surface-transparent)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                 border: 'none', cursor: dis ? 'default' : 'pointer',
                 opacity: dis ? 0.4 : 1, padding: 0,
@@ -301,53 +402,60 @@ export default function MasterCardPage() {
         })}
       </div>
 
-      {/* ── Табы (Услуги / Фото / Отзывы) ─────────────────────────────── */}
-      <div style={{
-        display: 'flex', gap: 0, padding: '20px 14px 0',
-      }}>
-        {TABS.map((key) => {
-          const active = tab === key
-          const badge = tabBadge(key)
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
-                padding: '0 12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 12 }}>
-                <span style={{
-                  ...text.subheadline,
-                  color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-                }}>
-                  {TAB_LABELS[key]}
-                </span>
-                {badge > 0 && (
+      {/* ── Табы (Услуги / Фото / Отзывы). Макет:
+            text.action + бейдж-пилюля 24×22 r=11. Активный: text=primarySurface, badge bg=activeSurface.
+            Неактивный: text=onSurfaceSecondary, badge bg=secondarySurface.
+            Под табами — divider (dividerLow), под активным — линия 3px primarySurface. */}
+      <div style={{ position: 'relative', marginTop: 31 }}>
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          height: 1, background: 'var(--color-divider-low)',
+        }} />
+        <div style={{ display: 'flex', gap: 24, padding: '0 16px', position: 'relative' }}>
+          {TABS.map((key) => {
+            const active = tab === key
+            const badge = tabBadge(key)
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                style={{
+                  flex: 'none', background: 'none', border: 'none', cursor: 'pointer',
+                  padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 13 }}>
                   <span style={{
-                    background: active ? 'rgba(0,122,254,0.3)' : 'var(--color-divider-low)',
+                    ...text.action,
                     color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-                    borderRadius: 11.5, ...text.footnote,
-                    padding: '2px 8px', minWidth: 24, textAlign: 'center',
-                    lineHeight: '19px',
                   }}>
-                    {badge}
+                    {TAB_LABELS[key]}
                   </span>
-                )}
-              </div>
-              <div style={{
-                width: '100%', height: 3,
-                background: active ? 'var(--color-primary-surface)' : 'transparent',
-                borderRadius: '3px 3px 0 0',
-              }} />
-            </button>
-          )
-        })}
+                  {badge > 0 && (
+                    <span style={{
+                      width: 24, height: 22, borderRadius: 11,
+                      background: active ? 'var(--color-active-surface)' : 'var(--color-secondary-surface)',
+                      color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
+                      ...text.caption,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {badge}
+                    </span>
+                  )}
+                </div>
+                <div style={{
+                  width: '100%', height: 3,
+                  background: active ? 'var(--color-primary-surface)' : 'transparent',
+                  borderRadius: '3px 3px 0 0',
+                }} />
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* ── Контент табов ──────────────────────────────────────────────── */}
-      <div style={{ padding: '10px 14px 0' }}>
+      {/* ── Контент табов. Между underline табов (page y=348) и первой карточкой (page y=372) gap=24. */}
+      <div style={{ padding: '24px 16px 0' }}>
 
         {tab === 'services' && (
           <ServicesList categories={master.categories} onCategoryClick={(cat) => {
@@ -360,7 +468,7 @@ export default function MasterCardPage() {
           workPhotos.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет фотографий</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -16px' }}>
               {workPhotos.map((p: any, i: number) => (
                 <div key={p.id} style={{ aspectRatio: '134/170', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxIndex(i)}>
                   <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -371,12 +479,12 @@ export default function MasterCardPage() {
         )}
 
         {tab === 'reviews' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {master.reviews.length === 0 && (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 32 }}>Пока нет отзывов</div>
             )}
             {master.reviews.map((r) => (
-              <div key={r.id} style={{ background: 'var(--color-surface)', borderRadius: 20, padding: 16 }}>
+              <div key={r.id} style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{
                     width: 46, height: 46, borderRadius: 23,
@@ -465,7 +573,9 @@ export default function MasterCardPage() {
 
 function ServicesList({ categories, onCategoryClick }: { categories: Category[]; onCategoryClick: (cat: Category) => void }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    /* Макет: карточки 379×88 (с бейджем) / 379×76 (без), rx=20, fill=surfaceTransparent.
+       Между карточками gap=8. Padding внутри подгоняется под содержимое. */
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {categories.map((cat) => {
         const hasDiscount = cat.services.some((s) => s.discountPercent)
         const preview = cat.services.map((s) => s.name).join(' • ')
@@ -475,35 +585,38 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             key={cat.id}
             onClick={() => onCategoryClick(cat)}
             style={{
-              display: 'flex', alignItems: 'center',
-              background: 'var(--color-surface)',
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'var(--color-surface-transparent)',
               borderRadius: 20,
-              minHeight: 78, padding: '0 16px 0 0',
+              padding: '16px 16px 16px 20px',
               cursor: 'pointer',
             }}
           >
-            {/* Аватар категории 46×46 */}
+            {/* Аватар категории 44×44 (макет: rect 36,518 → 36,518+44 ⇒ 44×44, rx=22). */}
             <div style={{
-              width: 46, height: 46, borderRadius: 23, flexShrink: 0,
-              overflow: 'hidden', background: 'var(--color-divider-low)',
+              width: 44, height: 44, borderRadius: 22, flexShrink: 0,
+              overflow: 'hidden', background: 'var(--color-surface)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 12px 0 16px',
             }}>
               {cat.photo
                 ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ ...text.titleSmall }}>✂️</span>
+                : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
               }
             </div>
 
-            {/* Название + описание */}
-            <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ ...text.body, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+            {/* Название + (опц. бейдж скидки) + описание */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ ...text.bodyStrong, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
+                  /* Макет: rect 69×20, rx=4, fill=errorSurfaceLite. Текст «% СКИДКИ» — text.overline. */
                   <span style={{
-                    background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                    ...text.overline, borderRadius: 6,
-                    padding: '2px 8px', lineHeight: '18px',
+                    height: 20, borderRadius: 4,
+                    padding: '0 8px',
+                    background: 'var(--color-error-surface-lite)',
+                    color: 'var(--color-on-error-surface-lite)',
+                    ...text.overline,
+                    display: 'inline-flex', alignItems: 'center',
                   }}>
                     % скидки
                   </span>
@@ -517,12 +630,10 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
               </div>
             </div>
 
-            {/* Шеврон */}
-            <div style={{ flexShrink: 0, marginLeft: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            {/* Шеврон → (interactiveElementSecondary) */}
+            <svg width="10" height="14" viewBox="0 0 10 14" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M1.5 1L7.5 7L1.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
         )
       })}
