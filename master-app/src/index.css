@@ -92,6 +92,10 @@
   --color-service-surface:        rgba(14, 15, 17, 0.60);
   --color-background-blur:        rgba(0, 0, 0, 0.10);
 
+  /* Декоративные круги в hero-блоке профиля */
+  --color-hero-circle-1: #5F68E2; /* gradViolet0 */
+  --color-hero-circle-2: #5295B4; /* mintbright1 */
+
   /* Радиусы */
   --radius:     12px;
   --radius-sm:  10px;
@@ -162,6 +166,10 @@
   --color-service-text:           rgba(14, 15, 17, 0.60);
   --color-service-surface:        rgba(14, 15, 17, 0.60);
   --color-background-blur:        rgba(242, 243, 245, 0.10);
+
+  /* Hero — пастельные круги светлой темы (из макета Profile_info.svg) */
+  --color-hero-circle-1: #A7AAE7; /* animation-v4-light */
+  --color-hero-circle-2: #DCEEEF; /* mintlight2 */
 }
 
 body {

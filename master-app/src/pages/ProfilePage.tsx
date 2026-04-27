@@ -229,15 +229,41 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* Шапка профиля */}
+      {/* Шапка профиля — декоративный hero (из design/light/Profile_info.svg) */}
       <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center' }}>
 
-        {/* Аватар — 104×104 (из Profile_info.svg) */}
+        {/* Декоративный фон: 2 круга + blur overlay */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, overflow: 'hidden',
+          pointerEvents: 'none', zIndex: 0,
+        }}>
+          {/* Большой круг (фиолет в Light, синий в Dark): cx=210 cy=52-124=-72 r=227 → ø454 */}
+          <div style={{
+            position: 'absolute', left: '50%', top: -72, transform: 'translateX(-50%)',
+            width: 454, height: 454, borderRadius: '50%',
+            background: 'var(--color-hero-circle-1)',
+          }} />
+          {/* Малый круг (мятный): cx=210 cy=90-124=-34 r=124 → ø248 */}
+          <div style={{
+            position: 'absolute', left: '50%', top: -34, transform: 'translateX(-50%)',
+            width: 248, height: 248, borderRadius: '50%',
+            background: 'var(--color-hero-circle-2)',
+          }} />
+          {/* Blur + полупрозрачный overlay поверх */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
+            background: 'var(--color-surface-transparent)',
+          }} />
+        </div>
+
+        {/* Аватар — 104×104 (rect 158,140 width=104 rx=52, без border) */}
         <div style={{
+          position: 'relative', zIndex: 1,
           width: 104, height: 104, borderRadius: '50%',
-          border: '3px solid var(--color-primary-surface)',
           overflow: 'hidden', margin: '0 auto 27px',
-          background: 'var(--color-secondary-surface)',
+          background: 'var(--color-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {master?.photo
@@ -247,11 +273,14 @@ export default function ProfilePage() {
         </div>
 
         {/* Имя */}
-        <div style={{ fontSize: 20, fontWeight: 700 }}>{master?.name || 'Мастер'}</div>
+        <div style={{ position: 'relative', zIndex: 1, fontSize: 20, fontWeight: 700 }}>
+          {master?.name || 'Мастер'}
+        </div>
 
         {/* Специальность */}
         {master?.description && (
           <div style={{
+            position: 'relative', zIndex: 1,
             color: 'var(--color-on-surface-secondary)', fontSize: 14,
             marginTop: 14, padding: '0 24px',
           }}>
