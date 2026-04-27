@@ -96,6 +96,9 @@
   --color-hero-circle-1: #5F68E2; /* gradViolet0 */
   --color-hero-circle-2: #5295B4; /* mintbright1 */
 
+  /* Фон hero-блока профиля — paint0 из design/Profile_info.svg */
+  --gradient-hero-background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%);
+
   /* Радиусы */
   --radius:     12px;
   --radius-sm:  10px;
@@ -170,6 +173,8 @@
   /* Hero — пастельные круги светлой темы (из макета Profile_info.svg) */
   --color-hero-circle-1: #A7AAE7; /* animation-v4-light */
   --color-hero-circle-2: #DCEEEF; /* mintlight2 */
+
+  /* --gradient-hero-background наследуется — стопы (surface, background) уже переопределены выше */
 }
 
 body {
