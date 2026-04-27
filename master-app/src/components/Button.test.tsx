@@ -25,13 +25,13 @@ describe('Button', () => {
   it('применяет стиль primary по умолчанию', () => {
     render(<Button>Текст</Button>)
     const btn = screen.getByText('Текст')
-    expect(btn).toHaveStyle({ background: 'var(--color-primary)' })
+    expect(btn).toHaveStyle({ background: 'var(--color-primary-surface)' })
   })
 
   it('применяет стиль danger', () => {
     render(<Button variant="danger">Удалить</Button>)
     const btn = screen.getByText('Удалить')
-    expect(btn).toHaveStyle({ color: 'var(--color-danger)' })
+    expect(btn).toHaveStyle({ color: 'var(--color-error-surface-accented)' })
   })
 
   it('растягивается на всю ширину при fullWidth', () => {

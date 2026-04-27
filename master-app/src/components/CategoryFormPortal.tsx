@@ -55,7 +55,7 @@ export default function CategoryFormPortal({
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'var(--color-bg)',
+      background: 'var(--color-background)',
       zIndex: 200,
       display: 'flex', flexDirection: 'column',
     }}>
@@ -66,7 +66,7 @@ export default function CategoryFormPortal({
           style={{
             width: 56, display: 'flex', justifyContent: 'center',
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--color-primary)', padding: 0,
+            color: 'var(--color-primary-surface)', padding: 0,
           }}
         >
           <BackArrowIcon />
@@ -74,7 +74,7 @@ export default function CategoryFormPortal({
         <div style={{
           flex: 1, textAlign: 'center',
           fontSize: 20, fontWeight: 600,
-          color: 'var(--color-text)', letterSpacing: -0.3,
+          color: 'var(--color-on-surface)', letterSpacing: -0.3,
         }}>
           {isEdit ? 'Редактирование категории' : 'Добавление категории'}
         </div>
@@ -161,8 +161,8 @@ export default function CategoryFormPortal({
           style={{
             ...primaryActionButtonBaseStyle,
             cursor: canSave ? 'pointer' : 'default',
-            background: canSave ? 'var(--color-primary)' : 'var(--color-card2)',
-            color: canSave ? '#fff' : 'var(--color-text-secondary)',
+            background: canSave ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
+            color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface-secondary)',
           }}
         >
           Готово

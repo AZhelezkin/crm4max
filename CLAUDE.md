@@ -84,7 +84,18 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
 - **Позиционирование**: всегда проверяй x/y координаты элементов в макете, чтобы определить их расположение (лево/право/центр). Не угадывай позицию — вычисляй из координат. Если два элемента имеют близкие y-координаты — они на одной строке, группируй их в один flex-row контейнер.
 - **Контрольная сумма при фиксированных размерах**: если у контейнера задан фиксированный `height`/`width` c `box-sizing: border-box`, **обязательно** сложи все внутренние размеры (padding + margin + высота/ширина каждого дочернего элемента) и убедись, что сумма **точно равна** заданному размеру. Не коммить код, пока сумма не сойдётся — иначе padding «съедается» и элементы прижимаются к краю.
 - Стили пишем **inline style** (React), без CSS-файлов.
-- Тёмная тема: фон `#0F0F11`, карточки `#1C1C1E` или `#25262B`, текст `#D3D4D6`, вторичный `#7D7D7F` / `#8E8E93`.
+- **Цвета — только через дизайн-токены MAX UI**, без хардкод-хексов в компонентах:
+  - **Палитра** (`master-app/src/styles/tokens.json` → `tokens.ts`) — базовый набор хексов из Figma (`blue50`, `red50`, `calmindigo80` и т.п.).
+  - **Семантический слой** (`master-app/src/styles/Dark.tokens.json` + `Light.tokens.json` → `theme.ts`) — две темы Dark/Light с одинаковыми ключами (`surface`, `onSurface`, `primarySurface`, `errorSurfaceAccented` и т.д.). По умолчанию Dark, переключение через `<html data-theme="light">`.
+  - В компонентах использовать **CSS-переменные** из `master-app/src/index.css` — они автоматически меняются при смене темы:
+    - Поверхности: `var(--color-background)`, `var(--color-surface)`, `var(--color-secondary-surface)`, `var(--color-pattern-element)`
+    - Текст: `var(--color-on-surface)`, `var(--color-on-surface-secondary)`, `var(--color-on-surface-muted)`, `var(--color-on-primary-surface)`
+    - Акценты: `var(--color-primary-surface)`, `var(--color-active-surface)`, `var(--color-active-element)`
+    - Состояния: `var(--color-error-surface-accented)` / `--color-error-surface-lite`, `--color-success-surface-accented` / `--color-success-surface-lite`, `--color-warning-surface-accented` / `--color-warning-surface-lite`
+    - Разделители: `var(--color-divider-low)`, `var(--color-divider-mid)`
+    - Градиенты: `var(--color-grad-violet-0/100)`, `--color-grad-mint-0/100`, `--color-grad-peach-0/100`, `--color-grad-green-0/100`, `--color-grad-green-vibrance-0/100`
+  - Прямой импорт `import { theme } from '@/styles/theme'` или `import { colors } from '@/styles/tokens'` — только там, где CSS var не работает: canvas API (QR-код).
+- При добавлении нового семантического токена: обновлять синхронно `Dark.tokens.json`, `Light.tokens.json`, `theme.ts` (`darkTheme` + `lightTheme`) и `index.css` (`:root[data-theme="dark"]` + `[data-theme="light"]`).
 - Максимально используй компоненты из MAX UI (https://dev.max.ru/ui) если имеются подходящие
 ## Запуск и тесты
 

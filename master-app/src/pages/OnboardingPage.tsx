@@ -301,7 +301,7 @@ export default function OnboardingPage() {
   // ─── Рендер ───────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Заголовок */}
       {true && (
@@ -401,7 +401,7 @@ export default function OnboardingPage() {
                 />
               </CellList>
               {phoneError && (
-                <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
+                <div style={{ fontSize: 13, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
               )}
             </div>
 
@@ -469,8 +469,8 @@ export default function OnboardingPage() {
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: 'pointer',
-                      background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card2)',
-                      color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text)',
+                      background: workingDays.includes(d.v) ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
+                      color: workingDays.includes(d.v) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                     }}
                   >
                     {d.l}
@@ -485,7 +485,7 @@ export default function OnboardingPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <TimeSelect value={startTime} onChange={setStartTime} />
-                <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
                 <TimeSelect value={endTime} onChange={setEndTime} />
               </div>
             </div>
@@ -515,7 +515,7 @@ export default function OnboardingPage() {
                   <div style={onboardingSectionLabelStyle}>ВРЕМЯ ОБЕДА</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <TimeSelect value={breakStart} onChange={setBreakStart} />
-                    <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                    <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
                     <TimeSelect value={breakEnd} onChange={setBreakEnd} />
                   </div>
                 </div>
@@ -548,7 +548,7 @@ export default function OnboardingPage() {
               padding: '12px 14px',
               borderRadius: 14,
               background: 'rgba(209, 50, 50, 0.12)',
-              color: '#9f1d1d',
+              color: 'var(--color-error-surface-accented)',
               fontSize: 14,
               lineHeight: 1.4,
             }}
@@ -564,11 +564,11 @@ export default function OnboardingPage() {
             ...primaryActionButtonBaseStyle,
             cursor: saving || photoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
             background: saving || photoUploading || (step === 0 && !name.trim())
-              ? 'var(--color-card2)'
-              : 'var(--color-primary)',
+              ? 'var(--color-secondary-surface)'
+              : 'var(--color-primary-surface)',
             color: saving || photoUploading || (step === 0 && !name.trim())
-              ? 'var(--color-text-secondary)'
-              : '#fff',
+              ? 'var(--color-on-surface-secondary)'
+              : 'var(--color-on-primary-surface)',
           }}
         >
           {saving ? 'Сохраняем...' :
@@ -638,7 +638,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
       >
         {hours.map((hh) => <option key={hh} value={hh}>{hh}</option>)}
       </select>
-      <span style={{ color: 'var(--color-text-secondary)' }}>:</span>
+      <span style={{ color: 'var(--color-on-surface-secondary)' }}>:</span>
       <select
         value={m}
         onChange={(e) => onChange(`${h}:${e.target.value}`)}
@@ -657,11 +657,11 @@ function BottomSheet({ title, children, onClose }: { title: string; children: Re
       onClick={onClose}
     >
       <div
-        style={{ background: 'var(--color-bg)', borderRadius: '16px 16px 0 0', width: '100%', padding: 16, maxHeight: '90dvh', overflowY: 'auto' }}
+        style={{ background: 'var(--color-background)', borderRadius: '16px 16px 0 0', width: '100%', padding: 16, maxHeight: '90dvh', overflowY: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ручка */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-card2)', margin: '0 auto 16px' }} />
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-secondary-surface)', margin: '0 auto 16px' }} />
         <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>{title}</h2>
         {children}
       </div>
@@ -673,9 +673,9 @@ function CameraIcon({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-        stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <circle cx="12" cy="13" r="4" stroke="#8E8E93" strokeWidth="1.5" fill="none" />
-      <path d="M12 11v1" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="12" cy="13" r="4" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" fill="none" />
+      <path d="M12 11v1" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }
@@ -685,9 +685,9 @@ function EditIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-        stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-        stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -711,10 +711,10 @@ function LocationIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M12 13.43a3.12 3.12 0 1 0 0-6.24 3.12 3.12 0 0 0 0 6.24z"
-        stroke="#8E8E93" strokeWidth="1.5" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" />
       <path d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 0 1-7.21 0c-2.76-2.66-5.92-6.97-4.77-12.05z"
-        stroke="#8E8E93" strokeWidth="1.5" />
-      <path d="M12 7.5v2M11 8.5h2" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" />
+      <path d="M12 7.5v2M11 8.5h2" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }
@@ -723,7 +723,7 @@ function LocationIcon() {
 function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path d="M9 18l6-6-6-6" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 18l6-6-6-6" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

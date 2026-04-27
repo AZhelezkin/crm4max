@@ -35,7 +35,7 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'var(--color-bg)',
+        background: 'var(--color-background)',
         zIndex: 200,
         display: 'flex',
         flexDirection: 'column',
@@ -70,8 +70,8 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
           style={{
             ...primaryActionButtonBaseStyle,
             cursor: 'pointer',
-            background: 'var(--color-primary)',
-            color: '#fff',
+            background: 'var(--color-primary-surface)',
+            color: 'var(--color-on-primary-surface)',
           }}
         >
           Готово

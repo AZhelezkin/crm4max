@@ -187,21 +187,21 @@ export default function PaymentsPage() {
   }, [payments, selectedMonth])
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', color: '#D3D4D6', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Header: 56px, centered title, upload icon right */}
       <header
         style={{
           height: 56,
           position: 'sticky',
           top: 0,
-          background: '#0F0F11',
+          background: 'var(--color-background)',
           zIndex: 10,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <h1 style={{ fontSize: 17, fontWeight: 600, color: '#D3D4D6', margin: 0 }}>Доход</h1>
+        <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>Доход</h1>
         <button
           aria-label="Экспорт"
           onClick={handleExport}
@@ -220,9 +220,9 @@ export default function PaymentsPage() {
           }}
         >
           <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 10.18V0.01" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 10.18V0.01" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </header>
@@ -255,10 +255,10 @@ export default function PaymentsPage() {
               style={{
                 flex: '0 0 164px',
                 height: 106,
-                background: active ? '#007AFE' : '#25262B',
+                background: active ? 'var(--color-primary-surface)' : 'var(--color-surface)',
                 borderRadius: 20,
                 padding: '18px 16px 10px',
-                color: '#fff',
+                color: 'var(--color-on-primary-surface)',
                 cursor: 'pointer',
                 boxSizing: 'border-box',
               }}
@@ -268,7 +268,7 @@ export default function PaymentsPage() {
                   fontSize: 14,
                   fontWeight: 400,
                   lineHeight: 1,
-                  color: active ? '#fff' : '#D3D4D6',
+                  color: active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                 }}
               >
                 {m.label}
@@ -279,7 +279,7 @@ export default function PaymentsPage() {
                   fontWeight: 700,
                   lineHeight: 1,
                   marginTop: 22,
-                  color: '#fff',
+                  color: 'var(--color-on-primary-surface)',
                 }}
               >
                 {formatRub(m.total)}
@@ -289,7 +289,7 @@ export default function PaymentsPage() {
                   fontSize: 12,
                   lineHeight: 1,
                   marginTop: 10,
-                  color: active ? 'rgba(255,255,255,0.6)' : '#7D7D7F',
+                  color: active ? 'rgba(255,255,255,0.6)' : 'var(--color-on-surface-secondary)',
                 }}
               >
                 Налог: {formatRub(m.tax, 2)}
@@ -298,7 +298,7 @@ export default function PaymentsPage() {
           )
         })}
         {months.length === 0 && (
-          <div style={{ color: '#7D7D7F', padding: 16 }}>Пока нет поступлений</div>
+          <div style={{ color: 'var(--color-on-surface-secondary)', padding: 16 }}>Пока нет поступлений</div>
         )}
       </div>
 
@@ -312,7 +312,7 @@ export default function PaymentsPage() {
               display: 'flex',
               alignItems: 'stretch',
               minHeight: 57,
-              borderTop: '1px solid #25262B',
+              borderTop: '1px solid var(--color-surface)',
               cursor: 'pointer',
             }}
           >
@@ -324,14 +324,14 @@ export default function PaymentsPage() {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>
+              <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                 {d.day} {d.monthShort}
               </span>
-              <span style={{ fontSize: 14, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+              <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                 {d.paymentCount}
               </span>
             </div>
-            <div style={{ width: 1, background: '#25262B' }} />
+            <div style={{ width: 1, background: 'var(--color-surface)' }} />
             <div
               style={{
                 flex: 1,
@@ -342,10 +342,10 @@ export default function PaymentsPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1, color: '#D3D4D6' }}>
+                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                   {formatRub(d.total)}
                 </div>
-                <div style={{ fontSize: 11, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+                <div style={{ fontSize: 11, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                   {formatRub(d.tax)}
                 </div>
               </div>
@@ -353,7 +353,7 @@ export default function PaymentsPage() {
                 <div
                   style={{
                     background: 'rgba(206, 66, 89, 0.3)',
-                    color: '#CE4259',
+                    color: 'var(--color-error-surface-accented)',
                     fontSize: 11,
                     fontWeight: 500,
                     padding: '4px 10px',
@@ -368,7 +368,7 @@ export default function PaymentsPage() {
           </div>
         ))}
         {selectedMonth && days.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет поступлений в этом месяце
           </div>
         )}
@@ -382,7 +382,7 @@ export default function PaymentsPage() {
           <div style={{ padding: '20px 14px 0' }}>
             <div
               style={{
-                background: '#25262B',
+                background: 'var(--color-surface)',
                 borderRadius: 20,
                 height: 116,
                 boxSizing: 'border-box',
@@ -392,11 +392,11 @@ export default function PaymentsPage() {
             >
               {/* Row 1: label + badge + pencil */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>ИНН</span>
+                <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>ИНН</span>
                 <div
                   style={{
                     background: 'rgba(66, 206, 89, 0.3)',
-                    color: '#29C643',
+                    color: 'var(--color-success-surface-accented)',
                     fontSize: 11,
                     fontWeight: 600,
                     letterSpacing: 0.5,
@@ -425,21 +425,21 @@ export default function PaymentsPage() {
                 <svg width="14" height="14" viewBox="370 277 16 18" fill="none">
                   <path
                     d="M378.84 280.4L373.366 286.193C373.16 286.413 372.96 286.846 372.92 287.146L372.673 289.306C372.586 290.086 373.146 290.62 373.92 290.486L376.066 290.12C376.366 290.066 376.786 289.846 376.993 289.62L382.466 283.826C383.413 282.826 383.84 281.686 382.366 280.293C380.9 278.913 379.786 279.4 378.84 280.4Z"
-                    stroke="#7D7D7F"
+                    stroke="var(--color-on-surface-secondary)"
                     strokeWidth="1.75"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <path
                     d="M377.927 281.366C378.213 283.206 379.707 284.613 381.56 284.8"
-                    stroke="#7D7D7F"
+                    stroke="var(--color-on-surface-secondary)"
                     strokeWidth="1.75"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <path
                     d="M372 292.667H384"
-                    stroke="#7D7D7F"
+                    stroke="var(--color-on-surface-secondary)"
                     strokeWidth="1.75"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -452,7 +452,7 @@ export default function PaymentsPage() {
                   fontSize: 22,
                   fontWeight: 600,
                   lineHeight: 1,
-                  color: '#FFFFFF',
+                  color: 'var(--color-on-primary-surface)',
                   marginTop: 23,
                   letterSpacing: 0.5,
                 }}
@@ -460,7 +460,7 @@ export default function PaymentsPage() {
                 77 22 123456 78
               </div>
               {/* Row 3: name */}
-              <div style={{ fontSize: 13, lineHeight: 1, color: '#7D7D7F', marginTop: 6 }}>
+              <div style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 6 }}>
                 Олег Алексеевич С.
               </div>
             </div>
@@ -474,7 +474,7 @@ export default function PaymentsPage() {
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: 0.5,
-              color: '#7D7D7F',
+              color: 'var(--color-on-surface-secondary)',
               textTransform: 'uppercase',
             }}
           >
@@ -495,7 +495,7 @@ export default function PaymentsPage() {
                     display: 'flex',
                     alignItems: 'stretch',
                     minHeight: 57,
-                    borderTop: '1px solid #25262B',
+                    borderTop: '1px solid var(--color-surface)',
                   }}
                 >
                   <div
@@ -506,14 +506,14 @@ export default function PaymentsPage() {
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ fontSize: 14, lineHeight: 1, color: '#D3D4D6' }}>
+                    <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface)' }}>
                       {m.monthAbbr}
                     </span>
-                    <span style={{ fontSize: 14, lineHeight: 1, color: '#7D7D7F', marginTop: 8 }}>
+                    <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
                       {m.year}
                     </span>
                   </div>
-                  <div style={{ width: 3, background: '#25262B' }} />
+                  <div style={{ width: 3, background: 'var(--color-surface)' }} />
                   <div
                     style={{
                       flex: 1,
@@ -536,7 +536,7 @@ export default function PaymentsPage() {
                           fontSize: 17,
                           fontWeight: 500,
                           lineHeight: 1,
-                          color: '#D3D4D6',
+                          color: 'var(--color-on-surface)',
                         }}
                       >
                         {formatNum(m.tax, 2)}<span style={{ opacity: 0.6 }}> ₽</span>
@@ -545,7 +545,7 @@ export default function PaymentsPage() {
                         <div
                           style={{
                             background: 'rgba(66, 206, 89, 0.3)',
-                            color: '#29C643',
+                            color: 'var(--color-success-surface-accented)',
                             fontSize: 11,
                             fontWeight: 600,
                             letterSpacing: 0.5,
@@ -579,18 +579,18 @@ export default function PaymentsPage() {
                       style={{
                         fontSize: 11,
                         lineHeight: 1,
-                        color: '#7D7D7F',
+                        color: 'var(--color-on-surface-secondary)',
                         marginTop: 8,
                       }}
                     >
-                      Доход: {formatNum(m.total, 2)}<span style={{ color: '#D3D4D6', opacity: 0.6 }}> ₽</span>
+                      Доход: {formatNum(m.total, 2)}<span style={{ color: 'var(--color-on-surface)', opacity: 0.6 }}> ₽</span>
                     </div>
                   </div>
                 </div>
               )
             })}
             {months.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>
+              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
                 Пока нет данных
               </div>
             )}
@@ -599,7 +599,7 @@ export default function PaymentsPage() {
       )}
 
       {tab === 'card' && (
-        <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 60 }}>
+        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 60 }}>
           Раздел в разработке
         </div>
       )}
@@ -614,7 +614,7 @@ export default function PaymentsPage() {
 
 function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; text: string }; onClose: () => void }) {
   const isSuccess = toast.kind === 'success'
-  const accent = isSuccess ? '#34C759' : '#FF453A'
+  const accent = isSuccess ? 'var(--color-success-surface-accented)' : 'var(--color-error-surface-accented)'
   return (
     <div
       onClick={onClose}
@@ -624,8 +624,8 @@ function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; tex
         left: 12,
         right: 12,
         zIndex: 1000,
-        background: '#1C1C1E',
-        border: '1px solid #2C2C2E',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-divider-low)',
         borderRadius: 14,
         padding: '12px 14px',
         display: 'flex',
@@ -665,7 +665,7 @@ function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; tex
           )}
         </svg>
       </div>
-      <div style={{ flex: 1, fontSize: 14, lineHeight: 1.35, color: '#D3D4D6' }}>{toast.text}</div>
+      <div style={{ flex: 1, fontSize: 14, lineHeight: 1.35, color: 'var(--color-on-surface)' }}>{toast.text}</div>
       <style>{`@keyframes crm4max-toast-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
     </div>
   )
@@ -690,7 +690,7 @@ function TabButton({
         fontSize: 17,
         lineHeight: '17px',
         fontWeight: active ? 600 : 400,
-        color: active ? '#007AFE' : '#7D7D7F',
+        color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
         position: 'relative',
         cursor: 'pointer',
       }}
@@ -704,7 +704,7 @@ function TabButton({
             right: 0,
             bottom: 0,
             height: 3,
-            background: '#007AFE',
+            background: 'var(--color-primary-surface)',
             borderRadius: 2,
           }}
         />

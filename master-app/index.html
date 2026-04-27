@@ -8,6 +8,13 @@
     <meta http-equiv="Expires" content="0" />
     <meta name="color-scheme" content="dark" />
     <title>CRM4Max</title>
+    <script>
+      // Применяем сохранённую тему до рендера React — без вспышки.
+      try {
+        var t = localStorage.getItem('crm4max-theme') === 'light' ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      } catch (e) { /* приватный режим / нет localStorage */ }
+    </script>
     <script src="https://st.max.ru/js/max-web-app.js"></script>
   </head>
   <body>

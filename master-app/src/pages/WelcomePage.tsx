@@ -14,8 +14,8 @@ export default function WelcomePage() {
     <div
       style={{
         minHeight: '100dvh',
-        background: '#0F0F11',
-        color: '#fff',
+        background: 'var(--color-background)',
+        color: 'var(--color-on-primary-surface)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
@@ -74,7 +74,7 @@ export default function WelcomePage() {
       </div>
 
       {/* ── Кнопка «Присоединиться» ── */}
-      {/* SVG: rect x=14 y=803 w=392 h=60 rx=20 fill=#007AFE; text cap ≈ 17 → fontSize 20 */}
+      {/* SVG: rect x=14 y=803 w=392 h=60 rx=20 fill=var(--color-primary-surface); text cap ≈ 17 → fontSize 20 */}
       <div
         style={{
           padding: '0 14px',
@@ -89,8 +89,8 @@ export default function WelcomePage() {
             height: 60,
             borderRadius: 20,
             border: 'none',
-            background: '#007AFE',
-            color: '#fff',
+            background: 'var(--color-primary-surface)',
+            color: 'var(--color-on-primary-surface)',
             fontSize: 20,
             fontWeight: 600,
             letterSpacing: -0.3,

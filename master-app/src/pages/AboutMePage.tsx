@@ -28,7 +28,7 @@ import {
 function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path d="M9 18l6-6-6-6" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 18l6-6-6-6" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -130,7 +130,7 @@ export default function AboutMePage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Заголовок */}
       <AppHeader title="Обо мне" onBack={() => navigate(-1)} />
@@ -179,7 +179,7 @@ export default function AboutMePage() {
             />
           </CellList>
           {phoneError && (
-            <div style={{ fontSize: 13, color: 'var(--color-error, #FF3B30)', padding: '4px 16px 0' }}>{phoneError}</div>
+            <div style={{ fontSize: 13, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
           )}
         </div>
 
@@ -223,8 +223,8 @@ export default function AboutMePage() {
           style={{
             ...primaryActionButtonBaseStyle,
             cursor: saving ? 'default' : 'pointer',
-            background: 'var(--color-primary)',
-            color: '#fff',
+            background: 'var(--color-primary-surface)',
+            color: 'var(--color-on-primary-surface)',
             opacity: saving ? 0.7 : 1,
           }}
         >

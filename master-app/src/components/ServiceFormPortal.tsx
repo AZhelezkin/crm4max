@@ -86,7 +86,7 @@ export default function ServiceFormPortal({
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'var(--color-bg)',
+      background: 'var(--color-background)',
       zIndex: 200,
       display: 'flex', flexDirection: 'column',
     }}>
@@ -97,7 +97,7 @@ export default function ServiceFormPortal({
           style={{
             width: 56, display: 'flex', justifyContent: 'center',
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--color-primary)', padding: 0,
+            color: 'var(--color-primary-surface)', padding: 0,
           }}
         >
           <BackArrowIcon />
@@ -105,7 +105,7 @@ export default function ServiceFormPortal({
         <div style={{
           flex: 1, textAlign: 'center',
           fontSize: 20, fontWeight: 600,
-          color: 'var(--color-text)', letterSpacing: -0.3,
+          color: 'var(--color-on-surface)', letterSpacing: -0.3,
         }}>
           {isEdit ? 'Редактирование услуги' : 'Добавление услуги'}
         </div>
@@ -181,12 +181,12 @@ export default function ServiceFormPortal({
             />
             <span style={{
               position: 'absolute', inset: 0, borderRadius: 13, cursor: 'pointer',
-              background: discountEnabled ? 'var(--color-primary)' : 'var(--color-card2)',
+              background: discountEnabled ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
               transition: 'background 0.2s',
             }}>
               <span style={{
                 position: 'absolute', top: 3, left: discountEnabled ? 21 : 3,
-                width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                width: 20, height: 20, borderRadius: '50%', background: 'var(--color-on-primary-surface)',
                 transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }} />
             </span>
@@ -196,7 +196,7 @@ export default function ServiceFormPortal({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
               {discountedPriceNum !== null && (
                 <div style={onboardingPriceRowStyle}>
-                  <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>
                     {formatPrice(discountedPriceNum)}
                   </span>
                   <span style={onboardingDiscountBadgeStyle}>{discountPercent}%</span>
@@ -212,7 +212,7 @@ export default function ServiceFormPortal({
                 </select>
                 <span style={onboardingSelectChevronStyle}>⌄</span>
               </div>
-              <span style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>%</span>
+              <span style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)' }}>%</span>
             </div>
           )}
         </div>
@@ -227,7 +227,7 @@ export default function ServiceFormPortal({
               disabled={uploading}
               style={{
                 width: 72, height: 72, borderRadius: 10,
-                background: 'var(--color-card2)', border: 'none',
+                background: 'var(--color-secondary-surface)', border: 'none',
                 cursor: uploading ? 'default' : 'pointer',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
@@ -254,8 +254,8 @@ export default function ServiceFormPortal({
                   style={{
                     position: 'absolute', top: -6, right: -6,
                     width: 20, height: 20, borderRadius: '50%',
-                    background: 'var(--color-danger)', border: 'none',
-                    color: '#fff', fontSize: 12, lineHeight: 1,
+                    background: 'var(--color-error-surface-accented)', border: 'none',
+                    color: 'var(--color-on-primary-surface)', fontSize: 12, lineHeight: 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', padding: 0,
                   }}
@@ -321,8 +321,8 @@ export default function ServiceFormPortal({
           style={{
             ...primaryActionButtonBaseStyle,
             cursor: canSave ? 'pointer' : 'default',
-            background: canSave ? 'var(--color-primary)' : 'var(--color-card2)',
-            color: canSave ? '#fff' : 'var(--color-text-secondary)',
+            background: canSave ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
+            color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface-secondary)',
           }}
         >
           Готово

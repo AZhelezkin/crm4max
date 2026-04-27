@@ -10,9 +10,9 @@ import bridge from '@vkontakte/vk-bridge'
 dayjs.locale('ru')
 
 const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  UNPAID:       { label: 'НЕ ОПЛАЧЕНО', bg: '#3A0A0A', color: '#FF3B30' },
-  DEPOSIT_PAID: { label: 'ДЕПОЗИТ',     bg: '#1A2A0A', color: '#FF9500' },
-  PAID:         { label: 'ОПЛАЧЕНО',    bg: '#0A2A0A', color: '#34C759' },
+  UNPAID:       { label: 'НЕ ОПЛАЧЕНО', bg: 'var(--color-error-surface-lite)',  color: 'var(--color-error-surface-accented)' },
+  DEPOSIT_PAID: { label: 'ДЕПОЗИТ',     bg: 'var(--color-warning-surface-lite)', color: 'var(--color-warning-surface-accented)' },
+  PAID:         { label: 'ОПЛАЧЕНО',    bg: 'var(--color-success-surface-lite)', color: 'var(--color-success-surface-accented)' },
 }
 
 export default function BookingDetailPage() {
@@ -59,31 +59,31 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 36, height: 36, borderRadius: '50%', background: '#1E3A1E',
+            width: 36, height: 36, borderRadius: '50%', background: 'var(--color-success-surface-lite)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10l4 4 8-8" stroke="#34C759" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M4 10l4 4 8-8" stroke="var(--color-success-surface-accented)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>Вы записаны!</div>
-            <div style={{ color: '#8E8E93', fontSize: 13 }}>Не опаздывайте 😉</div>
+            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Не опаздывайте 😉</div>
           </div>
         </div>
-        <button onClick={() => navigate('/my-bookings')} style={{ background: 'none', color: '#8E8E93', fontSize: 18 }}>✕</button>
+        <button onClick={() => navigate('/my-bookings')} style={{ background: 'none', color: 'var(--color-on-surface-secondary)', fontSize: 18 }}>✕</button>
       </div>
 
       <div style={{ flex: 1, padding: '4px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-              background: '#2C2C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
+              background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
             }}>
               {booking.master.photo
                 ? <img src={booking.master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -92,14 +92,14 @@ export default function BookingDetailPage() {
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>{booking.master.name}</div>
             </div>
-            <div style={{ color: '#FF9500', fontWeight: 600, fontSize: 14 }}>★</div>
+            <div style={{ color: 'var(--color-warning-surface-accented)', fontWeight: 600, fontSize: 14 }}>★</div>
           </div>
         </div>
 
-        <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
           <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{booking.service.name}</div>
           {booking.service.description && (
-            <div style={{ color: '#8E8E93', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
               {booking.service.description}
             </div>
           )}
@@ -113,18 +113,18 @@ export default function BookingDetailPage() {
           </div>
         </div>
 
-        <div style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 16px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px' }}>
           <div style={{ fontWeight: 600 }}>{formattedDate}</div>
-          <div style={{ color: '#8E8E93', fontSize: 13 }}>Дата</div>
+          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Дата</div>
         </div>
 
-        <div style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 16px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px' }}>
           <div style={{ fontWeight: 600 }}>{booking.time}</div>
-          <div style={{ color: '#8E8E93', fontSize: 13 }}>Напомним за 1 час</div>
+          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Напомним за 1 час</div>
         </div>
 
         {reschedule && (
-          <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
             <div style={{ fontWeight: 600, marginBottom: 12 }}>Выберите новое время</div>
             <input
               type="date"
@@ -133,8 +133,8 @@ export default function BookingDetailPage() {
               min={dayjs().format('YYYY-MM-DD')}
               style={{
                 width: '100%', padding: 12, borderRadius: 10,
-                border: '1px solid #2C2C2E', marginBottom: 12, fontSize: 15,
-                background: '#2C2C2E', color: '#fff',
+                border: '1px solid var(--color-divider-low)', marginBottom: 12, fontSize: 15,
+                background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)',
               }}
             />
             {slots.length > 0 && (
@@ -145,7 +145,7 @@ export default function BookingDetailPage() {
                     onClick={() => setNewTime(s)}
                     style={{
                       padding: '12px 0', borderRadius: 10, fontSize: 14, fontWeight: 500,
-                      background: newTime === s ? '#2688EB' : '#2C2C2E', color: '#fff',
+                      background: newTime === s ? 'var(--color-primary-surface)' : 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)',
                     }}
                   >
                     {s}
@@ -159,15 +159,15 @@ export default function BookingDetailPage() {
                 disabled={!newDate || !newTime}
                 style={{
                   flex: 1, padding: 12, borderRadius: 10,
-                  background: newDate && newTime ? '#2688EB' : '#2C2C2E',
-                  color: '#fff', fontWeight: 600,
+                  background: newDate && newTime ? 'var(--color-primary-surface)' : 'var(--color-divider-low)',
+                  color: 'var(--color-on-primary-surface)', fontWeight: 600,
                 }}
               >
                 Подтвердить
               </button>
               <button
                 onClick={() => setReschedule(false)}
-                style={{ flex: 1, padding: 12, borderRadius: 10, background: '#2C2C2E', color: '#fff', fontWeight: 600 }}
+                style={{ flex: 1, padding: 12, borderRadius: 10, background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)', fontWeight: 600 }}
               >
                 Отмена
               </button>
@@ -181,35 +181,35 @@ export default function BookingDetailPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
             <button
               onClick={() => setReschedule(true)}
-              style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="4" width="18" height="17" rx="3" stroke="#2688EB" strokeWidth="2" />
-                <path d="M3 9h18" stroke="#2688EB" strokeWidth="2" />
-                <path d="M8 2v4M16 2v4" stroke="#2688EB" strokeWidth="2" strokeLinecap="round" />
+                <rect x="3" y="4" width="18" height="17" rx="3" stroke="var(--color-primary-surface)" strokeWidth="2" />
+                <path d="M3 9h18" stroke="var(--color-primary-surface)" strokeWidth="2" />
+                <path d="M8 2v4M16 2v4" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
-            <button style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M12 20h9" stroke="#2688EB" strokeWidth="2" strokeLinecap="round" />
-                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#2688EB" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M12 20h9" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" />
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinejoin="round" />
               </svg>
             </button>
             <button
               onClick={handleWriteToMaster}
-              style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V6a2 2 0 0 1 2-2z" stroke="#2688EB" strokeWidth="2" fill="none" strokeLinejoin="round" />
+                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V6a2 2 0 0 1 2-2z" stroke="var(--color-primary-surface)" strokeWidth="2" fill="none" strokeLinejoin="round" />
               </svg>
             </button>
             <button
               onClick={() => setShowCancelSheet(true)}
-              style={{ background: '#1C1C1E', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'var(--color-surface)', borderRadius: 14, padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="#FF3B30" strokeWidth="2" />
-                <path d="M9 9l6 6M15 9l-6 6" stroke="#FF3B30" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="12" r="9" stroke="var(--color-error-surface-accented)" strokeWidth="2" />
+                <path d="M9 9l6 6M15 9l-6 6" stroke="var(--color-error-surface-accented)" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -217,14 +217,14 @@ export default function BookingDetailPage() {
           <button
             style={{
               width: '100%', padding: 16, borderRadius: 14,
-              background: '#2688EB', color: '#fff', fontWeight: 600, fontSize: 16,
+              background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               marginBottom: 32,
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <rect x="2" y="6" width="20" height="14" rx="3" stroke="#fff" strokeWidth="2" />
-              <path d="M2 10h20" stroke="#fff" strokeWidth="2" />
+              <rect x="2" y="6" width="20" height="14" rx="3" stroke="var(--color-on-primary-surface)" strokeWidth="2" />
+              <path d="M2 10h20" stroke="var(--color-on-primary-surface)" strokeWidth="2" />
             </svg>
             Оплатить
           </button>
@@ -237,11 +237,11 @@ export default function BookingDetailPage() {
           onClick={() => setShowCancelSheet(false)}
         >
           <div
-            style={{ background: '#1C1C1E', borderRadius: '20px 20px 0 0', width: '100%', padding: '20px 16px 32px' }}
+            style={{ background: 'var(--color-surface)', borderRadius: '20px 20px 0 0', width: '100%', padding: '20px 16px 32px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>Правила отмены</h2>
-            <p style={{ color: '#8E8E93', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            <p style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
               При отмене записи менее чем за 24 часа депозит не возвращается.
               При отмене за 24 часа и более — депозит возвращается в полном объёме.
             </p>
@@ -249,14 +249,14 @@ export default function BookingDetailPage() {
               onClick={handleCancel}
               style={{
                 width: '100%', padding: 15, borderRadius: 14,
-                background: '#FF3B30', color: '#fff', fontWeight: 600, fontSize: 16, marginBottom: 8,
+                background: 'var(--color-error-surface-accented)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16, marginBottom: 8,
               }}
             >
               Отменить запись
             </button>
             <button
               onClick={() => setShowCancelSheet(false)}
-              style={{ width: '100%', padding: 15, borderRadius: 14, background: '#2C2C2E', color: '#fff', fontWeight: 600, fontSize: 16 }}
+              style={{ width: '100%', padding: 15, borderRadius: 14, background: 'var(--color-divider-low)', color: 'var(--color-on-primary-surface)', fontWeight: 600, fontSize: 16 }}
             >
               Назад
             </button>

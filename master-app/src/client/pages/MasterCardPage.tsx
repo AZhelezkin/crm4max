@@ -7,41 +7,42 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+import { colors } from '@/styles/tokens'
 
 dayjs.locale('ru')
 
-/* ── Иконки кнопок действий (stroke #007AFE, 24×24) ───────────────────────── */
+/* ── Иконки кнопок действий (stroke var(--color-primary-surface), 24×24) ───────────────────────── */
 
 function IcoBook() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M8 2V5M16 2V5M3.5 9.09H20.5" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M12 13.7H12.01M8.3 13.7H8.31M8.3 16.7H8.31" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 2V5M16 2V5M3.5 9.09H20.5" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 13.7H12.01M8.3 13.7H8.31M8.3 16.7H8.31" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
 function IcoCall() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M21.97 18.33C21.97 18.69 21.89 19.06 21.72 19.42C21.55 19.78 21.33 20.12 21.04 20.44C20.55 20.98 20.01 21.37 19.4 21.62C18.8 21.87 18.15 22 17.45 22C16.43 22 15.34 21.76 14.19 21.27C13.04 20.78 11.89 20.12 10.75 19.29C9.6 18.45 8.51 17.52 7.47 16.49C6.44 15.45 5.51 14.36 4.68 13.22C3.86 12.08 3.2 10.94 2.72 9.81C2.24 8.67 2 7.58 2 6.54C2 5.86 2.12 5.21 2.36 4.61C2.6 4 2.98 3.44 3.51 2.94C4.15 2.31 4.85 2 5.59 2C5.87 2 6.15 2.06 6.4 2.18C6.66 2.3 6.89 2.48 7.07 2.74L9.39 6.01C9.57 6.26 9.7 6.49 9.79 6.71C9.88 6.92 9.93 7.13 9.93 7.32C9.93 7.56 9.86 7.8 9.72 8.03C9.59 8.26 9.4 8.5 9.16 8.74L8.4 9.53C8.29 9.64 8.24 9.77 8.24 9.93C8.24 10.01 8.25 10.08 8.27 10.16C8.3 10.24 8.33 10.3 8.35 10.36C8.53 10.69 8.84 11.12 9.28 11.64C9.73 12.16 10.21 12.69 10.73 13.22C11.27 13.75 11.79 14.24 12.32 14.69C12.84 15.13 13.27 15.43 13.61 15.61C13.66 15.63 13.72 15.66 13.79 15.69C13.87 15.72 13.95 15.73 14.04 15.73C14.21 15.73 14.34 15.67 14.45 15.56L15.21 14.81C15.46 14.56 15.7 14.37 15.93 14.25C16.16 14.11 16.39 14.04 16.64 14.04C16.83 14.04 17.03 14.08 17.25 14.17C17.47 14.26 17.7 14.39 17.95 14.56L21.26 16.91C21.52 17.09 21.7 17.3 21.81 17.55C21.91 17.8 21.97 18.05 21.97 18.33Z" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10"/>
+      <path d="M21.97 18.33C21.97 18.69 21.89 19.06 21.72 19.42C21.55 19.78 21.33 20.12 21.04 20.44C20.55 20.98 20.01 21.37 19.4 21.62C18.8 21.87 18.15 22 17.45 22C16.43 22 15.34 21.76 14.19 21.27C13.04 20.78 11.89 20.12 10.75 19.29C9.6 18.45 8.51 17.52 7.47 16.49C6.44 15.45 5.51 14.36 4.68 13.22C3.86 12.08 3.2 10.94 2.72 9.81C2.24 8.67 2 7.58 2 6.54C2 5.86 2.12 5.21 2.36 4.61C2.6 4 2.98 3.44 3.51 2.94C4.15 2.31 4.85 2 5.59 2C5.87 2 6.15 2.06 6.4 2.18C6.66 2.3 6.89 2.48 7.07 2.74L9.39 6.01C9.57 6.26 9.7 6.49 9.79 6.71C9.88 6.92 9.93 7.13 9.93 7.32C9.93 7.56 9.86 7.8 9.72 8.03C9.59 8.26 9.4 8.5 9.16 8.74L8.4 9.53C8.29 9.64 8.24 9.77 8.24 9.93C8.24 10.01 8.25 10.08 8.27 10.16C8.3 10.24 8.33 10.3 8.35 10.36C8.53 10.69 8.84 11.12 9.28 11.64C9.73 12.16 10.21 12.69 10.73 13.22C11.27 13.75 11.79 14.24 12.32 14.69C12.84 15.13 13.27 15.43 13.61 15.61C13.66 15.63 13.72 15.66 13.79 15.69C13.87 15.72 13.95 15.73 14.04 15.73C14.21 15.73 14.34 15.67 14.45 15.56L15.21 14.81C15.46 14.56 15.7 14.37 15.93 14.25C16.16 14.11 16.39 14.04 16.64 14.04C16.83 14.04 17.03 14.08 17.25 14.17C17.47 14.26 17.7 14.39 17.95 14.56L21.26 16.91C21.52 17.09 21.7 17.3 21.81 17.55C21.91 17.8 21.97 18.05 21.97 18.33Z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10"/>
     </svg>
   )
 }
 function IcoChat() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="#007AFE" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M7 8H17M7 13H13" stroke="#007AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7 8H17M7 13H13" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
 function IcoMore() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="5" cy="12" r="2" fill="#007AFE"/>
-      <circle cx="12" cy="12" r="2" fill="#007AFE"/>
-      <circle cx="19" cy="12" r="2" fill="#007AFE"/>
+      <circle cx="5" cy="12" r="2" fill="var(--color-primary-surface)"/>
+      <circle cx="12" cy="12" r="2" fill="var(--color-primary-surface)"/>
+      <circle cx="19" cy="12" r="2" fill="var(--color-primary-surface)"/>
     </svg>
   )
 }
@@ -157,20 +158,20 @@ export default function MasterCardPage() {
   /* ── Загрузка / ошибки ─────────────────────────────────────────────────── */
 
   if (!masterId) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: '#0F0F11' }}>
-      <span style={{ color: '#7D7D7F' }}>Откройте приложение через бота</span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
+      <span style={{ color: 'var(--color-on-surface-secondary)' }}>Откройте приложение через бота</span>
     </div>
   )
   if (!master) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: '#0F0F11' }}>
-      <span style={{ color: '#7D7D7F' }}>Загрузка...</span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
+      <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
     </div>
   )
 
   /* ── Рендер ─────────────────────────────────────────────────────────────── */
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 95 }}>
 
       {/* ── Шапка: рейтинг ─────────────────────────────────────────────── */}
       <div style={{ position: 'relative', padding: '16px 14px 0' }}>
@@ -178,11 +179,11 @@ export default function MasterCardPage() {
           <div style={{
             position: 'absolute', top: 16, right: 14,
             display: 'flex', alignItems: 'center', gap: 4,
-            background: '#25262B', borderRadius: 20,
+            background: 'var(--color-surface)', borderRadius: 20,
             padding: '4px 10px',
           }}>
-            <span style={{ color: '#F0AF2D', fontSize: 14 }}>★</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#D3D4D6' }}>{master.rating.toFixed(1)}</span>
+            <span style={{ color: 'var(--color-warning-surface-accented)', fontSize: 14 }}>★</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-on-surface)' }}>{master.rating.toFixed(1)}</span>
           </div>
         )}
       </div>
@@ -191,23 +192,23 @@ export default function MasterCardPage() {
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 28 }}>
         <div style={{
           width: 104, height: 104, borderRadius: 52,
-          overflow: 'hidden', background: '#25262B',
+          overflow: 'hidden', background: 'var(--color-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {master.photo
             ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 44, color: '#7D7D7F' }}>👤</span>
+            : <span style={{ fontSize: 44, color: 'var(--color-on-surface-secondary)' }}>👤</span>
           }
         </div>
       </div>
 
       {/* ── Имя + описание ────────────────────────────────────────────── */}
       <div style={{ textAlign: 'center', marginTop: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: '#D3D4D6', lineHeight: 1.2 }}>
+        <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--color-on-surface)', lineHeight: 1.2 }}>
           {master.name}
         </div>
         {master.description && (
-          <div style={{ fontSize: 15, color: '#7D7D7F', marginTop: 6, padding: '0 14px' }}>
+          <div style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)', marginTop: 6, padding: '0 14px' }}>
             {master.description}
           </div>
         )}
@@ -224,7 +225,7 @@ export default function MasterCardPage() {
           }}
           style={{
             margin: '20px 14px 0', height: 106, borderRadius: 20,
-            background: 'linear-gradient(135deg, #844BB6 0%, #5F68E2 100%)',
+            background: `linear-gradient(135deg, ${colors.violetbright2} 0%, ${colors.violetbright1} 100%)`,
             display: 'flex', alignItems: 'center', padding: '0 20px',
             cursor: 'pointer', position: 'relative', overflow: 'hidden',
           }}
@@ -232,7 +233,7 @@ export default function MasterCardPage() {
           {/* Calendar icon */}
           <div style={{
             width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-            background: 'linear-gradient(180deg, #32D9B9 0%, #09CA3E 100%)',
+            background: `linear-gradient(180deg, ${colors.freshgreen50} 0%, var(--color-success-surface-accented) 100%)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -243,19 +244,19 @@ export default function MasterCardPage() {
           </div>
           {/* Text — 3 lines (gaps from mockup: 22.6px, 33.4px between glyph tops) */}
           <div style={{ flex: 1, marginLeft: 16, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: '20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-on-primary-surface)', lineHeight: '20px' }}>
               Вы записаны
             </div>
-            <div style={{ fontSize: 13, color: '#fff', marginTop: 3, lineHeight: '18px' }}>
+            <div style={{ fontSize: 13, color: 'var(--color-on-primary-surface)', marginTop: 3, lineHeight: '18px' }}>
               {nextBooking.service.name}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 19, marginTop: 15 }}>
-              <span style={{ fontSize: 13, color: '#D3D4D6', lineHeight: '18px' }}>
+              <span style={{ fontSize: 13, color: 'var(--color-on-surface)', lineHeight: '18px' }}>
                 {dayjs(nextBooking.date).format('D MMMM')} в {nextBooking.time}
               </span>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M10.894 8.327l-.667-1.107c-.14-.247-.267-.713-.267-.987V4.547c0-1.567-.92-2.92-2.247-3.553A1.76 1.76 0 006.994.007c-.727 0-1.38.393-1.727 1.013-1.3.647-2.2 1.987-2.2 3.533v1.687c0 .273-.127.74-.267.98l-.673 1.113c-.267.447-.327.94-.16 1.393.16.447.54.793 1.033.96 1.294.44 2.654.653 4.014.653s2.72-.213 4.013-.647c.467-.153.827-.507 1-.967.173-.46.127-.967-.133-1.393z" fill="#29C643"/>
-                <path d="M8.887 12.007c-.28.773-1.02 1.327-1.887 1.327-.527 0-1.047-.214-1.413-.594a2.03 2.03 0 01-.467-.74c.087.014.173.02.267.034.153.02.313.04.473.053.38.033.767.053 1.153.053.38 0 .76-.02 1.134-.053.14-.013.28-.02.413-.04.107-.013.213-.027.327-.04z" fill="#29C643"/>
+                <path d="M10.894 8.327l-.667-1.107c-.14-.247-.267-.713-.267-.987V4.547c0-1.567-.92-2.92-2.247-3.553A1.76 1.76 0 006.994.007c-.727 0-1.38.393-1.727 1.013-1.3.647-2.2 1.987-2.2 3.533v1.687c0 .273-.127.74-.267.98l-.673 1.113c-.267.447-.327.94-.16 1.393.16.447.54.793 1.033.96 1.294.44 2.654.653 4.014.653s2.72-.213 4.013-.647c.467-.153.827-.507 1-.967.173-.46.127-.967-.133-1.393z" fill="var(--color-success-surface-accented)"/>
+                <path d="M8.887 12.007c-.28.773-1.02 1.327-1.887 1.327-.527 0-1.047-.214-1.413-.594a2.03 2.03 0 01-.467-.74c.087.014.173.02.267.034.153.02.313.04.473.053.38.033.767.053 1.153.053.38 0 .76-.02 1.134-.053.14-.013.28-.02.413-.04.107-.013.213-.027.327-.04z" fill="var(--color-success-surface-accented)"/>
               </svg>
             </div>
           </div>
@@ -286,14 +287,14 @@ export default function MasterCardPage() {
               onClick={btn.action}
               disabled={dis}
               style={{
-                flex: 1, height: 69, background: '#25262B', borderRadius: 18,
+                flex: 1, height: 69, background: 'var(--color-surface)', borderRadius: 18,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                 border: 'none', cursor: dis ? 'default' : 'pointer',
                 opacity: dis ? 0.4 : 1, padding: 0,
               }}
             >
               <btn.Icon />
-              <span style={{ fontSize: 14, fontWeight: 400, color: '#007AFE' }}>{btn.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
             </button>
           )
         })}
@@ -318,14 +319,14 @@ export default function MasterCardPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 12 }}>
                 <span style={{
                   fontSize: 17, fontWeight: 500,
-                  color: active ? '#007AFE' : '#7D7D7F',
+                  color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
                 }}>
                   {TAB_LABELS[key]}
                 </span>
                 {badge > 0 && (
                   <span style={{
-                    background: active ? 'rgba(0,122,254,0.3)' : '#454757',
-                    color: active ? '#007AFE' : '#7D7D7F',
+                    background: active ? 'rgba(0,122,254,0.3)' : 'var(--color-divider-low)',
+                    color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
                     borderRadius: 11.5, fontSize: 13, fontWeight: 500,
                     padding: '2px 8px', minWidth: 24, textAlign: 'center',
                     lineHeight: '19px',
@@ -336,7 +337,7 @@ export default function MasterCardPage() {
               </div>
               <div style={{
                 width: '100%', height: 3,
-                background: active ? '#007AFE' : 'transparent',
+                background: active ? 'var(--color-primary-surface)' : 'transparent',
                 borderRadius: '3px 3px 0 0',
               }} />
             </button>
@@ -356,7 +357,7 @@ export default function MasterCardPage() {
 
         {tab === 'photo' && (
           workPhotos.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Нет фотографий</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет фотографий</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -14px' }}>
               {workPhotos.map((p: any, i: number) => (
@@ -371,33 +372,33 @@ export default function MasterCardPage() {
         {tab === 'reviews' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {master.reviews.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 32 }}>Пока нет отзывов</div>
+              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 32 }}>Пока нет отзывов</div>
             )}
             {master.reviews.map((r) => (
-              <div key={r.id} style={{ background: '#25262B', borderRadius: 20, padding: 16 }}>
+              <div key={r.id} style={{ background: 'var(--color-surface)', borderRadius: 20, padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{
                     width: 46, height: 46, borderRadius: 23,
-                    background: '#454757', overflow: 'hidden',
+                    background: 'var(--color-divider-low)', overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>
                     {r.client.photo
                       ? <img src={r.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 20, color: '#7D7D7F' }}>👤</span>
+                      : <span style={{ fontSize: 20, color: 'var(--color-on-surface-secondary)' }}>👤</span>
                     }
                   </div>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 500, color: '#D3D4D6' }}>{r.client.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-on-surface)' }}>{r.client.name}</div>
                     <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < r.rating ? '#F0AF2D' : '#454757'}>
+                        <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < r.rating ? 'var(--color-warning-surface-accented)' : 'var(--color-divider-low)'}>
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                       ))}
                     </div>
                   </div>
                 </div>
-                {r.text && <p style={{ fontSize: 15, color: '#7D7D7F', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
+                {r.text && <p style={{ fontSize: 15, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
               </div>
             ))}
           </div>
@@ -426,7 +427,7 @@ export default function MasterCardPage() {
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M1 1l14 14M15 1L1 15" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M1 1l14 14M15 1L1 15" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
           <div
@@ -447,7 +448,7 @@ export default function MasterCardPage() {
                 <div key={i} style={{
                   width: i === lightboxIndex ? 8 : 6, height: i === lightboxIndex ? 8 : 6,
                   borderRadius: '50%',
-                  background: i === lightboxIndex ? '#fff' : 'rgba(255,255,255,0.35)',
+                  background: i === lightboxIndex ? 'var(--color-on-primary-surface)' : 'rgba(255,255,255,0.35)',
                   transition: 'all 0.2s',
                 }} />
               ))}
@@ -474,7 +475,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             onClick={() => onCategoryClick(cat)}
             style={{
               display: 'flex', alignItems: 'center',
-              background: '#25262B',
+              background: 'var(--color-surface)',
               borderRadius: 20,
               minHeight: 78, padding: '0 16px 0 0',
               cursor: 'pointer',
@@ -483,7 +484,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             {/* Аватар категории 46×46 */}
             <div style={{
               width: 46, height: 46, borderRadius: 23, flexShrink: 0,
-              overflow: 'hidden', background: '#454757',
+              overflow: 'hidden', background: 'var(--color-divider-low)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 12px 0 16px',
             }}>
@@ -496,10 +497,10 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             {/* Название + описание */}
             <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontWeight: 600, fontSize: 15, color: '#D3D4D6' }}>{cat.name}</span>
+                <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
                   <span style={{
-                    background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                    background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
                     fontSize: 11, fontWeight: 700, borderRadius: 6,
                     padding: '2px 8px', lineHeight: '18px',
                   }}>
@@ -508,7 +509,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                 )}
               </div>
               <div style={{
-                color: '#7D7D7F', fontSize: 13,
+                color: 'var(--color-on-surface-secondary)', fontSize: 13,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {cat.description || preview}
@@ -518,7 +519,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
             {/* Шеврон */}
             <div style={{ flexShrink: 0, marginLeft: 8 }}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
           </div>

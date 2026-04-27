@@ -113,14 +113,14 @@ export default function BookingsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', color: '#D3D4D6', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Header: только "+" кнопка справа */}
       <header
         style={{
           height: 56,
           position: 'sticky',
           top: 0,
-          background: '#0F0F11',
+          background: 'var(--color-background)',
           zIndex: 10,
         }}
       >
@@ -134,7 +134,7 @@ export default function BookingsPage() {
             width: 36,
             height: 36,
             borderRadius: 12,
-            background: '#007AFE',
+            background: 'var(--color-primary-surface)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -143,8 +143,8 @@ export default function BookingsPage() {
           }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8H13" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M8 3V13" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+            <path d="M3 8H13" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M8 3V13" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </header>
@@ -166,14 +166,14 @@ export default function BookingsPage() {
             gap: 8,
             fontSize: 15,
             fontWeight: 500,
-            color: '#D3D4D6',
+            color: 'var(--color-on-surface)',
           }}
         >
           <span>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
             <path
               d="M0 0L4 4L8 0"
-              stroke="#D3D4D6"
+              stroke="var(--color-on-surface)"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -199,7 +199,7 @@ export default function BookingsPage() {
             <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
               <path
                 d="M7 1L1 6L7 11"
-                stroke="#D3D4D6"
+                stroke="var(--color-on-surface)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -224,7 +224,7 @@ export default function BookingsPage() {
             <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
               <path
                 d="M1 1L7 6L1 11"
-                stroke="#D3D4D6"
+                stroke="var(--color-on-surface)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -250,7 +250,7 @@ export default function BookingsPage() {
               textAlign: 'center',
               fontSize: 14,
               fontWeight: 500,
-              color: '#58585A',
+              color: 'var(--color-divider-mid)',
               lineHeight: 1,
             }}
           >
@@ -286,8 +286,8 @@ export default function BookingsPage() {
                 height: 54,
                 position: 'relative',
                 borderRadius: 12,
-                background: isToday ? '#007AFE' : 'transparent',
-                border: !isToday && isSelected ? '2px solid #007AFE' : '2px solid transparent',
+                background: isToday ? 'var(--color-primary-surface)' : 'transparent',
+                border: !isToday && isSelected ? '2px solid var(--color-primary-surface)' : '2px solid transparent',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -302,7 +302,7 @@ export default function BookingsPage() {
                   fontWeight: 400,
                   lineHeight: 1,
                   marginTop: 18,
-                  color: isToday ? '#FFFFFF' : isWeekend ? '#CE4259' : '#D3D4D6',
+                  color: isToday ? 'var(--color-on-primary-surface)' : isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
                 }}
               >
                 {cell.day}
@@ -322,7 +322,7 @@ export default function BookingsPage() {
                       width: `${load}%`,
                       height: 3,
                       borderRadius: 1.5,
-                      background: isToday ? '#FFFFFF' : '#29C643',
+                      background: isToday ? 'var(--color-on-primary-surface)' : 'var(--color-success-surface-accented)',
                     }}
                   />
                 </div>
@@ -337,7 +337,7 @@ export default function BookingsPage() {
         {dayBookings.map((b) => {
           const endTime = dayjs(`${b.date}T${b.time}`).add(b.service.duration, 'minute')
           const isCompleted = b.status === 'COMPLETED' || endTime.isBefore(now)
-          const textColor = isCompleted ? '#7D7D7F' : '#D3D4D6'
+          const textColor = isCompleted ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)'
           const line = isCompleted ? ('line-through' as const) : ('none' as const)
 
           return (
@@ -348,7 +348,7 @@ export default function BookingsPage() {
                 display: 'flex',
                 alignItems: 'stretch',
                 minHeight: 57,
-                borderTop: '1px solid #25262B',
+                borderTop: '1px solid var(--color-surface)',
                 cursor: 'pointer',
               }}
             >
@@ -362,7 +362,7 @@ export default function BookingsPage() {
               >
                 <span style={{ fontSize: 14, lineHeight: 1, color: textColor }}>{b.time}</span>
               </div>
-              <div style={{ width: 1, background: '#25262B' }} />
+              <div style={{ width: 1, background: 'var(--color-surface)' }} />
               <div
                 style={{
                   flex: 1,
@@ -387,7 +387,7 @@ export default function BookingsPage() {
                   style={{
                     fontSize: 12,
                     lineHeight: 1,
-                    color: '#7D7D7F',
+                    color: 'var(--color-on-surface-secondary)',
                     marginTop: 6,
                     textDecoration: line,
                   }}

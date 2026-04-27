@@ -14,8 +14,8 @@ export default function MapTestPage() {
     <div
       style={{
         minHeight: '100dvh',
-        background: '#0F0F11',
-        color: '#D3D4D6',
+        background: 'var(--color-background)',
+        color: 'var(--color-on-surface)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -26,15 +26,15 @@ export default function MapTestPage() {
       }}
     >
       <div style={{ fontSize: 16, fontWeight: 600 }}>Map test page</div>
-      <div style={{ fontSize: 13, color: '#8E8E93', maxWidth: 320 }}>
-        Выбранный адрес: <b style={{ color: '#fff' }}>{address || '—'}</b>
+      <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', maxWidth: 320 }}>
+        Выбранный адрес: <b style={{ color: 'var(--color-on-primary-surface)' }}>{address || '—'}</b>
       </div>
       <button
         type="button"
         onClick={() => setOpen(true)}
         style={{
-          background: '#007AFE',
-          color: '#fff',
+          background: 'var(--color-primary-surface)',
+          color: 'var(--color-on-primary-surface)',
           border: 'none',
           borderRadius: 14,
           padding: '12px 24px',

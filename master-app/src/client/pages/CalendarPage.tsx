@@ -89,11 +89,11 @@ export default function CalendarPage() {
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Header 56px ── */}
       <div style={{
-        height: 56, background: '#0F0F11',
+        height: 56, background: 'var(--color-background)',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -103,15 +103,15 @@ export default function CalendarPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
         {/* Service info — centered */}
         <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
           <div style={{
-            fontWeight: 600, fontSize: 17, color: '#D3D4D6',
+            fontWeight: 600, fontSize: 17, color: 'var(--color-on-surface)',
             lineHeight: '22px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
@@ -119,7 +119,7 @@ export default function CalendarPage() {
           </div>
           {service && (
             <div style={{
-              color: '#7D7D7F', fontSize: 13, marginTop: 2,
+              color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
               lineHeight: '17px',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
@@ -139,7 +139,7 @@ export default function CalendarPage() {
 
               {/* Month title */}
               <div style={{
-                fontSize: 13, fontWeight: 600, color: '#D3D4D6',
+                fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface)',
                 marginBottom: 16, textTransform: 'capitalize',
               }}>
                 {monthStart.format('MMMM YYYY')}
@@ -153,7 +153,7 @@ export default function CalendarPage() {
                 {DAY_NAMES.map((d) => (
                   <div key={d} style={{
                     textAlign: 'center', fontSize: 14, fontWeight: 500,
-                    color: '#6E6E70',
+                    color: 'var(--color-on-surface-muted)',
                     padding: '4px 0',
                   }}>
                     {d}
@@ -185,13 +185,13 @@ export default function CalendarPage() {
                     let bg = 'transparent'
                     let cellOpacity = 1
                     if (isSelected) {
-                      bg = '#007AFE'
+                      bg = 'var(--color-primary-surface)'
                     } else if (isPast) {
                       cellOpacity = 0.5
                     } else if (hasSlots === true) {
                       bg = 'rgba(0, 122, 254, 0.3)'
                     } else if (hasSlots === false) {
-                      bg = '#454757'
+                      bg = 'var(--color-divider-low)'
                       cellOpacity = 0.5
                     } else {
                       // undefined — нерабочий день или данные ещё грузятся
@@ -199,9 +199,9 @@ export default function CalendarPage() {
                     }
 
                     // Text color
-                    let textColor = '#D3D4D6'
-                    if (isSelected) textColor = '#FFFFFF'
-                    else if (isWeekend) textColor = '#CE4259'
+                    let textColor = 'var(--color-on-surface)'
+                    if (isSelected) textColor = 'var(--color-on-primary-surface)'
+                    else if (isWeekend) textColor = 'var(--color-error-surface-accented)'
 
                     return (
                       <button
@@ -233,7 +233,7 @@ export default function CalendarPage() {
                             transform: 'translateX(-50%)',
                             width: 12, height: 2,
                             borderRadius: 1,
-                            background: '#CE4259',
+                            background: 'var(--color-error-surface-accented)',
                           }} />
                         )}
                       </button>
@@ -252,28 +252,28 @@ export default function CalendarPage() {
 
           {/* Selected date card */}
           <div style={{
-            background: '#25262B', borderRadius: 20,
+            background: 'var(--color-surface)', borderRadius: 20,
             padding: '14px 20px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginTop: 16, marginBottom: 24,
           }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 17, color: '#D3D4D6' }}>
+              <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-on-surface)' }}>
                 {selectedDayjs.format('D MMMM, dddd')}
               </div>
-              <div style={{ color: '#7D7D7F', fontSize: 13, marginTop: 2 }}>Дата</div>
+              <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2 }}>Дата</div>
             </div>
             <button onClick={() => setStep('date')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 20h9" stroke="#7D7D7F" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#7D7D7F" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M12 20h9" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
 
           {/* Slots label */}
           <div style={{
-            fontSize: 13, color: '#7D7D7F', fontWeight: 600,
+            fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 600,
             marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5,
           }}>
             Свободные слоты
@@ -281,9 +281,9 @@ export default function CalendarPage() {
 
           {/* Slots grid */}
           {slotsLoading ? (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', padding: '32px 0' }}>Загрузка...</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загрузка...</div>
           ) : slots.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', padding: '32px 0' }}>Нет свободных слотов</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 24 }}>
               {slots.map((s) => {
@@ -295,8 +295,8 @@ export default function CalendarPage() {
                     style={{
                       padding: '14px 0', borderRadius: 12,
                       fontSize: 15, fontWeight: 500,
-                      background: isSel ? '#007AFE' : '#25262B',
-                      color: isSel ? '#fff' : '#D3D4D6',
+                      background: isSel ? 'var(--color-primary-surface)' : 'var(--color-surface)',
+                      color: isSel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                       border: 'none', cursor: 'pointer',
                     }}
                   >
@@ -309,14 +309,14 @@ export default function CalendarPage() {
 
           {/* Remind toggle */}
           <div style={{
-            background: '#25262B', borderRadius: 20,
+            background: 'var(--color-surface)', borderRadius: 20,
             padding: '14px 20px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: 24,
           }}>
             <div>
-              <div style={{ fontWeight: 500, fontSize: 17, color: '#D3D4D6' }}>Напомнить за 1 час</div>
-              <div style={{ color: '#7D7D7F', fontSize: 13, marginTop: 2 }}>Бот напишет в MAX</div>
+              <div style={{ fontWeight: 500, fontSize: 17, color: 'var(--color-on-surface)' }}>Напомнить за 1 час</div>
+              <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2 }}>Бот напишет в MAX</div>
             </div>
             <ToggleSwitch
               checked={remind}

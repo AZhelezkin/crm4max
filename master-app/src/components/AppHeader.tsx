@@ -9,15 +9,15 @@ interface Props {
 
 /**
  * Единая шапка для экранов онбординга, профиля мастера и портала адреса.
- * Стиль — тот же, что задавал шаг 0 онбординга: 56 высотой, фон #0F0F11,
- * sticky-top, двухпутевая «Назад» стрелка #D3D4D6, заголовок 17/600 по центру.
+ * Стиль — тот же, что задавал шаг 0 онбординга: 56 высотой, фон var(--color-background),
+ * sticky-top, двухпутевая «Назад» стрелка var(--color-on-surface), заголовок 17/600 по центру.
  */
 export default function AppHeader({ title, onBack, right }: Props) {
   return (
     <div
       style={{
         height: 56,
-        background: '#0F0F11',
+        background: 'var(--color-background)',
         display: 'flex',
         alignItems: 'center',
         padding: '0 14px',
@@ -40,8 +40,8 @@ export default function AppHeader({ title, onBack, right }: Props) {
           aria-label="Назад"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       ) : (
@@ -53,7 +53,7 @@ export default function AppHeader({ title, onBack, right }: Props) {
           flex: 1,
           fontSize: 17,
           fontWeight: 600,
-          color: '#D3D4D6',
+          color: 'var(--color-on-surface)',
           textAlign: 'center',
         }}
       >

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 
 function IconCatalog({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <path d="M21 2.333H7C5.063 2.333 3.5 3.885 3.5 5.798v12.729C3.5 20.44 5.063 22.003 7 22.003h.887c.921 0 1.82.362 2.473 1.015l1.995 1.972c.91.898 2.38.898 3.29 0l1.995-1.972c.653-.653 1.552-1.015 2.473-1.015H21c1.937 0 3.5-1.563 3.5-3.477V5.798C24.5 3.885 22.937 2.333 21 2.333ZM14 6.475c1.26 0 2.275 1.027 2.275 2.275 0 1.237-.98 2.228-2.193 2.275-.046 0-.116 0-.175 0-1.225-.047-2.193-1.038-2.193-2.275C11.725 7.502 12.74 6.475 14 6.475Zm3.208 10.663c-1.761 1.179-4.655 1.179-6.416 0-1.552-1.027-1.552-2.73 0-3.769 1.773-1.178 4.667-1.178 6.416 0 1.552 1.039 1.552 2.73 0 3.769Z" fill={c}/>
@@ -10,7 +10,7 @@ function IconCatalog({ active }: { active: boolean }) {
 }
 
 function IconCalendar({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <path d="M9.333 2.333v2.334M18.667 2.333v2.334" stroke={c} strokeWidth="1.75" strokeLinecap="round"/>
@@ -22,7 +22,7 @@ function IconCalendar({ active }: { active: boolean }) {
 }
 
 function IconMessages({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <path d="M19.833 2.333H8.166C4.946 2.333 2.333 4.935 2.333 8.143v6.977 1.167c0 3.208 2.613 5.81 5.833 5.81h1.75c.315 0 .735.21.933.467l1.75 2.322c.77 1.026 2.03 1.026 2.8 0l1.75-2.322c.222-.292.571-.467.933-.467h1.75c3.22 0 5.834-2.602 5.834-5.81V8.143c0-3.208-2.614-5.81-5.834-5.81ZM15.166 16.042H8.166a.877.877 0 0 1-.875-.876c0-.478.397-.875.875-.875h7c.478 0 .875.397.875.875a.877.877 0 0 1-.875.876Zm4.667-5.834H8.166a.877.877 0 0 1-.875-.875c0-.478.397-.875.875-.875h11.667c.478 0 .875.397.875.875a.877.877 0 0 1-.875.875Z" fill={c}/>
@@ -31,7 +31,7 @@ function IconMessages({ active }: { active: boolean }) {
 }
 
 function IconContacts({ active }: { active: boolean }) {
-  const c = active ? '#007AFE' : '#7D7D7F'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <path d="M24.056 9.858C22.831 4.468 18.13 2.042 14 2.042c0 0 0 0-.012 0-4.118 0-8.832 2.415-10.057 7.805C2.566 15.867 6.253 20.965 9.59 24.173c1.236 1.19 2.823 1.785 4.41 1.785 1.586 0 3.173-.595 4.398-1.785 3.337-3.208 7.023-8.295 5.658-14.315ZM14 15.703c-2.03 0-3.675-1.645-3.675-3.675 0-2.03 1.645-3.675 3.675-3.675s3.675 1.645 3.675 3.675c0 2.03-1.645 3.675-3.675 3.675Z" fill={c}/>
@@ -62,8 +62,8 @@ export default function BottomNav({ badge = {} }: Props) {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: 'var(--color-bg)',
-      borderTop: '1px solid var(--color-border)',
+      background: 'var(--color-background)',
+      borderTop: '1px solid var(--color-divider-low)',
       display: 'flex',
       zIndex: 50,
       paddingBottom: 19,
@@ -87,9 +87,9 @@ export default function BottomNav({ badge = {} }: Props) {
               {count > 0 && (
                 <span style={{
                   position: 'absolute', top: -4, right: -6,
-                  background: '#CE4259', borderRadius: '50%',
+                  background: 'var(--color-error-surface-accented)', borderRadius: '50%',
                   minWidth: 12, height: 12, fontSize: 9, fontWeight: 700,
-                  color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '0 2px',
                 }}>
                   {count}
@@ -99,14 +99,14 @@ export default function BottomNav({ badge = {} }: Props) {
                 <span style={{
                   position: 'absolute', top: -2, right: -2,
                   width: 8, height: 8, borderRadius: '50%',
-                  background: '#CE4259',
-                  border: '2px solid var(--color-bg)',
+                  background: 'var(--color-error-surface-accented)',
+                  border: '2px solid var(--color-background)',
                 }} />
               )}
             </div>
             <span style={{
               fontSize: 12, fontWeight: 500,
-              color: active ? '#007AFE' : '#7D7D7F',
+              color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
             }}>
               {label}
             </span>

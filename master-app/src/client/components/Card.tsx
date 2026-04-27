@@ -5,7 +5,7 @@ export default function Card({ children, style, onClick }: {
 }) {
   return (
     <div onClick={onClick} style={{
-      background: 'var(--color-card)', borderRadius: 'var(--radius)',
+      background: 'var(--color-surface)', borderRadius: 'var(--radius)',
       padding: '14px 16px', cursor: onClick ? 'pointer' : undefined, ...style,
     }}>
       {children}

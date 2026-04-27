@@ -1,7 +1,7 @@
 ﻿import { useLocation, useNavigate } from 'react-router-dom'
 
-const ACTIVE = '#007AFE'
-const INACTIVE = '#7D7D7F'
+const ACTIVE = 'var(--color-primary-surface)'
+const INACTIVE = 'var(--color-on-surface-secondary)'
 
 function NavIcon({ path, color }: { path: string; color: string }) {
   if (path === '/') {
@@ -26,7 +26,7 @@ function NavIcon({ path, color }: { path: string; color: string }) {
         <span style={{
           position: 'absolute', top: -1, right: -3,
           width: 10, height: 10, borderRadius: '50%',
-          background: '#CE4259', border: '2px solid #1C1C1E',
+          background: 'var(--color-error-surface-accented)', border: '2px solid var(--color-surface)',
         }} />
       </div>
     )
@@ -67,7 +67,7 @@ export default function BottomNav() {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: 'var(--color-card)', borderTop: '1px solid var(--color-border)',
+      background: 'var(--color-surface)', borderTop: '1px solid var(--color-divider-low)',
       display: 'flex', zIndex: 50,
       paddingBottom: 19,
     }}>

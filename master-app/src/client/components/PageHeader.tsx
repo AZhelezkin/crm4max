@@ -13,12 +13,12 @@ export default function PageHeader({ title, back = true, right }: Props) {
       height: 56,
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '0 16px',
-      background: '#0F0F11',
-      borderBottom: '1px solid var(--color-border)',
+      background: 'var(--color-background)',
+      borderBottom: '1px solid var(--color-divider-low)',
       position: 'sticky', top: 0, zIndex: 10,
     }}>
       {back && (
-        <button onClick={() => navigate(-1)} style={{ background: 'none', fontSize: 20, color: 'var(--color-primary)' }}>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', fontSize: 20, color: 'var(--color-primary-surface)' }}>
           ←
         </button>
       )}

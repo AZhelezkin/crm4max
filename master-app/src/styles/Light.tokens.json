@@ -1,0 +1,72 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$extensions": { "com.figma.modeName": "Light" },
+
+  "surface":                  { "$type": "color", "$value": "#FFFFFF" },
+  "surfaceTransparent":       { "$type": "color", "$value": "rgba(255, 255, 255, 0.60)" },
+  "background":               { "$type": "color", "$value": "#F2F3F5" },
+
+  "onSurface":                { "$type": "color", "$value": "#0E0F11" },
+  "onSurfaceInverted":        { "$type": "color", "$value": "#FFFFFF" },
+  "onSurfaceSoften":          { "$type": "color", "$value": "#3E3F41" },
+  "onSurfaceSecondary":       { "$type": "color", "$value": "#565759" },
+  "onSurfaceMuted":           { "$type": "color", "$value": "#9E9FA1" },
+
+  "primarySurface":           { "$type": "color", "$value": "#007AFE" },
+  "onPrimarySurface":         { "$type": "color", "$value": "#FFFFFF" },
+
+  "secondarySurface":         { "$type": "color", "$value": "#D7D8E0" },
+  "secondarySurfaceMuted":    { "$type": "color", "$value": "#E4E5EB" },
+  "patternElement":           { "$type": "color", "$value": "#E4E5EB" },
+  "onSecondarySurface":       { "$type": "color", "$value": "#0E0F11" },
+
+  "errorSurfaceLite":         { "$type": "color", "$value": "#F3D0D5" },
+  "errorElementMuted":        { "$type": "color", "$value": "#E7A0AC" },
+  "onErrorSurfaceLite":       { "$type": "color", "$value": "#9B3143" },
+  "errorSurfaceAccented":     { "$type": "color", "$value": "#CE4259" },
+  "onErrorSurfaceAccented":   { "$type": "color", "$value": "#FFFFFF" },
+
+  "successSurfaceLite":       { "$type": "color", "$value": "#C9F1D0" },
+  "onSuccessSurfaceLite":     { "$type": "color", "$value": "#1F9432" },
+  "successSurfaceAccented":   { "$type": "color", "$value": "#29C643" },
+
+  "warningSurfaceLite":       { "$type": "color", "$value": "#FBEBCA" },
+  "onWarningSurfaceLite":     { "$type": "color", "$value": "#B48322" },
+  "warningSurfaceAccented":   { "$type": "color", "$value": "#F0AF2D" },
+  "onWarningSurfaceAccented": { "$type": "color", "$value": "#FFFFFF" },
+
+  "interactiveElementAccented":  { "$type": "color", "$value": "#3C3F4D" },
+  "interactiveElement":          { "$type": "color", "$value": "#5B5E73" },
+  "interactiveElementSecondary": { "$type": "color", "$value": "#797D99" },
+  "interactiveElementMuted":     { "$type": "color", "$value": "#9A9EB3" },
+
+  "activeElement":  { "$type": "color", "$value": "#007AFE" },
+  "activeSurface":  { "$type": "color", "$value": "#BFDEFF" },
+
+  "dividerLow":     { "$type": "color", "$value": "#CECFD1" },
+  "dividerMid":     { "$type": "color", "$value": "#B6B7B9" },
+
+  "gradViolet0":          { "$type": "color", "$value": "#E1E2FA" },
+  "gradViolet100":        { "$type": "color", "$value": "#E6DBF0" },
+  "gradMint0":            { "$type": "color", "$value": "#E2EDF3" },
+  "gradMint100":          { "$type": "color", "$value": "#DCEEEF" },
+  "gradPeach0":           { "$type": "color", "$value": "#F7E9EE" },
+  "gradPeach100":         { "$type": "color", "$value": "#F7DFDE" },
+  "gradGreen0":           { "$type": "color", "$value": "#E7F8F0" },
+  "gradGreen100":         { "$type": "color", "$value": "#DFF6EA" },
+  "gradGreenVibrance0":   { "$type": "color", "$value": "#32D9B9" },
+  "gradGreenVibrance100": { "$type": "color", "$value": "#09CA3E" },
+
+  "animationV1": { "$type": "color", "$value": "#C7A6E3" },
+  "animationV2": { "$type": "color", "$value": "#AD88F1" },
+  "animationV3": { "$type": "color", "$value": "#ADBEE6" },
+  "animationV4": { "$type": "color", "$value": "#A7AAE7" },
+
+  "chatBgElements":       { "$type": "color", "$value": "#E1E3F0" },
+  "stackModalBackground": { "$type": "color", "$value": "#000000" },
+  "serviceText":          { "$type": "color", "$value": "rgba(14, 15, 17, 0.60)" },
+  "serviceSurface":       { "$type": "color", "$value": "rgba(14, 15, 17, 0.60)" },
+  "backgroundBlur":       { "$type": "color", "$value": "rgba(242, 243, 245, 0.10)" },
+
+  "Opacity": { "$type": "number", "$value": 40 }
+}

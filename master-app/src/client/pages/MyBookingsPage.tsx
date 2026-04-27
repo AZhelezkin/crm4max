@@ -84,7 +84,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 95 }}>
 
       {/* Date title + action buttons */}
       <div style={{
@@ -92,7 +92,7 @@ export default function MyBookingsPage() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div style={{
-          fontSize: 22, fontWeight: 700, color: '#FFFFFF',
+          fontSize: 22, fontWeight: 700, color: 'var(--color-on-primary-surface)',
           letterSpacing: -0.3,
         }}>
           {today.format('D MMMM, YYYY')}
@@ -100,12 +100,12 @@ export default function MyBookingsPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: '#25262B', border: 'none', cursor: 'pointer',
+            background: 'var(--color-surface)', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="#8E8E93" strokeWidth="2"/>
-              <path d="M16.5 16.5l4 4" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="2"/>
+              <path d="M16.5 16.5l4 4" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
           <button
@@ -117,12 +117,12 @@ export default function MyBookingsPage() {
             disabled={!currentMasterId}
             style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: '#007AFE', border: 'none', cursor: 'pointer',
+              background: 'var(--color-primary-surface)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M8 2v12M2 8h12" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
@@ -138,12 +138,12 @@ export default function MyBookingsPage() {
           style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
-            color: '#8E8E93', fontSize: 15, fontWeight: 500, textTransform: 'capitalize',
+            color: 'var(--color-on-surface-secondary)', fontSize: 15, fontWeight: 500, textTransform: 'capitalize',
           }}
         >
           {viewMonth.format('MMMM YYYY')}
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-            <path d="M1 1l4 4 4-4" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1 1l4 4 4-4" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
         <div style={{ display: 'flex', gap: 16 }}>
@@ -152,7 +152,7 @@ export default function MyBookingsPage() {
             style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}
           >
             <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M8 1L1 8l7 7" stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 1L1 8l7 7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <button
@@ -160,7 +160,7 @@ export default function MyBookingsPage() {
             style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}
           >
             <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M1 1l7 7-7 7" stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M1 1l7 7-7 7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
@@ -171,7 +171,7 @@ export default function MyBookingsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
           {DAY_NAMES.map((d) => (
             <div key={d} style={{
-              textAlign: 'center', fontSize: 13, color: '#8E8E93',
+              textAlign: 'center', fontSize: 13, color: 'var(--color-on-surface-secondary)',
               padding: '6px 0', fontWeight: 400,
             }}>
               {d}
@@ -192,8 +192,8 @@ export default function MyBookingsPage() {
               const rec = bookingsByDate.get(val)
               const dotColor = rec
                 ? rec.hasFuture
-                  ? '#CE4259'
-                  : '#4A4B53'
+                  ? 'var(--color-error-surface-accented)'
+                  : 'var(--color-divider-low)'
                 : null
 
               return (
@@ -211,7 +211,7 @@ export default function MyBookingsPage() {
                   <span style={{
                     position: 'relative',
                     fontSize: 17, fontWeight: 400, lineHeight: 1,
-                    color: isWeekend ? '#CE4259' : '#FFFFFF',
+                    color: isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-on-primary-surface)',
                   }}>
                     {day.date()}
                     {dotColor && (
@@ -227,7 +227,7 @@ export default function MyBookingsPage() {
                     <span style={{
                       position: 'absolute', bottom: 10,
                       width: 16, height: 2, borderRadius: 1,
-                      background: '#CE4259',
+                      background: 'var(--color-error-surface-accented)',
                     }} />
                   )}
                 </button>
@@ -240,13 +240,13 @@ export default function MyBookingsPage() {
       {/* Bookings list header */}
       <div style={{ padding: '24px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          fontSize: 13, color: '#8E8E93', fontWeight: 400, letterSpacing: 0.2,
+          fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 400, letterSpacing: 0.2,
         }}>
           МОИ ЗАПИСИ
         </div>
         {displayedBookings.length > 0 && (
           <span style={{
-            background: '#007AFE', color: '#FFFFFF',
+            background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
             borderRadius: 12, padding: '1px 9px',
             fontSize: 13, fontWeight: 600, minWidth: 22, textAlign: 'center',
           }}>
@@ -257,7 +257,7 @@ export default function MyBookingsPage() {
 
       {/* Bookings list */}
       {displayedBookings.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#8E8E93', marginTop: 24, fontSize: 14 }}>
+        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 24, fontSize: 14 }}>
           {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
         </div>
       ) : (
@@ -274,30 +274,30 @@ export default function MyBookingsPage() {
                   padding: '14px 16px',
                   background: 'none',
                   borderLeft: 'none', borderRight: 'none',
-                  borderTop: idx === 0 ? '1px solid #1C1C1E' : 'none',
-                  borderBottom: '1px solid #1C1C1E',
+                  borderTop: idx === 0 ? '1px solid var(--color-surface)' : 'none',
+                  borderBottom: '1px solid var(--color-surface)',
                   cursor: 'pointer', textAlign: 'left',
                 }}
               >
                 <div style={{
-                  minWidth: 54, flexShrink: 0, color: '#8E8E93',
+                  minWidth: 54, flexShrink: 0, color: 'var(--color-on-surface-secondary)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'center',
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.3 }}>{dateLabel}</div>
                   <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.3 }}>{b.time}</div>
                 </div>
-                <div style={{ width: 1, background: '#2C2C2E', margin: '2px 14px 2px 2px' }} />
+                <div style={{ width: 1, background: 'var(--color-divider-low)', margin: '2px 14px 2px 2px' }} />
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div style={{
                     fontSize: 17, fontWeight: 500, lineHeight: 1.3,
-                    color: past ? '#8E8E93' : '#FFFFFF',
+                    color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-primary-surface)',
                     textDecoration: past ? 'line-through' : 'none',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {b.service.name}
                   </div>
                   <div style={{
-                    fontSize: 14, fontWeight: 400, color: '#8E8E93', marginTop: 4,
+                    fontSize: 14, fontWeight: 400, color: 'var(--color-on-surface-secondary)', marginTop: 4,
                   }}>
                     {priceLabel(b)}
                   </div>

@@ -22,7 +22,7 @@ export default function ToggleSwitch({ checked, onChange, disabled, ...rest }: P
         width: 51,
         height: 31,
         borderRadius: 16,
-        background: checked ? '#007AFE' : '#3A3A3C',
+        background: checked ? 'var(--color-primary-surface)' : 'var(--color-divider-low)',
         position: 'relative',
         transition: 'background 0.2s',
         flexShrink: 0,
@@ -40,7 +40,7 @@ export default function ToggleSwitch({ checked, onChange, disabled, ...rest }: P
           width: 25,
           height: 25,
           borderRadius: '50%',
-          background: '#fff',
+          background: 'var(--color-on-primary-surface)',
           transition: 'left 0.2s',
           boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
         }}

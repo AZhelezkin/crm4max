@@ -34,8 +34,8 @@ export default function ClientApp() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-bg)' }}>
-        <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
+        <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
       </div>
     )
   }

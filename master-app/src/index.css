@@ -1,3 +1,13 @@
+/**
+ * CSS-переменные семантической темы crm4max — Dark по умолчанию + Light через [data-theme="light"].
+ *
+ * Имена и значения соответствуют MAX UI design tokens:
+ * src/styles/Dark.tokens.json и src/styles/Light.tokens.json (источник истины).
+ *
+ * При изменении любого токена обновлять и .json, и theme.ts (для inline-импорта),
+ * и блоки ниже синхронно.
+ */
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,44 +15,159 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Тема мастера (по умолчанию) */
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
-  --color-primary: #2688EB;
-  --color-primary-light: rgba(38, 136, 235, 0.12);
-  --color-danger: #FF3B30;
-  --color-success: #34C759;
-  --color-text: #FFFFFF;
-  --color-text-secondary: #8E8E93;
-  --color-border: #2C2C2E;
-  --color-bg: #0F0F11;
-  --color-card: #1C1C1E;
-  --color-card2: #2C2C2E;
-  --radius: 12px;
-  --radius-sm: 10px;
+
+  /* Поверхности */
+  --color-surface:                #262729;
+  --color-surface-transparent:    rgba(242, 243, 245, 0.10);
+  --color-background:             #0E0F11;
+
+  /* Текст / иконки */
+  --color-on-surface:             #FFFFFF;
+  --color-on-surface-inverted:    #0E0F11;
+  --color-on-surface-soften:      #CECFD1;
+  --color-on-surface-secondary:   #B6B7B9;
+  --color-on-surface-muted:       #6E6F71;
+
+  /* Primary */
+  --color-primary-surface:        #409BFE;
+  --color-on-primary-surface:     #FFFFFF;
+
+  /* Secondary */
+  --color-secondary-surface:        #3C3F4D;
+  --color-secondary-surface-muted:  #1E1F26;
+  --color-pattern-element:          #24262E;
+  --color-on-secondary-surface:     #FFFFFF;
+
+  /* Error */
+  --color-error-surface-lite:        #67212C;
+  --color-error-element-muted:       #9B3143;
+  --color-on-error-surface-lite:     #E7A0AC;
+  --color-error-surface-accented:    #DA7182;
+  --color-on-error-surface-accented: #FFFFFF;
+
+  /* Success */
+  --color-success-surface-lite:      #146321;
+  --color-on-success-surface-lite:   #94E2A1;
+  --color-success-surface-accented:  #5ED472;
+
+  /* Warning */
+  --color-warning-surface-lite:        #785816;
+  --color-on-warning-surface-lite:     #F7D796;
+  --color-warning-surface-accented:    #F0AF2D;
+  --color-on-warning-surface-accented: #FFFFFF;
+
+  /* Интерактивные элементы */
+  --color-interactive-element-accented:  #F2F2F5;
+  --color-interactive-element:           #BCBECC;
+  --color-interactive-element-secondary: #9A9EB3;
+  --color-interactive-element-muted:     #5B5E73;
+
+  /* Активные состояния */
+  --color-active-element: #409BFE;
+  --color-active-surface: #003D7F;
+
+  /* Разделители */
+  --color-divider-low: #3E3F41;
+  --color-divider-mid: #565759;
+
+  /* Градиенты */
+  --color-grad-violet-0:           #5F68E2;
+  --color-grad-violet-100:         #844BB6;
+  --color-grad-mint-0:             #5295B4;
+  --color-grad-mint-100:           #449395;
+  --color-grad-peach-0:            #C15781;
+  --color-grad-peach-100:          #DA6461;
+  --color-grad-green-0:            #15482F;
+  --color-grad-green-100:          #195838;
+  --color-grad-green-vibrance-0:   #3C8F7F;
+  --color-grad-green-vibrance-100: #008725;
+
+  /* Прочее */
+  --color-chat-bg-elements:       #202336;
+  --color-stack-modal-background: #000000;
+  --color-service-text:           rgba(255, 255, 255, 0.60);
+  --color-service-surface:        rgba(14, 15, 17, 0.60);
+  --color-background-blur:        rgba(0, 0, 0, 0.10);
+
+  /* Радиусы */
+  --radius:     12px;
+  --radius-sm:  10px;
+  --radius-lg:  20px;
+  --radius-btn: 12px;
 }
 
-/* Тема клиента — переопределяет переменные при data-theme="client" на <html> */
-[data-theme="client"] {
-  --color-primary: #007AFE;
-  --color-primary-dim: rgba(0, 122, 254, 0.30);
-  --color-danger: #CE4259;
-  --color-success: #34C759;
-  --color-warning: #FF9500;
-  --color-text: #D3D4D6;
-  --color-text-secondary: #7D7D7F;
-  --color-border: #3A3A3C;
-  --color-bg: #0F0F11;
-  --color-card: #25262B;
-  --radius: 20px;
-  --radius-sm: 12px;
-  --radius-btn: 18px;
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-surface:                #FFFFFF;
+  --color-surface-transparent:    rgba(255, 255, 255, 0.60);
+  --color-background:             #F2F3F5;
+
+  --color-on-surface:             #0E0F11;
+  --color-on-surface-inverted:    #FFFFFF;
+  --color-on-surface-soften:      #3E3F41;
+  --color-on-surface-secondary:   #565759;
+  --color-on-surface-muted:       #9E9FA1;
+
+  --color-primary-surface:        #007AFE;
+  --color-on-primary-surface:     #FFFFFF;
+
+  --color-secondary-surface:        #D7D8E0;
+  --color-secondary-surface-muted:  #E4E5EB;
+  --color-pattern-element:          #E4E5EB;
+  --color-on-secondary-surface:     #0E0F11;
+
+  --color-error-surface-lite:        #F3D0D5;
+  --color-error-element-muted:       #E7A0AC;
+  --color-on-error-surface-lite:     #9B3143;
+  --color-error-surface-accented:    #CE4259;
+  --color-on-error-surface-accented: #FFFFFF;
+
+  --color-success-surface-lite:      #C9F1D0;
+  --color-on-success-surface-lite:   #1F9432;
+  --color-success-surface-accented:  #29C643;
+
+  --color-warning-surface-lite:        #FBEBCA;
+  --color-on-warning-surface-lite:     #B48322;
+  --color-warning-surface-accented:    #F0AF2D;
+  --color-on-warning-surface-accented: #FFFFFF;
+
+  --color-interactive-element-accented:  #3C3F4D;
+  --color-interactive-element:           #5B5E73;
+  --color-interactive-element-secondary: #797D99;
+  --color-interactive-element-muted:     #9A9EB3;
+
+  --color-active-element: #007AFE;
+  --color-active-surface: #BFDEFF;
+
+  --color-divider-low: #CECFD1;
+  --color-divider-mid: #B6B7B9;
+
+  --color-grad-violet-0:           #E1E2FA;
+  --color-grad-violet-100:         #E6DBF0;
+  --color-grad-mint-0:             #E2EDF3;
+  --color-grad-mint-100:           #DCEEEF;
+  --color-grad-peach-0:            #F7E9EE;
+  --color-grad-peach-100:          #F7DFDE;
+  --color-grad-green-0:            #E7F8F0;
+  --color-grad-green-100:          #DFF6EA;
+  --color-grad-green-vibrance-0:   #32D9B9;
+  --color-grad-green-vibrance-100: #09CA3E;
+
+  --color-chat-bg-elements:       #E1E3F0;
+  --color-stack-modal-background: #000000;
+  --color-service-text:           rgba(14, 15, 17, 0.60);
+  --color-service-surface:        rgba(14, 15, 17, 0.60);
+  --color-background-blur:        rgba(242, 243, 245, 0.10);
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-background);
+  color: var(--color-on-surface);
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;

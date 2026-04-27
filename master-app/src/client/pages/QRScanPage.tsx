@@ -48,18 +48,18 @@ export default function QRScanPage() {
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', height: '100dvh', gap: 16,
-      background: 'var(--color-bg)', color: 'var(--color-text)',
+      background: 'var(--color-background)', color: 'var(--color-on-surface)',
       padding: '0 24px', textAlign: 'center',
     }}>
       <h2 style={{ margin: 0, fontSize: 20 }}>Сканировать QR-код</h2>
-      <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 14 }}>
+      <p style={{ margin: 0, color: 'var(--color-on-surface-secondary)', fontSize: 14 }}>
         Для записи к конкреному мастеру попросите его показать или переслать вам QR-код.</p>
       <button
         onClick={handleScan}
         disabled={scanning}
         style={{
           marginTop: 8,
-          background: 'var(--color-primary)', color: '#fff',
+          background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
           border: 'none', borderRadius: 12, padding: '14px 40px',
           fontSize: 16, fontWeight: 600,
           cursor: scanning ? 'default' : 'pointer',

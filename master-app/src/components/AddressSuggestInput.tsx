@@ -294,7 +294,7 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
           style={{
             position: 'absolute',
             inset: 0,
-            background: '#0F0F11',
+            background: 'var(--color-background)',
             touchAction: 'none',
             pointerEvents: 'auto',
             userSelect: 'none',
@@ -382,9 +382,9 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             >
               <LocationIcon />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>{s.title}</div>
+                <div style={{ fontSize: 15, color: 'var(--color-on-surface)', fontWeight: 500 }}>{s.title}</div>
                 {s.subtitle && (
-                  <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{s.subtitle}</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>{s.subtitle}</div>
                 )}
               </div>
             </button>
@@ -395,7 +395,7 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         <div style={{
           position: 'relative', zIndex: 3,
           padding: '18px 16px', textAlign: 'center',
-          color: 'var(--color-text-secondary)', fontSize: 14,
+          color: 'var(--color-on-surface-secondary)', fontSize: 14,
           background: 'rgba(15,15,17,0.82)',
           pointerEvents: 'none',
         }}>
@@ -421,8 +421,8 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
 function SearchIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="7" stroke="var(--color-text-secondary)" strokeWidth="1.8" />
-      <path d="M20 20L16.65 16.65" stroke="var(--color-text-secondary)" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" />
+      <path d="M20 20L16.65 16.65" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
@@ -430,7 +430,7 @@ function SearchIcon() {
 function LocationIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="var(--color-text-secondary)" />
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="var(--color-on-surface-secondary)" />
     </svg>
   )
 }
@@ -440,9 +440,9 @@ function CenterPin() {
     <svg width="34" height="44" viewBox="0 0 34 44" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M17 1C8.71573 1 2 7.71573 2 16C2 26.25 17 43 17 43C17 43 32 26.25 32 16C32 7.71573 25.2843 1 17 1Z"
-        fill="#007AFE" stroke="#FFFFFF" strokeWidth="2" strokeLinejoin="round"
+        fill="var(--color-primary-surface)" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinejoin="round"
       />
-      <circle cx="17" cy="16" r="5" fill="#FFFFFF" />
+      <circle cx="17" cy="16" r="5" fill="var(--color-on-primary-surface)" />
     </svg>
   )
 }

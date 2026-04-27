@@ -37,10 +37,10 @@ export default function ConfirmPage() {
   const formattedDate = dayjs(date).format('D MMMM, dddd')
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
 
       <div style={{
-        height: 56, background: '#0F0F11',
+        height: 56, background: 'var(--color-background)',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -49,20 +49,20 @@ export default function ConfirmPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
         <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
           <div style={{
-            fontWeight: 600, fontSize: 17, color: '#D3D4D6',
+            fontWeight: 600, fontSize: 17, color: 'var(--color-on-surface)',
             lineHeight: '22px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             Подтверждение
           </div>
           <div style={{
-            color: '#7D7D7F', fontSize: 13, marginTop: 2,
+            color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
             lineHeight: '17px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
@@ -74,11 +74,11 @@ export default function ConfirmPage() {
 
       <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {master && (
-          <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-                background: '#2C2C2E', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 22, flexShrink: 0,
               }}>
                 {master.photo
@@ -89,7 +89,7 @@ export default function ConfirmPage() {
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{master.name}</div>
                 {master.description && (
                   <div style={{
-                    color: '#8E8E93', fontSize: 13, marginTop: 1,
+                    color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 1,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
                   }}>
@@ -98,7 +98,7 @@ export default function ConfirmPage() {
                 )}
               </div>
               {master.rating > 0 && (
-                <div style={{ color: '#FF9500', fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
+                <div style={{ color: 'var(--color-warning-surface-accented)', fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
                   ★ {master.rating.toFixed(1)}
                 </div>
               )}
@@ -106,10 +106,10 @@ export default function ConfirmPage() {
           </div>
         )}
 
-        <div style={{ background: '#1C1C1E', borderRadius: 14, padding: 14 }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{service.name}</div>
           {service.description && (
-            <div style={{ color: '#8E8E93', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>
               {service.description}
             </div>
           )}
@@ -118,7 +118,7 @@ export default function ConfirmPage() {
               {(price / 100).toLocaleString('ru-RU')} ₽
             </span>
             {service.discountPercent && (
-              <span style={{ color: '#8E8E93', fontSize: 13, textDecoration: 'line-through' }}>
+              <span style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13, textDecoration: 'line-through' }}>
                 {(service.price / 100).toLocaleString('ru-RU')} ₽
               </span>
             )}
@@ -126,35 +126,35 @@ export default function ConfirmPage() {
         </div>
 
         <div style={{
-          background: '#1C1C1E', borderRadius: 14, padding: '14px 16px',
+          background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
             <div style={{ fontWeight: 600 }}>{formattedDate}</div>
-            <div style={{ color: '#8E8E93', fontSize: 13 }}>Дата</div>
+            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>Дата</div>
           </div>
           <button onClick={() => navigate('/book/calendar')} style={{ background: 'none' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 20h9" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
-              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#8E8E93" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M12 20h9" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
 
         <div style={{
-          background: '#1C1C1E', borderRadius: 14, padding: '14px 16px',
+          background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
             <div style={{ fontWeight: 600 }}>{time}</div>
-            <div style={{ color: '#8E8E93', fontSize: 13 }}>
+            <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 13 }}>
               {remind ? 'Напомним за 1 час' : 'Без напоминания'}
             </div>
           </div>
           <button onClick={() => navigate('/book/calendar')} style={{ background: 'none' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 20h9" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
-              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="#8E8E93" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M12 20h9" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
@@ -166,8 +166,8 @@ export default function ConfirmPage() {
           disabled={loading}
           style={{
             width: '100%', padding: 16, borderRadius: 14,
-            background: loading ? '#1C1C1E' : '#2688EB',
-            color: loading ? '#8E8E93' : '#fff',
+            background: loading ? 'var(--color-surface)' : 'var(--color-primary-surface)',
+            color: loading ? 'var(--color-on-surface-secondary)' : 'var(--color-on-primary-surface)',
             fontWeight: 600, fontSize: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}

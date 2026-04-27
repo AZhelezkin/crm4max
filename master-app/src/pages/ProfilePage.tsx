@@ -195,12 +195,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', overflowX: 'hidden' }}>
 
       {/* Header: Поделиться + Карандаш */}
       <div style={{
         height: 56,
-        background: '#0F0F11',
+        background: 'var(--color-background)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
@@ -235,9 +235,9 @@ export default function ProfilePage() {
         {/* Аватар — 104×104 (из Profile_info.svg) */}
         <div style={{
           width: 104, height: 104, borderRadius: '50%',
-          border: '3px solid var(--color-primary)',
+          border: '3px solid var(--color-primary-surface)',
           overflow: 'hidden', margin: '0 auto 27px',
-          background: 'var(--color-card2)',
+          background: 'var(--color-secondary-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {master?.photo
@@ -252,7 +252,7 @@ export default function ProfilePage() {
         {/* Специальность */}
         {master?.description && (
           <div style={{
-            color: 'var(--color-text-secondary)', fontSize: 14,
+            color: 'var(--color-on-surface-secondary)', fontSize: 14,
             marginTop: 14, padding: '0 24px',
           }}>
             {master.description}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Табы */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', padding: '0 16px' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-divider-low)', padding: '0 16px' }}>
         {([
           { key: 'services', label: 'Услуги', count: totalServices },
           { key: 'photos',   label: 'Фото',   count: allPhotos.length },
@@ -274,8 +274,8 @@ export default function ProfilePage() {
             style={{
               flex: 1, background: 'none', border: 'none',
               padding: '12px 0', cursor: 'pointer',
-              borderBottom: activeTab === tab.key ? '2px solid var(--color-primary)' : '2px solid transparent',
-              color: activeTab === tab.key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+              borderBottom: activeTab === tab.key ? '2px solid var(--color-primary-surface)' : '2px solid transparent',
+              color: activeTab === tab.key ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
               fontSize: 14, fontWeight: 500,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}
@@ -283,8 +283,8 @@ export default function ProfilePage() {
             {tab.label}
             {tab.count > 0 && (
               <span style={{
-                background: activeTab === tab.key ? 'var(--color-primary)' : 'var(--color-card2)',
-                color: activeTab === tab.key ? '#fff' : 'var(--color-text-secondary)',
+                background: activeTab === tab.key ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
+                color: activeTab === tab.key ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface-secondary)',
                 borderRadius: 10, padding: '1px 6px', fontSize: 11, fontWeight: 600,
               }}>
                 {tab.count}
@@ -320,11 +320,11 @@ export default function ProfilePage() {
             ? <EmptyState text={reviewsLoaded ? 'Пока нет отзывов' : 'Загрузка…'} />
             : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {reviews.map((r) => (
-                  <div key={r.id} style={{ background: 'var(--color-card)', borderRadius: 16, padding: 14 }}>
+                  <div key={r.id} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                       <div style={{
                         width: 40, height: 40, borderRadius: '50%',
-                        background: 'var(--color-card2)', overflow: 'hidden',
+                        background: 'var(--color-secondary-surface)', overflow: 'hidden',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}>
                         {r.client.photo
@@ -336,14 +336,14 @@ export default function ProfilePage() {
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{r.client.name}</div>
                         <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < r.rating ? '#FF9500' : 'var(--color-card2)'}>
+                            <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < r.rating ? 'var(--color-warning-surface-accented)' : 'var(--color-secondary-surface)'}>
                               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                             </svg>
                           ))}
                         </div>
                       </div>
                     </div>
-                    {r.text && <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
+                    {r.text && <p style={{ fontSize: 14, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5, margin: 0 }}>{r.text}</p>}
                   </div>
                 ))}
               </div>
@@ -352,7 +352,7 @@ export default function ProfilePage() {
 
       {/* Портал расписания */}
       {showSchedule && createPortal(
-        <div style={{ position: 'fixed', inset: 0, background: 'var(--color-bg)', zIndex: 200, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--color-background)', zIndex: 200, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
           {/* Заголовок */}
           <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
             >
               <BackArrowIcon />
             </button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-text)', letterSpacing: -0.3 }}>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 20, fontWeight: 600, color: 'var(--color-on-surface)', letterSpacing: -0.3 }}>
               Расписание
             </div>
             <div style={{ width: 56 }} />
@@ -372,7 +372,7 @@ export default function ProfilePage() {
           <div style={{ flex: 1, padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
             {schLoading
-              ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-secondary)' }}>Загрузка…</div>
+              ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-on-surface-secondary)' }}>Загрузка…</div>
               : <>
                   {/* Дни недели */}
                   <div style={onboardingSectionCardStyle}>
@@ -385,8 +385,8 @@ export default function ProfilePage() {
                           style={{
                             border: 'none', borderRadius: 12, height: 36,
                             fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            background: workingDays.includes(d.v) ? 'var(--color-primary)' : 'var(--color-card2)',
-                            color: workingDays.includes(d.v) ? '#fff' : 'var(--color-text)',
+                            background: workingDays.includes(d.v) ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
+                            color: workingDays.includes(d.v) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                           }}
                         >{d.l}</button>
                       ))}
@@ -398,7 +398,7 @@ export default function ProfilePage() {
                     <div style={onboardingSectionLabelStyle}>ВРЕМЯ РАБОТЫ</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <SchTimeSelect value={startTime} onChange={setStartTime} />
-                      <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                      <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
                       <SchTimeSelect value={endTime} onChange={setEndTime} />
                     </div>
                   </div>
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                         <div style={onboardingSectionLabelStyle}>ВРЕМЯ ОБЕДА</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <SchTimeSelect value={breakStart} onChange={setBreakStart} />
-                          <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>—</span>
+                          <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
                           <SchTimeSelect value={breakEnd} onChange={setBreakEnd} />
                         </div>
                       </div>
@@ -432,7 +432,7 @@ export default function ProfilePage() {
                   </div>
 
                   {schError && (
-                    <div style={{ fontSize: 14, color: 'var(--color-error, #FF3B30)', padding: '4px 4px' }}>{schError}</div>
+                    <div style={{ fontSize: 14, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 4px' }}>{schError}</div>
                   )}
                 </>
             }
@@ -447,8 +447,8 @@ export default function ProfilePage() {
               style={{
                 ...primaryActionButtonBaseStyle,
                 cursor: schSaving || schLoading ? 'default' : 'pointer',
-                background: schSaving || schLoading ? 'var(--color-card2)' : 'var(--color-primary)',
-                color: schSaving || schLoading ? 'var(--color-text-secondary)' : '#fff',
+                background: schSaving || schLoading ? 'var(--color-secondary-surface)' : 'var(--color-primary-surface)',
+                color: schSaving || schLoading ? 'var(--color-on-surface-secondary)' : 'var(--color-on-primary-surface)',
               }}
             >
               {schSaving ? 'Сохраняем…' : 'Сохранить'}
@@ -508,7 +508,7 @@ export default function ProfilePage() {
                   width: i === lightboxIndex ? 8 : 6,
                   height: i === lightboxIndex ? 8 : 6,
                   borderRadius: '50%',
-                  background: i === lightboxIndex ? '#fff' : 'rgba(255,255,255,0.35)',
+                  background: i === lightboxIndex ? 'var(--color-on-primary-surface)' : 'rgba(255,255,255,0.35)',
                   transition: 'all 0.2s',
                 }} />
               ))}
@@ -546,7 +546,7 @@ function ServicesList({ categories }: { categories: Category[] }) {
               onClick={() => toggle(cat.id)}
               style={{
                 display: 'flex', alignItems: 'center',
-                background: 'var(--color-card)',
+                background: 'var(--color-surface)',
                 borderRadius: expanded ? '20px 20px 0 0' : 20,
                 minHeight: 78,
                 padding: '0 16px 0 0',
@@ -557,7 +557,7 @@ function ServicesList({ categories }: { categories: Category[] }) {
               <div style={{
                 width: 46, height: 46, borderRadius: '50%',
                 flexShrink: 0, overflow: 'hidden',
-                background: 'var(--color-card2)',
+                background: 'var(--color-secondary-surface)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 12px 0 16px',
               }}>
@@ -573,13 +573,13 @@ function ServicesList({ categories }: { categories: Category[] }) {
                   <span style={{ fontWeight: 600, fontSize: 15 }}>{cat.name}</span>
                   {hasDiscount && (
                     <span style={{
-                      background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                      background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
                       fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '2px 6px',
                     }}>% скидки</span>
                   )}
                 </div>
                 <div style={{
-                  color: 'var(--color-text-secondary)', fontSize: 13,
+                  color: 'var(--color-on-surface-secondary)', fontSize: 13,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {cat.description || preview}
@@ -599,7 +599,7 @@ function ServicesList({ categories }: { categories: Category[] }) {
 
             {/* Услуги — раскрываются */}
             {expanded && (
-              <div style={{ background: 'var(--color-card)', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
+              <div style={{ background: 'var(--color-surface)', borderRadius: '0 0 20px 20px', overflow: 'hidden' }}>
                 {cat.services.map((s) => {
                   const dPrice = discountedPrice(s.price, s.discountPercent)
                   return (
@@ -608,26 +608,26 @@ function ServicesList({ categories }: { categories: Category[] }) {
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '10px 16px',
-                        borderTop: '1px solid var(--color-border)',
+                        borderTop: '1px solid var(--color-divider-low)',
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{s.name}</div>
-                        <div style={{ color: 'var(--color-text-secondary)', fontSize: 12, marginTop: 2 }}>
+                        <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 12, marginTop: 2 }}>
                           {formatDuration(s.duration)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                         {dPrice !== null ? (
                           <>
-                            <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>
+                            <div style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>
                               {formatPrice(dPrice)}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>
+                            <div style={{ fontSize: 11, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </div>
                             <div style={{
-                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                              background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
                               fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '1px 5px',
                             }}>
                               -{s.discountPercent}%
@@ -652,13 +652,13 @@ function ServicesList({ categories }: { categories: Category[] }) {
 function EmptyState({ text, action }: { text: string; action?: { label: string; onClick: () => void } }) {
   return (
     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-      <div style={{ color: 'var(--color-text-secondary)', fontSize: 15 }}>{text}</div>
+      <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 15 }}>{text}</div>
       {action && (
         <button
           onClick={action.onClick}
           style={{
-            marginTop: 16, background: 'var(--color-primary)',
-            color: '#fff', border: 'none', borderRadius: 'var(--radius)',
+            marginTop: 16, background: 'var(--color-primary-surface)',
+            color: 'var(--color-on-primary-surface)', border: 'none', borderRadius: 'var(--radius)',
             padding: '10px 20px', fontSize: 15, fontWeight: 500, cursor: 'pointer',
           }}
         >
@@ -672,7 +672,7 @@ function EmptyState({ text, action }: { text: string; action?: { label: string; 
 // ─── Иконки ──────────────────────────────────────────────────────────────────
 
 function CalendarIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <rect x="3" y="4" width="18" height="17" rx="3" stroke={c} strokeWidth="2" />
@@ -684,7 +684,7 @@ function CalendarIcon({ active }: { active?: boolean }) {
 }
 
 function AddIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="9" stroke={c} strokeWidth="2" />
@@ -694,7 +694,7 @@ function AddIcon({ active }: { active?: boolean }) {
 }
 
 function EditIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke={c} strokeWidth="2" strokeLinecap="round" />
@@ -704,7 +704,7 @@ function EditIcon({ active }: { active?: boolean }) {
 }
 
 function CatalogIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       {/* Документ */}
@@ -719,7 +719,7 @@ function CatalogIcon({ active }: { active?: boolean }) {
 }
 
 function ScheduleIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="9" stroke={c} strokeWidth="2" />
@@ -731,7 +731,7 @@ function ScheduleIcon({ active }: { active?: boolean }) {
 function BackArrowIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -744,7 +744,7 @@ function SchTimeSelect({ value, onChange }: { value: string; onChange: (v: strin
       <select value={h} onChange={(e) => onChange(`${e.target.value}:${m}`)} style={onboardingTimeSelectStyle}>
         {hours.map((hh) => <option key={hh} value={hh}>{hh}</option>)}
       </select>
-      <span style={{ color: 'var(--color-text-secondary)' }}>:</span>
+      <span style={{ color: 'var(--color-on-surface-secondary)' }}>:</span>
       <select value={m} onChange={(e) => onChange(`${h}:${e.target.value}`)} style={onboardingTimeSelectStyle}>
         {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
       </select>
@@ -769,13 +769,13 @@ function SchSelectField({ value, onChange, options }: {
 function ChevronRightIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
 function ProfileShareIcon() {
-  const c = '#FFFFFF'
+  const c = 'var(--color-on-primary-surface)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path
@@ -795,7 +795,7 @@ function ProfileShareIcon() {
 }
 
 function ProfilePencilIcon() {
-  const c = '#FFFFFF'
+  const c = 'var(--color-on-primary-surface)'
   return (
     <svg width="20" height="22" viewBox="382 154 20 23" fill="none">
       <path
@@ -815,7 +815,7 @@ function ProfilePencilIcon() {
 }
 
 function ShareIcon({ active }: { active?: boolean }) {
-  const c = active ? '#2688EB' : '#8E8E93'
+  const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

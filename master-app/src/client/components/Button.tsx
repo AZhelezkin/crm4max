@@ -10,10 +10,10 @@ interface Props {
 }
 
 const styles: Record<string, CSSProperties> = {
-  primary:   { background: 'var(--color-primary)', color: '#fff' },
-  secondary: { background: 'var(--color-primary-dim)', color: 'var(--color-primary)' },
-  danger:    { background: 'transparent', color: 'var(--color-danger)' },
-  ghost:     { background: 'transparent', color: 'var(--color-primary)' },
+  primary:   { background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' },
+  secondary: { background: 'var(--color-active-surface)', color: 'var(--color-primary-surface)' },
+  danger:    { background: 'transparent', color: 'var(--color-error-surface-accented)' },
+  ghost:     { background: 'transparent', color: 'var(--color-primary-surface)' },
 }
 
 export default function Button({ children, onClick, variant = 'primary', fullWidth, disabled, style }: Props) {

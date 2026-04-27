@@ -62,13 +62,13 @@ export default function SchedulePage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)' }}>
       <PageHeader title="График работы" />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Рабочие дни */}
         <div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 8, fontWeight: 500 }}>
+          <div style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', marginBottom: 8, fontWeight: 500 }}>
             Рабочие дни
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -82,9 +82,9 @@ export default function SchedulePage() {
                   borderRadius: 'var(--radius-sm)',
                   fontSize: 14,
                   fontWeight: 500,
-                  background: workingDays.includes(d.value) ? 'var(--color-primary)' : 'var(--color-card)',
-                  color: workingDays.includes(d.value) ? '#fff' : 'var(--color-text)',
-                  border: '1px solid var(--color-border)',
+                  background: workingDays.includes(d.value) ? 'var(--color-primary-surface)' : 'var(--color-surface)',
+                  color: workingDays.includes(d.value) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
+                  border: '1px solid var(--color-divider-low)',
                 }}
               >
                 {d.label}

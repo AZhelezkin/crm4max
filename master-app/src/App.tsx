@@ -20,6 +20,7 @@ import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 import MapTestPage from '@/pages/MapTestPage'
+import ThemeSwitcher from '@/components/ThemeSwitcher'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -75,27 +76,28 @@ export default function App() {
     detect()
   }, [mode])
 
-  useEffect(() => {
-    if (mode) {
-      document.documentElement.dataset.theme = mode === 'master' ? 'master' : 'client'
-    }
-  }, [mode])
-
   if (isMapTestHash()) return <MapTestPage />
 
   if (mode === null) {
     return (
-      <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center',
-        height: '100dvh', background: '#0F0F11',
-      }}>
-        <span style={{ color: '#7D7D7F' }}>Загрузка...</span>
-      </div>
+      <>
+        <ThemeSwitcher />
+        <div style={{
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          height: '100dvh', background: 'var(--color-background)',
+        }}>
+          <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
+        </div>
+      </>
     )
   }
 
-  if (mode === 'client') return <ClientApp />
-  return <MasterApp />
+  return (
+    <>
+      <ThemeSwitcher />
+      {mode === 'client' ? <ClientApp /> : <MasterApp />}
+    </>
+  )
 }
 
 function MasterApp() {
@@ -109,9 +111,9 @@ function MasterApp() {
     return (
       <div style={{
         display: 'flex', justifyContent: 'center', alignItems: 'center',
-        height: '100dvh', background: 'var(--color-bg)',
+        height: '100dvh', background: 'var(--color-background)',
       }}>
-        <span style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</span>
+        <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
       </div>
     )
   }

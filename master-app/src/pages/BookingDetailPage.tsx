@@ -55,7 +55,7 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)' }}>
       <PageHeader title="Запись" />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -87,7 +87,7 @@ export default function BookingDetailPage() {
                   type="date"
                   value={newDate}
                   onChange={(e) => setNewDate(e.target.value)}
-                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid var(--color-border)', marginBottom: 12 }}
+                  style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid var(--color-divider-low)', marginBottom: 12 }}
                 />
                 {slots.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -97,9 +97,9 @@ export default function BookingDetailPage() {
                         onClick={() => setNewTime(s)}
                         style={{
                           padding: '8px 14px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-                          background: newTime === s ? 'var(--color-primary)' : 'var(--color-bg)',
-                          color: newTime === s ? '#fff' : 'var(--color-text)',
-                          border: '1px solid var(--color-border)',
+                          background: newTime === s ? 'var(--color-primary-surface)' : 'var(--color-background)',
+                          color: newTime === s ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
+                          border: '1px solid var(--color-divider-low)',
                         }}
                       >
                         {s}
@@ -135,9 +135,9 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '10px 0',
-      borderBottom: last ? 'none' : '1px solid var(--color-border)',
+      borderBottom: last ? 'none' : '1px solid var(--color-divider-low)',
     }}>
-      <span style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>{label}</span>
+      <span style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14 }}>{label}</span>
       <span style={{ fontWeight: 500 }}>{value}</span>
     </div>
   )

@@ -218,7 +218,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); void handleDeleteCategory(cat.id) }}
-                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
+                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', fontSize: 20, lineHeight: 1 }}
                       >
                         ×
                       </button>
@@ -257,8 +257,8 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                         <div style={onboardingPriceRowStyle}>
                           {dPrice !== null ? (
                             <>
-                              <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 14 }}>{formatPrice(dPrice)}</span>
-                              <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
+                              <span style={{ fontWeight: 600, color: 'var(--color-primary-surface)', fontSize: 14 }}>{formatPrice(dPrice)}</span>
+                              <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
                               <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
                             </>
                           ) : (
@@ -277,7 +277,7 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); void handleDeleteService(s.id) }}
-                          style={{ ...onboardingListActionButtonStyle, color: 'var(--color-text-secondary)', fontSize: 20, lineHeight: 1 }}
+                          style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', fontSize: 20, lineHeight: 1 }}
                         >
                           ×
                         </button>
@@ -351,9 +351,9 @@ function EditIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-        stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-        stroke="#8E8E93" strokeWidth="1.8" strokeLinecap="round" />
+        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }

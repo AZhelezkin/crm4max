@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 
 export const stepOneIntroTextStyle: CSSProperties = {
   fontSize: 14,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
   textAlign: 'center',
   marginBottom: 4,
 }
@@ -19,7 +19,7 @@ export const stepOnePhotoButtonBaseStyle: CSSProperties = {
   borderRadius: '50%',
   border: 'none',
   padding: 0,
-  background: '#2C2D31',
+  background: 'var(--color-divider-low)',
   position: 'relative',
   overflow: 'hidden',
 }
@@ -57,7 +57,7 @@ export const stepOneTextareaStyle: CSSProperties = {
   border: 'none',
   padding: '14px 16px 24px',
   fontSize: 16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   resize: 'none',
   display: 'block',
   outline: 'none',
@@ -68,18 +68,18 @@ export const stepOneCounterStyle: CSSProperties = {
   bottom: 8,
   right: 12,
   fontSize: 12,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
 }
 
 export const onboardingFieldWrapStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   borderRadius: 10,
 }
 
 export const onboardingFieldWithSuffixWrapStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   borderRadius: 10,
   display: 'flex',
   alignItems: 'center',
@@ -92,7 +92,7 @@ export const onboardingFieldInputStyle: CSSProperties = {
   border: 'none',
   outline: 'none',
   background: 'transparent',
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   fontSize: 16,
   fontWeight: 500,
   lineHeight: '22px',
@@ -106,11 +106,11 @@ export const onboardingFieldSuffixStyle: CSSProperties = {
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
 }
 
 export const onboardingSectionCardStyle: CSSProperties = {
-  background: 'var(--color-card)',
+  background: 'var(--color-surface)',
   borderRadius: 20,
   padding: '16px 14px 14px',
 }
@@ -118,7 +118,7 @@ export const onboardingSectionCardStyle: CSSProperties = {
 export const onboardingSectionLabelStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.5,
   marginBottom: 12,
 }
@@ -147,7 +147,7 @@ export const onboardingSelectWrapStyle: CSSProperties = {
 
 export const onboardingSelectStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   border: 'none',
   borderRadius: 10,
   padding: '15px 44px 17px 16px',
@@ -155,7 +155,7 @@ export const onboardingSelectStyle: CSSProperties = {
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   cursor: 'pointer',
   appearance: 'none',
   outline: 'none',
@@ -166,13 +166,13 @@ export const onboardingSelectChevronStyle: CSSProperties = {
   right: 14,
   top: '50%',
   transform: 'translateY(-50%)',
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
   pointerEvents: 'none',
 }
 
 export const onboardingTimeSelectWrapStyle: CSSProperties = {
   flex: 1,
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   borderRadius: 10,
   display: 'flex',
   alignItems: 'center',
@@ -188,13 +188,13 @@ export const onboardingTimeSelectStyle: CSSProperties = {
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   cursor: 'pointer',
   outline: 'none',
 }
 
 export const onboardingToggleRowStyle: CSSProperties = {
-  background: 'var(--color-card)',
+  background: 'var(--color-surface)',
   borderRadius: 20,
   padding: '14px 16px',
   display: 'flex',
@@ -207,19 +207,19 @@ export const onboardingToggleLabelStyle: CSSProperties = {
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
 }
 
 export const onboardingListCardStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card)',
+  background: 'var(--color-surface)',
   borderRadius: 20,
   overflow: 'hidden',
 }
 
 export const onboardingListButtonStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card)',
+  background: 'var(--color-surface)',
   border: 'none',
   borderRadius: 20,
   padding: '14px 16px',
@@ -235,7 +235,7 @@ export const onboardingListMediaStyle: CSSProperties = {
   height: 48,
   borderRadius: 24,
   overflow: 'hidden',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   flexShrink: 0,
   display: 'flex',
   alignItems: 'center',
@@ -247,12 +247,12 @@ export const onboardingListTitleStyle: CSSProperties = {
   fontWeight: 500,
   lineHeight: '22px',
   letterSpacing: -0.16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
 }
 
 export const onboardingListSubtitleStyle: CSSProperties = {
   fontSize: 13,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.15,
   lineHeight: '16px',
   marginTop: 1,
@@ -275,8 +275,8 @@ export const onboardingPriceRowStyle: CSSProperties = {
 }
 
 export const onboardingDiscountBadgeStyle: CSSProperties = {
-  background: 'var(--color-danger)',
-  color: '#fff',
+  background: 'var(--color-error-surface-accented)',
+  color: 'var(--color-on-primary-surface)',
   fontSize: 10,
   fontWeight: 700,
   borderRadius: 6,
@@ -285,7 +285,7 @@ export const onboardingDiscountBadgeStyle: CSSProperties = {
 
 export const stepOneAddressButtonStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   border: 'none',
   cursor: 'pointer',
   textAlign: 'left',
@@ -304,14 +304,14 @@ export const stepOneAddressContentStyle: CSSProperties = {
 export const stepOneAddressTitleStyle: CSSProperties = {
   fontWeight: 500,
   fontSize: 16,
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   letterSpacing: -0.16,
   lineHeight: '22px',
 }
 
 export const stepOneAddressHintStyle: CSSProperties = {
   fontSize: 13,
-  color: 'var(--color-text-secondary)',
+  color: 'var(--color-on-surface-secondary)',
   letterSpacing: 0.15,
   lineHeight: '16px',
   marginTop: 1,
@@ -319,7 +319,7 @@ export const stepOneAddressHintStyle: CSSProperties = {
 
 export const stepOneAddressInputWrapStyle: CSSProperties = {
   width: '100%',
-  background: 'var(--color-card2)',
+  background: 'var(--color-secondary-surface)',
   borderRadius: 10,
   position: 'relative',
 }
@@ -329,7 +329,7 @@ export const stepOneAddressInputStyle: CSSProperties = {
   border: 'none',
   outline: 'none',
   background: 'transparent',
-  color: 'var(--color-text)',
+  color: 'var(--color-on-surface)',
   fontSize: 16,
   fontWeight: 500,
   lineHeight: '22px',

@@ -2,11 +2,12 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
+import { colors } from '@/styles/tokens'
 
 function BackArrowIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 19l-7-7 7-7" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -14,8 +15,8 @@ function BackArrowIcon() {
 function CopyIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="9" width="13" height="13" rx="2" stroke="var(--color-primary)" strokeWidth="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="var(--color-primary)" strokeWidth="2" />
+      <rect x="9" y="9" width="13" height="13" rx="2" stroke="var(--color-primary-surface)" strokeWidth="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="var(--color-primary-surface)" strokeWidth="2" />
     </svg>
   )
 }
@@ -23,9 +24,9 @@ function CopyIcon() {
 function ShareIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="16 6 12 2 8 6" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="12" y1="2" x2="12" y2="15" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="16 6 12 2 8 6" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="2" x2="12" y2="15" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -33,9 +34,9 @@ function ShareIcon() {
 function DownloadIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="7 10 12 15 17 10" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="12" y1="15" x2="12" y2="3" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="7 10 12 15 17 10" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="15" x2="12" y2="3" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -87,7 +88,7 @@ export default function ShareLinkPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Шапка */}
       <div style={{
@@ -95,7 +96,7 @@ export default function ShareLinkPage() {
         display: 'flex', alignItems: 'center',
         padding: '0 8px 0 4px',
         position: 'sticky', top: 0,
-        background: '#0F0F11',
+        background: 'var(--color-background)',
         zIndex: 10,
       }}>
         <button
@@ -111,23 +112,23 @@ export default function ShareLinkPage() {
       <div style={{ padding: '8px 16px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Описание */}
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-on-surface-secondary)', lineHeight: 1.5 }}>
           Поделитесь этой ссылкой или QR-кодом — клиенты смогут записаться к вам через мессенджер Max
         </p>
 
         {/* Блок ссылки */}
         <div style={{
-          background: 'var(--color-card)',
+          background: 'var(--color-surface)',
           borderRadius: 'var(--radius)',
           display: 'flex', alignItems: 'center',
           padding: '12px 16px',
           gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Ссылка</div>
+            <div style={{ fontSize: 11, color: 'var(--color-on-surface-secondary)', marginBottom: 4 }}>Ссылка</div>
             <div style={{
               fontSize: 13, fontFamily: 'monospace',
-              color: 'var(--color-primary)',
+              color: 'var(--color-primary-surface)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {deepLink}
@@ -156,12 +157,12 @@ export default function ShareLinkPage() {
           onClick={handleCopy}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: copied ? 'var(--color-card2)' : 'var(--color-card)',
-            border: `1px solid ${copied ? 'var(--color-primary)' : 'transparent'}`,
+            background: copied ? 'var(--color-secondary-surface)' : 'var(--color-surface)',
+            border: `1px solid ${copied ? 'var(--color-primary-surface)' : 'transparent'}`,
             borderRadius: 'var(--radius)',
             padding: '12px 16px',
             cursor: 'pointer',
-            color: copied ? 'var(--color-primary)' : 'var(--color-text)',
+            color: copied ? 'var(--color-primary-surface)' : 'var(--color-on-surface)',
             fontSize: 15, fontWeight: 500,
             transition: 'all 0.15s',
           }}
@@ -172,14 +173,14 @@ export default function ShareLinkPage() {
 
         {/* Разделитель */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
-          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>или QR-код</span>
-          <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+          <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
+          <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)' }}>или QR-код</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
         </div>
 
         {/* QR-код */}
         <div style={{
-          background: 'var(--color-card)',
+          background: 'var(--color-surface)',
           borderRadius: 'var(--radius)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
@@ -187,7 +188,7 @@ export default function ShareLinkPage() {
           gap: 16,
         }}>
           <div style={{
-            background: '#ffffff',
+            background: colors.black00,
             borderRadius: 16,
             padding: 16,
             display: 'inline-flex',
@@ -197,15 +198,15 @@ export default function ShareLinkPage() {
                 ref={canvasRef}
                 value={deepLink}
                 size={200}
-                bgColor="#ffffff"
-                fgColor="#0F0F11"
+                bgColor={colors.black00}
+                fgColor={colors.black100}
                 level="M"
               />
             ) : (
               <div style={{
                 width: 200, height: 200,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#aaa', fontSize: 13, textAlign: 'center', padding: 16,
+                color: 'var(--color-on-surface-muted)', fontSize: 13, textAlign: 'center', padding: 16,
               }}>
                 QR-код появится после авторизации
               </div>
@@ -216,7 +217,7 @@ export default function ShareLinkPage() {
             <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
               {master?.name ?? 'Мастер'}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+            <div style={{ fontSize: 12, color: 'var(--color-on-surface-secondary)' }}>
               Отсканируйте, чтобы записаться
             </div>
           </div>
@@ -226,10 +227,10 @@ export default function ShareLinkPage() {
             onClick={handleDownloadQR}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: 'none', border: '1px solid var(--color-border)',
+              background: 'none', border: '1px solid var(--color-divider-low)',
               borderRadius: 10, padding: '8px 16px',
               cursor: 'pointer',
-              color: 'var(--color-text-secondary)',
+              color: 'var(--color-on-surface-secondary)',
               fontSize: 13, fontWeight: 500,
             }}
           >

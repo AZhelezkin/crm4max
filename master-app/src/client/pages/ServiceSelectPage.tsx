@@ -5,7 +5,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 
-/* ── Highlight matching substring in blue (#007AFE) ──────────────────────── */
+/* ── Highlight matching substring in blue (var(--color-primary-surface)) ──────────────────────── */
 
 function Highlight({ text, query }: { text: string; query: string }) {
   if (!query) return <>{text}</>
@@ -14,7 +14,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span style={{ color: '#007AFE' }}>{text.slice(idx, idx + query.length)}</span>
+      <span style={{ color: 'var(--color-primary-surface)' }}>{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </>
   )
@@ -84,11 +84,11 @@ export default function ServiceSelectPage() {
   const isSearching = isSearchMode && q.length > 0
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', paddingBottom: 20 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 20 }}>
 
       {/* -- Header -- */}
       <div style={{
-        height: 56, background: '#0F0F11',
+        height: 56, background: 'var(--color-background)',
         display: 'flex', alignItems: 'center', padding: '0 14px',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -98,21 +98,21 @@ export default function ServiceSelectPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="#D3D4D6" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
         {isSearchMode ? (
-          /* Search input — Global Search.svg style: rx=12, bg #454757, h=44 */
+          /* Search input — Global Search.svg style: rx=12, bg var(--color-divider-low), h=44 */
           <div style={{
-            flex: 1, height: 44, background: '#454757', borderRadius: 12,
+            flex: 1, height: 44, background: 'var(--color-divider-low)', borderRadius: 12,
             display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8,
             marginRight: 8,
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="11" cy="11" r="7" stroke="#7D7D7F" strokeWidth="1.5"/>
-              <path d="M16 16L20 20" stroke="#7D7D7F" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5"/>
+              <path d="M16 16L20 20" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <input
               ref={inputRef}
@@ -121,7 +121,7 @@ export default function ServiceSelectPage() {
               placeholder="Поиск услуг..."
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: '#D3D4D6', fontSize: 15, fontFamily: 'inherit', padding: 0,
+                color: 'var(--color-on-surface)', fontSize: 15, fontFamily: 'inherit', padding: 0,
               }}
             />
             {query && (
@@ -133,14 +133,14 @@ export default function ServiceSelectPage() {
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                  <path d="M5 5L15 15M15 5L5 15" stroke="#7D7D7F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M5 5L15 15M15 5L5 15" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             )}
           </div>
         ) : (
           <>
-            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#D3D4D6', textAlign: 'center' }}>
+            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', textAlign: 'center' }}>
               Выберите услугу
             </div>
             <button
@@ -148,8 +148,8 @@ export default function ServiceSelectPage() {
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="7" stroke="#D3D4D6" strokeWidth="1.5"/>
-                <path d="M16 16L20 20" stroke="#D3D4D6" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface)" strokeWidth="1.5"/>
+                <path d="M16 16L20 20" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
           </>
@@ -160,14 +160,14 @@ export default function ServiceSelectPage() {
       {isSearching && (
         <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {searchResults.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Ничего не найдено</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Ничего не найдено</div>
           )}
           {searchResults.map(({ category: cat, services }) => (
             <div key={cat.id}>
               {/* Category header — only in global search */}
               {globalSearch && (
                 <div style={{
-                  fontSize: 13, fontWeight: 600, color: '#7D7D7F',
+                  fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-secondary)',
                   marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
                 }}>
                   <Highlight text={cat.name} query={q} />
@@ -182,7 +182,7 @@ export default function ServiceSelectPage() {
                       onClick={() => handleSelect(s)}
                       style={{
                         width: '100%', height: 106,
-                        background: '#25262B', borderRadius: 20,
+                        background: 'var(--color-surface)', borderRadius: 20,
                         padding: '14px 20px 12px 22px', border: 'none',
                         cursor: 'pointer', textAlign: 'left',
                         display: 'flex', alignItems: 'flex-start',
@@ -190,13 +190,13 @@ export default function ServiceSelectPage() {
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontWeight: 600, fontSize: 15, color: '#D3D4D6',
+                          fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)',
                           lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                           <Highlight text={s.name} query={q} />
                         </div>
                         <div style={{
-                          color: '#7D7D7F', fontSize: 13, marginTop: 2,
+                          color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
                           height: 34, overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -210,19 +210,19 @@ export default function ServiceSelectPage() {
                         }}>
                           <span style={{
                             fontWeight: 600, fontSize: 15,
-                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                            color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
                           }}>
                             {formatPrice(dPrice ?? s.price)}
                           </span>
                           {dPrice !== null && (
-                            <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                            <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </span>
                           )}
                           {s.discountPercent && (
                             <span style={{
                               marginLeft: 'auto',
-                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                              background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
                               fontSize: 11, fontWeight: 700, borderRadius: 6,
                               padding: '2px 8px', lineHeight: '18px',
                             }}>
@@ -232,7 +232,7 @@ export default function ServiceSelectPage() {
                         </div>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
-                        <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                   )
@@ -247,16 +247,16 @@ export default function ServiceSelectPage() {
       {!isSearching && (
         <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {!master && (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Загрузка...</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
           )}
           {master && categories.length === 0 && !isSearchMode && (
-            <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>Нет услуг</div>
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет услуг</div>
           )}
           {!isSearchMode && categories.map((cat) => (
             <div key={cat.id}>
               {cat.name && (
                 <div style={{
-                  fontSize: 13, fontWeight: 600, color: '#7D7D7F',
+                  fontSize: 13, fontWeight: 600, color: 'var(--color-on-surface-secondary)',
                   marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
                 }}>
                   {cat.name}
@@ -272,7 +272,7 @@ export default function ServiceSelectPage() {
                       onClick={() => handleSelect(s)}
                       style={{
                         width: '100%', height: 106,
-                        background: '#25262B', borderRadius: 20,
+                        background: 'var(--color-surface)', borderRadius: 20,
                         padding: '14px 20px 12px 22px', border: 'none',
                         cursor: 'pointer', textAlign: 'left',
                         display: 'flex', alignItems: 'flex-start',
@@ -280,13 +280,13 @@ export default function ServiceSelectPage() {
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontWeight: 600, fontSize: 15, color: '#D3D4D6',
+                          fontWeight: 600, fontSize: 15, color: 'var(--color-on-surface)',
                           lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
                           {s.name}
                         </div>
                         <div style={{
-                          color: '#7D7D7F', fontSize: 13, marginTop: 2,
+                          color: 'var(--color-on-surface-secondary)', fontSize: 13, marginTop: 2,
                           height: 34, overflow: 'hidden',
                           display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -300,19 +300,19 @@ export default function ServiceSelectPage() {
                         }}>
                           <span style={{
                             fontWeight: 600, fontSize: 15,
-                            color: dPrice !== null ? '#CE4259' : '#D3D4D6',
+                            color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
                           }}>
                             {formatPrice(dPrice ?? s.price)}
                           </span>
                           {dPrice !== null && (
-                            <span style={{ fontSize: 13, color: '#7D7D7F', textDecoration: 'line-through' }}>
+                            <span style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
                               {formatPrice(s.price)}
                             </span>
                           )}
                           {s.discountPercent && (
                             <span style={{
                               marginLeft: 'auto',
-                              background: 'rgba(206,66,89,0.3)', color: '#CE4259',
+                              background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
                               fontSize: 11, fontWeight: 700, borderRadius: 6,
                               padding: '2px 8px', lineHeight: '18px',
                             }}>
@@ -322,7 +322,7 @@ export default function ServiceSelectPage() {
                         </div>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
-                        <path d="M7 5L11 9L7 13" stroke="#7D7D7F" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                   )

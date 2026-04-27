@@ -33,7 +33,7 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)' }}>
       <PageHeader title="Карта для оплаты" />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -51,7 +51,7 @@ export default function PaymentSettingsPage() {
         </Card>
 
         <Card style={{ textAlign: 'center' }}>
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 14, marginBottom: 12 }}>
+          <div style={{ color: 'var(--color-on-surface-secondary)', fontSize: 14, marginBottom: 12 }}>
             {master?.vkPayLinked ? '✅ VK Pay привязан' : 'Привяжите VK Pay для приёма оплат'}
           </div>
           {!master?.vkPayLinked && (

@@ -12,20 +12,20 @@ interface Props {
 
 const styles: Record<string, CSSProperties> = {
   primary: {
-    background: 'var(--color-primary)',
-    color: '#fff',
+    background: 'var(--color-primary-surface)',
+    color: 'var(--color-on-primary-surface)',
   },
   secondary: {
-    background: 'var(--color-primary-light)',
-    color: 'var(--color-primary)',
+    background: 'var(--color-active-surface)',
+    color: 'var(--color-primary-surface)',
   },
   danger: {
     background: 'transparent',
-    color: 'var(--color-danger)',
+    color: 'var(--color-error-surface-accented)',
   },
   ghost: {
     background: 'transparent',
-    color: 'var(--color-primary)',
+    color: 'var(--color-primary-surface)',
   },
 }
 

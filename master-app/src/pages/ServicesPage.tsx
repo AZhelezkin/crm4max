@@ -17,7 +17,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div style={{ height: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <AppHeader title={title} onBack={handleBack} />
       <CategoriesServicesEditor
         ref={editorRef}

@@ -11,17 +11,17 @@ export default function Input({ label, value, onChange, placeholder, type = 'tex
   const inputStyle = {
     width: '100%',
     padding: '12px 14px',
-    border: '1px solid var(--color-border)',
+    border: '1px solid var(--color-divider-low)',
     borderRadius: 'var(--radius-sm)',
     fontSize: 15,
-    background: '#fff',
-    color: 'var(--color-text)',
+    background: 'var(--color-on-primary-surface)',
+    color: 'var(--color-on-surface)',
     resize: 'none' as const,
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {label && <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{label}</label>}
+      {label && <label style={{ fontSize: 13, color: 'var(--color-on-surface-secondary)', fontWeight: 500 }}>{label}</label>}
       {multiline ? (
         <textarea
           value={value}

@@ -40,14 +40,14 @@ export default function PaymentsDayPage() {
   const titleDate = date ? dayjs(date).format('D MMMM YYYY') : ''
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F11', color: '#D3D4D6', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Header */}
       <header
         style={{
           height: 56,
           position: 'sticky',
           top: 0,
-          background: '#0F0F11',
+          background: 'var(--color-background)',
           zIndex: 10,
           display: 'flex',
           alignItems: 'center',
@@ -67,14 +67,14 @@ export default function PaymentsDayPage() {
             border: 'none',
             padding: 0,
             cursor: 'pointer',
-            color: '#D3D4D6',
+            color: 'var(--color-on-surface)',
           }}
         >
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
-            <path d="M9 1L1 8L9 15" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9 1L1 8L9 15" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h1 style={{ fontSize: 17, fontWeight: 600, color: '#D3D4D6', margin: 0 }}>{titleDate}</h1>
+        <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-on-surface)', margin: 0 }}>{titleDate}</h1>
         <button
           aria-label="Экспорт"
           style={{
@@ -90,9 +90,9 @@ export default function PaymentsDayPage() {
           }}
         >
           <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 10.18V0.01" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="#D3D4D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 10.18V0.01" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </header>
@@ -103,7 +103,7 @@ export default function PaymentsDayPage() {
           <DayCard key={p.id} payment={p} />
         ))}
         {dayPayments.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#7D7D7F', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет оплат за этот день
           </div>
         )}
@@ -115,8 +115,8 @@ export default function PaymentsDayPage() {
 function DayCard({ payment }: { payment: Payment }) {
   const isUnpaid = payment.status === 'UNPAID'
   const badgeBg = isUnpaid ? 'rgba(206, 66, 89, 0.3)' : 'rgba(66, 206, 89, 0.3)'
-  const badgeColor = isUnpaid ? '#CE4259' : '#42CE59'
-  const amountColor = isUnpaid ? '#CE4259' : '#D3D4D6'
+  const badgeColor = isUnpaid ? 'var(--color-error-surface-accented)' : 'var(--color-success-surface-accented)'
+  const amountColor = isUnpaid ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)'
 
   const serviceName = payment.booking?.service.name ?? '—'
   const clientName = payment.booking?.client.name ?? ''
@@ -126,7 +126,7 @@ function DayCard({ payment }: { payment: Payment }) {
   return (
     <div
       style={{
-        background: '#25262B',
+        background: 'var(--color-surface)',
         borderRadius: 20,
         padding: '18px 20px 13px',
         height: 115,
@@ -142,7 +142,7 @@ function DayCard({ payment }: { payment: Payment }) {
             fontSize: 14,
             fontWeight: 600,
             lineHeight: 1,
-            color: '#D3D4D6',
+            color: 'var(--color-on-surface)',
             flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -151,7 +151,7 @@ function DayCard({ payment }: { payment: Payment }) {
         >
           {serviceName}
         </div>
-        <div style={{ fontSize: 13, lineHeight: 1, color: '#7D7D7F' }}>{time}</div>
+        <div style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{time}</div>
       </div>
 
       {/* Row 2: avatar + client name */}
@@ -168,18 +168,18 @@ function DayCard({ payment }: { payment: Payment }) {
               width: 24,
               height: 24,
               borderRadius: 12,
-              background: '#3A3B42',
+              background: 'var(--color-divider-low)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 11,
-              color: '#7D7D7F',
+              color: 'var(--color-on-surface-secondary)',
             }}
           >
             {clientName ? clientName[0].toUpperCase() : ''}
           </div>
         )}
-        <span style={{ fontSize: 13, lineHeight: 1, color: '#7D7D7F' }}>{clientName}</span>
+        <span style={{ fontSize: 13, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{clientName}</span>
       </div>
 
       {/* Row 3: amount + badge */}
