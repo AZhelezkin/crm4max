@@ -8,37 +8,18 @@
     <meta http-equiv="Expires" content="0" />
     <meta name="color-scheme" content="light dark" />
     <title>CRM4Max</title>
-    <script src="https://st.max.ru/js/max-web-app.js"></script>
     <script>
       // Применяем тему до рендера React — без вспышки.
-      // Приоритет: localStorage > window.WebApp.* (тема Max) > prefers-color-scheme > Dark.
-      // max-web-app.js загружен синхронно выше, поэтому window.WebApp уже доступен.
+      // Приоритет: localStorage (явный выбор) > prefers-color-scheme (OS) > Dark.
       try {
         var stored = localStorage.getItem('crm4max-theme')
-        var t = null
-        if (stored === 'light' || stored === 'dark') {
-          t = stored
-        } else if (window.WebApp) {
-          var w = window.WebApp
-          var cs = w.colorScheme || w.theme || w.colorTheme
-          if (cs === 'light' || cs === 'dark') {
-            t = cs
-          } else {
-            var bg = w.themeParams && (w.themeParams.bg_color || w.themeParams.background_color)
-            if (typeof bg === 'string' && bg.charAt(0) === '#') {
-              var n = parseInt(bg.slice(1, 7), 16)
-              var r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff
-              t = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? 'light' : 'dark'
-            }
-          }
-        }
-        if (!t) {
-          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-            ? 'light' : 'dark'
-        }
+        var t = stored === 'light' || stored === 'dark'
+          ? stored
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
         document.documentElement.dataset.theme = t
       } catch (e) { /* приватный режим / нет localStorage */ }
     </script>
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
   </head>
   <body>
     <div id="root"></div>
