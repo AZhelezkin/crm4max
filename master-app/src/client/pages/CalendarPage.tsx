@@ -102,7 +102,16 @@ export default function CalendarPage() {
     if (step === 'time' && masterId && service && selectedDate) {
       setSlotsLoading(true)
       mastersApi.getSlots(masterId, selectedDate, service.id)
-        .then(setSlots)
+        .then((s) => {
+          setSlots(s)
+          // Самокоррекция кеша availability: если getSlots вернул пусто, помечаем
+          // дату как занятую, чтобы клетка перестала светиться синим при возврате.
+          // Случается, например, для сегодняшнего дня, когда последний слот стартанул
+          // между моментом загрузки availability и кликом по клетке.
+          setAvailability((prev) => prev[selectedDate] === (s.length > 0)
+            ? prev
+            : { ...prev, [selectedDate]: s.length > 0 })
+        })
         .catch(() => setSlots([]))
         .finally(() => setSlotsLoading(false))
     }
