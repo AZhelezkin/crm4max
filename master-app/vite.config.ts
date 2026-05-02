@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   base: process.env.VITE_BASE_PATH ?? '/',
   resolve: {
+    // ВАЖНО: .ts/.tsx до .js/.jsx, чтобы при импорте без расширения (`from
+    // '@client/pages/MasterCardPage'`) выбиралась TypeScript-версия. В рабочей
+    // копии лежат не-tracked legacy-`.js`-файлы (артефакты JS→TS миграции);
+    // иначе они резолвятся первыми и ломают локальный build (на Pages их нет).
+    extensions: ['.mts', '.ts', '.tsx', '.mjs', '.js', '.jsx', '.json'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@client': resolve(__dirname, 'src/client'),
