@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -15,6 +15,8 @@ dayjs.locale('ru')
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
+const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
 function buildMonthGrid(year: number, month: number): (dayjs.Dayjs | null)[][] {
   const firstDay = dayjs(new Date(year, month, 1))
   const startOffset = (firstDay.day() || 7) - 1
@@ -29,6 +31,43 @@ function buildMonthGrid(year: number, month: number): (dayjs.Dayjs | null)[][] {
   return weeks
 }
 
+/* ── Icons (Figma 8535:44330 toolbarTop + calendarControl) ─────────────────── */
+
+function IcoSearch() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="11" cy="11" r="8" stroke="var(--color-on-surface)" strokeWidth="1.75"/>
+      <path d="M21 21l-4-4" stroke="var(--color-on-surface)" strokeWidth="1.75" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IcoArrowDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2.5 4.5L6 8l3.5-3.5" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoArrowLeft() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M12.5 4L6.5 10l6 6" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoArrowRight() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M7.5 4L13.5 10l-6 6" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
+
 export default function MyBookingsPage() {
   const navigate = useNavigate()
   const storeMasterId = useBookingStore((s) => s.masterId)
@@ -36,7 +75,7 @@ export default function MyBookingsPage() {
   const currentMasterId = UUID_REGEX.test(startParam) ? startParam : storeMasterId
 
   const [bookings, setBookings] = useState<Booking[]>([])
-  const today = dayjs()
+  const today = dayjs().startOf('day')
   const [viewMonth, setViewMonth] = useState(today.startOf('month'))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -58,7 +97,7 @@ export default function MyBookingsPage() {
   )
 
   const isPast = (b: Booking) =>
-    dayjs(b.date + ' ' + b.time).isBefore(today) || b.status === 'COMPLETED' || b.status === 'CANCELLED'
+    dayjs(b.date + ' ' + b.time).isBefore(dayjs()) || b.status === 'COMPLETED' || b.status === 'CANCELLED'
 
   const upcomingCount = bookings.filter((b) => !isPast(b)).length
 
@@ -73,9 +112,19 @@ export default function MyBookingsPage() {
     return map
   }, [bookings])
 
-  const displayedBookings = selectedDate
-    ? sortedBookings.filter((b) => b.date === selectedDate)
-    : sortedBookings
+  // Группы по дате (всегда показываем все, фильтруя по selectedDate если выбрана).
+  const groups = useMemo(() => {
+    const map = new Map<string, Booking[]>()
+    for (const b of sortedBookings) {
+      const list = map.get(b.date) ?? []
+      list.push(b)
+      map.set(b.date, list)
+    }
+    if (selectedDate) {
+      return map.has(selectedDate) ? [[selectedDate, map.get(selectedDate)!]] as const : []
+    }
+    return Array.from(map.entries())
+  }, [sortedBookings, selectedDate])
 
   const priceLabel = (b: Booking) => {
     const svc = b.service
@@ -84,230 +133,329 @@ export default function MyBookingsPage() {
     return formatPrice(discounted)
   }
 
-  return (
-    <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
+  const endTime = (b: Booking) =>
+    dayjs(`${b.date} ${b.time}`).add(b.service.duration, 'minute').format('HH:mm')
 
-      {/* Date title + action buttons */}
+  const handleBookNew = () => {
+    if (!currentMasterId) return
+    setStoreMasterId(currentMasterId)
+    navigate('/book/categories')
+  }
+
+  return (
+    <div style={{ minHeight: '100dvh', paddingBottom: 95, display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Toolbar (Figma toolbarTop 8535:43254). h=56, pl-16 pr-12 py-6.
+            title left H3 22/26/700 ls -0.66, trailing search + Записаться pill, gap 10. */}
       <div style={{
-        padding: '20px 16px 0',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        height: 56,
+        padding: '6px 12px 6px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 8,
       }}>
         <div style={{
-          ...text.titleSmall, color: 'var(--color-on-primary-surface)',
-          letterSpacing: -0.3,
+          fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66,
+          color: 'var(--color-on-surface)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {today.format('D MMMM, YYYY')}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'var(--color-surface)', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="2"/>
-              <path d="M16.5 16.5l4 4" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {/* Search 44×44 round (decoration only) */}
           <button
-            onClick={() => {
-              if (!currentMasterId) return
-              setStoreMasterId(currentMasterId)
-              navigate('/book/categories')
+            aria-label="Поиск"
+            style={{
+              width: 44, height: 44, borderRadius: 22,
+              background: 'var(--color-background)',
+              border: 'none', padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
             }}
+          >
+            <IcoSearch />
+          </button>
+
+          {/* Записаться pill — bg primarysurface, h=44, padding 4 outer + 6 inner = 10 each side. */}
+          <button
+            onClick={handleBookNew}
             disabled={!currentMasterId}
             style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'var(--color-primary-surface)', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+              height: 44, padding: '0 16px', borderRadius: 22,
+              background: 'var(--color-primary-surface)',
+              color: 'var(--color-on-primary-surface)',
+              border: 'none',
+              ...text.callout1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: currentMasterId ? 'pointer' : 'default',
+              opacity: currentMasterId ? 1 : 0.5,
+              flexShrink: 0,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v12M2 8h12" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            Записаться
           </button>
         </div>
       </div>
 
-      {/* Month switcher */}
-      <div style={{
-        padding: '18px 16px 10px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <button
-          onClick={() => setViewMonth(today.startOf('month'))}
-          style={{
-            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            color: 'var(--color-on-surface-secondary)', ...text.bodyMedium, textTransform: 'capitalize',
-          }}
-        >
-          {viewMonth.format('MMMM YYYY')}
-          <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-            <path d="M1 1l4 4 4-4" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <button
-            onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
-            style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}
-          >
-            <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M8 1L1 8l7 7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMonth((m) => m.add(1, 'month'))}
-            style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}
-          >
-            <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M1 1l7 7-7 7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+      {/* ── Calendar block (Figma 8535:43249). px-16 py-8, gap-8. ──────────── */}
+      <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-      {/* Day names */}
-      <div style={{ padding: '0 16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
+        {/* controls row — pl-6 + space-between */}
+        <div style={{
+          paddingLeft: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          {/* Month label pill — pl-8 pr-4 py-12, gap 8, rounded 100 */}
+          <button
+            onClick={() => setViewMonth(today.startOf('month'))}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '12px 4px 12px 8px', borderRadius: 100,
+              background: 'none', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <span style={{
+              ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+              textTransform: 'capitalize',
+            }}>
+              {viewMonth.format('MMMM YYYY')}
+            </span>
+            <span style={{ display: 'inline-flex', padding: 4 }}>
+              <IcoArrowDown />
+            </span>
+          </button>
+
+          {/* Right: arrow-left + arrow-right, each p-12 (44×44) */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 4, borderRadius: 100 }}>
+            <button
+              onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
+              aria-label="Предыдущий месяц"
+              style={{
+                width: 44, height: 44, padding: 0, borderRadius: 22,
+                background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <IcoArrowLeft />
+            </button>
+            <button
+              onClick={() => setViewMonth((m) => m.add(1, 'month'))}
+              aria-label="Следующий месяц"
+              style={{
+                width: 44, height: 44, padding: 0, borderRadius: 22,
+                background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <IcoArrowRight />
+            </button>
+          </div>
+        </div>
+
+        {/* daysOfWeek row — h-48, body2Medium 17/24/500 ls 0.34 onsurfacesecondary */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
           {DAY_NAMES.map((d) => (
             <div key={d} style={{
-              textAlign: 'center', ...text.footnote, color: 'var(--color-on-surface-secondary)',
-              padding: '6px 0', fontWeight: 400,
+              height: 48,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              ...text.body2Medium, color: 'var(--color-on-surface-secondary)',
             }}>
               {d}
             </div>
           ))}
         </div>
 
-        {/* Calendar grid */}
-        {buildMonthGrid(viewMonth.year(), viewMonth.month()).map((week, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-            {week.map((day, di) => {
-              if (!day) return <div key={di} style={{ height: 54 }} />
-              const val = day.format('YYYY-MM-DD')
-              const isToday = day.isSame(today, 'day')
-              const isSelected = val === selectedDate
-              const weekday = day.day() // 0=Sun,6=Sat
-              const isWeekend = weekday === 0 || weekday === 6
-              const rec = bookingsByDate.get(val)
-              const dotColor = rec
-                ? rec.hasFuture
-                  ? 'var(--color-error-surface-accented)'
-                  : 'var(--color-divider-low)'
-                : null
+        {/* daysGrid — 7 cols, cell minH=56 px-4 py-8 rx-12, callout1 17/24 ls -0.17 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          {buildMonthGrid(viewMonth.year(), viewMonth.month()).flat().map((day, i) => {
+            if (!day) return <div key={i} style={{ minHeight: 56 }} />
+            const val = day.format('YYYY-MM-DD')
+            const isPastDay = day.isBefore(today, 'day')
+            const isToday = day.isSame(today, 'day')
+            const isSelected = val === selectedDate
+            const isWeekend = (day.day() || 7) >= 6
 
-              return (
-                <button
-                  key={val}
-                  onClick={() => setSelectedDate(isSelected ? null : val)}
-                  style={{
-                    position: 'relative',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    height: 54,
-                    background: isSelected ? 'rgba(0,122,254,0.15)' : 'transparent',
-                    border: 'none', borderRadius: 12, cursor: 'pointer',
-                  }}
-                >
-                  <span style={{
-                    position: 'relative',
-                    ...text.callout, lineHeight: 1,
-                    color: isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-on-primary-surface)',
-                  }}>
-                    {day.date()}
-                    {dotColor && (
-                      <span style={{
-                        position: 'absolute',
-                        top: -6, right: -9,
-                        width: 9, height: 9, borderRadius: '50%',
-                        background: dotColor,
-                      }} />
-                    )}
-                  </span>
-                  {isToday && (
-                    <span style={{
-                      position: 'absolute', bottom: 10,
-                      width: 16, height: 2, borderRadius: 1,
-                      background: 'var(--color-error-surface-accented)',
-                    }} />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        ))}
-      </div>
+            // Цвет цифры (Figma _calendarCell):
+            //   weekend регуляр  → error-surface-accented
+            //   weekend прошлый  → error-element-muted
+            //   обычный регуляр  → interactive-element-accented
+            //   обычный прошлый  → interactive-element-muted
+            const textColor = isWeekend
+              ? (isPastDay ? 'var(--color-error-element-muted)' : 'var(--color-error-surface-accented)')
+              : (isPastDay ? 'var(--color-interactive-element-muted)' : 'var(--color-interactive-element-accented)')
 
-      {/* Bookings list header */}
-      <div style={{ padding: '24px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          ...text.footnote, color: 'var(--color-on-surface-secondary)', fontWeight: 400, letterSpacing: 0.2,
-        }}>
-          МОИ ЗАПИСИ
-        </div>
-        {displayedBookings.length > 0 && (
-          <span style={{
-            background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
-            borderRadius: 12, padding: '1px 9px',
-            ...text.footnoteStrong, minWidth: 22, textAlign: 'center',
-          }}>
-            {displayedBookings.length}
-          </span>
-        )}
-      </div>
+            const rec = bookingsByDate.get(val)
+            const showBadge = !!rec
 
-      {/* Bookings list */}
-      {displayedBookings.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 24, ...text.action }}>
-          {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
-        </div>
-      ) : (
-        <div>
-          {displayedBookings.map((b, idx) => {
-            const past = isPast(b)
-            const dateLabel = dayjs(b.date).format('DD MMM').replace('.', '')
             return (
               <button
-                key={b.id}
-                onClick={() => navigate(`/my-bookings/${b.id}`)}
+                key={val}
+                onClick={() => setSelectedDate(isSelected ? null : val)}
                 style={{
-                  display: 'flex', alignItems: 'stretch', width: '100%',
-                  padding: '14px 16px',
-                  background: 'none',
-                  borderLeft: 'none', borderRight: 'none',
-                  borderTop: idx === 0 ? '1px solid var(--color-surface)' : 'none',
-                  borderBottom: '1px solid var(--color-surface)',
-                  cursor: 'pointer', textAlign: 'left',
+                  position: 'relative',
+                  minHeight: 56, padding: '8px 4px', borderRadius: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', cursor: 'pointer',
                 }}
               >
-                <div style={{
-                  minWidth: 54, flexShrink: 0, color: 'var(--color-on-surface-secondary)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                }}>
-                  <div style={{ ...text.footnote, lineHeight: 1.3 }}>{dateLabel}</div>
-                  <div style={{ ...text.footnote, lineHeight: 1.3 }}>{b.time}</div>
-                </div>
-                <div style={{ width: 1, background: 'var(--color-divider-low)', margin: '2px 14px 2px 2px' }} />
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{
-                    ...text.subheadline, lineHeight: 1.3,
-                    color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-primary-surface)',
-                    textDecoration: past ? 'line-through' : 'none',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {b.service.name}
-                  </div>
-                  <div style={{
-                    ...text.action, color: 'var(--color-on-surface-secondary)', marginTop: 4,
-                  }}>
-                    {priceLabel(b)}
-                  </div>
-                </div>
+                <span style={{ ...text.callout1, color: textColor }}>
+                  {day.date()}
+                </span>
+
+                {/* Today mark — небольшая риска под цифрой (bottom-14 в Figma).
+                    Используем ту же error-surface-accented, что и в book-flow. */}
+                {isToday && (
+                  <span style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: '50%', transform: 'translateX(-50%)',
+                    width: 10, height: 2, borderRadius: 1,
+                    background: 'var(--color-error-surface-accented)',
+                  }} />
+                )}
+
+                {/* Selected frame — 1.5px border, rounded-12 (накрывает всю клетку) */}
+                {isSelected && (
+                  <span style={{
+                    position: 'absolute', inset: 0,
+                    border: '1.5px solid var(--color-interactive-element-accented)',
+                    borderRadius: 12, pointerEvents: 'none',
+                  }} />
+                )}
+
+                {/* Badge dot top-right (10×10) — есть записи на дату */}
+                {showBadge && (
+                  <span style={{
+                    position: 'absolute', top: 4, right: 4,
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: rec.hasFuture
+                      ? 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))'
+                      : 'var(--color-divider-mid)',
+                  }} />
+                )}
               </button>
             )
           })}
         </div>
-      )}
+      </div>
+
+      {/* ── Appointment list (Figma 8535:43250). flex-col items-start w-full. ─ */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {groups.length === 0 ? (
+          <div style={{
+            textAlign: 'center', color: 'var(--color-on-surface-secondary)',
+            ...text.body, padding: '32px 16px',
+          }}>
+            {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
+          </div>
+        ) : (
+          groups.map(([date, items]) => {
+            const d = dayjs(date)
+            const dateLabel = `${d.format('D')} ${capitalize(d.format('MMMM'))}`
+            const dayLabel = capitalize(d.format('dddd'))
+            return (
+              <Fragment key={date}>
+                {/* _appointmentSectionTitle — pt-16 pb-8 px-8, gap-8, items-center.
+                    "22 Марта" callout1 onsurface white • gradient-green dot • "Пятница" body2 onsurfacemuted */}
+                <div style={{
+                  width: '100%',
+                  padding: '16px 8px 8px',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+                    {dateLabel}
+                  </span>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))',
+                  }} />
+                  <span style={{ ...text.body2, color: 'var(--color-on-surface-muted)' }}>
+                    {dayLabel}
+                  </span>
+                </div>
+
+                {/* Top divider */}
+                <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+
+                {items.map((b) => {
+                  const past = isPast(b)
+                  const lineGradient = past
+                    ? 'var(--color-divider-mid)'
+                    : 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))'
+
+                  return (
+                    <Fragment key={b.id}>
+                      <button
+                        onClick={() => navigate(`/my-bookings/${b.id}`)}
+                        style={{
+                          display: 'flex', alignItems: 'center', width: '100%',
+                          background: 'none', border: 'none', padding: 0,
+                          cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        {/* lineWrapper h=60 p-8 — внутри 2×44 gradient-зелёная полоса */}
+                        <div style={{
+                          height: 60, padding: 8, flexShrink: 0,
+                          display: 'flex', alignItems: 'center',
+                        }}>
+                          <span style={{
+                            width: 2, height: 44, borderRadius: 1,
+                            background: lineGradient,
+                          }} />
+                        </div>
+
+                        {/* cell/theme — pl-8 py-8, flex 1 */}
+                        <div style={{
+                          flex: 1, minWidth: 0,
+                          padding: '8px 0 8px 8px',
+                          display: 'flex', flexDirection: 'column',
+                        }}>
+                          <div style={{
+                            ...text.callout1,
+                            color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)',
+                            textDecoration: past ? 'line-through' : 'none',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {b.service.name}
+                          </div>
+                          <div style={{
+                            ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {priceLabel(b)}
+                          </div>
+                        </div>
+
+                        {/* timeCell — pl-16 pr-8 py-8, w=94 */}
+                        <div style={{
+                          width: 94, flexShrink: 0,
+                          padding: '8px 8px 8px 16px',
+                          display: 'flex', flexDirection: 'column',
+                        }}>
+                          <span style={{
+                            fontSize: 17, lineHeight: '24px', fontWeight: 400, letterSpacing: -0.17,
+                            color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)',
+                          }}>
+                            {b.time}
+                          </span>
+                          <span style={{
+                            ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+                          }}>
+                            {endTime(b)}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Divider после каждой записи (включая последнюю — Figma flow) */}
+                      <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+                    </Fragment>
+                  )
+                })}
+              </Fragment>
+            )
+          })
+        )}
+      </div>
 
       <BottomNav badge={{ bookings: upcomingCount }} />
     </div>
