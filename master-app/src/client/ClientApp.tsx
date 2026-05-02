@@ -21,12 +21,12 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // Deep-link на конкретную запись: startapp=b-<bookingId> (формат генерит
 // notifications.service.ts → bookingDeepLink). Префикс «b-» нужен, чтобы
 // отличить bookingId от masterId (оба UUID).
-const BOOKING_DEEPLINK_RE = /^b-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+const CLIENT_BOOKING_DEEPLINK_RE = /^b-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
 // Один раз пускаем deep-link редирект; после consume пользователь
 // может вернуться на «/» через нав-таб (иначе HomeRoute бесконечно
 // редиректил бы обратно на BookingDetailPage).
-let deepLinkConsumed = false
+let clientDeepLinkConsumed = false
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе — QR-сканер, пока masterId не появится в URL после скана
@@ -38,9 +38,9 @@ function HomeRoute() {
   // редиректим на /my-bookings/<id> (BookingDetailPage). Делаем именно
   // в HomeRoute (а не на module-уровне), чтобы избежать TDZ при
   // циркулярном импорте App ↔ ClientApp.
-  if (!deepLinkConsumed) {
-    deepLinkConsumed = true
-    const bookingMatch = BOOKING_DEEPLINK_RE.exec(startParam ?? '')
+  if (!clientDeepLinkConsumed) {
+    clientDeepLinkConsumed = true
+    const bookingMatch = CLIENT_BOOKING_DEEPLINK_RE.exec(startParam ?? '')
     if (bookingMatch) return <Navigate to={`/my-bookings/${bookingMatch[1]}`} replace />
   }
 

@@ -40,13 +40,22 @@ function resolveStartParam(): string {
 export const startParam = resolveStartParam()
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-// Deep-link на BookingDetailPage из бот-уведомления: b-<bookingId>.
-const BOOKING_DEEPLINK_RE = /^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Deep-link из бот-уведомлений на BookingDetailPage:
+//   b-<id>  → клиентское приложение, /my-bookings/<id>
+//   mb-<id> → мастер-приложение, /bookings/<id>
+const CLIENT_BOOKING_DEEPLINK_RE = /^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MASTER_BOOKING_DEEPLINK_RE = /^mb-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+
+export function getMasterBookingDeepLinkId(): string | null {
+  const m = MASTER_BOOKING_DEEPLINK_RE.exec(startParam ?? '')
+  return m ? m[1] : null
+}
 
 function resolveInitialMode(): 'master' | 'client' | null {
   if (startParam === 'mmode') return 'master'
+  if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
   if (UUID_RE.test(startParam)) return 'client'
-  if (BOOKING_DEEPLINK_RE.test(startParam)) return 'client'
+  if (CLIENT_BOOKING_DEEPLINK_RE.test(startParam)) return 'client'
   return null
 }
 
@@ -106,6 +115,20 @@ export default function App() {
   return mode === 'client' ? <ClientApp /> : <MasterApp />
 }
 
+// Одноразовый deep-link редирект: при первом заходе на «/» в master-режиме
+// проверяем startparam=mb-<id> → /bookings/<id>. Флаг гарантирует, что
+// последующие переходы на «/» (например через нав-таб) уже не редиректят.
+let masterDeepLinkConsumed = false
+
+function MasterIndexRoute() {
+  if (!masterDeepLinkConsumed) {
+    masterDeepLinkConsumed = true
+    const id = getMasterBookingDeepLinkId()
+    if (id) return <Navigate to={`/bookings/${id}`} replace />
+  }
+  return <ProfilePage />
+}
+
 function MasterApp() {
   const { init, isLoading, master } = useAuthStore()
 
@@ -149,7 +172,7 @@ function MasterApp() {
         {/* Все остальные роуты — только после онбординга */}
         <Route element={needsOnboarding ? <Navigate to={firstStopForNewMaster} replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
-            <Route index element={<ProfilePage />} />
+            <Route index element={<MasterIndexRoute />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ChatsPage />} />
             <Route path="income" element={<PaymentsPage />} />
