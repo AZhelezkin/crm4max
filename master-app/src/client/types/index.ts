@@ -68,6 +68,8 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
   paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
   notes: string | null
+  /** Напоминание за 1 час (Booking.remind в БД). */
+  remind?: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
   clientAddress: string | null
   master: { id: string; name: string; photo: string | null; location: string | null }

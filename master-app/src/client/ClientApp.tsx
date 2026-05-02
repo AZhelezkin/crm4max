@@ -13,7 +13,6 @@ import ConfirmPage       from '@client/pages/ConfirmPage'
 import DepositPage       from '@client/pages/DepositPage'
 import SuccessPage       from '@client/pages/SuccessPage'
 import MyBookingsPage    from '@client/pages/MyBookingsPage'
-import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
@@ -58,7 +57,9 @@ export default function ClientApp() {
         <Route path="/book/deposit"    element={<DepositPage />} />
         <Route path="/book/success"    element={<SuccessPage />} />
         <Route path="/my-bookings"     element={<MyBookingsPage />} />
-        <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
+        {/* Карточка существующей записи использует SuccessPage (объединённый
+            экран после создания / просмотра — данные тянутся по :id). */}
+        <Route path="/my-bookings/:id" element={<SuccessPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
         <Route path="*"                element={<Navigate to="/" replace />} />

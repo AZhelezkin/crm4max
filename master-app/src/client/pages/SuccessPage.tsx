@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Master } from '@client/types'
+import type { Booking } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 
 dayjs.locale('ru')
+
+/* Маппинг paymentStatus → бейдж (label / bg / text-color, токены MAX UI). */
+const PAYMENT_BADGE: Record<Booking['paymentStatus'], { label: string; bg: string; color: string }> = {
+  UNPAID:       { label: 'НЕ ОПЛАЧЕНО', bg: 'var(--color-error-surface-lite)',   color: 'var(--color-on-error-surface-lite)' },
+  DEPOSIT_PAID: { label: 'ДЕПОЗИТ',     bg: 'var(--color-warning-surface-lite)', color: 'var(--color-on-warning-surface-lite)' },
+  PAID:         { label: 'ОПЛАЧЕНО',    bg: 'var(--color-success-surface-lite)', color: 'var(--color-on-success-surface-lite)' },
+}
 
 /* ── Tick-circle (vuesax/bold/tick-circle 24×24, fill=onPrimarySurface) ────── */
 
@@ -36,16 +42,6 @@ function IcoEdit2() {
       <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M2 14.6667H14" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-/* ── Star 20×20 (vuesax/linear/star, fill=warningSurfaceAccented) ──────────── */
-
-function IcoStar() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M11.4751 2.85L12.9584 5.81667C13.1584 6.225 13.6917 6.61667 14.1417 6.69167L16.8001 7.13333C18.5001 7.41667 18.9001 8.65 17.6751 9.86667L15.6084 11.9333C15.2584 12.2833 15.0667 12.9583 15.1751 13.4417L15.7667 16C16.2334 18.025 15.1584 18.8083 13.3667 17.75L10.8751 16.275C10.4251 16.0083 9.68341 16.0083 9.22508 16.275L6.73341 17.75C4.95008 18.8083 3.86675 18.0167 4.33341 16L4.92508 13.4417C5.03341 12.9583 4.84175 12.2833 4.49175 11.9333L2.42508 9.86667C1.20841 8.65 1.60008 7.41667 3.30008 7.13333L5.95841 6.69167C6.40008 6.61667 6.93341 6.225 7.13341 5.81667L8.61675 2.85C9.41675 1.25833 10.7167 1.25833 11.4751 2.85Z" fill="var(--color-warning-surface-accented)"/>
     </svg>
   )
 }
@@ -86,24 +82,44 @@ function IcoCloseCircle() {
 export default function SuccessPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const bookingId = (location.state as { bookingId?: string })?.bookingId
-  const { masterId, service, categoryName, date, time, remind, clientAddress, reset } = useBookingStore()
-  const [master, setMaster] = useState<Master | null>(null)
+  const params = useParams<{ id: string }>()
+  const setMasterId = useBookingStore((s) => s.setMasterId)
+  const setService = useBookingStore((s) => s.setService)
+  const setDateTime = useBookingStore((s) => s.setDateTime)
+  const resetStore = useBookingStore((s) => s.reset)
+
+  // Источник bookingId: либо :id из URL (вход из списка /my-bookings/:id),
+  // либо location.state.bookingId (после создания записи на /book/confirm).
+  const stateBookingId = (location.state as { bookingId?: string } | null)?.bookingId
+  const bookingId = params.id ?? stateBookingId
+  const isPostBooking = !params.id  // /book/success — после создания
+
+  const [booking, setBooking] = useState<Booking | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
-    if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
-  }, [masterId])
+    if (!bookingId) return
+    bookingsApi.getById(bookingId).then(setBooking).catch(() => {})
+  }, [bookingId])
 
   const handleClose = () => {
-    reset()
-    navigate('/')
+    if (isPostBooking) {
+      resetStore()
+      navigate('/')
+    } else {
+      navigate('/my-bookings')
+    }
   }
 
   const handleReschedule = () => {
-    // Возврат на шаг календаря с сохранённым state — пользователь может
-    // выбрать новую дату/время, после чего на /book/confirm создаётся
-    // новая запись (старая остаётся, отдельный «перенос» — задача backend).
+    // Перенос идёт через тот же flow, что и новая запись: load store → /book/calendar.
+    // В post-booking режиме данные уже в store (из ConfirmPage); в view-режиме
+    // подгружаем их из текущей записи.
+    if (!isPostBooking && booking) {
+      setMasterId(booking.master.id)
+      setService(booking.service)
+      setDateTime(booking.date, booking.time)
+    }
     navigate('/book/calendar')
   }
 
@@ -120,17 +136,39 @@ export default function SuccessPage() {
     setCancelling(true)
     try {
       await bookingsApi.cancel(bookingId)
-      reset()
-      navigate('/')
+      if (isPostBooking) {
+        resetStore()
+        navigate('/')
+      } else {
+        navigate('/my-bookings')
+      }
     } catch {
       setCancelling(false)
     }
   }
 
-  if (!service) return null
+  if (!booking) {
+    // Пока booking грузится — рендерим shell-каркас (toolbar + skeleton-карточки).
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 }}>
+        <div style={{ height: 56 }} />
+        <div style={{
+          flex: 1, padding: '8px 16px',
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          <MasterListItemSkeleton />
+          <AddressListItemSkeleton lines={2} />
+        </div>
+      </div>
+    )
+  }
 
+  const { master, service, date, time, clientAddress, paymentStatus } = booking
+  const remind = booking.remind ?? true
   const price = discountedPrice(service.price, service.discountPercent) ?? service.price
   const formattedDate = dayjs(date).format('D MMMM, dd')
+  const badge = PAYMENT_BADGE[paymentStatus]
+  const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
@@ -196,64 +234,38 @@ export default function SuccessPage() {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
 
-        {/* listItem: мастер. Пока master null — skeleton того же размера,
-            чтобы layout не прыгал. Адрес-карточка тоже скелетится (lines=2). */}
-        {!master && <MasterListItemSkeleton />}
-        {!master && <AddressListItemSkeleton lines={2} />}
-        {master && (
+        {/* listItem: мастер. Booking-include возвращает только базовые поля
+            мастера (id/name/photo/location), без description/rating —
+            в этой карточке оставляем только аватар + имя. */}
+        <div style={{
+          background: 'var(--color-surface-transparent)',
+          borderRadius: 20,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
           <div style={{
-            background: 'var(--color-surface-transparent)',
-            borderRadius: 20,
-            padding: '16px 20px',
-            display: 'flex', alignItems: 'center', gap: 12,
+            width: 44, height: 44, borderRadius: 22,
+            overflow: 'hidden',
+            background: 'var(--color-surface)',
+            flexShrink: 0,
           }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 22,
-              overflow: 'hidden',
-              background: 'var(--color-surface)',
-              flexShrink: 0,
-            }}>
-              {master.photo && (
-                <img
-                  src={master.photo}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                ...text.callout1, color: 'var(--color-on-surface)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {master.name}
-              </div>
-              {master.description && (
-                <div style={{
-                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {master.description}
-                </div>
-              )}
-            </div>
-            {master.rating > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '8px 0',
-                flexShrink: 0,
-              }}>
-                <IcoStar />
-                <span style={{
-                  fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
-                  color: 'var(--color-on-surface-secondary)',
-                }}>
-                  {master.rating.toFixed(1)}
-                </span>
-              </div>
+            {master.photo && (
+              <img
+                src={master.photo}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             )}
           </div>
-        )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              ...text.callout1, color: 'var(--color-on-surface)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {master.name}
+            </div>
+          </div>
+        </div>
 
         {/* listItem: адрес — title (callout1 — выбранный адрес) + subtitle.
             clientAddress задан → выезд мастера, иначе адрес мастера. */}
@@ -312,18 +324,17 @@ export default function SuccessPage() {
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
                 {formatPrice(price)}
               </span>
-              {/* «НЕ ОПЛАЧЕНО» — Figma «Label 2 CAPS» 12/14/600 ls 0.24,
-                  bg=errorSurfaceLite, color=onErrorSurfaceLite, padding 8.5/8/7.5, rx=6 */}
+              {/* paymentStatus-badge: цвета из PAYMENT_BADGE (UNPAID/DEPOSIT_PAID/PAID). */}
               <span style={{
                 ...text.label2Caps,
                 display: 'inline-flex', alignItems: 'center',
                 height: 30,
                 padding: '0 8px',
                 borderRadius: 6,
-                background: 'var(--color-error-surface-lite)',
-                color: 'var(--color-on-error-surface-lite)',
+                background: badge.bg,
+                color: badge.color,
               }}>
-                НЕ ОПЛАЧЕНО
+                {badge.label}
               </span>
             </div>
           </div>
@@ -377,7 +388,8 @@ export default function SuccessPage() {
       </div>
 
       {/* ── Footer chips (Figma 8534:15134). bottom-fixed, padding 8/12/48.
-            Группа из 3 чипов equal-width, gap=4. Кнопка «Оплатить» пока не реализована. */}
+            Группа из 3 чипов equal-width, gap=4. Скрываем для COMPLETED/CANCELLED. */}
+      {canAct && (
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '8px 12px 48px',
@@ -444,6 +456,7 @@ export default function SuccessPage() {
           </button>
         </div>
       </div>
+      )}
     </div>
   )
 }
