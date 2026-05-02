@@ -416,7 +416,14 @@ export default function MasterCardPage() {
               <img
                 src={capybaraBookingImg}
                 alt=""
-                style={{ width: 80, height: 80, objectFit: 'contain', flexShrink: 0, alignSelf: bookingsExpanded ? 'flex-start' : 'center' }}
+                style={{
+                  width: 80, height: 80,
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  // Якорим к верху всегда — иначе при раскрытии списка
+                  // вертикальное центрирование смещает капибару вниз.
+                  alignSelf: 'flex-start',
+                }}
               />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <span style={{
