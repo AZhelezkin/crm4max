@@ -198,7 +198,7 @@ export default function MasterCardPage() {
       lbStripRef.current.style.transform = `translateX(calc(-100vw + ${dx}px))`
   }
   function onLbEnd(e: React.TouchEvent) {
-    e.preventDefault(); e.stopPropagation()
+    e.stopPropagation()
     const { startX, dir } = lbTouch.current
     const dx = e.changedTouches[0].clientX - startX
     if (dir !== 'h') return
@@ -759,11 +759,14 @@ export default function MasterCardPage() {
         }
         return (
           <div
-            onTouchStart={onLbStart}
-            onTouchMove={onLbMove}
-            onTouchEnd={onLbEnd}
             onClick={() => setLightboxMenuOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1000,
+              // Тот же hero-градиент что на самой странице — чтобы верхняя часть
+              // лайтбокса визуально совпадала с MasterCardPage.
+              background: 'var(--color-background) var(--gradient-hero-background)',
+              overflow: 'hidden',
+            }}
           >
             {/* Top toolbar */}
             <div
@@ -855,11 +858,20 @@ export default function MasterCardPage() {
               </div>
             </div>
 
-            {/* Photo strip */}
+            {/* Photo strip — touch swipe только тут, не на toolbar/footer */}
             <div
               ref={lbStripRef}
+              onTouchStart={onLbStart}
+              onTouchMove={onLbMove}
+              onTouchEnd={onLbEnd}
               onClick={(e) => e.stopPropagation()}
-              style={{ display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }}
+              style={{
+                display: 'flex',
+                width: '300vw', height: '100%',
+                transform: 'translateX(-100vw)',
+                willChange: 'transform',
+                touchAction: 'pan-y',
+              }}
             >
               {[lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (
                 <div key={idx} style={{ width: '100vw', height: '100%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
