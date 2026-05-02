@@ -64,31 +64,29 @@ export default function CategorySelectPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
-      {/* ── Header (toolbarTop). Figma: h=56, py=6 px=12, items-center,
-            justify-between с абсолютно центрированным заголовком. */}
+      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, items-center, gap=8.
+            Простой flex: back / [flex-1 title по центру] / search. Без absolute,
+            чтобы клики по кнопкам гарантированно проходили на мобильных WebView. */}
       <div style={{
-        position: 'relative',
         height: 56,
         padding: '6px 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
           <IcoArrowLeft />
         </ToolbarButton>
 
+        <span style={{
+          flex: 1, minWidth: 0, textAlign: 'center',
+          ...text.callout1, color: 'var(--color-on-surface)',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          Выберите категорию
+        </span>
+
         <ToolbarButton onClick={() => navigate('/book/services?search=1')} ariaLabel="Поиск">
           <IcoSearch />
         </ToolbarButton>
-
-        {/* Заголовок — text.callout1 (17/24/700 ls −0.17), абсолютно центрирован */}
-        <div style={{
-          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          pointerEvents: 'none',
-        }}>
-          <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
-            Выберите категорию
-          </span>
-        </div>
       </div>
 
       {/* ── Список категорий. Figma: padding 16/8, gap=8, items на surfaceTransparent. */}

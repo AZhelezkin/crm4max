@@ -235,13 +235,12 @@ export default function ServiceSelectPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
-      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, items-center, justify-between
-            с абсолютно центрированным title. В search-mode title заменяется input'ом. */}
+      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, items-center, gap=8.
+            Без absolute — back / [flex-1 центр] / search прямым flex. */}
       <div style={{
-        position: 'relative',
         height: 56,
         padding: '6px 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
           <IcoArrowLeft />
@@ -250,7 +249,7 @@ export default function ServiceSelectPage() {
         {isSearchMode ? (
           /* Search input — заполняет среднюю зону */
           <div style={{
-            flex: 1, marginLeft: 8, marginRight: 8,
+            flex: 1, minWidth: 0,
             height: 44, background: 'var(--color-surface-transparent)', borderRadius: 22,
             display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8,
           }}>
@@ -285,15 +284,13 @@ export default function ServiceSelectPage() {
           </div>
         ) : (
           <>
-            {/* Title — text.callout1, абсолютно центрирован */}
-            <div style={{
-              position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
+            <span style={{
+              flex: 1, minWidth: 0, textAlign: 'center',
+              ...text.callout1, color: 'var(--color-on-surface)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
-                Выберите услугу
-              </span>
-            </div>
+              Выберите услугу
+            </span>
             <ToolbarButton
               onClick={() => navigate(`/book/services?search=1${categoryId ? `&categoryId=${categoryId}` : ''}`)}
               ariaLabel="Поиск"
