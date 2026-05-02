@@ -7,6 +7,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 import { startParam } from '@/App'
 import { text } from '@/styles/typography'
 import capybaraBookingImg from '@/assets/capybara-booking.png'
@@ -224,9 +225,10 @@ export default function MasterCardPage() {
     </div>
   )
   if (!master) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
-      <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
-    </div>
+    <>
+      <MasterCardSkeleton />
+      <BottomNav />
+    </>
   )
 
   /* ── Рендер ─────────────────────────────────────────────────────────────── */
