@@ -35,10 +35,12 @@ export default function ClientApp() {
   useEffect(() => { init() }, [init])
 
   if (isLoading) {
-    // Самый частый путь — мастер по UUID startParam → показываем skeleton
-    // карточки мастера (он совпадает с тем, что отрисует MasterCardPage,
-    // когда master ещё null). Иначе — пустой экран (для QR-сканера и т.п.).
-    if (UUID_REGEX.test(startParam)) {
+    // Skeleton-карточка мастера уместен только когда после auth откроется
+    // именно MasterCardPage (root + UUID startParam). Если пользователь
+    // открыл приложение по deep-link на /my-bookings или другую страницу —
+    // skeleton мастера не имеет отношения к контенту, отдаём пустой экран.
+    const targetIsHome = !window.location.hash || window.location.hash === '#/' || window.location.hash === '#'
+    if (targetIsHome && UUID_REGEX.test(startParam)) {
       return <MasterCardSkeleton />
     }
     return <div style={{ height: '100dvh' }} />
