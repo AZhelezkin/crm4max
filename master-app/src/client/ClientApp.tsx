@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
@@ -23,25 +23,27 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // отличить bookingId от masterId (оба UUID).
 const BOOKING_DEEPLINK_RE = /^b-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
-// Если открыли по deep-link b-<id>, ставим целевой hash до монтирования
-// HashRouter — он подхватит /my-bookings/<id> как initial route.
-// Логика выполняется внутри компонента (через useState lazy initializer),
-// а не на module-уровне — иначе при циркулярном импорте App ↔ ClientApp
-// startParam ещё не определён (App.tsx импортит ClientApp ДО строки
-// `export const startParam = …`), и обращение к нему даёт TDZ.
-function applyBookingDeepLink() {
-  const m = BOOKING_DEEPLINK_RE.exec(startParam ?? '')
-  if (!m) return
-  const hash = window.location.hash || ''
-  if (hash === '' || hash === '#' || hash === '#/') {
-    window.location.hash = `/my-bookings/${m[1]}`
-  }
-}
+// Один раз пускаем deep-link редирект; после consume пользователь
+// может вернуться на «/» через нав-таб (иначе HomeRoute бесконечно
+// редиректил бы обратно на BookingDetailPage).
+let deepLinkConsumed = false
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе — QR-сканер, пока masterId не появится в URL после скана
 function HomeRoute() {
   const [params] = useSearchParams()
+
+  // Deep-link на конкретную запись: startapp=b-<bookingId>. Префикс «b-»
+  // отличает bookingId от masterId (оба UUID-формата). При первом заходе
+  // редиректим на /my-bookings/<id> (BookingDetailPage). Делаем именно
+  // в HomeRoute (а не на module-уровне), чтобы избежать TDZ при
+  // циркулярном импорте App ↔ ClientApp.
+  if (!deepLinkConsumed) {
+    deepLinkConsumed = true
+    const bookingMatch = BOOKING_DEEPLINK_RE.exec(startParam ?? '')
+    if (bookingMatch) return <Navigate to={`/my-bookings/${bookingMatch[1]}`} replace />
+  }
+
   const masterId = UUID_REGEX.test(startParam) ? startParam : params.get('masterId')
   if (!masterId) return <QRScanPage />
   return <MasterCardPage />
@@ -49,11 +51,6 @@ function HomeRoute() {
 
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
-
-  // Применяем booking deep-link один раз перед монтированием HashRouter.
-  // useState lazy initializer вызывается при первом рендере — startParam
-  // на этот момент уже определён (циркулярный импорт разрезолвлен).
-  useState(() => { applyBookingDeepLink() })
 
   useEffect(() => { init() }, [init])
 
