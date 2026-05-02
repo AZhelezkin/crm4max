@@ -69,7 +69,7 @@ export const darkTheme: SemanticTheme = {
   // Поверхности
   surface:               '#262729',                       // black90
   surfaceTransparent:    'rgba(242, 243, 245, 0.10)',
-  background:            '#0E0F11',                       // black100
+  background:            '#17181C',                       // MAX UI --background-surface-primary (синхронизировано с Max chrome)
 
   // Текст / иконки на основной поверхности
   onSurface:             '#FFFFFF',                       // black00
