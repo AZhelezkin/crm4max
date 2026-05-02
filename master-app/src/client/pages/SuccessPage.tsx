@@ -7,16 +7,85 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
-import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
+
+/* ── Tick-circle (vuesax/bold/tick-circle 24×24, fill=onPrimarySurface) ────── */
+
+function IcoTickCircle() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Zm-1.13-7.83 4.95-4.95a.749.749 0 0 0-.53-1.28.74.74 0 0 0-.53.22l-4.42 4.42-1.62-1.62a.754.754 0 0 0-1.06 0 .749.749 0 0 0 0 1.06l2.15 2.15c.15.15.34.22.53.22.19 0 .38-.07.53-.22Z"
+        fill="var(--color-on-primary-surface)"
+      />
+    </svg>
+  )
+}
+
+/* ── Edit-2 16×16 (vuesax/linear/edit-2, точные path Figma 8175:13372) ─────── */
+
+function IcoEdit2() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2 14.6667H14" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/* ── Star 20×20 (vuesax/linear/star, fill=warningSurfaceAccented) ──────────── */
+
+function IcoStar() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M11.4751 2.85L12.9584 5.81667C13.1584 6.225 13.6917 6.61667 14.1417 6.69167L16.8001 7.13333C18.5001 7.41667 18.9001 8.65 17.6751 9.86667L15.6084 11.9333C15.2584 12.2833 15.0667 12.9583 15.1751 13.4417L15.7667 16C16.2334 18.025 15.1584 18.8083 13.3667 17.75L10.8751 16.275C10.4251 16.0083 9.68341 16.0083 9.22508 16.275L6.73341 17.75C4.95008 18.8083 3.86675 18.0167 4.33341 16L4.92508 13.4417C5.03341 12.9583 4.84175 12.2833 4.49175 11.9333L2.42508 9.86667C1.20841 8.65 1.60008 7.41667 3.30008 7.13333L5.95841 6.69167C6.40008 6.61667 6.93341 6.225 7.13341 5.81667L8.61675 2.85C9.41675 1.25833 10.7167 1.25833 11.4751 2.85Z" fill="var(--color-warning-surface-accented)"/>
+    </svg>
+  )
+}
+
+/* ── Chip icons (vuesax/linear, 24×24, stroke=currentColor) ───────────────── */
+
+function IcoRepeat() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M2.83 14.32V7.6c0-2.94 2.4-5.34 5.34-5.34h7.66" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="m13.7 4.43 2.13-2.13L13.7.17" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M21.17 9.68v6.72c0 2.94-2.4 5.34-5.34 5.34H8.17" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10.3 19.57 8.17 21.7l2.13 2.13" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoMessageText() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7 8h10M7 13h6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoCloseCircle() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9.17 14.83 14.83 9.17M14.83 14.83 9.17 9.17" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
 
 export default function SuccessPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const bookingId = (location.state as { bookingId?: string })?.bookingId
-  const { masterId, service, date, time, remind, reset } = useBookingStore()
+  const { masterId, service, categoryName, date, time, remind, reset } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -29,14 +98,11 @@ export default function SuccessPage() {
     navigate('/')
   }
 
-  const handleShare = async () => {
-    if (!master || !service) return
-    const text = `Записался к ${master.name} на «${service.name}» — ${dayjs(date).format('D MMMM')}, ${time}`
-    if (navigator.share) {
-      try { await navigator.share({ text }) } catch { /* cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(text)
-    }
+  const handleReschedule = () => {
+    // Возврат на шаг календаря с сохранённым state — пользователь может
+    // выбрать новую дату/время, после чего на /book/confirm создаётся
+    // новая запись (старая остаётся, отдельный «перенос» — задача backend).
+    navigate('/book/calendar')
   }
 
   const handleChat = () => {
@@ -62,227 +128,311 @@ export default function SuccessPage() {
   if (!service) return null
 
   const price = discountedPrice(service.price, service.discountPercent) ?? service.price
-  const formattedDate = dayjs(date).format('D MMMM, dddd')
+  const formattedDate = dayjs(date).format('D MMMM, dd')
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
 
-      {/* ── Header ── */}
+      {/* ── Toolbar (Figma 8534:15132). h=56, padding 6/12, gap 12, justify-between.
+            Без back-кнопки: leading = icon-pill + title+subtitle, trailing = «Закрыть». */}
       <div style={{
-        height: 56, background: 'var(--color-background)',
-        display: 'flex', alignItems: 'center', padding: '0 14px',
-        position: 'sticky', top: 0, zIndex: 10,
+        height: 56,
+        padding: '6px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 12,
       }}>
-        {/* Green circle with white circle + green checkmark */}
-        <div style={{
-          width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-          background: `linear-gradient(180deg, ${colors.freshgreen50} 0%, var(--color-success-surface-accented) 100%)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-            <circle cx="13" cy="13" r="9.125" fill="var(--color-on-primary-surface)"/>
-            <path d="M18.275 8.91a1.63 1.63 0 0 0-2.05 0l-.123.111-4.523 4.521-1.68-1.681-.124-.111a1.63 1.63 0 0 0-2.05 0l-.123.111a1.63 1.63 0 0 0 0 2.298l2.83 2.829a1.62 1.62 0 0 0 2.296 0l5.67-5.67.006-.005.005-.004a1.63 1.63 0 0 0 .102-2.163l-.113-.125z" fill="var(--color-success-surface-accented)" stroke="var(--color-success-surface-accented)" strokeWidth="0.5"/>
-          </svg>
-        </div>
-        {/* Title */}
-        <div style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* iconWrapper: 44 slot, inside 24 icon в pill 44×44 padding 10, bg=greenVibrance gradient */}
           <div style={{
-            ...text.callout, color: 'var(--color-on-surface)',
-            lineHeight: '22px',
+            width: 44, height: 44, borderRadius: 22,
+            background: 'linear-gradient(149.74deg, var(--color-grad-green-vibrance-0) 7.31%, var(--color-grad-green-vibrance-100) 91.96%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
           }}>
-            Вы записаны!
+            <IcoTickCircle />
           </div>
-          <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>
-            Не опаздывайте 😏
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              ...text.callout1, color: 'var(--color-on-surface)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              Вы записаны!
+            </div>
+            <div style={{
+              ...text.caption2, color: 'var(--color-on-surface-secondary)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              Не опаздывайте
+            </div>
           </div>
         </div>
-        {/* Close button (right) */}
+
+        {/* Trailing «Закрыть» — pill h=44, padding 0/10, rx=22 */}
         <button
           onClick={handleClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+          aria-label="Закрыть"
+          style={{
+            height: 44,
+            padding: '0 10px',
+            borderRadius: 22,
+            background: 'var(--color-background)',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="m9.17 14.83 5.66-5.66m0 5.66-5.66-5.66M9 22h6c5 0 7-2 7-7v-6c0-5-2-7-7-7H9c-5 0-7 2-7 7v6c0 5 2 7 7 7" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+            Закрыть
+          </span>
         </button>
       </div>
 
-      {/* ── Cards ── */}
-      <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* ── Form (Figma 8534:15122): padding 8/16, gap 8, w-full children. */}
+      <div style={{
+        flex: 1,
+        padding: '8px 16px',
+        display: 'flex', flexDirection: 'column', gap: 8,
+      }}>
 
-        {/* Master */}
+        {/* listItem: мастер */}
         {master && (
-          <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            background: 'var(--color-surface-transparent)',
+            borderRadius: 20,
+            padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 22,
+              overflow: 'hidden',
+              background: 'var(--color-surface)',
+              flexShrink: 0,
+            }}>
+              {master.photo && (
+                <img
+                  src={master.photo}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
-                width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-                background: 'var(--color-divider-low)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                ...text.titleSmall, flexShrink: 0,
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
-                {master.photo
-                  ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : '👤'}
+                {master.name}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...text.body }}>{master.name}</div>
-                {master.description && (
-                  <div style={{
-                    color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 1,
-                    overflow: 'hidden', display: '-webkit-box',
-                    WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-                  }}>
-                    {master.description}
-                  </div>
-                )}
-              </div>
-              {master.rating > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path fill="var(--color-warning-surface-accented)" d="m11.153 3.34 1.174 2.347c.16.326.586.64.946.7l2.127.353c1.36.227 1.68 1.213.7 2.187l-1.653 1.653c-.28.28-.434.82-.347 1.207l.473 2.046c.374 1.62-.486 2.247-1.92 1.4l-1.993-1.18c-.36-.213-.953-.213-1.32 0l-1.993 1.18c-1.427.847-2.294.214-1.92-1.4l.473-2.046c.087-.387-.067-.927-.347-1.207L4.9 8.927c-.973-.974-.66-1.96.7-2.187l2.127-.353c.353-.06.78-.374.94-.7l1.173-2.347c.64-1.273 1.68-1.273 2.313 0"/>
-                  </svg>
-                  <span style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>{master.rating.toFixed(1)}</span>
+              {master.description && (
+                <div style={{
+                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {master.description}
                 </div>
               )}
+            </div>
+            {master.rating > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '8px 0',
+                flexShrink: 0,
+              }}>
+                <IcoStar />
+                <span style={{
+                  fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
+                  color: 'var(--color-on-surface-secondary)',
+                }}>
+                  {master.rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* listItem: адрес — title (callout1) + subtitle "Адрес" (caption2 secondary) */}
+        {master?.location && (
+          <div style={{
+            background: 'var(--color-surface-transparent)',
+            borderRadius: 20,
+            padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {master.location}
+              </div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+                Адрес
+              </div>
             </div>
           </div>
         )}
 
-        {/* Service */}
-        <div style={{ background: 'var(--color-surface)', borderRadius: 14, padding: 14 }}>
-          <div style={{ ...text.body, marginBottom: 4 }}>{service.name}</div>
-          {service.description && (
-            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.action, lineHeight: 1.5, marginBottom: 8 }}>
-              {service.description}
+        {/* listItem: услуга — column gap=16, нижний row: price + tag «НЕ ОПЛАЧЕНО» */}
+        <div style={{
+          background: 'var(--color-surface-transparent)',
+          borderRadius: 20,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {service.name}
+              </div>
+              {service.description && (
+                <div style={{
+                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}>
+                  {service.description}
+                </div>
+              )}
             </div>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ ...text.subheadRegular }}>
-              {formatPrice(price)}
-            </span>
-            {service.discountPercent && (
-              <span style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, textDecoration: 'line-through' }}>
-                {formatPrice(service.price)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+                {formatPrice(price)}
               </span>
-            )}
-            <span style={{
-              marginLeft: 'auto',
-              background: 'rgba(206, 66, 89, 0.3)', color: 'var(--color-error-surface-accented)',
-              ...text.overline, borderRadius: 6,
-              padding: '2px 10px', lineHeight: '18px',
+              {/* «НЕ ОПЛАЧЕНО» — Figma «Label 2 CAPS» 12/14/600 ls 0.24,
+                  bg=errorSurfaceLite, color=onErrorSurfaceLite, padding 8.5/8/7.5, rx=6 */}
+              <span style={{
+                display: 'inline-block',
+                height: 30, lineHeight: '30px',
+                padding: '0 8px',
+                borderRadius: 6,
+                background: 'var(--color-error-surface-lite)',
+                color: 'var(--color-on-error-surface-lite)',
+                ...text.label2Caps,
+              }}>
+                НЕ ОПЛАЧЕНО
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* listItem: дата */}
+        <div style={{
+          background: 'var(--color-surface-transparent)',
+          borderRadius: 20,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              ...text.callout1, color: 'var(--color-on-surface)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              Не оплачено
-            </span>
+              {formattedDate}
+            </div>
+            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+              Дата
+            </div>
           </div>
+          <IcoEdit2 />
         </div>
 
-        {/* Date */}
+        {/* listItem: время + remind */}
         <div style={{
-          background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'var(--color-surface-transparent)',
+          borderRadius: 20,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
         }}>
-          <div>
-            <div style={{ fontWeight: 600 }}>{formattedDate}</div>
-            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>Дата</div>
-          </div>
-        </div>
-
-        {/* Time */}
-        <div style={{
-          background: 'var(--color-surface)', borderRadius: 14, padding: '14px 16px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ fontWeight: 600 }}>{time}</div>
-            <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              ...text.callout1, color: 'var(--color-on-surface)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {time}
+            </div>
+            <div style={{
+              ...text.caption2, color: 'var(--color-on-surface-secondary)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
               {remind ? 'Напомним за 1 час' : 'Без напоминания'}
             </div>
           </div>
+          <IcoEdit2 />
         </div>
 
       </div>
 
-      {/* ── Bottom: 4 action buttons + big close button ── */}
-      <div style={{ padding: '12px 16px 32px' }}>
+      {/* ── Footer chips (Figma 8534:15134). bottom-fixed, padding 8/12/48.
+            Группа из 3 чипов equal-width, gap=4. Кнопка «Оплатить» пока не реализована. */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        padding: '8px 12px 48px',
+        background: 'var(--color-background)',
+      }}>
+        <div style={{ display: 'flex', gap: 4, width: '100%' }}>
+          {/* Chip: Перенести */}
+          <button
+            onClick={handleReschedule}
+            style={{
+              flex: 1, minWidth: 0,
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 18,
+              padding: '12px 8px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              border: 'none', cursor: 'pointer',
+              color: 'var(--color-active-element)',
+            }}
+          >
+            <IcoRepeat />
+            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>
+              Перенести
+            </span>
+          </button>
 
-        {/* 4 action buttons */}
-        <div style={{ display: 'flex', gap: 9, marginBottom: 16 }}>
-          {([
-            { label: 'Поделиться', Icon: IcoShare, action: handleShare, disabled: false, red: false },
-            { label: 'Изменить', Icon: IcoEdit, action: () => {}, disabled: true, red: false },
-            { label: 'Чат', Icon: IcoChat, action: handleChat, disabled: false, red: false },
-            { label: 'Отменить', Icon: IcoCancel, action: handleCancel, disabled: cancelling, red: true },
-          ]).map((btn) => (
-            <button
-              key={btn.label}
-              onClick={btn.action}
-              disabled={btn.disabled}
-              style={{
-                flex: 1, height: 60, background: 'var(--color-surface)', borderRadius: 18,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 'none', cursor: btn.disabled ? 'default' : 'pointer',
-                opacity: btn.disabled ? 0.4 : 1, padding: 0,
-              }}
-            >
-              <btn.Icon />
-            </button>
-          ))}
+          {/* Chip: Чат */}
+          <button
+            onClick={handleChat}
+            style={{
+              flex: 1, minWidth: 0,
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 18,
+              padding: '12px 8px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              border: 'none', cursor: 'pointer',
+              color: 'var(--color-active-element)',
+            }}
+          >
+            <IcoMessageText />
+            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>
+              Чат
+            </span>
+          </button>
+
+          {/* Chip: Отменить */}
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            style={{
+              flex: 1, minWidth: 0,
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 18,
+              padding: '12px 8px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              border: 'none', cursor: cancelling ? 'default' : 'pointer',
+              color: 'var(--color-error-surface-accented)',
+              opacity: cancelling ? 0.5 : 1,
+            }}
+          >
+            <IcoCloseCircle />
+            <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>
+              Отменить
+            </span>
+          </button>
         </div>
-
-        {/* Close button — same style as ConfirmPage "Записаться" */}
-        <button
-          onClick={handleClose}
-          style={{
-            width: '100%', padding: 16, borderRadius: 14,
-            background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
-            ...text.subheadRegular,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            border: 'none', cursor: 'pointer',
-          }}
-        >
-          Закрыть
-        </button>
       </div>
     </div>
-  )
-}
-
-/* ── Icon components ── */
-
-function IcoShare() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M14.83 13L20.83 7" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M21.63 8.8V3H15.83" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M11 3H9C4 3 2 5 2 10V16C2 21 4 23 9 23H15C20 23 22 21 22 16V14" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-function IcoEdit() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M13.14 5.6L5.92 13.29C5.61 13.62 5.32 14.27 5.26 14.72L4.89 17.96C4.76 19.13 5.6 19.93 6.76 19.73L9.98 19.18C10.43 19.1 11.06 18.77 11.37 18.43L18.58 10.74C19.99 9.24 20.64 7.53 18.43 5.44C16.23 3.37 14.56 4.1 13.14 5.6Z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M11.77 7.05C12.2 9.81 14.44 11.92 17.22 12.2" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3.88 22H21.88" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-function IcoChat() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M8.5 19H8C4 19 2 18 2 13V8C2 4 4 2 8 2H16C20 2 22 4 22 8V13C22 17 20 19 16 19H15.5C15.19 19 14.89 19.15 14.7 19.4L13.2 21.4C12.54 22.28 11.46 22.28 10.8 21.4L9.3 19.4C9.14 19.18 8.77 19 8.5 19Z" stroke="var(--color-primary-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M7 8H17M7 13H13" stroke="var(--color-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-function IcoCancel() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="var(--color-error-surface-accented)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M9.17 14.83L14.83 9.17" stroke="var(--color-error-surface-accented)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M14.83 14.83L9.17 9.17" stroke="var(--color-error-surface-accented)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
   )
 }
