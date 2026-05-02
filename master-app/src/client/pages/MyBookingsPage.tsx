@@ -147,8 +147,6 @@ export default function MyBookingsPage() {
   const isPast = (b: Booking) =>
     dayjs(b.date + ' ' + b.time).isBefore(dayjs()) || b.status === 'COMPLETED' || b.status === 'CANCELLED'
 
-  const upcomingCount = bookings.filter((b) => !isPast(b)).length
-
   const bookingsByDate = useMemo(() => {
     const map = new Map<string, { hasFuture: boolean; hasPast: boolean }>()
     for (const b of bookings) {
@@ -670,7 +668,7 @@ export default function MyBookingsPage() {
 
       </div>
 
-      <BottomNav badge={{ bookings: upcomingCount }} />
+      <BottomNav />
     </div>
   )
 }

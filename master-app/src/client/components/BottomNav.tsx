@@ -47,11 +47,7 @@ const NAV_ITEMS = [
   { key: 'contacts', label: 'Контакты', path: '/contacts', Icon: IconContacts },
 ]
 
-interface Props {
-  badge?: Partial<Record<string, number>>
-}
-
-export default function BottomNav({ badge = {} }: Props) {
+export default function BottomNav() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -71,7 +67,6 @@ export default function BottomNav({ badge = {} }: Props) {
     }}>
       {NAV_ITEMS.map(({ key, label, path, Icon }) => {
         const active = isActive(path)
-        const count = badge[key] ?? 0
         return (
           <button
             key={key}
@@ -83,28 +78,7 @@ export default function BottomNav({ badge = {} }: Props) {
               border: 'none', cursor: 'pointer',
             }}
           >
-            <div style={{ position: 'relative' }}>
-              <Icon active={active} />
-              {count > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -6,
-                  background: 'var(--color-error-surface-accented)', borderRadius: '50%',
-                  minWidth: 12, height: 12, ...text.captionSmall,
-                  color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '0 2px',
-                }}>
-                  {count}
-                </span>
-              )}
-              {key === 'catalog' && (
-                <span style={{
-                  position: 'absolute', top: -2, right: -2,
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: 'var(--color-error-surface-accented)',
-                  border: '2px solid var(--color-background)',
-                }} />
-              )}
-            </div>
+            <Icon active={active} />
             <span style={{
               ...text.caption,
               color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
