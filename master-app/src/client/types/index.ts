@@ -88,4 +88,6 @@ export interface BookingDraft {
   date: string
   time: string
   remind: boolean
+  /** Если задан — клиент выбрал «Мой адрес» (выезд мастера). Null — у мастера. */
+  clientAddress: string | null
 }

@@ -10,6 +10,8 @@ import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
+import SegmentControl from '@client/components/SegmentControl'
+import AddressSuggestField from '@client/components/AddressSuggestField'
 
 dayjs.locale('ru')
 
@@ -85,13 +87,29 @@ function IcoCalendarEdit() {
 
 export default function ConfirmPage() {
   const navigate = useNavigate()
-  const { masterId, service, categoryName, date, time, remind, reset } = useBookingStore()
+  const { masterId, service, categoryName, date, time, remind, clientAddress, setClientAddress, reset } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
+  const [addressMode, setAddressMode] = useState<'master' | 'client'>(
+    clientAddress ? 'client' : 'master',
+  )
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
   }, [masterId])
+
+  // Если у мастера нет home_visit — выбора нет, всегда «адрес мастера».
+  useEffect(() => {
+    if (master && !master.homeVisit && addressMode === 'client') {
+      setAddressMode('master')
+      setClientAddress(null)
+    }
+  }, [master, addressMode, setClientAddress])
+
+  const handleAddressMode = (mode: 'master' | 'client') => {
+    setAddressMode(mode)
+    if (mode === 'master') setClientAddress(null)
+  }
 
   const handleConfirm = async () => {
     if (!service) return
@@ -113,6 +131,9 @@ export default function ConfirmPage() {
 
   const price = discountedPrice(service.price, service.discountPercent) ?? service.price
   const formattedDate = dayjs(date).format('D MMMM, dd')
+
+  // Если режим «мой адрес» — нужен непустой адрес перед submit.
+  const submitDisabled = loading || (addressMode === 'client' && !clientAddress?.trim())
 
   const headerSubtitle = categoryName || service.name
 
@@ -233,22 +254,43 @@ export default function ConfirmPage() {
           </div>
         )}
 
-        {/* listItem: адрес (только description) */}
-        {master?.location && (
+        {/* Segment-control «Адрес специалиста / Мой адрес» — только если у мастера home_visit */}
+        {master?.homeVisit && (
+          <SegmentControl<'master' | 'client'>
+            value={addressMode}
+            onChange={handleAddressMode}
+            options={[
+              { value: 'master', label: 'Адрес специалиста' },
+              { value: 'client', label: 'Мой адрес' },
+            ]}
+          />
+        )}
+
+        {/* listItem: адрес (текст или input в зависимости от выбранного режима) */}
+        {master && (addressMode === 'client' || master.location) && (
           <div style={{
             background: 'var(--color-surface-transparent)',
             borderRadius: 20,
             padding: '16px 20px',
             display: 'flex', alignItems: 'center', gap: 12,
+            position: 'relative',
           }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {master.location}
+            {addressMode === 'client' ? (
+              <AddressSuggestField
+                value={clientAddress ?? ''}
+                onChange={(v) => setClientAddress(v || null)}
+                placeholder="Введите адрес"
+              />
+            ) : (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {master.location}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -352,14 +394,14 @@ export default function ConfirmPage() {
       }}>
         <button
           onClick={handleConfirm}
-          disabled={loading}
+          disabled={submitDisabled}
           style={{
             width: '100%', height: 60, borderRadius: 20,
             background: 'var(--color-primary-surface)',
-            border: 'none', cursor: loading ? 'default' : 'pointer',
+            border: 'none', cursor: submitDisabled ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: 18,
-            opacity: loading ? 0.6 : 1,
+            opacity: submitDisabled ? 0.5 : 1,
           }}
         >
           <IcoCalendarEdit />

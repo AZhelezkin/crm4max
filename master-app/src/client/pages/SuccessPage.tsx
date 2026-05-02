@@ -87,7 +87,7 @@ export default function SuccessPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const bookingId = (location.state as { bookingId?: string })?.bookingId
-  const { masterId, service, categoryName, date, time, remind, reset } = useBookingStore()
+  const { masterId, service, categoryName, date, time, remind, clientAddress, reset } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -255,27 +255,33 @@ export default function SuccessPage() {
           </div>
         )}
 
-        {/* listItem: адрес — title (callout1) + subtitle "Адрес" (caption2 secondary) */}
-        {master?.location && (
-          <div style={{
-            background: 'var(--color-surface-transparent)',
-            borderRadius: 20,
-            padding: '16px 20px',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                ...text.callout1, color: 'var(--color-on-surface)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {master.location}
-              </div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-                Адрес
+        {/* listItem: адрес — title (callout1 — выбранный адрес) + subtitle.
+            clientAddress задан → выезд мастера, иначе адрес мастера. */}
+        {(() => {
+          const addressText = clientAddress || master?.location
+          if (!addressText) return null
+          const subtitle = clientAddress ? 'Мой адрес' : 'Адрес'
+          return (
+            <div style={{
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 20,
+              padding: '16px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  ...text.callout1, color: 'var(--color-on-surface)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {addressText}
+                </div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+                  {subtitle}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* listItem: услуга — column gap=16, нижний row: price + tag «НЕ ОПЛАЧЕНО» */}
         <div style={{
