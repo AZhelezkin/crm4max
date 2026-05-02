@@ -18,6 +18,21 @@ import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Deep-link на конкретную запись: startapp=b-<bookingId> (формат генерит
+// notifications.service.ts → bookingDeepLink). Префикс «b-» нужен, чтобы
+// отличить bookingId от masterId (оба UUID).
+const BOOKING_DEEPLINK_RE = /^b-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+
+// Если открыли по deep-link b-<id>, ставим целевой hash до монтирования
+// HashRouter — он подхватит /my-bookings/<id> как initial route.
+;(function applyDeepLink() {
+  const m = BOOKING_DEEPLINK_RE.exec(startParam)
+  if (!m) return
+  const hash = window.location.hash || ''
+  if (hash === '' || hash === '#' || hash === '#/') {
+    window.location.hash = `/my-bookings/${m[1]}`
+  }
+})()
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе — QR-сканер, пока masterId не появится в URL после скана

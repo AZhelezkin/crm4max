@@ -40,10 +40,13 @@ function resolveStartParam(): string {
 export const startParam = resolveStartParam()
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Deep-link на BookingDetailPage из бот-уведомления: b-<bookingId>.
+const BOOKING_DEEPLINK_RE = /^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function resolveInitialMode(): 'master' | 'client' | null {
   if (startParam === 'mmode') return 'master'
   if (UUID_RE.test(startParam)) return 'client'
+  if (BOOKING_DEEPLINK_RE.test(startParam)) return 'client'
   return null
 }
 
