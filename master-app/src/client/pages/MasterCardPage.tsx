@@ -271,26 +271,6 @@ export default function MasterCardPage() {
           }} />
         </div>
 
-        {/* Back-кнопка: SVG (12, 130) → page (12, 6); 44×44, bg=background, arrow=onSurfaceSoften */}
-        <button
-          onClick={() => navigate(-1)}
-          aria-label="Назад"
-          style={{
-            position: 'absolute', top: 6, left: 12, zIndex: 2,
-            width: 44, height: 44, borderRadius: 22,
-            background: 'var(--color-background)',
-            border: 'none', cursor: 'pointer', padding: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {/* Стрелка ← из макета: M31.57 145.93 L 25.5 152 L 31.57 158.07 + M42.5 152 H 25.67,
-              переведено в 17×13 viewBox (origin = 25.5, 145.93). */}
-          <svg width="17" height="13" viewBox="0 0 17 13" fill="none">
-            <path d="M6.07 0L0 6.07L6.07 12.14" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M17 6.07H0.17" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        </button>
-
         {/* Рейтинг (top-right): звезда + число, без подложки.
             Star 18×16 fill=warningSurfaceAccented (#F0AF2D), text onSurfaceSecondary. */}
         {master.rating > 0 && (
