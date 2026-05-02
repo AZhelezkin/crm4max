@@ -304,13 +304,13 @@ export default function SuccessPage() {
               {/* «НЕ ОПЛАЧЕНО» — Figma «Label 2 CAPS» 12/14/600 ls 0.24,
                   bg=errorSurfaceLite, color=onErrorSurfaceLite, padding 8.5/8/7.5, rx=6 */}
               <span style={{
-                display: 'inline-block',
-                height: 30, lineHeight: '30px',
+                ...text.label2Caps,
+                display: 'inline-flex', alignItems: 'center',
+                height: 30,
                 padding: '0 8px',
                 borderRadius: 6,
                 background: 'var(--color-error-surface-lite)',
                 color: 'var(--color-on-error-surface-lite)',
-                ...text.label2Caps,
               }}>
                 НЕ ОПЛАЧЕНО
               </span>
