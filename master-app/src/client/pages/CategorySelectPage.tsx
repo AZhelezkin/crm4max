@@ -37,7 +37,7 @@ function ToolbarButton({ onClick, ariaLabel, children }: {
       onClick={onClick}
       aria-label={ariaLabel}
       style={{
-        width: 48, height: 48, borderRadius: 24,
+        width: 44, height: 44, borderRadius: 22,
         background: 'var(--color-background)',
         border: 'none', cursor: 'pointer', padding: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -69,7 +69,7 @@ export default function CategorySelectPage() {
             чтобы клики по кнопкам гарантированно проходили на мобильных WebView. */}
       <div style={{
         height: 56,
-        padding: '4px 12px',
+        padding: '6px 12px',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
