@@ -773,13 +773,14 @@ export default function MasterCardPage() {
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
-                position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+                position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
                 height: 56, padding: '6px 12px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
             >
               <button
-                onClick={() => setLightboxIndex(null)}
+                onPointerUp={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
                 aria-label="Назад"
                 style={{
                   width: 44, height: 44, borderRadius: 22,
@@ -787,6 +788,7 @@ export default function MasterCardPage() {
                   border: 'none', cursor: 'pointer', padding: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
+                  touchAction: 'manipulation',
                 }}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
