@@ -8,6 +8,8 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
+import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
+import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 
 dayjs.locale('ru')
 
@@ -170,7 +172,10 @@ export default function ConfirmPage() {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
 
-        {/* listItem: мастер (avatar + name + profession + rating) */}
+        {/* listItem: мастер (avatar + name + profession + rating).
+            Пока master null — рендерим skeleton того же размера, чтобы layout не прыгал. */}
+        {!master && <MasterListItemSkeleton />}
+        {!master && <AddressListItemSkeleton lines={1} />}
         {master && (
           <div style={{
             background: 'var(--color-surface-transparent)',

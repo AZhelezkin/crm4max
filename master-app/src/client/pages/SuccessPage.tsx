@@ -8,6 +8,8 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
+import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
+import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 
 dayjs.locale('ru')
 
@@ -194,7 +196,10 @@ export default function SuccessPage() {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
 
-        {/* listItem: мастер */}
+        {/* listItem: мастер. Пока master null — skeleton того же размера,
+            чтобы layout не прыгал. Адрес-карточка тоже скелетится (lines=2). */}
+        {!master && <MasterListItemSkeleton />}
+        {!master && <AddressListItemSkeleton lines={2} />}
         {master && (
           <div style={{
             background: 'var(--color-surface-transparent)',
