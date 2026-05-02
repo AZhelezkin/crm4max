@@ -125,9 +125,7 @@ export default function CalendarPage() {
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
   const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
-  const headerSubtitle = step === 'date'
-    ? (service?.name ?? '')
-    : selectedDayjs.format('D MMMM')
+  const headerSubtitle = service?.name ?? ''
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -326,23 +324,21 @@ export default function CalendarPage() {
                 Дата
               </div>
             </div>
-            {/* vuesax/linear/edit-2 16×16 */}
+            {/* vuesax/linear/edit-2 16×16 — точные path из Figma 8175:13372 */}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M8.84 2.4H6c-3.333 0-4.667 1.333-4.667 4.667v2.667c0 3.333 1.334 4.666 4.667 4.666h2.667c3.333 0 4.666-1.333 4.666-4.666V8" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9.834 3.073 5.44 7.467c-.167.166-.334.493-.367.733l-.24 1.687c-.087.613.347 1.04.96.953l1.687-.24c.233-.033.56-.2.733-.367L12.607 5.84c.76-.76 1.12-1.647 0-2.767-1.12-1.12-2.013-.76-2.773 0Z" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9.207 3.7a4.005 4.005 0 0 0 2.78 2.78" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 14.6667H14" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
           {/* Slots block (Figma 8534:14570 "selectSlots", flex-col gap 12) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
 
-            {/* Section title — Figma title: padding pt=24 pb=8 px=8, justify-center.
+            {/* Section title — Figma title (selectSlots → items-start): padding 24/8/8/8,
+                плашка shrink-0, поэтому прижата к левому краю.
                 text: caption3Caps, color onSurfaceSoften. */}
-            <div style={{
-              padding: '24px 8px 8px',
-              display: 'flex', justifyContent: 'center',
-            }}>
+            <div style={{ padding: '24px 8px 8px' }}>
               <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>
                 ДОСТУПНЫЕ СЛОТЫ
               </span>

@@ -1,6 +1,41 @@
 import dayjs from 'dayjs'
 import { prisma } from '../../db/client'
 
+/** HH:mm → минуты от полуночи */
+function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+/** Минуты от полуночи → HH:mm */
+function formatTime(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+type Interval = { start: number; end: number }
+
+/** Рабочие окна из расписания, разбитые перерывом */
+function buildWorkWindows(
+  startTime: string, endTime: string,
+  breakStart?: string | null, breakEnd?: string | null,
+): Interval[] {
+  const dayStart = toMinutes(startTime)
+  const dayEnd = toMinutes(endTime)
+
+  if (breakStart && breakEnd) {
+    const brkStart = toMinutes(breakStart)
+    const brkEnd = toMinutes(breakEnd)
+    const windows: Interval[] = []
+    if (dayStart < brkStart) windows.push({ start: dayStart, end: brkStart })
+    if (brkEnd < dayEnd) windows.push({ start: brkEnd, end: dayEnd })
+    return windows
+  }
+
+  return [{ start: dayStart, end: dayEnd }]
+}
+
 export const scheduleService = {
   get: (masterId: string) =>
     prisma.schedule.findUnique({ where: { masterId } }),
@@ -19,6 +54,10 @@ export const scheduleService = {
       create: { masterId, ...data },
     }),
 
+  /**
+   * Динамический расчёт слотов: мелкий шаг + проверка буфера между услугами.
+   * Слоты прижимаются к краям свободных окон → максимальная загрузка мастера.
+   */
   async getAvailableSlots(masterId: string, date: string, serviceId: string) {
     const schedule = await prisma.schedule.findUnique({ where: { masterId } })
     if (!schedule) return []
@@ -30,29 +69,18 @@ export const scheduleService = {
     const dayOfWeek = dayjs(date).day() || 7
     if (!schedule.workingDays.includes(dayOfWeek)) return []
 
-    // Генерируем все слоты с шагом = длительность + буфер
-    const step = service.duration + schedule.bufferMinutes
-    const slots: string[] = []
+    const buffer = schedule.bufferMinutes
+    const duration = service.duration
+    // Шаг сетки слотов = duration + buffer: между двумя соседними записями
+    // обязан быть зазор bufferMinutes. На пустом дне 09:00–13:00 при d=60, b=10
+    // получаем 09:00, 10:10, 11:20 (11:20+60=12:20; следующий 12:30+60>13:00).
+    const step = duration + buffer
 
-    let current = dayjs(`${date} ${schedule.startTime}`)
-    const end = dayjs(`${date} ${schedule.endTime}`)
-    const breakStart = schedule.breakStart ? dayjs(`${date} ${schedule.breakStart}`) : null
-    const breakEnd = schedule.breakEnd ? dayjs(`${date} ${schedule.breakEnd}`) : null
+    const windows = buildWorkWindows(
+      schedule.startTime, schedule.endTime,
+      schedule.breakStart, schedule.breakEnd,
+    )
 
-    while (current.add(service.duration, 'minute').isBefore(end) ||
-           current.add(service.duration, 'minute').isSame(end)) {
-      // Пропускаем перерыв
-      if (breakStart && breakEnd) {
-        if (current.isBefore(breakEnd) && current.add(service.duration, 'minute').isAfter(breakStart)) {
-          current = breakEnd
-          continue
-        }
-      }
-      slots.push(current.format('HH:mm'))
-      current = current.add(step, 'minute')
-    }
-
-    // Исключаем уже занятые слоты
     const existingBookings = await prisma.booking.findMany({
       where: {
         masterId,
@@ -62,17 +90,27 @@ export const scheduleService = {
       include: { service: true },
     })
 
-    // Проверяем пересечение по времени с учётом длительности каждой услуги
-    return slots.filter((slot) => {
-      const slotStart = dayjs(`${date} ${slot}`)
-      const slotEnd = slotStart.add(service.duration, 'minute')
-      return !existingBookings.some((b) => {
-        const bStart = dayjs(`${date} ${b.time}`)
-        const bEnd = bStart.add(b.service.duration, 'minute')
-        // Пересечение: slotStart < bEnd && slotEnd > bStart
-        return slotStart.isBefore(bEnd) && slotEnd.isAfter(bStart)
-      })
-    })
+    // Занятые интервалы: [start, end] каждой записи
+    const busy = existingBookings.map((b) => ({
+      start: toMinutes(b.time),
+      end: toMinutes(b.time) + b.service.duration,
+    }))
+
+    // Генерируем кандидатов с мелким шагом, фильтруем конфликты с учётом буфера
+    const slots: string[] = []
+
+    for (const win of windows) {
+      for (let t = win.start; t + duration <= win.end; t += step) {
+        const hasConflict = busy.some((b) =>
+          t < b.end + buffer && t + duration > b.start - buffer
+        )
+        if (!hasConflict) {
+          slots.push(formatTime(t))
+        }
+      }
+    }
+
+    return slots
   },
 
   /**
@@ -95,9 +133,15 @@ export const scheduleService = {
       include: { service: true },
     })
 
-    const step = service.duration + schedule.bufferMinutes
-    const breakStartTime = schedule.breakStart
-    const breakEndTime = schedule.breakEnd
+    const buffer = schedule.bufferMinutes
+    const duration = service.duration
+    const step = duration + buffer
+
+    const windows = buildWorkWindows(
+      schedule.startTime, schedule.endTime,
+      schedule.breakStart, schedule.breakEnd,
+    )
+
     const result: Record<string, boolean> = {}
 
     let d = dayjs(from)
@@ -108,42 +152,28 @@ export const scheduleService = {
       const dayOfWeek = d.day() || 7
 
       if (!schedule.workingDays.includes(dayOfWeek)) {
-        // Нерабочие дни НЕ включаем в ответ — фронт отличит их от "занятых"
         d = d.add(1, 'day')
         continue
       }
 
-      // Генерируем слоты для этого дня
-      let current = dayjs(`${dateStr} ${schedule.startTime}`)
-      const end = dayjs(`${dateStr} ${schedule.endTime}`)
-      const brkStart = breakStartTime ? dayjs(`${dateStr} ${breakStartTime}`) : null
-      const brkEnd = breakEndTime ? dayjs(`${dateStr} ${breakEndTime}`) : null
-
       const dayBookings = existingBookings.filter((b) => b.date === dateStr)
-      let hasSlot = false
+      const busy = dayBookings.map((b) => ({
+        start: toMinutes(b.time),
+        end: toMinutes(b.time) + b.service.duration,
+      }))
 
-      while (current.add(service.duration, 'minute').isBefore(end) ||
-             current.add(service.duration, 'minute').isSame(end)) {
-        if (brkStart && brkEnd) {
-          if (current.isBefore(brkEnd) && current.add(service.duration, 'minute').isAfter(brkStart)) {
-            current = brkEnd
-            continue
+      let hasSlot = false
+      for (const win of windows) {
+        for (let t = win.start; t + duration <= win.end; t += step) {
+          const hasConflict = busy.some((b) =>
+            t < b.end + buffer && t + duration > b.start - buffer
+          )
+          if (!hasConflict) {
+            hasSlot = true
+            break
           }
         }
-
-        const slotStart = current
-        const slotEnd = slotStart.add(service.duration, 'minute')
-        const isBooked = dayBookings.some((b) => {
-          const bStart = dayjs(`${dateStr} ${b.time}`)
-          const bEnd = bStart.add(b.service.duration, 'minute')
-          return slotStart.isBefore(bEnd) && slotEnd.isAfter(bStart)
-        })
-
-        if (!isBooked) {
-          hasSlot = true
-          break
-        }
-        current = current.add(step, 'minute')
+        if (hasSlot) break
       }
 
       result[dateStr] = hasSlot
