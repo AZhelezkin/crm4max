@@ -364,11 +364,26 @@ export default function MasterCardPage() {
               </div>
             )}
 
-            {/* Адрес — pin (16×16) + текст в primarySurface. Только если location есть. */}
+            {/* Адрес — pin (16×16) + текст в primarySurface, кликабельный →
+                открывает системные карты через geo: schema с lat/lng мастера
+                (как в ContactsPage). Только если location есть. */}
             {master.location && (
-              <div style={{
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 3,
-              }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (master.lat && master.lng) {
+                    window.WebApp?.openLink(
+                      `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
+                    )
+                  }
+                }}
+                disabled={!master.lat || !master.lng}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 3,
+                  background: 'none', border: 'none', padding: 0,
+                  cursor: master.lat && master.lng ? 'pointer' : 'default',
+                }}
+              >
                 {/* vuesax/linear/location 16×16 stroke=primarySurface */}
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
                   <path d="M8 8.953a2.08 2.08 0 1 0 0-4.16 2.08 2.08 0 0 0 0 4.16Z" stroke="var(--color-primary-surface)" strokeWidth="1.2"/>
@@ -377,7 +392,7 @@ export default function MasterCardPage() {
                 <span style={{ ...text.caption2, color: 'var(--color-primary-surface)', textAlign: 'center' }}>
                   {master.location}
                 </span>
-              </div>
+              </button>
             )}
           </div>
 
