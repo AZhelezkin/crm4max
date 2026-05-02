@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
+import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
 import CategorySelectPage from '@client/pages/CategorySelectPage'
@@ -34,11 +35,13 @@ export default function ClientApp() {
   useEffect(() => { init() }, [init])
 
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', background: 'var(--color-background)' }}>
-        <span style={{ color: 'var(--color-on-surface-secondary)' }}>Загрузка...</span>
-      </div>
-    )
+    // Самый частый путь — мастер по UUID startParam → показываем skeleton
+    // карточки мастера (он совпадает с тем, что отрисует MasterCardPage,
+    // когда master ещё null). Иначе — пустой экран (для QR-сканера и т.п.).
+    if (UUID_REGEX.test(startParam)) {
+      return <MasterCardSkeleton />
+    }
+    return <div style={{ height: '100dvh' }} />
   }
 
   return (
