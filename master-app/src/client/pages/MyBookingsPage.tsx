@@ -85,7 +85,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
 
       {/* Date title + action buttons */}
       <div style={{

@@ -26,7 +26,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 80 }}>
       <div style={{ padding: '16px 16px 0' }}>
         <h1 style={{ ...text.titleSmall, margin: 0 }}>Контакты</h1>
       </div>

@@ -51,7 +51,7 @@ export default function CreateBookingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)' }}>
+    <div style={{ minHeight: '100dvh' }}>
       <PageHeader title="Создать запись" />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>

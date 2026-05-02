@@ -114,7 +114,7 @@ export default function BookingsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Header: только "+" кнопка справа */}
       <header
         style={{

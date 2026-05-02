@@ -4,7 +4,7 @@ import { text } from '@/styles/typography'
 
 export default function ChatsPage() {
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)' }}>
+    <div style={{ minHeight: '100dvh' }}>
       <PageHeader title="Клиенты" back={false} />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>

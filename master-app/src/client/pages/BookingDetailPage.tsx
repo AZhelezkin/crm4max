@@ -60,7 +60,7 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{

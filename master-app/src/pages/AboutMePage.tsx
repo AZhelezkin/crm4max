@@ -131,7 +131,7 @@ export default function AboutMePage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
       {/* Заголовок */}
       <AppHeader title="Обо мне" onBack={() => navigate(-1)} />

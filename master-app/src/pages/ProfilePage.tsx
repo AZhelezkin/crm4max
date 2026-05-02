@@ -196,7 +196,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', overflowX: 'hidden' }}>
 
       {/* Header: Поделиться + Карандаш */}
       <div style={{

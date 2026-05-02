@@ -16,7 +16,7 @@ export default function CategorySelectPage() {
   }, [masterId, navigate])
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 20 }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
       {/* Header: back arrow + title + search icon */}
       <div style={{

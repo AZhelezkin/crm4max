@@ -199,11 +199,23 @@ body {
  * MaxUI (@maxhub/max-ui) оборачивает приложение в <div class="MaxUI__…">
  * с background-color: var(--background-surface-primary). Без prop colorScheme
  * эта переменная не определена — обёртка падает в светлый дефолт и
- * перекрывает body на тёмной теме («пропала подложка»). Явно зануляем bg
- * MaxUI-обёртки на наш семантический --color-background.
+ * перекрывает body на тёмной теме («пропала подложка»). Явно задаём
+ * bg/скругление MaxUI-обёртки.
+ *
+ * ЕДИНОЕ ПРАВИЛО ДЛЯ ВСЕХ ЭКРАНОВ:
+ * • Фон страницы — градиент paint0 (surface→background, length-stops 0→390px)
+ * • Сверху скруглены углы 24px (по дизайн-системе MAX UI)
+ * Любой новый экран автоматически их получает, ничего не делая.
+ *
+ * При cutout-е скруглений просвечивает <body> с плоским --color-background
+ * (как «corners»-маска в Figma). Hero-блоки на MasterCard/Profile имеют
+ * собственный borderRadius:24 + gradient — они совпадают с body-уровневыми
+ * и не создают двойного эффекта.
  */
 #root > div {
-  background-color: var(--color-background);
+  background: var(--gradient-hero-background);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
 }
 
 button, input, textarea, select {

@@ -188,7 +188,7 @@ export default function PaymentsPage() {
   }, [payments, selectedMonth])
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
+    <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Header: 56px, centered title, upload icon right */}
       <header
         style={{

@@ -85,7 +85,7 @@ export default function ServiceSelectPage() {
   const isSearching = isSearchMode && q.length > 0
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-background)', paddingBottom: 20 }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
       {/* -- Header -- */}
       <div style={{

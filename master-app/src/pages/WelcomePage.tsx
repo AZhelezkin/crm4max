@@ -15,7 +15,6 @@ export default function WelcomePage() {
     <div
       style={{
         minHeight: '100dvh',
-        background: 'var(--color-background)',
         color: 'var(--color-on-primary-surface)',
         display: 'flex',
         flexDirection: 'column',
