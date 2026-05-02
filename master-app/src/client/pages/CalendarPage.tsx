@@ -32,6 +32,41 @@ function isWorkingDay(day: dayjs.Dayjs, schedule: Schedule | null): boolean {
   return schedule.workingDays.includes(isoDay)
 }
 
+/* ── Toolbar icon ──────────────────────────────────────────────────────────── */
+
+function IcoArrowLeft() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12l6.07 6.07" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20.5 12H3.67" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function ToolbarButton({ onClick, ariaLabel, children }: {
+  onClick: () => void
+  ariaLabel: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width: 44, height: 44, borderRadius: 22,
+        background: 'var(--color-background)',
+        border: 'none', cursor: 'pointer', padding: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
+
 export default function CalendarPage() {
   const navigate = useNavigate()
   const { masterId, service, date, time, remind, setDateTime, setRemind } = useBookingStore()
@@ -52,7 +87,7 @@ export default function CalendarPage() {
     }
   }, [masterId])
 
-  // Batch-загрузка доступности слотов для всех 3 месяцев
+  // Batch availability for visible 3 months
   useEffect(() => {
     if (masterId && service) {
       const from = today.format('YYYY-MM-DD')
@@ -89,159 +124,168 @@ export default function CalendarPage() {
   const selectedDayjs = dayjs(selectedDate)
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
+  const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
+
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Header 56px ── */}
+      {/* ── Toolbar (Figma toolbarTop). h=56, padding 6/12, gap=8.
+            Title abs-centered: callout1 + caption2 — как в ServiceDetailPage. */}
       <div style={{
-        height: 56, background: 'var(--color-background)',
-        display: 'flex', alignItems: 'center', padding: '0 14px',
-        position: 'sticky', top: 0, zIndex: 10,
+        position: 'relative',
+        height: 56,
+        padding: '6px 12px',
+        display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        {/* Back arrow */}
-        <button
+        <ToolbarButton
           onClick={() => step === 'time' ? setStep('date') : navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+          ariaLabel="Назад"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+          <IcoArrowLeft />
+        </ToolbarButton>
 
-        {/* Service info — centered */}
-        <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
-          <div style={{
-            ...text.callout, color: 'var(--color-on-surface)',
-            lineHeight: '22px',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {step === 'date' ? 'Выберите дату' : 'Выберите время'}
+        <div style={{
+          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+          textAlign: 'center', whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+            {headerTitle}
           </div>
           {service && (
-            <div style={{
-              color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
-              lineHeight: '17px',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
+            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
               {service.name}
             </div>
           )}
         </div>
 
-        <div style={{ width: 36 }} />
+        {/* trailing slot 44×44 для симметрии */}
+        <div style={{ width: 44, height: 44, marginLeft: 'auto', flexShrink: 0 }} />
       </div>
 
       {/* ── Date step — Calendar ── */}
       {step === 'date' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px', paddingBottom: 32 }}>
-          {months.map((monthStart, mi) => (
-            <div key={monthStart.format('YYYY-MM')} style={{ marginTop: mi === 0 ? 24 : 24 }}>
+        <div style={{
+          flex: 1, overflowY: 'auto',
+          padding: '0 16px 32px',
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}>
+          {months.map((monthStart) => (
+            <div key={monthStart.format('YYYY-MM')} style={{
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
 
-              {/* Month title */}
-              <div style={{
-                ...text.footnoteStrong, color: 'var(--color-on-surface)',
-                marginBottom: 16, textTransform: 'capitalize',
-              }}>
-                {monthStart.format('MMMM YYYY')}
+              {/* Month label — Figma «_calendar2Control»: padding 14/8/14/4, pl=6 на контейнере. */}
+              <div style={{ paddingLeft: 6 }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '14px 4px 14px 8px',
+                  borderRadius: 100,
+                }}>
+                  <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-secondary)' }}>
+                    {monthStart.format('MMMM YYYY')}
+                  </span>
+                </div>
               </div>
 
-              {/* Day-of-week labels */}
+              {/* Day-of-week labels — Figma «_calendar2Day»: h=48, body2Medium, secondary. */}
               <div style={{
                 display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
-                marginBottom: 8,
+                width: '100%',
               }}>
                 {DAY_NAMES.map((d) => (
                   <div key={d} style={{
-                    textAlign: 'center', ...text.action,
-                    color: 'var(--color-on-surface-muted)',
-                    padding: '4px 0',
+                    height: 48,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    ...text.body2Medium,
+                    color: 'var(--color-on-surface-secondary)',
                   }}>
                     {d}
                   </div>
                 ))}
               </div>
 
-              {/* Calendar grid */}
-              {buildMonthGrid(monthStart.year(), monthStart.month()).map((week, wi) => (
-                <div key={wi} style={{
-                  display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: 1, marginBottom: 1,
-                }}>
-                  {week.map((day, di) => {
-                    if (!day) return <div key={di} />
-                    const val = day.format('YYYY-MM-DD')
-                    const isPast = day.isBefore(today)
-                    const isToday = day.isSame(today)
-                    const isSelected = val === selectedDate
-                    const working = isWorkingDay(day, schedule)
-                    const disabled = isPast || !working
-                    const isWeekend = di >= 5 // Сб, Вс
+              {/* Days grid — Figma «_calendar2Cell»: minH=56, padding 8/4, rounded 10, callout1. */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+              }}>
+                {buildMonthGrid(monthStart.year(), monthStart.month()).flat().map((day, i) => {
+                  if (!day) return <div key={i} style={{ minHeight: 56 }} />
+                  const val = day.format('YYYY-MM-DD')
+                  const isPast = day.isBefore(today)
+                  const isToday = day.isSame(today)
+                  const isSelected = val === selectedDate
+                  const working = isWorkingDay(day, schedule)
+                  const disabled = isPast || !working
+                  const isWeekend = (day.day() || 7) >= 6 // Сб, Вс
 
-                    // Цвета ячеек:
-                    //   dark blue = есть свободные слоты (availability[val] === true)
-                    //   gray      = нет свободных слотов (availability[val] === false)
-                    //   black     = прошёл, нерабочий, или данные не загружены
-                    const hasSlots = availability[val] // true | false | undefined
-                    let bg = 'transparent'
-                    let cellOpacity = 1
-                    if (isSelected) {
-                      bg = 'var(--color-primary-surface)'
-                    } else if (isPast) {
-                      cellOpacity = 0.5
-                    } else if (hasSlots === true) {
-                      bg = 'rgba(0, 122, 254, 0.3)'
-                    } else if (hasSlots === false) {
-                      bg = 'var(--color-divider-low)'
-                      cellOpacity = 0.5
-                    } else {
-                      // undefined — нерабочий день или данные ещё грузятся
-                      cellOpacity = 0.5
-                    }
+                  // Cell bg: state-driven
+                  //   primary-surface = доступны слоты или выбранный день
+                  //   divider-low     = нет свободных слотов
+                  //   transparent     = past / нерабочий / данные ещё грузятся
+                  const hasSlots = availability[val]
+                  let bg = 'transparent'
+                  let cellOpacity = 1
+                  if (isSelected || hasSlots === true) {
+                    bg = 'var(--color-primary-surface)'
+                  } else if (hasSlots === false) {
+                    bg = 'var(--color-divider-low)'
+                    cellOpacity = 0.5
+                  } else if (isPast) {
+                    cellOpacity = 0.5
+                  } else {
+                    cellOpacity = 0.5
+                  }
 
-                    // Text color
-                    let textColor = 'var(--color-on-surface)'
-                    if (isSelected) textColor = 'var(--color-on-primary-surface)'
-                    else if (isWeekend) textColor = 'var(--color-error-surface-accented)'
+                  // Text color: weekend → red; on primary-surface → on-primary-surface; else on-surface
+                  let textColor: string
+                  if (isSelected || hasSlots === true) {
+                    textColor = isWeekend
+                      ? 'var(--color-error-surface-accented)'
+                      : 'var(--color-on-primary-surface)'
+                  } else if (isWeekend) {
+                    textColor = 'var(--color-error-surface-accented)'
+                  } else {
+                    textColor = 'var(--color-on-surface)'
+                  }
 
-                    return (
-                      <button
-                        key={val}
-                        onClick={() => !disabled && handleSelectDate(day)}
-                        disabled={disabled}
-                        style={{
-                          aspectRatio: '54 / 53',
-                          borderRadius: 12,
-                          display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', justifyContent: 'center',
-                          ...text.bodyStrong,
-                          background: bg,
-                          color: textColor,
-                          opacity: cellOpacity,
-                          border: 'none',
-                          cursor: disabled ? 'default' : 'pointer',
-                          position: 'relative',
-                          padding: 0,
-                        }}
-                      >
-                        {day.date()}
-                        {/* Today indicator — red bar */}
-                        {isToday && (
-                          <span style={{
-                            position: 'absolute',
-                            bottom: 6,
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: 12, height: 2,
-                            borderRadius: 1,
-                            background: 'var(--color-error-surface-accented)',
-                          }} />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => !disabled && handleSelectDate(day)}
+                      disabled={disabled}
+                      style={{
+                        minHeight: 56,
+                        padding: '8px 4px',
+                        borderRadius: 10,
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', gap: 8,
+                        ...text.callout1,
+                        background: bg,
+                        color: textColor,
+                        opacity: cellOpacity,
+                        border: 'none',
+                        cursor: disabled ? 'default' : 'pointer',
+                        position: 'relative',
+                      }}
+                    >
+                      {day.date()}
+                      {/* Today indicator — небольшая красная риска под цифрой */}
+                      {isToday && (
+                        <span style={{
+                          position: 'absolute',
+                          bottom: 6,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 12, height: 2,
+                          borderRadius: 1,
+                          background: 'var(--color-error-surface-accented)',
+                        }} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           ))}
         </div>

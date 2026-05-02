@@ -84,6 +84,7 @@ export interface Review {
 export interface BookingDraft {
   masterId: string
   service: Service | null
+  categoryName: string | null
   date: string
   time: string
   remind: boolean

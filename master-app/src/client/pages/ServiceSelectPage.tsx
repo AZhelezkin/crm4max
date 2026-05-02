@@ -192,8 +192,8 @@ export default function ServiceSelectPage() {
     if (isSearchMode && inputRef.current) inputRef.current.focus()
   }, [isSearchMode, master])
 
-  const handleSelect = (service: Service) => {
-    setService(service)
+  const handleSelect = (service: Service, categoryName: string) => {
+    setService(service, categoryName)
     navigate('/book/service')
   }
 
@@ -316,7 +316,7 @@ export default function ServiceSelectPage() {
           <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {globalSearch && <SectionTitle name={cat.name} query={q} />}
             {services.map((s) => (
-              <ServiceItem key={s.id} service={s} query={q} onSelect={handleSelect} />
+              <ServiceItem key={s.id} service={s} query={q} onSelect={(svc) => handleSelect(svc, cat.name)} />
             ))}
           </div>
         ))}
@@ -330,7 +330,7 @@ export default function ServiceSelectPage() {
             {/* Заголовок секции (Figma: имя категории «ВОЛОСЫ» над списком) — всегда. */}
             {cat.name && <SectionTitle name={cat.name} />}
             {cat.services.map((s) => (
-              <ServiceItem key={s.id} service={s} query="" onSelect={handleSelect} />
+              <ServiceItem key={s.id} service={s} query="" onSelect={(svc) => handleSelect(svc, cat.name)} />
             ))}
           </div>
         ))}

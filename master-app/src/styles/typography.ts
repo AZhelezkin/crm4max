@@ -40,6 +40,9 @@ export const text = {
   /** 17 / 24 / 400 letterSpacing -0.17px — Figma «Body 2», крупный обычный (табы, заметные подписи). */
   body2:          { fontSize: 17, lineHeight: '24px', fontWeight: 400, letterSpacing: -0.17 },
 
+  /** 17 / 24 / 500 letterSpacing 0.34px (= 2% от 17px) — Figma «_calendar2Day», лейблы дней недели в календаре («Пн», «Вт»…). */
+  body2Medium:    { fontSize: 17, lineHeight: '24px', fontWeight: 500, letterSpacing: 0.34 },
+
   /** 16 / 22 / 600 — подзаголовок, активный пункт списка, ярлык поля. */
   subhead:        { fontSize: 16, lineHeight: '22px', fontWeight: 600 },
 

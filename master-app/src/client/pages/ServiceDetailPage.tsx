@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Category, Master } from '@client/types'
 import { discountedPrice, formatDuration, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 
@@ -56,19 +54,13 @@ function IcoCalendarEdit() {
 
 export default function ServiceDetailPage() {
   const navigate = useNavigate()
-  const { masterId, service } = useBookingStore()
-  const [master, setMaster] = useState<Master | null>(null)
+  const { masterId, service, categoryName } = useBookingStore()
 
   useEffect(() => {
-    if (!masterId || !service) { navigate('/'); return }
-    mastersApi.getById(masterId).then(setMaster).catch(() => navigate('/'))
+    if (!masterId || !service) navigate('/')
   }, [masterId, service, navigate])
 
   if (!service) return null
-
-  const category: Category | undefined = master?.categories.find((c) =>
-    c.services.some((s) => s.id === service.id),
-  )
 
   const dPrice = discountedPrice(service.price, service.discountPercent)
   const hasDiscount = dPrice !== null
@@ -96,9 +88,9 @@ export default function ServiceDetailPage() {
           <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
             {service.name}
           </div>
-          {category && (
+          {categoryName && (
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-              {category.name}
+              {categoryName}
             </div>
           )}
         </div>
