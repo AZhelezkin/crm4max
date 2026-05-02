@@ -399,18 +399,20 @@ export default function MasterCardPage() {
           </div>
 
           {/* Тэг «Доступен выезд на дом» — bg=activeSurface, text=primarySurface (label3Caps).
-              Padding по макету: pt-7 pb-6 px-6, rounded-4. */}
+              Padding по макету: pt-7 pb-6 px-6, rounded-4. inline-block (НЕ inline-flex) —
+              иначе Android Chromium берёт высоту из font ascent/descent (≈12px) вместо
+              line-height (14px), и бейдж выходит ниже макета. */}
           {master.homeVisit && (
-            <div style={{
+            <span style={{
               background: 'var(--color-active-surface)',
               borderRadius: 4,
               padding: '7px 6px 6px',
-              display: 'inline-flex', alignItems: 'center',
+              display: 'inline-block',
+              ...text.label3Caps,
+              color: 'var(--color-primary-surface)',
             }}>
-              <span style={{ ...text.label3Caps, color: 'var(--color-primary-surface)' }}>
-                Доступен выезд на дом
-              </span>
-            </div>
+              Доступен выезд на дом
+            </span>
           )}
         </div>
       </div>
@@ -767,14 +769,15 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                 <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
                   /* Tag: rounded=4, padding (Figma) pt-7 pb-6 px-6, bg=errorSurfaceLite,
-                     text «label 3 CAPS» (10/14/800 ls −0.2 uppercase) onErrorSurfaceLite. */
+                     text «label 3 CAPS» (10/14/800 ls −0.2 uppercase) onErrorSurfaceLite.
+                     inline-block — см. комментарий у бейджа «Доступен выезд на дом». */
                   <span style={{
                     borderRadius: 4,
                     padding: '7px 6px 6px',
                     background: 'var(--color-error-surface-lite)',
                     color: 'var(--color-on-error-surface-lite)',
                     ...text.label3Caps,
-                    display: 'inline-flex', alignItems: 'center',
+                    display: 'inline-block',
                   }}>
                     % скидки
                   </span>
