@@ -309,7 +309,7 @@ export default function MyBookingsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Поиск по записям"
+              placeholder="Найти запись"
               style={{
                 flex: 1, minWidth: 0,
                 background: 'transparent', border: 'none', outline: 'none',
