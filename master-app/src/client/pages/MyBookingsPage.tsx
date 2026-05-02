@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -66,6 +66,43 @@ function IcoArrowRight() {
   )
 }
 
+/* Back-arrow 24×24 (vuesax/linear/arrow-left) — toolbar-leading в search-режиме. */
+function IcoBack() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12l6.07 6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20.5 12H3.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+/* X 20×20 — clear-кнопка в search-инпуте. */
+function IcoClear() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M6 6l8 8M14 6l-8 8" stroke="var(--color-on-surface)" strokeWidth="1.75" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+/* Подсветка совпадения подстроки в названии услуги — primary-blue. */
+function HighlightedText({ value, query }: { value: string; query: string }) {
+  if (!query) return <>{value}</>
+  const lower = value.toLowerCase()
+  const q = query.toLowerCase()
+  const idx = lower.indexOf(q)
+  if (idx < 0) return <>{value}</>
+  return (
+    <>
+      {value.substring(0, idx)}
+      <span style={{ color: 'var(--color-primary-surface)' }}>
+        {value.substring(idx, idx + query.length)}
+      </span>
+      {value.substring(idx + query.length)}
+    </>
+  )
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 
 export default function MyBookingsPage() {
@@ -78,6 +115,13 @@ export default function MyBookingsPage() {
   const today = dayjs().startOf('day')
   const [viewMonth, setViewMonth] = useState(today.startOf('month'))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  // Search mode (Figma 8535:48230). При активации скрывается календарь,
+  // toolbar заменяется на «back-button + input», список фильтруется
+  // по названию услуги или дате (число / название месяца).
+  const [searchMode, setSearchMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     bookingsApi
@@ -112,19 +156,42 @@ export default function MyBookingsPage() {
     return map
   }, [bookings])
 
-  // Группы по дате (всегда показываем все, фильтруя по selectedDate если выбрана).
+  // Filtered bookings — используется для search-режима. В обычном режиме
+  // возвращаем все sortedBookings; в search-режиме при пустом запросе —
+  // пустой массив (Figma не показывает список до ввода запроса).
+  const filteredBookings = useMemo(() => {
+    if (!searchMode) return sortedBookings
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
+    return sortedBookings.filter((b) => {
+      // 1) match по названию услуги
+      if (b.service.name.toLowerCase().includes(q)) return true
+      // 2) match по дате — число дня или название месяца ("март", "марта")
+      const d = dayjs(b.date)
+      const dayNum = d.format('D')               // "12", "22"
+      const monthName = d.format('MMMM').toLowerCase() // "марта", "мая"
+      const dayMonth = `${dayNum} ${monthName}`
+      if (dayNum === q) return true
+      if (monthName.includes(q)) return true
+      if (dayMonth.includes(q)) return true
+      return false
+    })
+  }, [searchMode, searchQuery, sortedBookings])
+
+  // Группы по дате. В обычном режиме фильтруем по selectedDate (если выбрана);
+  // в search-режиме показываем все совпавшие записи без selected-фильтра.
   const groups = useMemo(() => {
     const map = new Map<string, Booking[]>()
-    for (const b of sortedBookings) {
+    for (const b of filteredBookings) {
       const list = map.get(b.date) ?? []
       list.push(b)
       map.set(b.date, list)
     }
-    if (selectedDate) {
+    if (!searchMode && selectedDate) {
       return map.has(selectedDate) ? [[selectedDate, map.get(selectedDate)!]] as const : []
     }
     return Array.from(map.entries())
-  }, [sortedBookings, selectedDate])
+  }, [filteredBookings, selectedDate, searchMode])
 
   const priceLabel = (b: Booking) => {
     const svc = b.service
@@ -142,29 +209,84 @@ export default function MyBookingsPage() {
     navigate('/book/categories')
   }
 
+  const handleEnterSearch = () => {
+    setSearchMode(true)
+    setSearchQuery('')
+    // autofocus после следующего кадра, когда input уже отрендерился
+    setTimeout(() => searchInputRef.current?.focus(), 0)
+  }
+
+  const handleExitSearch = () => {
+    setSearchMode(false)
+    setSearchQuery('')
+  }
+
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 95, display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Toolbar (Figma toolbarTop 8535:43254). h=56, pl-16 pr-12 py-6.
-            title left H3 22/26/700 ls -0.66, trailing search + Записаться pill, gap 10. */}
-      <div style={{
-        height: 56,
-        padding: '6px 12px 6px 16px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 8,
-      }}>
+      {/* ── Toolbar (Figma 8535:43254 normal / 8535:46744 search) ─────────── */}
+      {!searchMode ? (
+        // Normal: title left + search button + Записаться pill (gap-10).
         <div style={{
-          fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66,
-          color: 'var(--color-on-surface)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          height: 56,
+          padding: '6px 12px 6px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 8,
         }}>
-          {today.format('D MMMM, YYYY')}
-        </div>
+          <div style={{
+            fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66,
+            color: 'var(--color-on-surface)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {today.format('D MMMM, YYYY')}
+          </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {/* Search 44×44 round (decoration only) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <button
+              aria-label="Поиск"
+              onClick={handleEnterSearch}
+              style={{
+                width: 44, height: 44, borderRadius: 22,
+                background: 'var(--color-background)',
+                border: 'none', padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <IcoSearch />
+            </button>
+
+            <button
+              onClick={handleBookNew}
+              disabled={!currentMasterId}
+              style={{
+                height: 44, padding: '0 10px', borderRadius: 22,
+                background: 'var(--color-primary-surface)',
+                color: 'var(--color-on-primary-surface)',
+                border: 'none',
+                ...text.callout1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: currentMasterId ? 'pointer' : 'default',
+                opacity: currentMasterId ? 1 : 0.5,
+                flexShrink: 0,
+              }}
+            >
+              Записаться
+            </button>
+          </div>
+        </div>
+      ) : (
+        // Search-mode toolbar (Figma 8535:46744).
+        // Layout: h=56, px-12 py-6 gap-8. leading=back-btn (44×44 round bg-bg)
+        // + searchTop (flex-1 px-14 py-10 rounded-22 bg-bg) с input + X.
+        <div style={{
+          height: 56,
+          padding: '6px 12px',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
           <button
-            aria-label="Поиск"
+            aria-label="Назад"
+            onClick={handleExitSearch}
             style={{
               width: 44, height: 44, borderRadius: 22,
               background: 'var(--color-background)',
@@ -173,29 +295,50 @@ export default function MyBookingsPage() {
               cursor: 'pointer', flexShrink: 0,
             }}
           >
-            <IcoSearch />
+            <IcoBack />
           </button>
 
-          {/* Записаться pill — bg primarysurface, h=44, horiz. padding = 4 (outer) + 6 (inner) = 10. */}
-          <button
-            onClick={handleBookNew}
-            disabled={!currentMasterId}
-            style={{
-              height: 44, padding: '0 10px', borderRadius: 22,
-              background: 'var(--color-primary-surface)',
-              color: 'var(--color-on-primary-surface)',
-              border: 'none',
-              ...text.callout1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: currentMasterId ? 'pointer' : 'default',
-              opacity: currentMasterId ? 1 : 0.5,
-              flexShrink: 0,
-            }}
-          >
-            Записаться
-          </button>
+          <div style={{
+            flex: 1, minWidth: 0, height: 44,
+            padding: '0 14px', borderRadius: 22,
+            background: 'var(--color-background)',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск по записям"
+              style={{
+                flex: 1, minWidth: 0,
+                background: 'transparent', border: 'none', outline: 'none',
+                fontFamily: 'inherit',
+                fontSize: 18, lineHeight: '24px', fontWeight: 400,
+                color: 'var(--color-interactive-element-accented)',
+                padding: 0,
+              }}
+            />
+            {searchQuery && (
+              <button
+                aria-label="Очистить"
+                onClick={() => {
+                  setSearchQuery('')
+                  searchInputRef.current?.focus()
+                }}
+                style={{
+                  width: 20, height: 20, padding: 0, borderRadius: '50%',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <IcoClear />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Content area (Figma 8535:43248): px-16 py-8 gap-8 — общий
             горизонт. отступ для календаря и списка записей. ──────────────── */}
@@ -205,7 +348,8 @@ export default function MyBookingsPage() {
         flex: 1,
       }}>
 
-      {/* ── Calendar block (Figma 8535:43249). flex-col gap-8. ──────────── */}
+      {!searchMode && (
+      /* ── Calendar block (Figma 8535:43249). flex-col gap-8. ──────────── */
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
         {/* controls row — pl-6 + space-between */}
@@ -346,38 +490,76 @@ export default function MyBookingsPage() {
           })}
         </div>
       </div>
+      )}
 
-      {/* ── Appointment list (Figma 8535:43250). flex-col items-start w-full. ─ */}
+      {/* ── Appointment list (Figma 8535:43250 / 8535:46740). ─────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {groups.length === 0 ? (
-          <div style={{
-            textAlign: 'center', color: 'var(--color-on-surface-secondary)',
-            ...text.body, padding: '32px 16px',
-          }}>
-            {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
-          </div>
+          // empty state: 3 ветки.
+          searchMode && !searchQuery.trim() ? null  // ждём ввода — пусто
+          : searchMode ? (
+            // Figma 8535:50007 «search-empty»: h=352 py-24 flex-col items-center
+            // justify-center, текст pb-32 px-40 body2 onsurfacesecondary center.
+            <div style={{
+              minHeight: 352,
+              padding: '24px 0',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              width: '100%',
+            }}>
+              <div style={{
+                width: '100%', padding: '0 40px 32px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{
+                  ...text.body2,
+                  color: 'var(--color-on-surface-secondary)',
+                  textAlign: 'center',
+                }}>
+                  Ничего не найдено
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              textAlign: 'center', color: 'var(--color-on-surface-secondary)',
+              ...text.body, padding: '32px 16px',
+            }}>
+              {selectedDate ? 'Нет записей на этот день' : 'Нет записей'}
+            </div>
+          )
         ) : (
           groups.map(([date, items]) => {
             const d = dayjs(date)
             const dateLabel = `${d.format('D')} ${capitalize(d.format('MMMM'))}`
             const dayLabel = capitalize(d.format('dddd'))
+            // Section считается прошедшей, если ВСЕ её записи в прошлом
+            // (Figma 8535:48230: «12 марта • Вторник» с полностью muted-стилем).
+            const sectionPast = items.every((b) => isPast(b))
+            const sectionTextColor = sectionPast
+              ? 'var(--color-on-surface-muted)'
+              : 'var(--color-on-surface)'
+            const sectionDayColor = 'var(--color-on-surface-muted)'
             return (
               <Fragment key={date}>
                 {/* _appointmentSectionTitle — pt-16 pb-8 px-8, gap-8, items-center.
-                    "22 Марта" callout1 onsurface white • gradient-green dot • "Пятница" body2 onsurfacemuted */}
+                    Future: callout1 onsurface white + green-vibrance bullet + body2 onsurfacemuted.
+                    Past:   все элементы onsurfacemuted, bullet тоже muted. */}
                 <div style={{
                   width: '100%',
                   padding: '16px 8px 8px',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
-                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+                  <span style={{ ...text.callout1, color: sectionTextColor }}>
                     {dateLabel}
                   </span>
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%',
-                    background: 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))',
+                    background: sectionPast
+                      ? 'var(--color-on-surface-muted)'
+                      : 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))',
                   }} />
-                  <span style={{ ...text.body2, color: 'var(--color-on-surface-muted)' }}>
+                  <span style={{ ...text.body2, color: sectionDayColor }}>
                     {dayLabel}
                   </span>
                 </div>
@@ -389,9 +571,17 @@ export default function MyBookingsPage() {
 
                 {items.map((b) => {
                   const past = isPast(b)
-                  const lineGradient = past
-                    ? 'var(--color-divider-mid)'
+                  // Past — Figma 8535:46740: полоса = pattern-element (#24262e),
+                  // текст = onsurfacemuted, без line-through.
+                  const lineBg = past
+                    ? 'var(--color-pattern-element)'
                     : 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))'
+                  const rowTextColor = past
+                    ? 'var(--color-on-surface-muted)'
+                    : 'var(--color-on-surface)'
+                  const rowSecondaryColor = past
+                    ? 'var(--color-on-surface-muted)'
+                    : 'var(--color-on-surface-secondary)'
 
                   return (
                     <Fragment key={b.id}>
@@ -403,18 +593,19 @@ export default function MyBookingsPage() {
                           cursor: 'pointer', textAlign: 'left',
                         }}
                       >
-                        {/* lineWrapper h=60 p-8 — внутри 2×44 gradient-зелёная полоса */}
+                        {/* lineWrapper h=60 p-8 — внутри 2×44 полоса (green / pattern). */}
                         <div style={{
                           height: 60, padding: 8, flexShrink: 0,
                           display: 'flex', alignItems: 'center',
                         }}>
                           <span style={{
                             width: 2, height: 44, borderRadius: 1,
-                            background: lineGradient,
+                            background: lineBg,
                           }} />
                         </div>
 
-                        {/* cell/theme — pl-8 py-8, flex 1 */}
+                        {/* cell/theme — pl-8 py-8, flex 1.
+                            В search-режиме совпадение «Уклад» подсвечивается primary-blue. */}
                         <div style={{
                           flex: 1, minWidth: 0,
                           padding: '8px 0 8px 8px',
@@ -422,14 +613,16 @@ export default function MyBookingsPage() {
                         }}>
                           <div style={{
                             ...text.callout1,
-                            color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)',
-                            textDecoration: past ? 'line-through' : 'none',
+                            color: rowTextColor,
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
-                            {b.service.name}
+                            <HighlightedText
+                              value={b.service.name}
+                              query={searchMode ? searchQuery.trim() : ''}
+                            />
                           </div>
                           <div style={{
-                            ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+                            ...text.body, color: rowSecondaryColor, letterSpacing: -0.15,
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
                             {priceLabel(b)}
@@ -444,12 +637,12 @@ export default function MyBookingsPage() {
                         }}>
                           <span style={{
                             fontSize: 17, lineHeight: '24px', fontWeight: 400, letterSpacing: -0.17,
-                            color: past ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)',
+                            color: rowTextColor,
                           }}>
                             {b.time}
                           </span>
                           <span style={{
-                            ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+                            ...text.body, color: rowSecondaryColor, letterSpacing: -0.15,
                           }}>
                             {endTime(b)}
                           </span>
