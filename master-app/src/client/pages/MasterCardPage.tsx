@@ -48,6 +48,64 @@ function IcoMore() {
   )
 }
 
+/* ── Иконки контекстного меню (vuesax/linear, 20×20, stroke=onSurface | errorSurfaceAccented) ── */
+
+type MenuIconProps = { destructive?: boolean }
+const menuIconColor = (destructive?: boolean) =>
+  destructive ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)'
+
+function IcoShare({ destructive }: MenuIconProps) {
+  // vuesax/linear/send-2
+  const c = menuIconColor(destructive)
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M14.46 7.93 5.41 12.45c-3.05 1.52-3.05 4.01 0 5.54l1.35.67 .67 1.35c1.52 3.05 4.02 3.05 5.54 0l4.53-9.05c1.01-2.04-.04-3.07-2.04-2.03Zm.16 2.27-5.71 5.71c-.22.22-.59.22-.81 0a.575.575 0 0 1 0-.81l5.71-5.71c.22-.22.59-.22.81 0 .22.22.22.59 0 .81Z" fill={c} transform="translate(-3, -3)"/>
+    </svg>
+  )
+}
+
+function IcoBookmark({ destructive }: MenuIconProps) {
+  // vuesax/linear/bookmark-2
+  const c = menuIconColor(destructive)
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M14.585 2.583H5.41c-1.45 0-2.625 1.183-2.625 2.625v11.45c0 1.225.875 1.742 1.95 1.15l4.642-2.583c.354-.2.929-.2 1.275 0l4.641 2.583c1.075.6 1.95.084 1.95-1.15V5.208c.009-1.442-1.166-2.625-2.658-2.625Z" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoDocument({ destructive }: MenuIconProps) {
+  // vuesax/linear/document-text
+  const c = menuIconColor(destructive)
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M18.333 8.333v4.167c0 4.166-1.666 5.833-5.833 5.833H7.5c-4.167 0-5.833-1.667-5.833-5.833V7.5c0-4.167 1.666-5.833 5.833-5.833h4.167" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18.333 8.333H15c-2.5 0-3.333-.833-3.333-3.333V1.667l6.666 6.666ZM6.667 10.833H10.833M6.667 14.167H9.167" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoTrash({ destructive }: MenuIconProps) {
+  // vuesax/linear/trash
+  const c = menuIconColor(destructive)
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M17.5 4.983c-2.775-.275-5.567-.416-8.35-.416-1.65 0-3.3.083-4.95.25l-1.7.166M8.084 4.142l.183-1.092c.133-.792.233-1.383 1.642-1.383h2.183c1.408 0 1.516.625 1.641 1.391l.184 1.084M16.146 7.617l-.541 8.391c-.092 1.309-.167 2.325-2.492 2.325H6.888c-2.325 0-2.4-1.016-2.492-2.325l-.541-8.391M8.108 13.75H11.883M7.5 10.417H12.5" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function IcoBlock({ destructive }: MenuIconProps) {
+  // vuesax/linear/forbidden — крест в круге
+  const c = menuIconColor(destructive)
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 18.333a8.333 8.333 0 1 0 0-16.666 8.333 8.333 0 0 0 0 16.666Z" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M4.108 4.108 15.892 15.892" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
 /* ── Типы ──────────────────────────────────────────────────────────────────── */
 
 const TABS = ['services', 'photo', 'reviews'] as const
@@ -67,6 +125,7 @@ export default function MasterCardPage() {
   const [nextBooking, setNextBooking] = useState<Booking | null>(null)
   const [tab, setTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const lbStripRef = useRef<HTMLDivElement>(null)
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
@@ -301,25 +360,62 @@ export default function MasterCardPage() {
           </div>
         </div>
 
-        {/* Имя — Figma «H2»: Nunito Sans ExtraBold 28/36 letterSpacing −0.84. */}
+        {/* Name + description блок: gap 12 между text-стопкой и тэгом homeVisit.
+            Внутри text-стопки gap 2 между name, subtitle, address-row. */}
         <div style={{
-          position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 18,
-          ...text.h2, color: 'var(--color-on-surface)',
+          position: 'relative', zIndex: 1, marginTop: 18,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
           padding: '0 16px',
         }}>
-          {master.name}
-        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%' }}>
+            {/* Имя — Figma «H2»: Nunito Sans ExtraBold 28/36 ls −0.84. */}
+            <div style={{
+              ...text.h2, color: 'var(--color-on-surface)', textAlign: 'center',
+            }}>
+              {master.name}
+            </div>
 
-        {/* Подзаголовок — Figma «Caption 2»: Nunito Sans Medium 14/16 letterSpacing −0.028. */}
-        {master.description && (
-          <div style={{
-            position: 'relative', zIndex: 1, textAlign: 'center', marginTop: 0,
-            ...text.caption2, color: 'var(--color-on-surface-secondary)',
-            padding: '0 16px',
-          }}>
-            {master.description}
+            {/* Подзаголовок — Figma «Caption 2» 14/16/500 ls −0.028. */}
+            {master.description && (
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)', textAlign: 'center',
+              }}>
+                {master.description}
+              </div>
+            )}
+
+            {/* Адрес — pin (16×16) + текст в primarySurface. Только если location есть. */}
+            {master.location && (
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 3,
+              }}>
+                {/* vuesax/linear/location 16×16 stroke=primarySurface */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M8 8.953a2.08 2.08 0 1 0 0-4.16 2.08 2.08 0 0 0 0 4.16Z" stroke="var(--color-primary-surface)" strokeWidth="1.2"/>
+                  <path d="M2.413 5.66c1.314-5.773 9.867-5.767 11.174.007.766 3.387-1.34 6.253-3.187 8.026a3.4 3.4 0 0 1-4.807 0c-1.84-1.773-3.946-4.646-3.18-8.033Z" stroke="var(--color-primary-surface)" strokeWidth="1.2"/>
+                </svg>
+                <span style={{ ...text.caption2, color: 'var(--color-primary-surface)', textAlign: 'center' }}>
+                  {master.location}
+                </span>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Тэг «Доступен выезд на дом» — bg=activeSurface, text=primarySurface (label3Caps).
+              Padding по макету: pt-7 pb-6 px-6, rounded-4. */}
+          {master.homeVisit && (
+            <div style={{
+              background: 'var(--color-active-surface)',
+              borderRadius: 4,
+              padding: '7px 6px 6px',
+              display: 'inline-flex', alignItems: 'center',
+            }}>
+              <span style={{ ...text.label3Caps, color: 'var(--color-primary-surface)' }}>
+                Доступен выезд на дом
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Блок ближайшей записи ─────────────────────────────────────── */}
@@ -376,39 +472,94 @@ export default function MasterCardPage() {
       )}
 
       {/* ── 4 действия. Макет: 4 карточки 91.75×69, gap 4, rx 18, fill=surfaceTransparent.
-            Иконка 24×24 (stroke=primarySurface) + label text.action (primarySurface). */}
-      <div style={{ display: 'flex', gap: 4, padding: '0 16px' }}>
-        {([
-          { label: 'Запись',  Icon: IcoBook, action: () => handleBook() },
-          { label: 'Звонок', Icon: IcoCall, action: () => {
-            if (master.phone)
-              window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
-          }, disabled: !master.phone },
-          { label: 'Чат',    Icon: IcoChat, action: () => {
-            window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
-          } },
-          { label: 'Ещё',    Icon: IcoMore, action: () => {} },
-        ] as const).map((btn) => {
-          const dis = 'disabled' in btn ? btn.disabled : false
-          return (
-            <button
-              key={btn.label}
-              onClick={btn.action}
-              disabled={dis}
+            Иконка 24×24 (stroke=primarySurface) + label text.action (primarySurface).
+            Контейнер relative — чтобы повесить контекст-меню (от «Ещё») absolute снизу-справа. */}
+      <div style={{ position: 'relative', padding: '0 16px' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([
+            { label: 'Запись',  Icon: IcoBook, action: () => handleBook() },
+            { label: 'Звонок', Icon: IcoCall, action: () => {
+              if (master.phone)
+                window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
+            }, disabled: !master.phone },
+            { label: 'Чат',    Icon: IcoChat, action: () => {
+              window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
+            } },
+            { label: 'Ещё',    Icon: IcoMore, action: () => setMenuOpen(true) },
+          ] as const).map((btn) => {
+            const dis = 'disabled' in btn ? btn.disabled : false
+            return (
+              <button
+                key={btn.label}
+                onClick={btn.action}
+                disabled={dis}
+                style={{
+                  flex: 1, height: 69, borderRadius: 18,
+                  background: 'var(--color-surface-transparent)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  border: 'none', cursor: dis ? 'default' : 'pointer',
+                  opacity: dis ? 0.4 : 1, padding: '12px 8px',
+                }}
+              >
+                <btn.Icon />
+                {/* Label — Figma «Caption 2»: Nunito Sans Medium 14/16 ls −0.028. */}
+                <span style={{ ...text.caption2, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Контекстное меню — открывается от «Ещё». Bg=surface, rx=16, w=262, padding 20/12.
+            Пункты — text.body2 (17/24/400), последний destructive — errorSurfaceAccented.
+            Иконки 20×20 справа. Между пунктами 8px-divider (просто gap). */}
+        {menuOpen && (
+          <>
+            {/* Backdrop — захватывает клики вне меню */}
+            <div
+              onClick={() => setMenuOpen(false)}
               style={{
-                flex: 1, height: 69, borderRadius: 18,
-                background: 'var(--color-surface-transparent)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                border: 'none', cursor: dis ? 'default' : 'pointer',
-                opacity: dis ? 0.4 : 1, padding: '12px 8px',
+                position: 'fixed', inset: 0, zIndex: 99, background: 'transparent',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 16, zIndex: 100,
+                width: 262, padding: '12px 20px', borderRadius: 16,
+                background: 'var(--color-surface)',
+                boxShadow: '0 16px 32px rgba(12,12,13,0.10), 0 4px 4px rgba(12,12,13,0.05)',
+                display: 'flex', flexDirection: 'column',
               }}
             >
-              <btn.Icon />
-              {/* Label — Figma «Caption 2»: Nunito Sans Medium 14/16 ls −0.028. */}
-              <span style={{ ...text.caption2, color: 'var(--color-primary-surface)' }}>{btn.label}</span>
-            </button>
-          )
-        })}
+              {([
+                { label: 'Поделиться контактом', Icon: IcoShare, destructive: false },
+                { label: 'В избранное',          Icon: IcoBookmark, destructive: false },
+                { label: 'Правила отмены',       Icon: IcoDocument, destructive: false },
+                { label: 'Очистить историю',     Icon: IcoTrash, destructive: false },
+                { label: 'Заблокировать',        Icon: IcoBlock, destructive: true },
+              ] as const).map((item, idx, arr) => (
+                <div key={item.label}>
+                  <button
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      width: '100%', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 8,
+                      background: 'none', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{
+                      flex: 1, textAlign: 'left',
+                      ...text.body2,
+                      color: item.destructive ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
+                    }}>
+                      {item.label}
+                    </span>
+                    <item.Icon destructive={item.destructive} />
+                  </button>
+                  {idx < arr.length - 1 && <div style={{ height: 8 }} aria-hidden="true" />}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Табы (Услуги / Фото / Отзывы). Макет (Figma):
