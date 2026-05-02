@@ -5,6 +5,52 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { text } from '@/styles/typography'
 
+/* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
+
+function IcoArrowLeft() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12l6.07 6.07" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20.5 12H3.67" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IcoSearch() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M11.5 21c5.246 0 9.5-4.254 9.5-9.5S16.746 2 11.5 2 2 6.254 2 11.5 6.254 21 11.5 21Z" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="m22 22-2-2" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/* ── Toolbar round button (44×44, bg=background) ───────────────────────────── */
+
+function ToolbarButton({ onClick, ariaLabel, children }: {
+  onClick: () => void
+  ariaLabel: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width: 44, height: 44, borderRadius: 22,
+        background: 'var(--color-background)',
+        border: 'none', cursor: 'pointer', padding: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+/* ── Страница ──────────────────────────────────────────────────────────────── */
+
 export default function CategorySelectPage() {
   const navigate = useNavigate()
   const { masterId } = useBookingStore()
@@ -18,38 +64,35 @@ export default function CategorySelectPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
-      {/* Header: back arrow + title + search icon */}
+      {/* ── Header (toolbarTop). Figma: h=56, py=6 px=12, items-center,
+            justify-between с абсолютно центрированным заголовком. */}
       <div style={{
-        height: 56, background: 'var(--color-background)',
-        display: 'flex', alignItems: 'center', padding: '0 14px',
-        position: 'sticky', top: 0, zIndex: 10,
+        position: 'relative',
+        height: 56,
+        padding: '6px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div style={{ flex: 1, ...text.subheadline, color: 'var(--color-on-surface)', textAlign: 'center' }}>
-          Выберите категорию
+        <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
+          <IcoArrowLeft />
+        </ToolbarButton>
+
+        <ToolbarButton onClick={() => navigate('/book/services?search=1')} ariaLabel="Поиск">
+          <IcoSearch />
+        </ToolbarButton>
+
+        {/* Заголовок — text.callout1 (17/24/700 ls −0.17), абсолютно центрирован */}
+        <div style={{
+          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
+            Выберите категорию
+          </span>
         </div>
-        {/* Search icon → navigate to ServiceSelectPage in search mode */}
-        <button
-          onClick={() => navigate('/book/services?search=1')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface)" strokeWidth="1.5"/>
-            <path d="M16 16L20 20" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </button>
       </div>
 
-      {/* Category list */}
-      <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* ── Список категорий. Figma: padding 16/8, gap=8, items на surfaceTransparent. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
         {!master && (
           <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
         )}
@@ -66,51 +109,63 @@ export default function CategorySelectPage() {
               onClick={() => navigate(`/book/services?categoryId=${cat.id}`)}
               style={{
                 width: '100%',
-                display: 'flex', alignItems: 'center',
-                background: 'var(--color-surface)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'var(--color-surface-transparent)',
                 borderRadius: 20,
-                minHeight: 78, padding: '0 16px 0 0',
+                padding: '16px 16px 16px 20px',
                 cursor: 'pointer', border: 'none', textAlign: 'left',
               }}
             >
+              {/* Аватар категории 44×44 ø */}
               <div style={{
-                width: 46, height: 46, borderRadius: 23, flexShrink: 0,
-                overflow: 'hidden', background: 'var(--color-divider-low)',
+                width: 44, height: 44, borderRadius: 22, flexShrink: 0,
+                overflow: 'hidden', background: 'var(--color-surface)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 12px 0 16px',
               }}>
                 {cat.photo
                   ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ ...text.titleSmall }}>✂️</span>
+                  : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
                 }
               </div>
 
-              <div style={{ flex: 1, minWidth: 0, padding: '14px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ ...text.body, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+              {/* Title + опц. бейдж + description */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                   {hasDiscount && (
+                    /* Бейдж «% СКИДКИ»: h=20, px=6, label3Caps. См. MasterCardPage. */
                     <span style={{
-                      background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                      ...text.overline, borderRadius: 6,
-                      padding: '2px 8px', lineHeight: '18px',
+                      borderRadius: 4,
+                      display: 'inline-block',
+                      height: 20,
+                      padding: '0 6px',
+                      boxSizing: 'border-box',
+                      background: 'var(--color-error-surface-lite)',
+                      color: 'var(--color-on-error-surface-lite)',
+                      ...text.label3Caps,
+                      lineHeight: '20px',
                     }}>
                       % скидки
                     </span>
                   )}
                 </div>
+                {/* Description — text.caption2 (14/16/500), до 2 строк */}
                 <div style={{
-                  color: 'var(--color-on-surface-secondary)', ...text.footnote,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  color: 'var(--color-on-surface-secondary)', ...text.caption2,
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}>
                   {cat.description || preview}
                 </div>
               </div>
 
-              <div style={{ flexShrink: 0, marginLeft: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
+              {/* Chevron → 16×16 (interactiveElementSecondary) */}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M5.5 3L10.5 8L5.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           )
         })}
