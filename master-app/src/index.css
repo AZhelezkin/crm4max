@@ -96,8 +96,11 @@
   --color-hero-circle-1: #2A2F99; /* animationV4 */
   --color-hero-circle-2: #449395; /* gradMint100 / mintbright2 */
 
-  /* Фон hero-блока профиля — paint0 из design/Profile_info.svg */
-  --gradient-hero-background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%);
+  /* Фон hero-блока профиля — paint0 из design/Profile_info.svg.
+     Length-stops: переход surface→background строго на первых 390px (как
+     `background` div h-[390px] в Figma), дальше градиент держит конечный цвет
+     до конца блока. Без второго background-слоя — иначе на границе виден шов. */
+  --gradient-hero-background: linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px);
 
   /* Радиусы */
   --radius:     12px;
