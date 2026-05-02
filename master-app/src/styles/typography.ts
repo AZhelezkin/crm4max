@@ -70,6 +70,18 @@ export const text = {
   /** 12 / 16 / 500 — caption, бейджи. */
   caption:        { fontSize: 12, lineHeight: '16px', fontWeight: 500 },
 
+  /** 12 / 14 / 600 UPPERCASE letterSpacing 2px — Figma «Label 2 CAPS», крупный статус-бейдж («% СКИДКИ» в услугах). */
+  label2Caps:     {
+    fontSize: 12, lineHeight: '14px', fontWeight: 600,
+    letterSpacing: 2, textTransform: 'uppercase',
+  },
+
+  /** 14 / 16 / 500 UPPERCASE letterSpacing 3px — Figma «Caption 3 CAPS», заголовок секции в списке (имя категории «ВОЛОСЫ»). */
+  caption3Caps:   {
+    fontSize: 14, lineHeight: '16px', fontWeight: 500,
+    letterSpacing: 3, textTransform: 'uppercase',
+  },
+
   /** 11 / 14 / 500 — мелкий caption. */
   captionSmall:   { fontSize: 11, lineHeight: '14px', fontWeight: 500 },
 

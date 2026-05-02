@@ -6,20 +6,172 @@ import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 
-/* ── Highlight matching substring in blue (var(--color-primary-surface)) ──────────────────────── */
+/* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
-function Highlight({ text, query }: { text: string; query: string }) {
-  if (!query) return <>{text}</>
-  const idx = text.toLowerCase().indexOf(query.toLowerCase())
-  if (idx === -1) return <>{text}</>
+function IcoArrowLeft() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12l6.07 6.07" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20.5 12H3.67" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IcoSearch() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M11.5 21c5.246 0 9.5-4.254 9.5-9.5S16.746 2 11.5 2 2 6.254 2 11.5 6.254 21 11.5 21Z" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="m22 22-2-2" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function ToolbarButton({ onClick, ariaLabel, children }: {
+  onClick: () => void
+  ariaLabel: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width: 44, height: 44, borderRadius: 22,
+        background: 'var(--color-background)',
+        border: 'none', cursor: 'pointer', padding: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+/* ── Highlight matching substring ──────────────────────────────────────────── */
+
+function Highlight({ text: t, query }: { text: string; query: string }) {
+  if (!query) return <>{t}</>
+  const idx = t.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return <>{t}</>
   return (
     <>
-      {text.slice(0, idx)}
-      <span style={{ color: 'var(--color-primary-surface)' }}>{text.slice(idx, idx + query.length)}</span>
-      {text.slice(idx + query.length)}
+      {t.slice(0, idx)}
+      <span style={{ color: 'var(--color-primary-surface)' }}>{t.slice(idx, idx + query.length)}</span>
+      {t.slice(idx + query.length)}
     </>
   )
 }
+
+/* ── Карточка услуги (Figma 8534:13301 → listItem) ─────────────────────────── */
+
+function ServiceItem({ service, query, onSelect }: {
+  service: Service
+  query: string
+  onSelect: (s: Service) => void
+}) {
+  const dPrice = discountedPrice(service.price, service.discountPercent)
+  const hasDiscount = dPrice !== null
+
+  return (
+    <button
+      onClick={() => onSelect(service)}
+      style={{
+        width: '100%', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: 'var(--color-surface-transparent)',
+        borderRadius: 20,
+        padding: '16px 16px 16px 20px',
+        border: 'none', cursor: 'pointer',
+      }}
+    >
+      {/* Колонка контента: title-stack + price-row, gap 16 между ними */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Title + description */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{
+            ...text.callout1, color: 'var(--color-on-surface)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            <Highlight text={service.name} query={query} />
+          </div>
+          {service.description && (
+            <div style={{
+              ...text.caption2, color: 'var(--color-on-surface-secondary)',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
+              overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {service.description}
+            </div>
+          )}
+        </div>
+
+        {/* Price row: actual + (если скидка) crossed-out + бейдж «% СКИДКИ» */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{
+            ...text.callout1,
+            color: hasDiscount ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
+          }}>
+            {formatPrice(dPrice ?? service.price)}
+          </span>
+          {hasDiscount && (
+            <span style={{
+              ...text.caption2,
+              color: 'var(--color-on-surface-muted)',
+              textDecoration: 'line-through',
+            }}>
+              {formatPrice(service.price)}
+            </span>
+          )}
+          {service.discountPercent && (
+            /* Figma: rounded=6, padding pt-8.5 pb-7.5 px-8, h=30, Label 2 CAPS,
+               errorSurfaceLite/onErrorSurfaceLite. inline-block + height:30 + lineHeight:30
+               — см. подход с бейджем категорий. */
+            <span style={{
+              borderRadius: 6,
+              display: 'inline-block',
+              height: 30,
+              padding: '0 8px',
+              boxSizing: 'border-box',
+              background: 'var(--color-error-surface-lite)',
+              color: 'var(--color-on-error-surface-lite)',
+              ...text.label2Caps,
+              lineHeight: '30px',
+            }}>
+              % скидки
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Chevron 16×16 */}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M5.5 3L10.5 8L5.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  )
+}
+
+/* ── Заголовок секции «ВОЛОСЫ» (Figma sectionTitle) ────────────────────────── */
+
+function SectionTitle({ name, query }: { name: string; query?: string }) {
+  return (
+    /* Figma: padding pt-16 pb-4 px-8, full width, text Caption 3 CAPS на onSurface. */
+    <div style={{ width: '100%', padding: '16px 8px 4px' }}>
+      <span style={{
+        ...text.caption3Caps,
+        color: 'var(--color-on-surface)',
+      }}>
+        {query ? <Highlight text={name} query={query} /> : name}
+      </span>
+    </div>
+  )
+}
+
+/* ── Страница ──────────────────────────────────────────────────────────────── */
 
 export default function ServiceSelectPage() {
   const navigate = useNavigate()
@@ -52,28 +204,24 @@ export default function ServiceSelectPage() {
         : master.categories)
     : []
 
-  /* ── Search mode ────────────────────────────────────────────────────── */
-  // With categoryId → search only within that category (from ServiceSelect)
-  // Without categoryId → search across all categories (from CategorySelect)
+  /* ── Search mode ──────────────────────────────────────────────────────── */
   const globalSearch = isSearchMode && !categoryId
   const q = query.trim().toLowerCase()
   const searchResults = useMemo(() => {
     if (!master || !q) return [] as { category: Category; services: Service[] }[]
     const searchIn = globalSearch ? master.categories : categories
     if (globalSearch) {
-      // Group by category
       const grouped: { category: Category; services: Service[] }[] = []
       for (const cat of searchIn) {
         const matched = cat.services.filter(
           (s) =>
             s.name.toLowerCase().includes(q) ||
-                        cat.name.toLowerCase().includes(q),
+            cat.name.toLowerCase().includes(q),
         )
         if (matched.length > 0) grouped.push({ category: cat, services: matched })
       }
       return grouped
     }
-    // Flat for per-category search
     const matched = searchIn.flatMap((cat) =>
       cat.services
         .filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q))
@@ -87,33 +235,28 @@ export default function ServiceSelectPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
-      {/* -- Header -- */}
+      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, items-center, justify-between
+            с абсолютно центрированным title. В search-mode title заменяется input'ом. */}
       <div style={{
-        height: 56, background: 'var(--color-background)',
-        display: 'flex', alignItems: 'center', padding: '0 14px',
-        position: 'sticky', top: 0, zIndex: 10,
+        position: 'relative',
+        height: 56,
+        padding: '6px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        {/* Back arrow */}
-        <button
-          onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15.57 17.93L9.5 12l6.07-6.07" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M20.5 12H9.67" stroke="var(--color-on-surface)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+        <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
+          <IcoArrowLeft />
+        </ToolbarButton>
 
         {isSearchMode ? (
-          /* Search input — Global Search.svg style: rx=12, bg var(--color-divider-low), h=44 */
+          /* Search input — заполняет среднюю зону */
           <div style={{
-            flex: 1, height: 44, background: 'var(--color-divider-low)', borderRadius: 12,
+            flex: 1, marginLeft: 8, marginRight: 8,
+            height: 44, background: 'var(--color-surface-transparent)', borderRadius: 22,
             display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8,
-            marginRight: 8,
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5"/>
-              <path d="M16 16L20 20" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M11.5 21c5.246 0 9.5-4.254 9.5-9.5S16.746 2 11.5 2 2 6.254 2 11.5 6.254 21 11.5 21Z" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5"/>
+              <path d="m22 22-2-2" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <input
               ref={inputRef}
@@ -128,6 +271,7 @@ export default function ServiceSelectPage() {
             {query && (
               <button
                 onClick={() => { setQuery(''); inputRef.current?.focus() }}
+                aria-label="Очистить"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center',
@@ -141,198 +285,58 @@ export default function ServiceSelectPage() {
           </div>
         ) : (
           <>
-            <div style={{ flex: 1, ...text.subheadline, color: 'var(--color-on-surface)', textAlign: 'center' }}>
-              Выберите услугу
+            {/* Title — text.callout1, абсолютно центрирован */}
+            <div style={{
+              position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+            }}>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
+                Выберите услугу
+              </span>
             </div>
-            <button
+            <ToolbarButton
               onClick={() => navigate(`/book/services?search=1${categoryId ? `&categoryId=${categoryId}` : ''}`)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, flexShrink: 0 }}
+              ariaLabel="Поиск"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface)" strokeWidth="1.5"/>
-                <path d="M16 16L20 20" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
+              <IcoSearch />
+            </ToolbarButton>
           </>
         )}
       </div>
 
-      {/* -- Search results -- */}
-      {isSearching && (
-        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {searchResults.length === 0 && (
-            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Ничего не найдено</div>
-          )}
-          {searchResults.map(({ category: cat, services }) => (
-            <div key={cat.id}>
-              {/* Category header — only in global search */}
-              {globalSearch && (
-                <div style={{
-                  ...text.footnoteStrong, color: 'var(--color-on-surface-secondary)',
-                  marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
-                }}>
-                  <Highlight text={cat.name} query={q} />
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {services.map((s) => {
-                  const dPrice = discountedPrice(s.price, s.discountPercent)
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => handleSelect(s)}
-                      style={{
-                        width: '100%', height: 106,
-                        background: 'var(--color-surface)', borderRadius: 20,
-                        padding: '14px 20px 12px 22px', border: 'none',
-                        cursor: 'pointer', textAlign: 'left',
-                        display: 'flex', alignItems: 'flex-start',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          ...text.body, color: 'var(--color-on-surface)',
-                          lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                          <Highlight text={s.name} query={q} />
-                        </div>
-                        <div style={{
-                          color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
-                          height: 34, overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                          lineHeight: '17px',
-                        }}>
-                          {s.description || '\u00A0'}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
-                          lineHeight: '18px',
-                        }}>
-                          <span style={{
-                            ...text.body,
-                            color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
-                          }}>
-                            {formatPrice(dPrice ?? s.price)}
-                          </span>
-                          {dPrice !== null && (
-                            <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
-                              {formatPrice(s.price)}
-                            </span>
-                          )}
-                          {s.discountPercent && (
-                            <span style={{
-                              marginLeft: 'auto',
-                              background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                              ...text.overline, borderRadius: 6,
-                              padding: '2px 8px', lineHeight: '18px',
-                            }}>
-                              % скидки
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
-                        <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── Список (Figma list: padding 16/8, gap 8) ───────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
+        {!master && (
+          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
+        )}
 
-      {/* -- Service list (normal mode or search mode with empty query) -- */}
-      {!isSearching && (
-        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {!master && (
-            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
-          )}
-          {master && categories.length === 0 && !isSearchMode && (
-            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет услуг</div>
-          )}
-          {!isSearchMode && categories.map((cat) => (
-            <div key={cat.id}>
-              {cat.name && (
-                <div style={{
-                  ...text.footnoteStrong, color: 'var(--color-on-surface-secondary)',
-                  marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5,
-                }}>
-                  {cat.name}
-                </div>
-              )}
+        {/* Search mode */}
+        {isSearching && searchResults.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Ничего не найдено</div>
+        )}
+        {isSearching && searchResults.map(({ category: cat, services }) => (
+          <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {globalSearch && <SectionTitle name={cat.name} query={q} />}
+            {services.map((s) => (
+              <ServiceItem key={s.id} service={s} query={q} onSelect={handleSelect} />
+            ))}
+          </div>
+        ))}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {cat.services.map((s) => {
-                  const dPrice = discountedPrice(s.price, s.discountPercent)
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => handleSelect(s)}
-                      style={{
-                        width: '100%', height: 106,
-                        background: 'var(--color-surface)', borderRadius: 20,
-                        padding: '14px 20px 12px 22px', border: 'none',
-                        cursor: 'pointer', textAlign: 'left',
-                        display: 'flex', alignItems: 'flex-start',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          ...text.body, color: 'var(--color-on-surface)',
-                          lineHeight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                          {s.name}
-                        </div>
-                        <div style={{
-                          color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2,
-                          height: 34, overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                          lineHeight: '17px',
-                        }}>
-                          {s.description || '\u00A0'}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
-                          lineHeight: '18px',
-                        }}>
-                          <span style={{
-                            ...text.body,
-                            color: dPrice !== null ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
-                          }}>
-                            {formatPrice(dPrice ?? s.price)}
-                          </span>
-                          {dPrice !== null && (
-                            <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>
-                              {formatPrice(s.price)}
-                            </span>
-                          )}
-                          {s.discountPercent && (
-                            <span style={{
-                              marginLeft: 'auto',
-                              background: 'rgba(206,66,89,0.3)', color: 'var(--color-error-surface-accented)',
-                              ...text.overline, borderRadius: 6,
-                              padding: '2px 8px', lineHeight: '18px',
-                            }}>
-                              % скидки
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginLeft: 8, marginTop: 10 }}>
-                        <path d="M7 5L11 9L7 13" stroke="var(--color-on-surface-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Normal mode */}
+        {master && !isSearching && categories.length === 0 && !isSearchMode && (
+          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет услуг</div>
+        )}
+        {!isSearchMode && categories.map((cat) => (
+          <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Заголовок секции показываем, если выбраны все категории (списком) */}
+            {!categoryId && cat.name && <SectionTitle name={cat.name} />}
+            {cat.services.map((s) => (
+              <ServiceItem key={s.id} service={s} query="" onSelect={handleSelect} />
+            ))}
+          </div>
+        ))}
+      </div>
 
     </div>
   )
