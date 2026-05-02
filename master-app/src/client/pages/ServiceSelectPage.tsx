@@ -247,24 +247,25 @@ export default function ServiceSelectPage() {
         </ToolbarButton>
 
         {isSearchMode ? (
-          /* Search input — заполняет среднюю зону */
+          /* Search input — Figma searchTop. bg=--color-background, h=44 (py=10 px=14),
+             rounded=22, text 18/24/400 в interactiveElementAccented. Без левой иконки —
+             только текст/курсор + X-кнопка очистки 20×20 справа. */
           <div style={{
             flex: 1, minWidth: 0,
-            height: 44, background: 'var(--color-surface-transparent)', borderRadius: 22,
+            height: 44, background: 'var(--color-background)', borderRadius: 22,
             display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8,
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M11.5 21c5.246 0 9.5-4.254 9.5-9.5S16.746 2 11.5 2 2 6.254 2 11.5 6.254 21 11.5 21Z" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5"/>
-              <path d="m22 22-2-2" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Поиск услуг..."
+              placeholder="Поиск"
               style={{
-                flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: 'var(--color-on-surface)', ...text.body, fontFamily: 'inherit', padding: 0,
+                flex: 1, minWidth: 0,
+                background: 'none', border: 'none', outline: 'none',
+                color: 'var(--color-interactive-element-accented)',
+                fontSize: 18, lineHeight: '24px', fontWeight: 400,
+                fontFamily: 'inherit', padding: 0,
               }}
             />
             {query && (
@@ -272,12 +273,13 @@ export default function ServiceSelectPage() {
                 onClick={() => { setQuery(''); inputRef.current?.focus() }}
                 aria-label="Очистить"
                 style={{
+                  width: 20, height: 20, padding: 0, flexShrink: 0,
                   background: 'none', border: 'none', cursor: 'pointer',
-                  padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                  <path d="M5 5L15 15M15 5L5 15" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1 1L9 9M9 1L1 9" stroke="var(--color-interactive-element-accented)" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </button>
             )}
