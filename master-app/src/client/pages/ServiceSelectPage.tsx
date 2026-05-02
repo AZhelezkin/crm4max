@@ -5,6 +5,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Category, Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
+import ServiceListSkeleton from '@client/components/ServiceListSkeleton'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -304,9 +305,7 @@ export default function ServiceSelectPage() {
 
       {/* ── Список (Figma list: padding 16/8, gap 8) ───────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
-        {!master && (
-          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
-        )}
+        {!master && <ServiceListSkeleton />}
 
         {/* Search mode */}
         {isSearching && searchResults.length === 0 && (

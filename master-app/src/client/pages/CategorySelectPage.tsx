@@ -4,6 +4,7 @@ import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { text } from '@/styles/typography'
+import CategoryListSkeleton from '@client/components/CategoryListSkeleton'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -89,9 +90,7 @@ export default function CategorySelectPage() {
 
       {/* ── Список категорий. Figma: padding 16/8, gap=8, items на surfaceTransparent. */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
-        {!master && (
-          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загрузка...</div>
-        )}
+        {!master && <CategoryListSkeleton />}
         {master && master.categories.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет категорий</div>
         )}
