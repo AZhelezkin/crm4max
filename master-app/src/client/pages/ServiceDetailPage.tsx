@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 import { discountedPrice, formatDuration, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
+import capybaraNoPhotoImg from '@/assets/capybara-no-photo.png'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -141,8 +142,10 @@ export default function ServiceDetailPage() {
         </div>
 
         {/* Photo grid — 3 колонки, gap 1px, rx=20 на контейнере (overflow:hidden).
-            Каждая ячейка фиксированной высоты 170px (per Figma). */}
-        {service.workPhotos.length > 0 && (
+            Каждая ячейка фиксированной высоты 170px (per Figma).
+            Если фото нет — empty-state с capybara 240×240 + «Фото пока нет»
+            (Figma 8534:33636 «Placeholder», padding 24 vertical, text body2 secondary). */}
+        {service.workPhotos.length > 0 ? (
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
@@ -159,6 +162,30 @@ export default function ServiceDetailPage() {
                 />
               </div>
             ))}
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            padding: '24px 0',
+          }}>
+            <img
+              src={capybaraNoPhotoImg}
+              alt=""
+              style={{ width: 240, height: 240, objectFit: 'contain', display: 'block' }}
+            />
+            <div style={{
+              padding: '0 40px 32px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <p style={{
+                ...text.body2,
+                color: 'var(--color-on-surface-secondary)',
+                textAlign: 'center',
+                margin: 0,
+              }}>
+                Фото пока нет
+              </p>
+            </div>
           </div>
         )}
       </div>
