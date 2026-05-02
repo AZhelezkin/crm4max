@@ -858,7 +858,9 @@ export default function MasterCardPage() {
               </div>
             </div>
 
-            {/* Photo strip — touch swipe только тут, не на toolbar/footer */}
+            {/* Photo strip — touch swipe только тут, не на toolbar/footer.
+                top=56 (toolbar), bottom=74 (footer dots+text) — так hero-градиент
+                с outer-обёртки видим в toolbar-зоне и фото туда не залезает. */}
             <div
               ref={lbStripRef}
               onTouchStart={onLbStart}
@@ -866,8 +868,10 @@ export default function MasterCardPage() {
               onTouchEnd={onLbEnd}
               onClick={(e) => e.stopPropagation()}
               style={{
+                position: 'absolute',
+                top: 56, bottom: 64, left: 0,
                 display: 'flex',
-                width: '300vw', height: '100%',
+                width: '300vw',
                 transform: 'translateX(-100vw)',
                 willChange: 'transform',
                 touchAction: 'pan-y',
