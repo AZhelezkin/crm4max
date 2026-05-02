@@ -8,6 +8,7 @@ export interface Master {
   lat: number | null
   lng: number | null
   rating: number
+  homeVisit: boolean
   schedule: Schedule | null
   categories: Category[]
   reviews: Review[]

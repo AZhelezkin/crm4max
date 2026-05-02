@@ -29,6 +29,7 @@ export async function masterRoutes(app: FastifyInstance) {
       location: z.string().optional(),
       lat: z.number().optional(),
       lng: z.number().optional(),
+      homeVisit: z.boolean().optional(),
       isOnboarded: z.boolean().optional(),
     })
     const { userId } = req.user as { userId: string }

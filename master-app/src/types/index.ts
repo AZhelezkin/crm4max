@@ -11,6 +11,7 @@ export interface Master {
   rating: number
   cardNumber: string | null
   vkPayLinked: boolean
+  homeVisit: boolean
   isOnboarded: boolean
   schedule: Schedule | null
   categories: Category[]

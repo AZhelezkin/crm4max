@@ -132,6 +132,7 @@ export default function OnboardingPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
   const [photoUploading, setPhotoUploading] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const [homeVisit, setHomeVisit] = useState(false)
 
   // ── Шаг 1: График ──
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5])
@@ -246,6 +247,7 @@ export default function OnboardingPage() {
           ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
           contacts: undefined,
           photo: photoUrl ?? undefined,
+          homeVisit,
           isOnboarded: false,
         })
         setStep(1)
@@ -443,6 +445,18 @@ export default function OnboardingPage() {
                 </div>
                 <ChevronIcon />
               </button>
+            </CellList>
+
+            {/* Выезд на дом */}
+            <CellList mode="island">
+              <div style={onboardingToggleRowStyle}>
+                <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Выезд на дом</span>
+                <ToggleSwitch
+                  checked={homeVisit}
+                  onChange={setHomeVisit}
+                  aria-label="Выезд на дом"
+                />
+              </div>
             </CellList>
           </>
         )}

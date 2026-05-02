@@ -14,6 +14,7 @@ export const mastersService = {
         lat: true,
         lng: true,
         rating: true,
+        homeVisit: true,
         schedule: true,
         categories: {
           include: {
@@ -57,6 +58,7 @@ export const mastersService = {
     location?: string
     lat?: number
     lng?: number
+    homeVisit?: boolean
     isOnboarded?: boolean
   }) {
     return prisma.master.update({
