@@ -194,7 +194,7 @@ export default function ServiceSelectPage() {
 
   const handleSelect = (service: Service) => {
     setService(service)
-    navigate('/book/calendar')
+    navigate('/book/service')
   }
 
   /* ── Normal mode: filter by category ──────────────────────────────────── */

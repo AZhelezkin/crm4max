@@ -6,6 +6,7 @@ import { startParam } from '@/App'
 import MasterCardPage    from '@client/pages/MasterCardPage'
 import CategorySelectPage from '@client/pages/CategorySelectPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
+import ServiceDetailPage from '@client/pages/ServiceDetailPage'
 import CalendarPage      from '@client/pages/CalendarPage'
 import ConfirmPage       from '@client/pages/ConfirmPage'
 import DepositPage       from '@client/pages/DepositPage'
@@ -46,6 +47,7 @@ export default function ClientApp() {
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/book/categories" element={<CategorySelectPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
+        <Route path="/book/service"    element={<ServiceDetailPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
         <Route path="/book/deposit"    element={<DepositPage />} />
