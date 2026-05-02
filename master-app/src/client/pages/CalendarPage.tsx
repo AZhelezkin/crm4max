@@ -219,34 +219,32 @@ export default function CalendarPage() {
                   const disabled = isPast || !working
                   const isWeekend = (day.day() || 7) >= 6 // Сб, Вс
 
-                  // Cell bg: state-driven
-                  //   primary-surface = доступны слоты или выбранный день
-                  //   divider-low     = нет свободных слотов
-                  //   transparent     = past / нерабочий / данные ещё грузятся
+                  // Cell bg per Figma:
+                  //   active-surface           = доступны слоты или выбранный день (#003D7F)
+                  //   secondary-surface-muted  = нет слотов (#1E1F26)
+                  //   transparent              = past / нерабочий / данные ещё грузятся
                   const hasSlots = availability[val]
                   let bg = 'transparent'
-                  let cellOpacity = 1
                   if (isSelected || hasSlots === true) {
-                    bg = 'var(--color-primary-surface)'
+                    bg = 'var(--color-active-surface)'
                   } else if (hasSlots === false) {
-                    bg = 'var(--color-divider-low)'
-                    cellOpacity = 0.5
-                  } else if (isPast) {
-                    cellOpacity = 0.5
-                  } else {
-                    cellOpacity = 0.5
+                    bg = 'var(--color-secondary-surface-muted)'
                   }
 
-                  // Text color: weekend → red; on primary-surface → on-primary-surface; else on-surface
+                  // Text color per Figma:
+                  //   weekend регуляр  → error-surface-accented (#DA7182)
+                  //   weekend прошлый  → error-element-muted    (#9B3143)
+                  //   обычный регуляр  → interactive-element-accented (#F2F2F5)
+                  //   обычный прошлый  → interactive-element-muted    (#5B5E73)
                   let textColor: string
-                  if (isSelected || hasSlots === true) {
-                    textColor = isWeekend
-                      ? 'var(--color-error-surface-accented)'
-                      : 'var(--color-on-primary-surface)'
-                  } else if (isWeekend) {
-                    textColor = 'var(--color-error-surface-accented)'
+                  if (isWeekend) {
+                    textColor = (isPast || (!working && hasSlots !== true && !isSelected))
+                      ? 'var(--color-error-element-muted)'
+                      : 'var(--color-error-surface-accented)'
                   } else {
-                    textColor = 'var(--color-on-surface)'
+                    textColor = (isPast || (!working && hasSlots !== true && !isSelected))
+                      ? 'var(--color-interactive-element-muted)'
+                      : 'var(--color-interactive-element-accented)'
                   }
 
                   return (
@@ -263,7 +261,6 @@ export default function CalendarPage() {
                         ...text.callout1,
                         background: bg,
                         color: textColor,
-                        opacity: cellOpacity,
                         border: 'none',
                         cursor: disabled ? 'default' : 'pointer',
                         position: 'relative',
