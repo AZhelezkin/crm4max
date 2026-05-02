@@ -114,8 +114,8 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
   - `text.caption2` — 14/16/500 ls −0.028, компактный второстепенный — chip-label, описания, счётчики (Figma «Caption 2»)
   - `text.footnote` — 13/18/400, пояснения под полями
   - `text.caption` — 12/16/500, бейджи, мелкие подписи
-  - `text.label2Caps` — 12/14/600 UPPERCASE ls 2, крупный статус-бейдж — «% СКИДКИ» в услугах (Figma «Label 2 CAPS»)
-  - `text.caption3Caps` — 14/16/500 UPPERCASE ls 3, заголовок секции списка («ВОЛОСЫ») (Figma «Caption 3 CAPS»)
+  - `text.label2Caps` — 12/14/600 UPPERCASE ls 0.24, крупный статус-бейдж — «% СКИДКИ» в услугах (Figma «Label 2 CAPS», 2% от font-size)
+  - `text.caption3Caps` — 14/16/500 UPPERCASE ls 0.42, заголовок секции списка («ВОЛОСЫ») (Figma «Caption 3 CAPS», 3% от font-size)
   - `text.overline` — 11/14/600 UPPERCASE + letter-spacing, лейблы секций (legacy)
   - `text.label3Caps` — 10/14/800 UPPERCASE ls −0.2, узкий статус-бейдж «% СКИДКИ» в категориях (Figma «label 3 CAPS»)
   - Использование: `<div style={{ ...text.title, color: 'var(--color-on-surface)' }}>...</div>`. Цвет НЕ кладётся в text-стили — задаётся отдельно через CSS-переменную, иначе разные темы сломаются.
