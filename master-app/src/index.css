@@ -27,7 +27,7 @@
 
 @keyframes hero-pulse {
   0%, 100% { --hero-pulse: 0px;  }
-  50%      { --hero-pulse: 24px; }
+  50%      { --hero-pulse: 48px; }
 }
 
 :root,
