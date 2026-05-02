@@ -6,6 +6,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import type { Booking } from '@client/types'
 import { formatPrice } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
+import MyBookingsListSkeleton from '@client/components/MyBookingsListSkeleton'
 import { startParam } from '@/App'
 import { useBookingStore } from '@client/store/booking.store'
 import { text } from '@/styles/typography'
@@ -112,6 +113,7 @@ export default function MyBookingsPage() {
   const currentMasterId = UUID_REGEX.test(startParam) ? startParam : storeMasterId
 
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
   const today = dayjs().startOf('day')
   const [viewMonth, setViewMonth] = useState(today.startOf('month'))
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -124,6 +126,7 @@ export default function MyBookingsPage() {
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    setBookingsLoading(true)
     bookingsApi
       .list()
       .then((all) => {
@@ -133,6 +136,7 @@ export default function MyBookingsPage() {
         setBookings(filtered)
       })
       .catch(() => {})
+      .finally(() => setBookingsLoading(false))
   }, [currentMasterId])
 
   const sortedBookings = useMemo(
@@ -494,7 +498,9 @@ export default function MyBookingsPage() {
 
       {/* ── Appointment list (Figma 8535:43250 / 8535:46740). ─────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {groups.length === 0 ? (
+        {bookingsLoading && !searchMode ? (
+          <MyBookingsListSkeleton />
+        ) : groups.length === 0 ? (
           // empty state: 3 ветки.
           searchMode && !searchQuery.trim() ? null  // ждём ввода — пусто
           : searchMode ? (
