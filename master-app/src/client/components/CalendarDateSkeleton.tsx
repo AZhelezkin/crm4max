@@ -4,11 +4,10 @@ import { text } from '@/styles/typography'
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 /**
- * Skeleton-плейсхолдер для шага «выбор даты» в CalendarPage.
- * Повторяет layout 1-в-1: 3 месяца × (label + day-of-week + 5×7 ячеек).
- *
- * Лейблы дней недели рендерятся реальным текстом — они статичны и не зависят
- * от данных. Лейбл месяца и ячейки — шиммер.
+ * Skeleton для шага «выбор даты» CalendarPage. Структура та же, что у реального
+ * grid-а (3 месяца × month-label + day-of-week + сетка). Чтобы не перегружать
+ * экран мерцанием 35 ячеек на месяц, заменили cell-grid на 6 row-strip-ов
+ * (имитируют недели) — то же визуальное чтение, в 5× меньше анимаций.
  */
 export default function CalendarDateSkeleton() {
   return (
@@ -44,16 +43,10 @@ export default function CalendarDateSkeleton() {
             ))}
           </div>
 
-          {/* Cell grid 5×7 — каждый плейсхолдер minH=56 padding 8/4 r=10. */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-            {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} style={{
-                minHeight: 56,
-                padding: '8px 4px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Skeleton width="100%" height={40} radius={10} />
-              </div>
+          {/* 6 row-strip-ов (имитируют недели). Каждая h=48 r=10 full-width. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height={48} radius={10} />
             ))}
           </div>
         </div>
