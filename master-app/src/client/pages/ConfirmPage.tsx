@@ -115,7 +115,10 @@ export default function ConfirmPage() {
     if (!service) return
     setLoading(true)
     try {
-      const booking = await bookingsApi.create({ masterId, serviceId: service.id, date, time, remind })
+      const booking = await bookingsApi.create({
+        masterId, serviceId: service.id, date, time, remind,
+        clientAddress: addressMode === 'client' ? clientAddress : null,
+      })
       navigate('/book/success', { state: { bookingId: booking.id } })
     } finally {
       setLoading(false)
