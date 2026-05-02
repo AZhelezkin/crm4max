@@ -128,6 +128,11 @@ export default function MasterCardPage() {
   const [bookingsExpanded, setBookingsExpanded] = useState(false)
   const [tab, setTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [lightboxMenuOpen, setLightboxMenuOpen] = useState(false)
+  // Сбрасываем меню «Ещё», когда лайтбокс закрывается.
+  useEffect(() => {
+    if (lightboxIndex === null) setLightboxMenuOpen(false)
+  }, [lightboxIndex])
   const [menuOpen, setMenuOpen] = useState(false)
   const lbStripRef = useRef<HTMLDivElement>(null)
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
@@ -149,9 +154,10 @@ export default function MasterCardPage() {
     }).catch(() => {})
   }, [masterId])
 
+  // Каждое фото несёт ссылку на свою услугу — нужно для подписи в лайтбоксе.
   const workPhotos = (master?.categories ?? [])
     .flatMap((c) => c.services)
-    .flatMap((s) => (s as any).workPhotos ?? [])
+    .flatMap((s) => ((s as any).workPhotos ?? []).map((p: any) => ({ ...p, serviceName: s.name })))
     .sort((a: any, b: any) => a.order - b.order)
 
   const handleBook = (service?: Service) => {
@@ -658,9 +664,27 @@ export default function MasterCardPage() {
           workPhotos.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет фотографий</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, margin: '0 -16px' }}>
+            /* Figma 8534:30813: grid 3-col gap=1px, container rx=20 overflow:hidden,
+               каждая ячейка с маленьким rx=2. Сетка растягивается до краёв
+               экрана (margin: 0 -16) — rx=20 виден в верхних/нижних углах. */
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 1,
+              margin: '0 -16px',
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}>
               {workPhotos.map((p: any, i: number) => (
-                <div key={p.id} style={{ aspectRatio: '134/170', overflow: 'hidden', cursor: 'pointer' }} onClick={() => setLightboxIndex(i)}>
+                <div
+                  key={p.id}
+                  onClick={() => setLightboxIndex(i)}
+                  style={{
+                    aspectRatio: '134/170',
+                    overflow: 'hidden',
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                  }}
+                >
                   <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
               ))}
@@ -706,55 +730,183 @@ export default function MasterCardPage() {
 
       <BottomNav />
 
-      {/* ── Лайтбокс ──────────────────────────────────────────────────── */}
-      {lightboxIndex !== null && (
-        <div
-          onTouchStart={onLbStart}
-          onTouchMove={onLbMove}
-          onTouchEnd={onLbEnd}
-          onClick={(e) => e.stopPropagation()}
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }}
-        >
-          <button
-            onTouchEnd={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
-            style={{
-              position: 'absolute', top: 16, right: 16, zIndex: 10,
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.15)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M1 1l14 14M15 1L1 15" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
+      {/* ── Лайтбокс (Figma 8534:33102) ────────────────────────────────────
+            Toolbar сверху: back-кнопка + (download / more) pill, без «1/6».
+            Footer снизу bg=#0F0F11: dots + название услуги (имя мастера игнорируем).
+            More-меню → один пункт «Поделиться» через WebApp.shareContent (скопировать игнорируем). */}
+      {lightboxIndex !== null && (() => {
+        const current = workPhotos[lightboxIndex] as any | undefined
+        const photoUrl: string = current?.url ?? ''
+        const photoServiceName: string = current?.serviceName ?? ''
+        const fileNameFromUrl = (() => {
+          try {
+            const path = new URL(photoUrl).pathname
+            const name = path.split('/').pop() || 'photo.jpg'
+            return name
+          } catch {
+            return 'photo.jpg'
+          }
+        })()
+        const handleDownload = () => {
+          if (!photoUrl) return
+          try { window.WebApp?.downloadFile?.(photoUrl, fileNameFromUrl) } catch { /* ignore */ }
+        }
+        const handleShare = () => {
+          if (!photoUrl) return
+          const text = photoServiceName ? `${photoServiceName}\n${photoUrl}` : photoUrl
+          try { window.WebApp?.shareContent?.({ text }) } catch { /* ignore */ }
+          setLightboxMenuOpen(false)
+        }
+        return (
           <div
-            ref={lbStripRef}
-            style={{ display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }}
+            onTouchStart={onLbStart}
+            onTouchMove={onLbMove}
+            onTouchEnd={onLbEnd}
+            onClick={() => setLightboxMenuOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', overflow: 'hidden', touchAction: 'none' }}
           >
-            {[lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (
-              <div key={idx} style={{ width: '100vw', height: '100%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {workPhotos[idx] && (
-                  <img src={(workPhotos[idx] as any).url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none' }} />
+            {/* Top toolbar */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+                height: 56, padding: '6px 12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+            >
+              <button
+                onClick={() => setLightboxIndex(null)}
+                aria-label="Назад"
+                style={{
+                  width: 44, height: 44, borderRadius: 22,
+                  background: 'var(--color-background)',
+                  border: 'none', cursor: 'pointer', padding: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M9.57 5.93L3.5 12l6.07 6.07" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.5 12H3.67" stroke="var(--color-on-surface-soften)" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round"/>
+                </svg>
+              </button>
+
+              {/* Trailing pill: download + more, gap=12, padding=4 */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: 4,
+                background: 'var(--color-background)', borderRadius: 22,
+                position: 'relative',
+              }}>
+                <button
+                  onClick={handleDownload}
+                  aria-label="Скачать"
+                  style={{
+                    width: 36, height: 36,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {/* vuesax/linear/import 24×24 */}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 10h6m-3 0V3m0 0L9 6m3-3 3 3" stroke="var(--color-on-surface-soften)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12c0 6-2 9-9 9s-9-3-9-9" stroke="var(--color-on-surface-soften)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setLightboxMenuOpen((v) => !v)}
+                  aria-label="Ещё"
+                  style={{
+                    width: 36, height: 36,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {/* vuesax/linear/more 24×24 (3 dots horizontal) */}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="5" cy="12" r="2" fill="var(--color-on-surface-soften)"/>
+                    <circle cx="12" cy="12" r="2" fill="var(--color-on-surface-soften)"/>
+                    <circle cx="19" cy="12" r="2" fill="var(--color-on-surface-soften)"/>
+                  </svg>
+                </button>
+
+                {lightboxMenuOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    background: 'var(--color-surface)',
+                    borderRadius: 12,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+                    overflow: 'hidden',
+                    minWidth: 180,
+                    zIndex: 20,
+                  }}>
+                    <button
+                      onClick={handleShare}
+                      style={{
+                        width: '100%', textAlign: 'left',
+                        padding: '14px 16px',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        ...text.body, color: 'var(--color-on-surface)',
+                      }}
+                    >
+                      Поделиться
+                    </button>
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
-          {workPhotos.length > 1 && (
-            <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'none' }}>
-              {workPhotos.map((_: any, i: number) => (
-                <div key={i} style={{
-                  width: i === lightboxIndex ? 8 : 6, height: i === lightboxIndex ? 8 : 6,
-                  borderRadius: '50%',
-                  background: i === lightboxIndex ? 'var(--color-on-primary-surface)' : 'rgba(255,255,255,0.35)',
-                  transition: 'all 0.2s',
-                }} />
+            </div>
+
+            {/* Photo strip */}
+            <div
+              ref={lbStripRef}
+              onClick={(e) => e.stopPropagation()}
+              style={{ display: 'flex', width: '300vw', height: '100%', transform: 'translateX(-100vw)', willChange: 'transform' }}
+            >
+              {[lightboxIndex - 1, lightboxIndex, lightboxIndex + 1].map((idx) => (
+                <div key={idx} style={{ width: '100vw', height: '100%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {workPhotos[idx] && (
+                    <img src={(workPhotos[idx] as any).url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', pointerEvents: 'none' }} />
+                  )}
+                </div>
               ))}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Footer: dots + service name. bg=#0F0F11. */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
+                background: '#0F0F11',
+                padding: '12px 16px 20px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              }}
+            >
+              {workPhotos.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  {workPhotos.map((_: any, i: number) => (
+                    <div key={i} style={{
+                      width: i === lightboxIndex ? 8 : 6, height: i === lightboxIndex ? 8 : 6,
+                      borderRadius: '50%',
+                      background: i === lightboxIndex ? 'var(--color-on-primary-surface)' : 'rgba(255,255,255,0.35)',
+                      transition: 'all 0.2s',
+                    }} />
+                  ))}
+                </div>
+              )}
+              {photoServiceName && (
+                <span style={{
+                  fontSize: 13, lineHeight: '16px', fontWeight: 400, letterSpacing: 0.26,
+                  color: 'var(--color-on-primary-surface)',
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}>
+                  {photoServiceName}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
