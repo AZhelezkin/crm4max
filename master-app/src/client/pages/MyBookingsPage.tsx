@@ -176,12 +176,12 @@ export default function MyBookingsPage() {
             <IcoSearch />
           </button>
 
-          {/* Записаться pill — bg primarysurface, h=44, padding 4 outer + 6 inner = 10 each side. */}
+          {/* Записаться pill — bg primarysurface, h=44, horiz. padding = 4 (outer) + 6 (inner) = 10. */}
           <button
             onClick={handleBookNew}
             disabled={!currentMasterId}
             style={{
-              height: 44, padding: '0 16px', borderRadius: 22,
+              height: 44, padding: '0 10px', borderRadius: 22,
               background: 'var(--color-primary-surface)',
               color: 'var(--color-on-primary-surface)',
               border: 'none',
@@ -197,8 +197,16 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {/* ── Calendar block (Figma 8535:43249). px-16 py-8, gap-8. ──────────── */}
-      <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* ── Content area (Figma 8535:43248): px-16 py-8 gap-8 — общий
+            горизонт. отступ для календаря и списка записей. ──────────────── */}
+      <div style={{
+        padding: '8px 16px',
+        display: 'flex', flexDirection: 'column', gap: 8,
+        flex: 1,
+      }}>
+
+      {/* ── Calendar block (Figma 8535:43249). flex-col gap-8. ──────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
         {/* controls row — pl-6 + space-between */}
         <div style={{
@@ -302,12 +310,11 @@ export default function MyBookingsPage() {
                   {day.date()}
                 </span>
 
-                {/* Today mark — небольшая риска под цифрой (bottom-14 в Figma).
-                    Используем ту же error-surface-accented, что и в book-flow. */}
+                {/* Today mark — риска под цифрой. Figma: bottom-14, line w-10.5 h-2 stroke. */}
                 {isToday && (
                   <span style={{
                     position: 'absolute',
-                    bottom: 8,
+                    bottom: 12,
                     left: '50%', transform: 'translateX(-50%)',
                     width: 10, height: 2, borderRadius: 1,
                     background: 'var(--color-error-surface-accented)',
@@ -323,13 +330,14 @@ export default function MyBookingsPage() {
                   }} />
                 )}
 
-                {/* Badge dot top-right (10×10) — есть записи на дату */}
+                {/* Badge dot top-right (10×10) — есть записи на дату.
+                    По скриншоту дот красный (error-surface-accented); прошлые-only — серый. */}
                 {showBadge && (
                   <span style={{
                     position: 'absolute', top: 4, right: 4,
                     width: 10, height: 10, borderRadius: '50%',
                     background: rec.hasFuture
-                      ? 'linear-gradient(94deg, var(--color-grad-green-vibrance-0), var(--color-grad-green-vibrance-100))'
+                      ? 'var(--color-error-surface-accented)'
                       : 'var(--color-divider-mid)',
                   }} />
                 )}
@@ -340,7 +348,7 @@ export default function MyBookingsPage() {
       </div>
 
       {/* ── Appointment list (Figma 8535:43250). flex-col items-start w-full. ─ */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {groups.length === 0 ? (
           <div style={{
             textAlign: 'center', color: 'var(--color-on-surface-secondary)',
@@ -374,8 +382,10 @@ export default function MyBookingsPage() {
                   </span>
                 </div>
 
-                {/* Top divider */}
-                <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+                {/* Top divider — Figma h=8 контейнер с 1px-линией по центру */}
+                <div style={{ width: '100%', height: 8, display: 'flex', alignItems: 'center' }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
+                </div>
 
                 {items.map((b) => {
                   const past = isPast(b)
@@ -446,8 +456,10 @@ export default function MyBookingsPage() {
                         </div>
                       </button>
 
-                      {/* Divider после каждой записи (включая последнюю — Figma flow) */}
-                      <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+                      {/* Divider после каждой записи — Figma h=8 + 1px-линия по центру */}
+                      <div style={{ width: '100%', height: 8, display: 'flex', alignItems: 'center' }}>
+                        <div style={{ flex: 1, height: 1, background: 'var(--color-divider-low)' }} />
+                      </div>
                     </Fragment>
                   )
                 })}
@@ -455,6 +467,8 @@ export default function MyBookingsPage() {
             )
           })
         )}
+      </div>
+
       </div>
 
       <BottomNav badge={{ bookings: upcomingCount }} />
