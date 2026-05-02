@@ -7,6 +7,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Schedule } from '@client/types'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import { text } from '@/styles/typography'
+import CalendarDateSkeleton from '@client/components/CalendarDateSkeleton'
 
 dayjs.locale('ru')
 
@@ -78,6 +79,7 @@ export default function CalendarPage() {
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>({})
+  const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
 
   useEffect(() => {
     if (masterId) {
@@ -93,8 +95,8 @@ export default function CalendarPage() {
       const from = today.format('YYYY-MM-DD')
       const to = today.startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
       mastersApi.getAvailability(masterId, from, to, service.id)
-        .then(setAvailability)
-        .catch(() => {})
+        .then((a) => { setAvailability(a); setAvailabilityLoaded(true) })
+        .catch(() => { setAvailabilityLoaded(true) })
     }
   }, [masterId, service])
 
@@ -173,8 +175,14 @@ export default function CalendarPage() {
         <div style={{ width: 44, height: 44, marginLeft: 'auto', flexShrink: 0 }} />
       </div>
 
-      {/* ── Date step — Calendar ── */}
-      {step === 'date' && (
+      {/* ── Date step — Calendar ──
+            Пока schedule или availability ещё не загрузились, показываем
+            skeleton-grid (CalendarDateSkeleton) с тем же layout-ом. */}
+      {step === 'date' && (!schedule || !availabilityLoaded) && (
+        <CalendarDateSkeleton />
+      )}
+
+      {step === 'date' && schedule && availabilityLoaded && (
         <div style={{
           flex: 1, overflowY: 'auto',
           padding: '0 16px 32px',
