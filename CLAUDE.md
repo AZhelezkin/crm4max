@@ -63,13 +63,15 @@ infra/          — docker-compose.prod.yml, deploy.sh, nginx
 
 | Ресурс | Значение |
 |---|---|
-| VM IP | `158.160.244.151` |
-| API URL | `https://158-160-244-151.sslip.io` |
+| VM IP | `81.26.186.235` (static, reserved as `crm4max-static`) |
+| VM ID | `fv4852jssl97dhckkjkg` |
+| API URL | `https://81-26-186-235.sslip.io` |
 | SSH | `~/.ssh/crm4max_deploy` (user: ubuntu) |
 | Registry | `cr.yandex/crp6mv57ms1a67he7ukv` |
 | S3 | `crm4max-media`, endpoint `https://storage.yandexcloud.net` |
+| Managed PG | `crm4max-pg` (`c9q4otmferkauueju72n`), host `rc1d-mccl9656o7v0rrab.mdb.yandexcloud.net:6432` |
 
-Деплой: `SSH_KEY=~/.ssh/crm4max_deploy VM_HOST=158.160.244.151 YC_REGISTRY_ID=crp6mv57ms1a67he7ukv bash infra/deploy.sh`
+Деплой: `SSH_KEY=~/.ssh/crm4max_deploy VM_HOST=81.26.186.235 YC_REGISTRY_ID=crp6mv57ms1a67he7ukv bash infra/deploy.sh`
 
 CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты → Docker → Yandex Registry → SSH → health check.
 

@@ -5,7 +5,7 @@
 set -e
 
 SSH_KEY="${SSH_KEY:-~/.ssh/crm4max_deploy}"
-VM_HOST="${VM_HOST:-158.160.244.151}"
+VM_HOST="${VM_HOST:-81.26.186.235}"
 SSH="ssh -i $SSH_KEY ubuntu@$VM_HOST"
 CONTAINER="crm4max-backend-1"
 

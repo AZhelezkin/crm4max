@@ -2,10 +2,10 @@
  * seed-demo-master.mjs — plain ESM, запускается внутри backend-контейнера:
  *
  *   # Копируем на сервер и в контейнер:
- *   scp -i ~/.ssh/crm4max_deploy scripts/seed-demo-master.mjs ubuntu@158.160.244.151:/tmp/
- *   CONTAINER=$(ssh -i ~/.ssh/crm4max_deploy ubuntu@158.160.244.151 \
+ *   scp -i ~/.ssh/crm4max_deploy scripts/seed-demo-master.mjs ubuntu@81.26.186.235:/tmp/
+ *   CONTAINER=$(ssh -i ~/.ssh/crm4max_deploy ubuntu@81.26.186.235 \
  *     "docker ps --format '{{.Names}}' | grep backend")
- *   ssh -i ~/.ssh/crm4max_deploy ubuntu@158.160.244.151 \
+ *   ssh -i ~/.ssh/crm4max_deploy ubuntu@81.26.186.235 \
  *     "docker cp /tmp/seed-demo-master.mjs $CONTAINER:/app/ && \
  *      docker exec $CONTAINER sh -c 'cd /app && node seed-demo-master.mjs'"
  */
