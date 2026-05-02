@@ -123,7 +123,8 @@ export default function MasterCardPage() {
   const { setMasterId, setService, setDateTime } = useBookingStore()
 
   const [master, setMaster] = useState<Master | null>(null)
-  const [nextBooking, setNextBooking] = useState<Booking | null>(null)
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
+  const [bookingsExpanded, setBookingsExpanded] = useState(false)
   const [tab, setTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -143,7 +144,7 @@ export default function MasterCardPage() {
         .filter((b) => b.master.id === masterId)
         .filter((b) => dayjs(`${b.date} ${b.time}`).isAfter(now))
         .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-      setNextBooking(forMaster[0] ?? null)
+      setUpcomingBookings(forMaster)
     }).catch(() => {})
   }, [masterId])
 
@@ -385,68 +386,112 @@ export default function MasterCardPage() {
         </div>
       </div>
 
-      {/* ── Блок ближайшей записи (Figma 8534:16529 «appointmentWidget») ─────
+      {/* ── Блок ближайших записей (Figma 8534:16529 «appointmentWidget») ────
             Контейнер: pl=8 pr=20 py=16, rx=20, gap=8, items-center.
             Background: linear-gradient(206.87°, gradViolet100 5.83% → gradViolet0 90.48%).
             Слева — capybara-стикер 80×80, справа — flex-col gap=8:
               caption3Caps «ВЫ ЗАПИСАНЫ» (service-text)
-              row gap=16: (callout1 «4 апреля в 15:00» + 15/20/400 ls −0.15 service-text имя услуги) + arrow-right 16. */}
-      {nextBooking && (
-        <div style={{ padding: '0 16px', marginBottom: 24 }}>
-          <div
-            onClick={() => {
-              setMasterId(masterId)
-              setService(nextBooking.service)
-              setDateTime(nextBooking.date, nextBooking.time)
-              navigate('/book/success', { state: { bookingId: nextBooking.id } })
-            }}
-            style={{
+              N row(ов) с (callout1 «D MMMM в HH:mm» + 15/20/400 service-text service.name) + arrow-right 16
+              Если bookings > 1: divider + «И ещё N» / «Свернуть» + arrow-down/up 16. */}
+      {upcomingBookings.length > 0 && (() => {
+        const visibleBookings = bookingsExpanded
+          ? upcomingBookings
+          : upcomingBookings.slice(0, 1)
+        const goToBooking = (b: Booking) => {
+          setMasterId(masterId)
+          setService(b.service)
+          setDateTime(b.date, b.time)
+          navigate('/book/success', { state: { bookingId: b.id } })
+        }
+        const moreCount = upcomingBookings.length - 1
+        return (
+          <div style={{ padding: '0 16px', marginBottom: 24 }}>
+            <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '16px 20px 16px 8px',
               borderRadius: 20,
               background: 'linear-gradient(206.87deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
-              cursor: 'pointer',
               width: '100%',
-            }}
-          >
-            <img
-              src={capybaraBookingImg}
-              alt=""
-              style={{ width: 80, height: 80, objectFit: 'contain', flexShrink: 0 }}
-            />
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{
-                ...text.caption3Caps,
-                color: 'var(--color-service-text)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                Вы записаны
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    ...text.callout1, color: 'var(--color-on-primary-surface)',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {dayjs(nextBooking.date).format('D MMMM')} в {nextBooking.time}
+            }}>
+              <img
+                src={capybaraBookingImg}
+                alt=""
+                style={{ width: 80, height: 80, objectFit: 'contain', flexShrink: 0, alignSelf: bookingsExpanded ? 'flex-start' : 'center' }}
+              />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{
+                  ...text.caption3Caps,
+                  color: 'var(--color-service-text)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  Вы записаны
+                </span>
+
+                {visibleBookings.map((b) => (
+                  <div
+                    key={b.id}
+                    onClick={() => goToBooking(b)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 16,
+                      cursor: 'pointer', width: '100%',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        ...text.callout1, color: 'var(--color-on-primary-surface)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {dayjs(b.date).format('D MMMM')} в {b.time}
+                      </div>
+                      <div style={{
+                        fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
+                        color: 'var(--color-service-text)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {b.service.name}
+                      </div>
+                    </div>
+                    {/* vuesax/linear/arrow-right 16×16 */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M8.91 19.92L15.43 13.4c.77-.77.77-2.03 0-2.8L8.91 4.08" stroke="var(--color-on-primary-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                  <div style={{
-                    fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
-                    color: 'var(--color-service-text)',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {nextBooking.service.name}
+                ))}
+
+                {upcomingBookings.length > 1 && (
+                  <div
+                    onClick={() => setBookingsExpanded((v) => !v)}
+                    style={{
+                      cursor: 'pointer',
+                      borderTop: '1px solid rgba(255,255,255,0.18)',
+                      paddingTop: 8,
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 14, lineHeight: '20px', fontWeight: 700, letterSpacing: -0.14,
+                      color: 'var(--color-service-text)',
+                    }}>
+                      {bookingsExpanded ? 'Свернуть' : `И ещё ${moreCount}`}
+                    </span>
+                    {/* vuesax/linear/arrow-down 16×16, поворот на 180° когда раскрыто */}
+                    <svg
+                      width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      style={{
+                        flexShrink: 0,
+                        transform: bookingsExpanded ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 0.15s',
+                      }}
+                    >
+                      <path d="M19.92 8.95l-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95" stroke="var(--color-service-text)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                </div>
-                {/* vuesax/linear/arrow-right 16×16 */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                  <path d="M8.91 19.92L15.43 13.4c.77-.77.77-2.03 0-2.8L8.91 4.08" stroke="var(--color-on-primary-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ── 4 действия. Макет: 4 карточки 91.75×69, gap 4, rx 18, fill=surfaceTransparent.
             Иконка 24×24 (stroke=primarySurface) + label text.action (primarySurface).
