@@ -8,6 +8,7 @@ import type { Schedule } from '@client/types'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import { text } from '@/styles/typography'
 import CalendarDateSkeleton from '@client/components/CalendarDateSkeleton'
+import SlotsGridSkeleton from '@client/components/SlotsGridSkeleton'
 
 dayjs.locale('ru')
 
@@ -364,7 +365,7 @@ export default function CalendarPage() {
             {/* Grid 4×N — Figma _select: h=69, padding 12/0, rx=18, gap 8.
                 bg=surfaceTransparent, text=callout1 onSurface. */}
             {slotsLoading ? (
-              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загрузка...</div>
+              <SlotsGridSkeleton />
             ) : slots.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
             ) : (
