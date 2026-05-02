@@ -3,8 +3,9 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
+import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Booking } from '@client/types'
+import type { Booking, Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
@@ -42,6 +43,16 @@ function IcoEdit2() {
       <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M2 14.6667H14" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/* ── Star 20×20 (vuesax/linear/star, fill=warningSurfaceAccented) ──────────── */
+
+function IcoStar() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M11.4751 2.85L12.9584 5.81667C13.1584 6.225 13.6917 6.61667 14.1417 6.69167L16.8001 7.13333C18.5001 7.41667 18.9001 8.65 17.6751 9.86667L15.6084 11.9333C15.2584 12.2833 15.0667 12.9583 15.1751 13.4417L15.7667 16C16.2334 18.025 15.1584 18.8083 13.3667 17.75L10.8751 16.275C10.4251 16.0083 9.68341 16.0083 9.22508 16.275L6.73341 17.75C4.95008 18.8083 3.86675 18.0167 4.33341 16L4.92508 13.4417C5.03341 12.9583 4.84175 12.2833 4.49175 11.9333L2.42508 9.86667C1.20841 8.65 1.60008 7.41667 3.30008 7.13333L5.95841 6.69167C6.40008 6.61667 6.93341 6.225 7.13341 5.81667L8.61675 2.85C9.41675 1.25833 10.7167 1.25833 11.4751 2.85Z" fill="var(--color-warning-surface-accented)"/>
     </svg>
   )
 }
@@ -95,12 +106,20 @@ export default function BookingDetailPage() {
   const isPostBooking = !params.id  // /book/success — после создания
 
   const [booking, setBooking] = useState<Booking | null>(null)
+  // Полный мастер (с description + rating) — booking-include с бэка
+  // отдаёт только id/name/photo/location, поэтому подгружаем отдельно.
+  const [masterFull, setMasterFull] = useState<Master | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     if (!bookingId) return
     bookingsApi.getById(bookingId).then(setBooking).catch(() => {})
   }, [bookingId])
+
+  useEffect(() => {
+    if (!booking) return
+    mastersApi.getById(booking.master.id).then(setMasterFull).catch(() => {})
+  }, [booking])
 
   const handleClose = () => {
     if (isPostBooking) {
@@ -234,9 +253,9 @@ export default function BookingDetailPage() {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
 
-        {/* listItem: мастер. Booking-include возвращает только базовые поля
-            мастера (id/name/photo/location), без description/rating —
-            в этой карточке оставляем только аватар + имя. */}
+        {/* listItem: мастер.
+            booking.master содержит только id/name/photo/location (booking-include),
+            description + rating подгружаются из mastersApi.getById через masterFull. */}
         <div style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
@@ -264,7 +283,30 @@ export default function BookingDetailPage() {
             }}>
               {master.name}
             </div>
+            {masterFull?.description && (
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {masterFull.description}
+              </div>
+            )}
           </div>
+          {masterFull && masterFull.rating > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '8px 0',
+              flexShrink: 0,
+            }}>
+              <IcoStar />
+              <span style={{
+                fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
+                color: 'var(--color-on-surface-secondary)',
+              }}>
+                {masterFull.rating.toFixed(1)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* listItem: адрес — title (callout1 — выбранный адрес) + subtitle.
