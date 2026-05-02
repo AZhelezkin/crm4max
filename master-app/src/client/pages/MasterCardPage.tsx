@@ -232,46 +232,10 @@ export default function MasterCardPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 95 }}>
 
-      {/* ── HERO: paint0 (surface→background) + декор (animationV4 + gradMint100 + blur)
-            + back + рейтинг + аватар + имя. Координаты — из design/dark/Profile_info.svg.
-            borderTop{Left,Right}Radius:24 — Figma «corners» (M24 124.5 C 10.745 124.5, 0 135.245, 0 148.5
-            V 124.5 H 24 Z), четверть-круг радиуса 24 у каждого верхнего угла.
-            Градиент жёстко 390px (как в Figma `background` div h-[390px]) через
-            background-size + no-repeat, ниже — плоский --color-background. */}
-      <div style={{
-        position: 'relative', overflow: 'hidden',
-        paddingTop: 16, paddingBottom: 24,
-        background: 'var(--gradient-hero-background) 0 0 / 100% 390px no-repeat, var(--color-background)',
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-      }}>
-
-        {/* Декор: 2 круга с filter:blur (вместо backdrop-filter — блюр-фильтр на самом
-            элементе кешируется композитором и не глючит при скролле в iOS WebView)
-            + полупрозрачный overlay для затемнения. paint0 наследуется от <body>. */}
-        <div aria-hidden="true" style={{
-          position: 'absolute', inset: 0, overflow: 'hidden',
-          pointerEvents: 'none', zIndex: 0,
-        }}>
-          {/* Большой круг animationV4: SVG cx=210 cy=52 r=227 → ø454, top=-(227+72)=-299 */}
-          <div style={{
-            position: 'absolute', left: '50%', top: -299, transform: 'translateX(-50%)',
-            width: 454, height: 454, borderRadius: '50%',
-            background: 'var(--color-hero-circle-1)',
-            filter: 'blur(60px)',
-          }} />
-          {/* Малый круг gradMint100: SVG cx=210 cy=90 r=124 → ø248, top=-(124+34)=-158 */}
-          <div style={{
-            position: 'absolute', left: '50%', top: -158, transform: 'translateX(-50%)',
-            width: 248, height: 248, borderRadius: '50%',
-            background: 'var(--color-hero-circle-2)',
-            filter: 'blur(60px)',
-          }} />
-          {/* Тёмный overlay (как в SVG: чёрная плёнка 10%). */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'var(--color-background-blur)',
-          }} />
-        </div>
+      {/* ── HERO: layout-only. Декор (paint0 + 2 цветных круга + blur-overlay) —
+            глобальный, на #root > div через --gradient-hero-background.
+            Контент сидит на этом фоне напрямую. */}
+      <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 24 }}>
 
         {/* Рейтинг (top-right): звезда + число, без подложки.
             Star 18×16 fill=warningSurfaceAccented (#F0AF2D), text onSurfaceSecondary. */}

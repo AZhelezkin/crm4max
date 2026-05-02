@@ -96,11 +96,22 @@
   --color-hero-circle-1: #2A2F99; /* animationV4 */
   --color-hero-circle-2: #449395; /* gradMint100 / mintbright2 */
 
-  /* Фон hero-блока профиля — paint0 из design/Profile_info.svg.
-     Length-stops: переход surface→background строго на первых 390px (как
-     `background` div h-[390px] в Figma), дальше градиент держит конечный цвет
-     до конца блока. Без второго background-слоя — иначе на границе виден шов. */
-  --gradient-hero-background: linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px);
+  /* Фон hero-области (применяется глобально на #root > div) — полная композиция
+     из Figma `background` div h-[390px]: paint0-градиент + 2 цветных круга
+     (animationV4 + gradMint100) с soft-falloff + 10% чёрная плёнка.
+     Все 4 декоративных слоя ограничены 390px-зоной (background-size 100% 390),
+     ниже остаётся плоский paint0-tail = --color-background.
+     • Круги — radial-gradient с двумя цветовыми стопами (солидный центр + плавный
+       fade), визуально соответствует тому, что давал filter:blur(60px) на
+       solid-кругах в локальной верстке MasterCard.
+     • Координаты центров — из design/dark/Profile_info.svg
+       (cx=210 / 50%, cy=−72/−34 в page coord), радиусы — original + 60 для blur.
+     • Length-stop линейки 0px→390px удерживает background ниже зоны (без шва). */
+  --gradient-hero-background:
+    radial-gradient(circle 184px at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%) center top / 100% 390px no-repeat,
+    radial-gradient(circle 287px at 50% -72px, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%) center top / 100% 390px no-repeat,
+    linear-gradient(var(--color-background-blur), var(--color-background-blur)) center top / 100% 390px no-repeat,
+    linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px);
 
   /* Радиусы */
   --radius:     12px;

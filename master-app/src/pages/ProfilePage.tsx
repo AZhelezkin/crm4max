@@ -230,39 +230,11 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* Шапка профиля — декоративный hero (из design/light/Profile_info.svg).
-          paint0 (surface → background) + 2 круга + blur. */}
+      {/* Шапка профиля — layout-only. Декор (paint0 + circles + blur) глобальный,
+          на #root > div через --gradient-hero-background. */}
       <div style={{
         position: 'relative', paddingTop: 16, paddingBottom: 20, textAlign: 'center',
-        background: 'var(--gradient-hero-background)',
       }}>
-
-        {/* Декоративный фон: 2 круга + blur overlay */}
-        <div aria-hidden="true" style={{
-          position: 'absolute', inset: 0, overflow: 'hidden',
-          pointerEvents: 'none', zIndex: 0,
-        }}>
-          {/* Круги с filter:blur (вместо backdrop-filter, который глючит на скролле в iOS WebView). */}
-          {/* Большой круг (фиолет в Light, синий в Dark): cx=210 cy=52-124=-72 r=227 → ø454 */}
-          <div style={{
-            position: 'absolute', left: '50%', top: -72, transform: 'translateX(-50%)',
-            width: 454, height: 454, borderRadius: '50%',
-            background: 'var(--color-hero-circle-1)',
-            filter: 'blur(60px)',
-          }} />
-          {/* Малый круг (мятный): cx=210 cy=90-124=-34 r=124 → ø248 */}
-          <div style={{
-            position: 'absolute', left: '50%', top: -34, transform: 'translateX(-50%)',
-            width: 248, height: 248, borderRadius: '50%',
-            background: 'var(--color-hero-circle-2)',
-            filter: 'blur(60px)',
-          }} />
-          {/* Полупрозрачный overlay (без backdrop-filter). */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'var(--color-surface-transparent)',
-          }} />
-        </div>
 
         {/* Аватар — 104×104 (rect 158,140 width=104 rx=52, без border) */}
         <div style={{
