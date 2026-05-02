@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { startParam } from '@/App'
@@ -25,14 +25,18 @@ const BOOKING_DEEPLINK_RE = /^b-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 
 // Если открыли по deep-link b-<id>, ставим целевой hash до монтирования
 // HashRouter — он подхватит /my-bookings/<id> как initial route.
-;(function applyDeepLink() {
-  const m = BOOKING_DEEPLINK_RE.exec(startParam)
+// Логика выполняется внутри компонента (через useState lazy initializer),
+// а не на module-уровне — иначе при циркулярном импорте App ↔ ClientApp
+// startParam ещё не определён (App.tsx импортит ClientApp ДО строки
+// `export const startParam = …`), и обращение к нему даёт TDZ.
+function applyBookingDeepLink() {
+  const m = BOOKING_DEEPLINK_RE.exec(startParam ?? '')
   if (!m) return
   const hash = window.location.hash || ''
   if (hash === '' || hash === '#' || hash === '#/') {
     window.location.hash = `/my-bookings/${m[1]}`
   }
-})()
+}
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе — QR-сканер, пока masterId не появится в URL после скана
@@ -45,6 +49,11 @@ function HomeRoute() {
 
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
+
+  // Применяем booking deep-link один раз перед монтированием HashRouter.
+  // useState lazy initializer вызывается при первом рендере — startParam
+  // на этот момент уже определён (циркулярный импорт разрезолвлен).
+  useState(() => { applyBookingDeepLink() })
 
   useEffect(() => { init() }, [init])
 
