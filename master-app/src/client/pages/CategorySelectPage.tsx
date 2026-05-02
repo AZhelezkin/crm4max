@@ -64,31 +64,23 @@ export default function CategorySelectPage() {
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
 
-      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, gap=8.
-            Grid `auto 1fr auto` с явными колонками — чтобы две круглые
-            кнопки занимали ровно 44px каждая, а заголовок — оставшееся
-            место по центру. На flex с inline-span'ом Android Chromium
-            иногда не уважает min-width:0 и span "съедает" соседние
-            колонки → клик-зона search-кнопки уезжала влево от её визуала. */}
+      {/* ── Header (Figma toolbarTop). h=56, padding 6/12, gap=8. */}
       <div style={{
         height: 56,
         padding: '6px 12px',
-        display: 'grid',
-        gridTemplateColumns: 'auto 1fr auto',
-        gap: 8,
-        alignItems: 'center',
+        display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
           <IcoArrowLeft />
         </ToolbarButton>
 
-        <div style={{
-          textAlign: 'center', minWidth: 0,
+        <span style={{
+          flex: 1, minWidth: 0, textAlign: 'center',
           ...text.callout1, color: 'var(--color-on-surface)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           Выберите категорию
-        </div>
+        </span>
 
         <ToolbarButton onClick={() => navigate('/book/services?search=1')} ariaLabel="Поиск">
           <IcoSearch />
