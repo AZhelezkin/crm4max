@@ -327,8 +327,8 @@ export default function ServiceSelectPage() {
         )}
         {!isSearchMode && categories.map((cat) => (
           <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Заголовок секции показываем, если выбраны все категории (списком) */}
-            {!categoryId && cat.name && <SectionTitle name={cat.name} />}
+            {/* Заголовок секции (Figma: имя категории «ВОЛОСЫ» над списком) — всегда. */}
+            {cat.name && <SectionTitle name={cat.name} />}
             {cat.services.map((s) => (
               <ServiceItem key={s.id} service={s} query="" onSelect={handleSelect} />
             ))}
