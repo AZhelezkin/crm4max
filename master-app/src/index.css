@@ -21,7 +21,7 @@
    (где есть известные баги Chromium). См. #root > div::before ниже. */
 @keyframes hero-pulse {
   0%, 100% { transform: scale(1);    }
-  50%      { transform: scale(1.18); }
+  50%      { transform: scale(1.09); }
 }
 
 :root,
@@ -243,6 +243,11 @@ body {
   border-top-right-radius: 24px;
   position: relative;
   isolation: isolate; /* контейнер стэка для pseudo с z-index:0 */
+  /* clip-path обрезает ПОТОМКОВ (включая pseudo) по форме скруглённого
+     верха — иначе scale-анимация ::before перекрывала бы corner-cutout
+     между Max-панелью и нашей страницей. border-radius сам по себе НЕ
+     клипит абсолютных детей. clip-path не ломает position:sticky внутри. */
+  clip-path: inset(0 round 24px 24px 0 0);
 }
 
 #root > div::before {
