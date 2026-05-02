@@ -125,6 +125,9 @@ export default function CalendarPage() {
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
   const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
+  const headerSubtitle = step === 'date'
+    ? (service?.name ?? '')
+    : selectedDayjs.format('D MMMM')
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -152,9 +155,9 @@ export default function CalendarPage() {
           <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
             {headerTitle}
           </div>
-          {service && (
+          {headerSubtitle && (
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-              {service.name}
+              {headerSubtitle}
             </div>
           )}
         </div>
@@ -288,77 +291,119 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* ── Time step ── */}
+      {/* ── Time step (Figma form: top=180, padding 8/16, gap=8, flex-col items=center) ── */}
       {step === 'time' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 24px' }}>
+        <div style={{
+          flex: 1, overflowY: 'auto',
+          padding: '8px 16px 32px',
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
 
-          {/* Selected date card */}
-          <div style={{
-            background: 'var(--color-surface)', borderRadius: 20,
-            padding: '14px 20px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginTop: 16, marginBottom: 24,
-          }}>
-            <div>
-              <div style={{ ...text.callout, color: 'var(--color-on-surface)' }}>
-                {selectedDayjs.format('D MMMM, dddd')}
+          {/* Selected date listItem (Figma 8534:14569).
+              bg=surfaceTransparent, rx=20, padding 16/20, gap 12. */}
+          <button
+            onClick={() => setStep('date')}
+            style={{
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 20,
+              padding: '16px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              border: 'none', cursor: 'pointer',
+              width: '100%', textAlign: 'left',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {selectedDayjs.format('D MMMM, dd')}
               </div>
-              <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>Дата</div>
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Дата
+              </div>
             </div>
-            <button onClick={() => setStep('date')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 20h9" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z" stroke="var(--color-on-surface-secondary)" strokeWidth="2" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            {/* vuesax/linear/edit-2 16×16 */}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M8.84 2.4H6c-3.333 0-4.667 1.333-4.667 4.667v2.667c0 3.333 1.334 4.666 4.667 4.666h2.667c3.333 0 4.666-1.333 4.666-4.666V8" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.834 3.073 5.44 7.467c-.167.166-.334.493-.367.733l-.24 1.687c-.087.613.347 1.04.96.953l1.687-.24c.233-.033.56-.2.733-.367L12.607 5.84c.76-.76 1.12-1.647 0-2.767-1.12-1.12-2.013-.76-2.773 0Z" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.207 3.7a4.005 4.005 0 0 0 2.78 2.78" stroke="var(--color-on-surface-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Slots block (Figma 8534:14570 "selectSlots", flex-col gap 12) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+
+            {/* Section title — Figma title: padding pt=24 pb=8 px=8, justify-center.
+                text: caption3Caps, color onSurfaceSoften. */}
+            <div style={{
+              padding: '24px 8px 8px',
+              display: 'flex', justifyContent: 'center',
+            }}>
+              <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>
+                ДОСТУПНЫЕ СЛОТЫ
+              </span>
+            </div>
+
+            {/* Grid 4×N — Figma _select: h=69, padding 12/0, rx=18, gap 8.
+                bg=surfaceTransparent, text=callout1 onSurface. */}
+            {slotsLoading ? (
+              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загрузка...</div>
+            ) : slots.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                {slots.map((s) => {
+                  const isSel = selectedTime === s
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => handleSelectTime(s)}
+                      style={{
+                        height: 69, padding: '12px 0', borderRadius: 18,
+                        background: isSel
+                          ? 'var(--color-active-surface)'
+                          : 'var(--color-surface-transparent)',
+                        color: isSel
+                          ? 'var(--color-interactive-element-accented)'
+                          : 'var(--color-on-surface)',
+                        ...text.callout1,
+                        border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      {s}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Slots label */}
+          {/* Remind listItem (Figma 8534:14571) — same shell as date card. */}
           <div style={{
-            ...text.footnote, color: 'var(--color-on-surface-secondary)', fontWeight: 600,
-            marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5,
+            background: 'var(--color-surface-transparent)',
+            borderRadius: 20,
+            padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            width: '100%',
           }}>
-            Свободные слоты
-          </div>
-
-          {/* Slots grid */}
-          {slotsLoading ? (
-            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загрузка...</div>
-          ) : slots.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 24 }}>
-              {slots.map((s) => {
-                const isSel = selectedTime === s
-                return (
-                  <button
-                    key={s}
-                    onClick={() => handleSelectTime(s)}
-                    style={{
-                      padding: '14px 0', borderRadius: 12,
-                      ...text.bodyMedium,
-                      background: isSel ? 'var(--color-primary-surface)' : 'var(--color-surface)',
-                      color: isSel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
-                      border: 'none', cursor: 'pointer',
-                    }}
-                  >
-                    {s}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Remind toggle */}
-          <div style={{
-            background: 'var(--color-surface)', borderRadius: 20,
-            padding: '14px 20px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 24,
-          }}>
-            <div>
-              <div style={{ ...text.callout, color: 'var(--color-on-surface)' }}>Напомнить за 1 час</div>
-              <div style={{ color: 'var(--color-on-surface-secondary)', ...text.footnote, marginTop: 2 }}>Бот напишет в MAX</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Напомнить за 1 час
+              </div>
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Бот напишет в МАХ
+              </div>
             </div>
             <ToggleSwitch
               checked={remind}
