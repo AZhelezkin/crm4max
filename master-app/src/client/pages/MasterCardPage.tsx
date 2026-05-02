@@ -762,9 +762,10 @@ export default function MasterCardPage() {
             onClick={() => setLightboxMenuOpen(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 1000,
-              // Тот же hero-градиент что на самой странице — чтобы верхняя часть
-              // лайтбокса визуально совпадала с MasterCardPage.
-              background: 'var(--color-background) var(--gradient-hero-background)',
+              // Тот же hero-градиент что на самой странице (#root > div).
+              // Последний слой переменной — linear-gradient surface→background,
+              // он же заливает всю область, так что отдельный bg-color не нужен.
+              background: 'var(--gradient-hero-background)',
               overflow: 'hidden',
             }}
           >
