@@ -15,19 +15,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Animatable length-переменная для пульсации hero-кругов.
-   Через @property регистрируем с типом <length>, чтобы CSS-engine мог
-   плавно интерполировать её внутри @keyframes. Без @property значение
-   менялось бы дискретно (0 → 24px одним кадром). */
-@property --hero-pulse {
-  syntax: '<length>';
-  initial-value: 0px;
-  inherits: true;
-}
-
+/* Пульсация hero-декора. Реализована через transform: scale() на
+   pseudo-element с радиальными кругами — это GPU-accelerated и не
+   зависит от @property/calc-substitution внутри background-image
+   (где есть известные баги Chromium). См. #root > div::before ниже. */
 @keyframes hero-pulse {
-  0%, 100% { --hero-pulse: 0px;  }
-  50%      { --hero-pulse: 48px; }
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.18); }
 }
 
 :root,
@@ -121,12 +115,10 @@
        solid-кругах в локальной верстке MasterCard.
      • Координаты центров — из design/dark/Profile_info.svg
        (cx=210 / 50%, cy=−72/−34 в page coord), радиусы — original + 60 для blur.
-     • Length-stop линейки 0px→390px удерживает background ниже зоны (без шва).
-     • К радиусам обоих кругов прибавляется animatable-переменная --hero-pulse
-       (см. @property + @keyframes hero-pulse ниже) — лёгкое «дыхание» 5с/cycle. */
+     • Length-stop линейки 0px→390px удерживает background ниже зоны (без шва). */
   --gradient-hero-background:
-    radial-gradient(circle calc(184px + var(--hero-pulse)) at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%) center top / 100% 390px no-repeat,
-    radial-gradient(circle calc(287px + var(--hero-pulse)) at 50% -72px, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%) center top / 100% 390px no-repeat,
+    radial-gradient(circle 184px at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%) center top / 100% 390px no-repeat,
+    radial-gradient(circle 287px at 50% -72px, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%) center top / 100% 390px no-repeat,
     linear-gradient(var(--color-background-blur), var(--color-background-blur)) center top / 100% 390px no-repeat,
     linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px);
 
@@ -241,14 +233,43 @@ body {
  * и не создают двойного эффекта.
  */
 #root > div {
-  background: var(--gradient-hero-background);
+  /* База: только paint0-tail (surface→background length-stops 0→390px).
+     Декор (2 круга + blur) вынесен в ::before — он анимируется transform:scale(),
+     а паint0 остаётся статичным, чтобы цвет под пульсирующими кругами не плыл. */
+  background:
+    linear-gradient(var(--color-background-blur), var(--color-background-blur)) center top / 100% 390px no-repeat,
+    linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
+  position: relative;
+  isolation: isolate; /* контейнер стэка для pseudo с z-index:0 */
+}
+
+#root > div::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 390px;
+  pointer-events: none;
+  z-index: 0;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  background:
+    radial-gradient(circle 184px at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%),
+    radial-gradient(circle 287px at 50% -72px, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%);
+  transform-origin: 50% 0%;          /* пульсация от верхнего центра */
   animation: hero-pulse 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Дочерние блоки #root > div должны лежать поверх декоративного pseudo. */
+#root > div > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #root > div { animation: none; }
+  #root > div::before { animation: none; }
 }
 
 button, input, textarea, select {
