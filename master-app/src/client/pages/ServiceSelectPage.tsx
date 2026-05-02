@@ -36,7 +36,7 @@ function ToolbarButton({ onClick, ariaLabel, children }: {
       onClick={onClick}
       aria-label={ariaLabel}
       style={{
-        width: 44, height: 44, borderRadius: 22,
+        width: 48, height: 48, borderRadius: 24,
         background: 'var(--color-background)',
         border: 'none', cursor: 'pointer', padding: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -239,7 +239,7 @@ export default function ServiceSelectPage() {
             Без absolute — back / [flex-1 центр] / search прямым flex. */}
       <div style={{
         height: 56,
-        padding: '6px 12px',
+        padding: '4px 12px',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <ToolbarButton onClick={() => navigate(-1)} ariaLabel="Назад">
@@ -252,7 +252,7 @@ export default function ServiceSelectPage() {
              только текст/курсор + X-кнопка очистки 20×20 справа. */
           <div style={{
             flex: 1, minWidth: 0,
-            height: 44, background: 'var(--color-background)', borderRadius: 22,
+            height: 48, background: 'var(--color-background)', borderRadius: 24,
             display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8,
           }}>
             <input
