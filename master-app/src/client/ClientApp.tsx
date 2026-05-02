@@ -11,7 +11,7 @@ import ServiceDetailPage from '@client/pages/ServiceDetailPage'
 import CalendarPage      from '@client/pages/CalendarPage'
 import ConfirmPage       from '@client/pages/ConfirmPage'
 import DepositPage       from '@client/pages/DepositPage'
-import SuccessPage       from '@client/pages/SuccessPage'
+import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import ContactsPage      from '@client/pages/ContactsPage'
@@ -55,11 +55,10 @@ export default function ClientApp() {
         <Route path="/book/calendar"   element={<CalendarPage />} />
         <Route path="/book/confirm"    element={<ConfirmPage />} />
         <Route path="/book/deposit"    element={<DepositPage />} />
-        <Route path="/book/success"    element={<SuccessPage />} />
+        <Route path="/book/success"    element={<BookingDetailPage />} />
         <Route path="/my-bookings"     element={<MyBookingsPage />} />
-        {/* Карточка существующей записи использует SuccessPage (объединённый
-            экран после создания / просмотра — данные тянутся по :id). */}
-        <Route path="/my-bookings/:id" element={<SuccessPage />} />
+        {/* Карточка существующей записи — тот же компонент, данные по :id. */}
+        <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
         <Route path="/contacts"        element={<ContactsPage />} />
         <Route path="*"                element={<Navigate to="/" replace />} />

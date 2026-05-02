@@ -17,7 +17,7 @@ interface Props {
  * Используется на ConfirmPage внутри listItem-карточки.
  *
  * Полный адрес (title + subtitle) уходит в onChange — он же сохраняется
- * в booking.store и потом показывается на SuccessPage.
+ * в booking.store и потом показывается на BookingDetailPage.
  */
 export default function AddressSuggestField({ value, onChange, placeholder = 'Адрес' }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])

@@ -1,10 +1,10 @@
 import Skeleton from '@/components/Skeleton'
 
 /**
- * Skeleton-плейсхолдер для address-карточки на ConfirmPage / SuccessPage.
+ * Skeleton-плейсхолдер для address-карточки на ConfirmPage / BookingDetailPage.
  * Тот же shell, что у master-карточки. Высота:
  *   - lines=1 (ConfirmPage): только описание caption2 → 1 строка
- *   - lines=2 (SuccessPage): title callout1 + subtitle "Адрес" caption2
+ *   - lines=2 (BookingDetailPage): title callout1 + subtitle "Адрес" caption2
  */
 type Props = { lines?: 1 | 2 }
 

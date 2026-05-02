@@ -1,7 +1,7 @@
 import Skeleton from '@/components/Skeleton'
 
 /**
- * Skeleton-плейсхолдер для master-карточки на ConfirmPage / SuccessPage.
+ * Skeleton-плейсхолдер для master-карточки на ConfirmPage / BookingDetailPage.
  * Повторяет shell реального listItem (surfaceTransparent rx=20 padding 16/20 gap 12)
  * + аватар 44×44 + 2 строки текста + правая «звёздочка-рейтинг» 46×20.
  */

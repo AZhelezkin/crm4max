@@ -79,7 +79,7 @@ function IcoCloseCircle() {
 
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 
-export default function SuccessPage() {
+export default function BookingDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams<{ id: string }>()
