@@ -398,17 +398,20 @@ export default function MasterCardPage() {
             )}
           </div>
 
-          {/* Тэг «Доступен выезд на дом» — bg=activeSurface, text=primarySurface (label3Caps).
-              Padding по макету: pt-7 pb-6 px-6, rounded-4. inline-block (НЕ inline-flex) —
-              иначе Android Chromium берёт высоту из font ascent/descent (≈12px) вместо
-              line-height (14px), и бейдж выходит ниже макета. */}
+          {/* Тэг «Доступен выезд на дом». Figma: 20px высоты (cap-height 7 + padding 7/6).
+              CSS line-height 14 даёт +7px воздуха → 27px, что слишком. Поэтому фиксируем
+              height:20 + line-height:20 (центрирует 10px текст в коробке) и убираем
+              вертикальные паддинги. */}
           {master.homeVisit && (
             <span style={{
               background: 'var(--color-active-surface)',
               borderRadius: 4,
-              padding: '7px 6px 6px',
               display: 'inline-block',
+              height: 20,
+              padding: '0 6px',
+              boxSizing: 'border-box',
               ...text.label3Caps,
+              lineHeight: '20px',
               color: 'var(--color-primary-surface)',
             }}>
               Доступен выезд на дом
@@ -768,16 +771,18 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
                 {hasDiscount && (
-                  /* Tag: rounded=4, padding (Figma) pt-7 pb-6 px-6, bg=errorSurfaceLite,
-                     text «label 3 CAPS» (10/14/800 ls −0.2 uppercase) onErrorSurfaceLite.
-                     inline-block — см. комментарий у бейджа «Доступен выезд на дом». */
+                  /* Tag: высота 20 (Figma metadata), горизонт. padding 6, текст
+                     центрирован через line-height:20. См. комментарий у homeVisit-тэга. */
                   <span style={{
                     borderRadius: 4,
-                    padding: '7px 6px 6px',
+                    display: 'inline-block',
+                    height: 20,
+                    padding: '0 6px',
+                    boxSizing: 'border-box',
                     background: 'var(--color-error-surface-lite)',
                     color: 'var(--color-on-error-surface-lite)',
                     ...text.label3Caps,
-                    display: 'inline-block',
+                    lineHeight: '20px',
                   }}>
                     % скидки
                   </span>
