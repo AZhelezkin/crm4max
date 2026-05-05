@@ -119,9 +119,12 @@ const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фо
 export default function MasterCardPage() {
   const [params] = useSearchParams()
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const masterId = (UUID_REGEX.test(startParam) ? startParam : null) ?? params.get('masterId') ?? ''
+  const { setMasterId, setService, setDateTime, masterId: storeMasterId } = useBookingStore()
+  const masterId = (UUID_REGEX.test(startParam) ? startParam : null)
+    ?? params.get('masterId')
+    ?? storeMasterId
+    ?? ''
   const navigate = useNavigate()
-  const { setMasterId, setService, setDateTime } = useBookingStore()
 
   const [master, setMaster] = useState<Master | null>(null)
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
