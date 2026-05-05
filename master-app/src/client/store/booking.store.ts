@@ -27,7 +27,7 @@ export const useBookingStore = create<BookingState>()(
       setDateTime: (date, time) => set({ date, time }),
       setRemind: (remind) => set({ remind }),
       setClientAddress: (clientAddress) => set({ clientAddress }),
-      reset: () => set({ masterId: '', service: null, categoryName: null, date: '', time: '', remind: true, clientAddress: null }),
+      reset: () => set((s) => ({ masterId: s.masterId, service: null, categoryName: null, date: '', time: '', remind: true, clientAddress: null })),
     }),
     {
       name: 'booking-draft',

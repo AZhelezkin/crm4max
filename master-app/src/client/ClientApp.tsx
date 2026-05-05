@@ -52,8 +52,11 @@ function HomeRoute() {
     }
   }
 
+  // Если startParam — deep-link на запись (<masterId>-<bookingId>), достаём masterId из него
+  const deepLinkMasterId = CLIENT_BOOKING_DEEPLINK_RE.exec(startParam ?? '')?.[1] ?? null
   const masterId = (UUID_REGEX.test(startParam) ? startParam : null)
     ?? params.get('masterId')
+    ?? deepLinkMasterId
     ?? storeMasterId
   if (!masterId) return <QRScanPage />
   return <MasterCardPage />
