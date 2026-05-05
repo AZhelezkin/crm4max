@@ -40,15 +40,17 @@ function resolveStartParam(): string {
 export const startParam = resolveStartParam()
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 // Deep-link из бот-уведомлений на BookingDetailPage:
-//   b-<id>  → клиентское приложение, /my-bookings/<id>
-//   mb-<id> → мастер-приложение, /bookings/<id>
-const CLIENT_BOOKING_DEEPLINK_RE = /^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const MASTER_BOOKING_DEEPLINK_RE = /^mb-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+//   <masterId>-<bookingId>    → клиентское приложение, /my-bookings/<bookingId>
+//   m-<masterId>-<bookingId>  → мастер-приложение, /bookings/<bookingId>
+const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`, 'i')
+const MASTER_BOOKING_DEEPLINK_RE = new RegExp(`^m-(${UUID_PART})-(${UUID_PART})$`, 'i')
 
 export function getMasterBookingDeepLinkId(): string | null {
   const m = MASTER_BOOKING_DEEPLINK_RE.exec(startParam ?? '')
-  return m ? m[1] : null
+  // m[1]=masterId, m[2]=bookingId
+  return m ? m[2] : null
 }
 
 function resolveInitialMode(): 'master' | 'client' | null {

@@ -113,7 +113,10 @@ export default function BookingDetailPage() {
 
   useEffect(() => {
     if (!bookingId) return
-    bookingsApi.getById(bookingId).then(setBooking).catch(() => {})
+    bookingsApi.getById(bookingId).then((b) => {
+      setBooking(b)
+      setMasterId(b.master.id)  // сохраняем masterId чтобы HomeRoute и MyBookingsPage работали после дип-линка
+    }).catch(() => {})
   }, [bookingId])
 
   useEffect(() => {
