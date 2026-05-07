@@ -16,6 +16,18 @@ function formatTime(minutes: number): string {
 
 type Interval = { start: number; end: number }
 
+/**
+ * «Сейчас» в часовом поясе мастера (MSK = UTC+3, без DST).
+ * Сервер в UTC; для расчёта «сегодня» сдвигаем момент на +3ч.
+ */
+function nowInMasterTz() {
+  const now = dayjs().add(3, 'hour')
+  return {
+    date: now.format('YYYY-MM-DD'),
+    minutes: now.hour() * 60 + now.minute(),
+  }
+}
+
 /** Рабочие окна из расписания, разбитые перерывом */
 function buildWorkWindows(
   startTime: string, endTime: string,
@@ -65,6 +77,9 @@ export const scheduleService = {
     const service = await prisma.service.findUnique({ where: { id: serviceId } })
     if (!service) return []
 
+    const tzNow = nowInMasterTz()
+    if (date < tzNow.date) return []   // прошедшая дата
+
     // Проверяем рабочий день (dayjs: 0=Вс, 1=Пн ... 6=Сб → конвертим в 1=Пн...7=Вс)
     const dayOfWeek = dayjs(date).day() || 7
     if (!schedule.workingDays.includes(dayOfWeek)) return []
@@ -96,11 +111,13 @@ export const scheduleService = {
       end: toMinutes(b.time) + b.service.duration,
     }))
 
-    // Генерируем кандидатов с мелким шагом, фильтруем конфликты с учётом буфера
-    const slots: string[] = []
+    // Для сегодняшней даты — отрезаем слоты, которые уже стартовали
+    const minSlotStart = (date === tzNow.date) ? tzNow.minutes : 0
 
+    const slots: string[] = []
     for (const win of windows) {
       for (let t = win.start; t + duration <= win.end; t += step) {
+        if (t < minSlotStart) continue
         const hasConflict = busy.some((b) =>
           t < b.end + buffer && t + duration > b.start - buffer
         )
@@ -143,6 +160,7 @@ export const scheduleService = {
     )
 
     const result: Record<string, boolean> = {}
+    const tzNow = nowInMasterTz()
 
     let d = dayjs(from)
     const last = dayjs(to)
@@ -150,6 +168,12 @@ export const scheduleService = {
     while (!d.isAfter(last)) {
       const dateStr = d.format('YYYY-MM-DD')
       const dayOfWeek = d.day() || 7
+
+      if (dateStr < tzNow.date) {
+        // Прошедшая дата — слотов нет
+        d = d.add(1, 'day')
+        continue
+      }
 
       if (!schedule.workingDays.includes(dayOfWeek)) {
         d = d.add(1, 'day')
@@ -162,9 +186,13 @@ export const scheduleService = {
         end: toMinutes(b.time) + b.service.duration,
       }))
 
+      // Для сегодняшней даты — отрезаем слоты, которые уже стартовали
+      const minSlotStart = (dateStr === tzNow.date) ? tzNow.minutes : 0
+
       let hasSlot = false
       for (const win of windows) {
         for (let t = win.start; t + duration <= win.end; t += step) {
+          if (t < minSlotStart) continue
           const hasConflict = busy.some((b) =>
             t < b.end + buffer && t + duration > b.start - buffer
           )
