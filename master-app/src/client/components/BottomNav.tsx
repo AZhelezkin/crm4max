@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { text } from '@/styles/typography'
+import { startSupport } from '@client/api/support.api'
 
 function IconCatalog({ active }: { active: boolean }) {
   const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
@@ -31,11 +33,11 @@ function IconMessages({ active }: { active: boolean }) {
   )
 }
 
-function IconContacts({ active }: { active: boolean }) {
+function IconSupport({ active }: { active: boolean }) {
   const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path d="M24.056 9.858C22.831 4.468 18.13 2.042 14 2.042c0 0 0 0-.012 0-4.118 0-8.832 2.415-10.057 7.805C2.566 15.867 6.253 20.965 9.59 24.173c1.236 1.19 2.823 1.785 4.41 1.785 1.586 0 3.173-.595 4.398-1.785 3.337-3.208 7.023-8.295 5.658-14.315ZM14 15.703c-2.03 0-3.675-1.645-3.675-3.675 0-2.03 1.645-3.675 3.675-3.675s3.675 1.645 3.675 3.675c0 2.03-1.645 3.675-3.675 3.675Z" fill={c}/>
+      <path d="M14 2.333c-5.798 0-10.5 4.702-10.5 10.5v6.417c0 1.93 1.57 3.5 3.5 3.5h1.167c.644 0 1.166-.523 1.166-1.167v-5.833c0-.644-.522-1.167-1.166-1.167H5.833v-1.75c0-4.51 3.657-8.166 8.167-8.166s8.167 3.656 8.167 8.166v1.75h-2.334c-.644 0-1.166.523-1.166 1.167v5.833c0 .644.522 1.167 1.166 1.167h2.334v.583c0 1.61-1.307 2.917-2.917 2.917H15.75a1.75 1.75 0 0 0-1.75 1.75v.583c0 .322-.261.584-.583.584H11.083a.583.583 0 0 1-.583-.584v-1.166c0-.322.261-.584.583-.584h2.334c.644 0 1.166-.522 1.166-1.166s-.522-1.167-1.166-1.167h-2.334a2.917 2.917 0 0 0-2.916 2.917v1.166a2.917 2.917 0 0 0 2.916 2.917h2.334a2.917 2.917 0 0 0 2.916-2.917v-.583c4.832 0 5.25-3.92 5.25-5.25v-7c0-5.798-4.702-10.5-10.5-10.5Z" fill={c}/>
     </svg>
   )
 }
@@ -44,17 +46,45 @@ const NAV_ITEMS = [
   { key: 'catalog', label: 'Профиль', path: '/', Icon: IconCatalog },
   { key: 'bookings', label: 'Записи', path: '/my-bookings', Icon: IconCalendar },
   { key: 'messages', label: 'Сообщения', path: '/messages', Icon: IconMessages },
-  { key: 'contacts', label: 'Контакты', path: '/contacts', Icon: IconContacts },
-]
+] as const
 
 export default function BottomNav() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [supportLoading, setSupportLoading] = useState(false)
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/'
     return pathname.startsWith(path)
   }
+
+  const handleSupport = async () => {
+    if (supportLoading) return
+    setSupportLoading(true)
+    try {
+      const { botUrl } = await startSupport()
+      const wa = window.WebApp
+      if (wa?.openMaxLink) wa.openMaxLink(botUrl)
+      else if (wa?.openLink) wa.openLink(botUrl)
+      else window.open(botUrl, '_blank')
+    } catch (err) {
+      console.error('startSupport failed', err)
+      alert('Не удалось открыть поддержку. Попробуйте позже.')
+    } finally {
+      setSupportLoading(false)
+    }
+  }
+
+  const buttonStyle = {
+    flex: 1, display: 'flex', flexDirection: 'column' as const,
+    alignItems: 'center' as const, justifyContent: 'center' as const,
+    gap: 4, padding: '10px 0 12px', background: 'none',
+    border: 'none', cursor: 'pointer',
+  }
+  const labelStyle = (active: boolean) => ({
+    ...text.caption,
+    color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
+  })
 
   return (
     <nav style={{
@@ -68,26 +98,21 @@ export default function BottomNav() {
       {NAV_ITEMS.map(({ key, label, path, Icon }) => {
         const active = isActive(path)
         return (
-          <button
-            key={key}
-            onClick={() => navigate(path)}
-            style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: 4, padding: '10px 0 12px', background: 'none',
-              border: 'none', cursor: 'pointer',
-            }}
-          >
+          <button key={key} onClick={() => navigate(path)} style={buttonStyle}>
             <Icon active={active} />
-            <span style={{
-              ...text.caption,
-              color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-            }}>
-              {label}
-            </span>
+            <span style={labelStyle(active)}>{label}</span>
           </button>
         )
       })}
+      <button
+        key="support"
+        onClick={handleSupport}
+        disabled={supportLoading}
+        style={{ ...buttonStyle, opacity: supportLoading ? 0.5 : 1 }}
+      >
+        <IconSupport active={false} />
+        <span style={labelStyle(false)}>Поддержка</span>
+      </button>
     </nav>
   )
 }

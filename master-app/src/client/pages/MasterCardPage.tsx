@@ -344,8 +344,8 @@ export default function MasterCardPage() {
             )}
 
             {/* Адрес — pin (16×16) + текст в primarySurface, кликабельный →
-                открывает системные карты через geo: schema с lat/lng мастера
-                (как в ContactsPage). Только если location есть. */}
+                открывает системные карты через geo: schema с lat/lng мастера.
+                Только если location есть. */}
             {master.location && (
               <button
                 type="button"

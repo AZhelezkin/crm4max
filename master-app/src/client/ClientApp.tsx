@@ -15,7 +15,6 @@ import DepositPage       from '@client/pages/DepositPage'
 import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import MessagesPage      from '@client/pages/MessagesPage'
-import ContactsPage      from '@client/pages/ContactsPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -94,7 +93,6 @@ export default function ClientApp() {
         {/* Карточка существующей записи — тот же компонент, данные по :id. */}
         <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
         <Route path="/messages"        element={<MessagesPage />} />
-        <Route path="/contacts"        element={<ContactsPage />} />
         <Route path="*"                element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
