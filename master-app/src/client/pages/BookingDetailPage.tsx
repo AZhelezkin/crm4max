@@ -345,7 +345,8 @@ export default function BookingDetailPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   ...text.callout1, color: 'var(--color-on-surface)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden', wordBreak: 'break-word',
                 }}>
                   {addressText}
                 </div>

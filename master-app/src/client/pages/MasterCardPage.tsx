@@ -345,8 +345,8 @@ export default function MasterCardPage() {
 
             {/* Адрес — pin (16×16) + текст в primarySurface, кликабельный →
                 открывает системные карты через geo: schema с lat/lng мастера.
-                Только если location есть. */}
-            {master.location && (
+                Показываем только если мастер НЕ выезжает на дом и есть location. */}
+            {!master.homeVisit && master.location && (
               <button
                 type="button"
                 onClick={() => {
@@ -361,24 +361,31 @@ export default function MasterCardPage() {
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 3,
                   background: 'none', border: 'none', padding: 0,
                   cursor: master.lat && master.lng ? 'pointer' : 'default',
+                  maxWidth: '100%',
                 }}
               >
                 {/* vuesax/linear/location 16×16 stroke=primarySurface */}
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
                   <path d="M8 8.953a2.08 2.08 0 1 0 0-4.16 2.08 2.08 0 0 0 0 4.16Z" stroke="var(--color-primary-surface)" strokeWidth="1.2"/>
                   <path d="M2.413 5.66c1.314-5.773 9.867-5.767 11.174.007.766 3.387-1.34 6.253-3.187 8.026a3.4 3.4 0 0 1-4.807 0c-1.84-1.773-3.946-4.646-3.18-8.033Z" stroke="var(--color-primary-surface)" strokeWidth="1.2"/>
                 </svg>
-                <span style={{ ...text.caption2, color: 'var(--color-primary-surface)', textAlign: 'center' }}>
+                <span style={{
+                  ...text.caption2, color: 'var(--color-primary-surface)', textAlign: 'center',
+                  minWidth: 0,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden', wordBreak: 'break-word',
+                }}>
                   {master.location}
                 </span>
               </button>
             )}
           </div>
 
-          {/* Тэг «Доступен выезд на дом». Figma: 20px высоты (cap-height 7 + padding 7/6).
-              CSS line-height 14 даёт +7px воздуха → 27px, что слишком. Поэтому фиксируем
-              height:20 + line-height:20 (центрирует 10px текст в коробке) и убираем
-              вертикальные паддинги. */}
+          {/* Тэг «Доступен выезд на дом» — только если мастер выезжает на дом.
+              Адрес выше в этом случае скрыт (взаимоисключаются по homeVisit).
+              Figma: 20px высоты (cap-height 7 + padding 7/6). CSS line-height 14
+              даёт +7px воздуха → 27px, что слишком. Фиксируем height:20 +
+              line-height:20 (центрирует 10px текст) и убираем верт. паддинги. */}
           {master.homeVisit && (
             <span style={{
               background: 'var(--color-active-surface)',
