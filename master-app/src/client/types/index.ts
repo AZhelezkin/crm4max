@@ -72,7 +72,16 @@ export interface Booking {
   remind?: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
   clientAddress: string | null
-  master: { id: string; name: string; photo: string | null; location: string | null }
+  master: {
+    id: string
+    name: string
+    photo: string | null
+    location: string | null
+    description: string | null
+    rating: number
+    lat: number | null
+    lng: number | null
+  }
   client: { id: string; name: string; photo: string | null }
   service: Service
 }

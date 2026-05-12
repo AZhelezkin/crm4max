@@ -3,9 +3,8 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
-import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Booking, Master } from '@client/types'
+import type { Booking } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
@@ -117,9 +116,6 @@ export default function BookingDetailPage() {
   const isPostBooking = !params.id  // /book/success — после создания
 
   const [booking, setBooking] = useState<Booking | null>(null)
-  // Полный мастер (с description + rating) — booking-include с бэка
-  // отдаёт только id/name/photo/location, поэтому подгружаем отдельно.
-  const [masterFull, setMasterFull] = useState<Master | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
@@ -129,11 +125,6 @@ export default function BookingDetailPage() {
       setMasterId(b.master.id)  // сохраняем masterId чтобы HomeRoute и MyBookingsPage работали после дип-линка
     }).catch(() => {})
   }, [bookingId])
-
-  useEffect(() => {
-    if (!booking) return
-    mastersApi.getById(booking.master.id).then(setMasterFull).catch(() => {})
-  }, [booking])
 
   const handleClose = () => {
     if (isPostBooking) {
@@ -297,17 +288,17 @@ export default function BookingDetailPage() {
             }}>
               {master.name}
             </div>
-            {masterFull?.description && (
+            {master.description && (
               <div style={{
                 ...text.caption2, color: 'var(--color-on-surface-secondary)',
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
               }}>
-                {masterFull.description}
+                {master.description}
               </div>
             )}
           </div>
-          {masterFull && masterFull.rating > 0 && (
+          {master.rating > 0 && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '8px 0',
@@ -318,7 +309,7 @@ export default function BookingDetailPage() {
                 fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15,
                 color: 'var(--color-on-surface-secondary)',
               }}>
-                {masterFull.rating.toFixed(1)}
+                {master.rating.toFixed(1)}
               </span>
             </div>
           )}
@@ -332,8 +323,8 @@ export default function BookingDetailPage() {
           if (!addressText) return null
           const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'
           const handleOpenAddress = () => {
-            const url = !clientAddress && masterFull?.lat && masterFull?.lng
-              ? `geo:${masterFull.lat},${masterFull.lng}?q=${masterFull.lat},${masterFull.lng}(${encodeURIComponent(master.name)})`
+            const url = !clientAddress && master.lat && master.lng
+              ? `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
               : `geo:0,0?q=${encodeURIComponent(addressText)}`
             window.WebApp?.openLink(url)
           }
