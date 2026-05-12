@@ -15,6 +15,10 @@ dayjs.locale('ru')
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const MONTH_NAMES = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+]
 
 const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -124,6 +128,20 @@ export default function MyBookingsPage() {
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Month picker menu (Figma 8671:38152). Открывается по клику на пилюлю
+  // с шевроном; быстрый перенос на конкретный месяц в текущем году.
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false)
+  const monthMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!monthMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!monthMenuRef.current?.contains(e.target as Node)) setMonthMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [monthMenuOpen])
 
   useEffect(() => {
     setBookingsLoading(true)
@@ -359,25 +377,83 @@ export default function MyBookingsPage() {
           paddingLeft: 6,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          {/* Month label pill — pl-8 pr-4 py-12, gap 8, rounded 100 */}
-          <button
-            onClick={() => setViewMonth(today.startOf('month'))}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '12px 4px 12px 8px', borderRadius: 100,
-              background: 'none', border: 'none', cursor: 'pointer',
-            }}
-          >
-            <span style={{
-              ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
-              textTransform: 'capitalize',
-            }}>
-              {viewMonth.format('MMMM YYYY')}
-            </span>
-            <span style={{ display: 'inline-flex', padding: 4 }}>
-              <IcoArrowDown />
-            </span>
-          </button>
+          {/* Month label pill — pl-8 pr-4 py-12, gap 8, rounded 100.
+              Клик открывает month-picker (Figma 8671:38152). */}
+          <div ref={monthMenuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMonthMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={monthMenuOpen}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '12px 4px 12px 8px', borderRadius: 100,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <span style={{
+                ...text.body, color: 'var(--color-on-surface-secondary)', letterSpacing: -0.15,
+                textTransform: 'capitalize',
+              }}>
+                {viewMonth.format('MMMM YYYY')}
+              </span>
+              <span style={{
+                display: 'inline-flex', padding: 4,
+                transform: monthMenuOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.15s ease',
+              }}>
+                <IcoArrowDown />
+              </span>
+            </button>
+
+            {/* Month menu (Figma 8671:38152): bg-surface, rx-16, px-20 py-12, w-210,
+                drop-shadow. Items: callout-line py-6, 1px divider-low between. */}
+            {monthMenuOpen && (
+              <div role="menu" style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)', left: 0,
+                width: 210,
+                background: 'var(--color-surface)',
+                borderRadius: 16,
+                padding: '12px 20px',
+                boxShadow: '0 4px 4px -1px rgba(12,12,13,0.05), 0 16px 32px -1px rgba(12,12,13,0.1)',
+                display: 'flex', flexDirection: 'column',
+                zIndex: 20,
+              }}>
+                {MONTH_NAMES.map((name, idx) => {
+                  const isCurrent = idx === viewMonth.month()
+                  return (
+                    <Fragment key={name}>
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setViewMonth(viewMonth.month(idx))
+                          setMonthMenuOpen(false)
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 0',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          textAlign: 'left',
+                          ...text.body2,
+                          color: isCurrent
+                            ? 'var(--color-active-element)'
+                            : 'var(--color-on-surface)',
+                        }}
+                      >
+                        {name}
+                      </button>
+                      {idx < MONTH_NAMES.length - 1 && (
+                        <div style={{
+                          width: '100%', height: 1,
+                          background: 'var(--color-divider-low)',
+                        }} />
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Right: arrow-left + arrow-right, each p-12 (44×44) */}
           <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 8, paddingRight: 4, borderRadius: 100 }}>
@@ -429,17 +505,22 @@ export default function MyBookingsPage() {
             const isSelected = val === selectedDate
             const isWeekend = (day.day() || 7) >= 6
 
+            const rec = bookingsByDate.get(val)
+            // Прошлый день с записью (Figma 8535:44330 ячейка «13»): pattern-element fill +
+            // цифра возвращается к accented-цвету, чтобы выделить «была запись».
+            const isPastWithBooking = isPastDay && !!rec?.hasPast && !rec?.hasFuture
+
             // Цвет цифры (Figma _calendarCell):
             //   weekend регуляр  → error-surface-accented
             //   weekend прошлый  → error-element-muted
             //   обычный регуляр  → interactive-element-accented
             //   обычный прошлый  → interactive-element-muted
-            const textColor = isWeekend
-              ? (isPastDay ? 'var(--color-error-element-muted)' : 'var(--color-error-surface-accented)')
-              : (isPastDay ? 'var(--color-interactive-element-muted)' : 'var(--color-interactive-element-accented)')
-
-            const rec = bookingsByDate.get(val)
-            const showBadge = !!rec
+            //   past-with-booking → восстанавливаем accented поверх gray-fill
+            const textColor = isPastWithBooking
+              ? (isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-interactive-element-accented)')
+              : isWeekend
+                ? (isPastDay ? 'var(--color-error-element-muted)' : 'var(--color-error-surface-accented)')
+                : (isPastDay ? 'var(--color-interactive-element-muted)' : 'var(--color-interactive-element-accented)')
 
             return (
               <button
@@ -449,10 +530,11 @@ export default function MyBookingsPage() {
                   position: 'relative',
                   minHeight: 56, padding: '8px 4px', borderRadius: 12,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'none', border: 'none', cursor: 'pointer',
+                  background: isPastWithBooking ? 'var(--color-pattern-element)' : 'none',
+                  border: 'none', cursor: 'pointer',
                 }}
               >
-                <span style={{ ...text.callout1, color: textColor }}>
+                <span style={{ ...text.callout1, color: textColor, position: 'relative', zIndex: 1 }}>
                   {day.date()}
                 </span>
 
@@ -476,15 +558,15 @@ export default function MyBookingsPage() {
                   }} />
                 )}
 
-                {/* Badge dot top-right (10×10) — есть записи на дату.
-                    По скриншоту дот красный (error-surface-accented); прошлые-only — серый. */}
-                {showBadge && (
+                {/* Load-индикатор записи (Figma 8535:43249): салатовый штрих под
+                    цифрой. bottom-8, w-16, h-4, rounded-100, bg onSuccessSurfaceLite. */}
+                {rec?.hasFuture && (
                   <span style={{
-                    position: 'absolute', top: 4, right: 4,
-                    width: 10, height: 10, borderRadius: '50%',
-                    background: rec.hasFuture
-                      ? 'var(--color-error-surface-accented)'
-                      : 'var(--color-divider-mid)',
+                    position: 'absolute',
+                    bottom: 8,
+                    left: '50%', transform: 'translateX(-50%)',
+                    width: 16, height: 4, borderRadius: 100,
+                    background: 'var(--color-on-success-surface-lite)',
                   }} />
                 )}
               </button>

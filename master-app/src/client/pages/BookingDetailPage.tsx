@@ -35,6 +35,17 @@ function IcoTickCircle() {
   )
 }
 
+/* ── Location 16×16 (vuesax/linear/location) — pin для адреса ──────────────── */
+
+function IcoLocation() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8 8.95C9.149 8.95 10.08 8.019 10.08 6.87C10.08 5.722 9.149 4.79 8 4.79C6.851 4.79 5.92 5.722 5.92 6.87C5.92 8.019 6.851 8.95 8 8.95Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5"/>
+      <path d="M2.413 5.66C3.727 -0.107 12.28 -0.1 13.587 5.667C14.353 9.054 12.247 11.92 10.4 13.694C9.06 14.987 6.94 14.987 5.593 13.694C3.753 11.92 1.647 9.047 2.413 5.66Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5"/>
+    </svg>
+  )
+}
+
 /* ── Edit-2 16×16 (vuesax/linear/edit-2, точные path Figma 8175:13372) ─────── */
 
 function IcoEdit2() {
@@ -289,7 +300,8 @@ export default function BookingDetailPage() {
             {masterFull?.description && (
               <div style={{
                 ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
               }}>
                 {masterFull.description}
               </div>
@@ -312,19 +324,33 @@ export default function BookingDetailPage() {
           )}
         </div>
 
-        {/* listItem: адрес — title (callout1 — выбранный адрес) + subtitle.
-            clientAddress задан → выезд мастера, иначе адрес мастера. */}
+        {/* listItem: адрес — clickable card → geo://.
+            clientAddress задан → выезд мастера (subtitle «Мой адрес»),
+            иначе адрес мастера (subtitle «Адрес мастера», координаты из masterFull). */}
         {(() => {
           const addressText = clientAddress || master?.location
           if (!addressText) return null
-          const subtitle = clientAddress ? 'Мой адрес' : 'Адрес'
+          const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'
+          const handleOpenAddress = () => {
+            const url = !clientAddress && masterFull?.lat && masterFull?.lng
+              ? `geo:${masterFull.lat},${masterFull.lng}?q=${masterFull.lat},${masterFull.lng}(${encodeURIComponent(master.name)})`
+              : `geo:0,0?q=${encodeURIComponent(addressText)}`
+            window.WebApp?.openLink(url)
+          }
           return (
-            <div style={{
-              background: 'var(--color-surface-transparent)',
-              borderRadius: 20,
-              padding: '16px 20px',
-              display: 'flex', alignItems: 'center', gap: 12,
-            }}>
+            <button
+              type="button"
+              onClick={handleOpenAddress}
+              aria-label="Открыть на карте"
+              style={{
+                background: 'var(--color-surface-transparent)',
+                borderRadius: 20,
+                padding: '16px 20px',
+                display: 'flex', alignItems: 'center', gap: 12,
+                border: 'none', cursor: 'pointer',
+                width: '100%', textAlign: 'left',
+              }}
+            >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   ...text.callout1, color: 'var(--color-on-surface)',
@@ -336,7 +362,8 @@ export default function BookingDetailPage() {
                   {subtitle}
                 </div>
               </div>
-            </div>
+              <IcoLocation />
+            </button>
           )
         })()}
 

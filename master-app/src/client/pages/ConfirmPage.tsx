@@ -10,7 +10,6 @@ import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
-import SegmentControl from '@client/components/SegmentControl'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 
 dayjs.locale('ru')
@@ -45,6 +44,17 @@ function ToolbarButton({ onClick, ariaLabel, children }: {
     >
       {children}
     </button>
+  )
+}
+
+/* ── Location 16×16 (vuesax/linear/location) — pin для адреса мастера ──────── */
+
+function IcoLocation() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8 8.95C9.149 8.95 10.08 8.019 10.08 6.87C10.08 5.722 9.149 4.79 8 4.79C6.851 4.79 5.92 5.722 5.92 6.87C5.92 8.019 6.851 8.95 8 8.95Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5"/>
+      <path d="M2.413 5.66C3.727 -0.107 12.28 -0.1 13.587 5.667C14.353 9.054 12.247 11.92 10.4 13.694C9.06 14.987 6.94 14.987 5.593 13.694C3.753 11.92 1.647 9.047 2.413 5.66Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5"/>
+    </svg>
   )
 }
 
@@ -90,26 +100,17 @@ export default function ConfirmPage() {
   const { masterId, service, categoryName, date, time, remind, clientAddress, setClientAddress, reset } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
-  const [addressMode, setAddressMode] = useState<'master' | 'client'>(
-    clientAddress ? 'client' : 'master',
-  )
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
   }, [masterId])
 
-  // Если у мастера нет home_visit — выбора нет, всегда «адрес мастера».
+  // Если у мастера нет home_visit — clientAddress всегда null (услуга у мастера).
   useEffect(() => {
-    if (master && !master.homeVisit && addressMode === 'client') {
-      setAddressMode('master')
+    if (master && !master.homeVisit && clientAddress) {
       setClientAddress(null)
     }
-  }, [master, addressMode, setClientAddress])
-
-  const handleAddressMode = (mode: 'master' | 'client') => {
-    setAddressMode(mode)
-    if (mode === 'master') setClientAddress(null)
-  }
+  }, [master, clientAddress, setClientAddress])
 
   const handleConfirm = async () => {
     if (!service) return
@@ -117,12 +118,20 @@ export default function ConfirmPage() {
     try {
       const booking = await bookingsApi.create({
         masterId, serviceId: service.id, date, time, remind,
-        clientAddress: addressMode === 'client' ? clientAddress : null,
+        clientAddress: master?.homeVisit ? clientAddress : null,
       })
       navigate('/book/success', { state: { bookingId: booking.id } })
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleOpenMasterLocation = () => {
+    if (!master) return
+    const url = master.lat && master.lng
+      ? `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
+      : `geo:0,0?q=${encodeURIComponent(master.location ?? '')}`
+    window.WebApp?.openLink(url)
   }
 
   const handleClose = () => {
@@ -135,8 +144,8 @@ export default function ConfirmPage() {
   const price = discountedPrice(service.price, service.discountPercent) ?? service.price
   const formattedDate = dayjs(date).format('D MMMM, dd')
 
-  // Если режим «мой адрес» — нужен непустой адрес перед submit.
-  const submitDisabled = loading || (addressMode === 'client' && !clientAddress?.trim())
+  // Если мастер выезжает к клиенту — нужен непустой адрес перед submit.
+  const submitDisabled = loading || (master?.homeVisit === true && !clientAddress?.trim())
 
   const headerSubtitle = categoryName || service.name
 
@@ -232,7 +241,8 @@ export default function ConfirmPage() {
               {master.description && (
                 <div style={{
                   ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                 }}>
                   {master.description}
                 </div>
@@ -257,44 +267,50 @@ export default function ConfirmPage() {
           </div>
         )}
 
-        {/* Segment-control «Адрес специалиста / Мой адрес» — только если у мастера home_visit */}
-        {master?.homeVisit && (
-          <SegmentControl<'master' | 'client'>
-            value={addressMode}
-            onChange={handleAddressMode}
-            options={[
-              { value: 'master', label: 'Адрес специалиста' },
-              { value: 'client', label: 'Мой адрес' },
-            ]}
-          />
+        {/* listItem: адрес — зависит от master.homeVisit.
+              homeVisit=false → карточка с адресом мастера (callout1 + caption2 "Адрес мастера")
+                                + location pin справа, клик открывает geo:// (Figma 8700:33418).
+              homeVisit=true  → AddressSuggestField со своей карточкой (label «Ваш адрес»
+                                + outline + input), Figma 8557:23640 / 8746:54653. */}
+        {master && !master.homeVisit && master.location && (
+          <button
+            type="button"
+            onClick={handleOpenMasterLocation}
+            style={{
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 20,
+              padding: '16px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              border: 'none', cursor: 'pointer',
+              width: '100%', textAlign: 'left',
+            }}
+            aria-label="Открыть на карте"
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {master.location}
+              </div>
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Адрес мастера
+              </div>
+            </div>
+            <IcoLocation />
+          </button>
         )}
 
-        {/* listItem: адрес (текст или input в зависимости от выбранного режима) */}
-        {master && (addressMode === 'client' || master.location) && (
-          <div style={{
-            background: 'var(--color-surface-transparent)',
-            borderRadius: 20,
-            padding: '16px 20px',
-            display: 'flex', alignItems: 'center', gap: 12,
-            position: 'relative',
-          }}>
-            {addressMode === 'client' ? (
-              <AddressSuggestField
-                value={clientAddress ?? ''}
-                onChange={(v) => setClientAddress(v || null)}
-                placeholder="Введите адрес"
-              />
-            ) : (
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {master.location}
-                </div>
-              </div>
-            )}
-          </div>
+        {master?.homeVisit && (
+          <AddressSuggestField
+            value={clientAddress ?? ''}
+            onChange={(v) => setClientAddress(v || null)}
+            label="Ваш адрес"
+            placeholder="Город, улица, дом, квартира..."
+          />
         )}
 
         {/* listItem: услуга — column gap=16: (name+description) + price */}

@@ -224,9 +224,12 @@ export default function CalendarPage() {
                 ))}
               </div>
 
-              {/* Days grid — Figma «_calendar2Cell»: minH=56, padding 8/4, rounded 10, callout1. */}
+              {/* Days grid — Figma «_calendar2Cell»: minH=56, padding 8/4, rounded 10, callout1.
+                  daysGrid в Figma имеет `gap-x-px gap-y-px` (1px) — между залитыми
+                  ячейками просвечивает body-background и образует тонкие разделители. */}
               <div style={{
                 display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: 1,
               }}>
                 {buildMonthGrid(monthStart.year(), monthStart.month()).flat().map((day, i) => {
                   if (!day) return <div key={i} style={{ minHeight: 56 }} />

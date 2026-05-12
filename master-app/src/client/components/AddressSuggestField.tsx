@@ -9,17 +9,25 @@ interface Suggestion { title: string; subtitle: string }
 interface Props {
   value: string
   onChange: (v: string) => void
+  /** Плавающий лейбл над input-ом. Figma «Ваш адрес», caption2 secondary. */
+  label?: string
   placeholder?: string
 }
 
 /**
- * Лёгкий адресный input с Yandex-саджестами — без карты.
- * Используется на ConfirmPage внутри listItem-карточки.
- *
- * Полный адрес (title + subtitle) уходит в onChange — он же сохраняется
- * в booking.store и потом показывается на BookingDetailPage.
+ * Самодостаточная карточка-input с Yandex-саджестами. Figma 8557:23640 / 8746:54653:
+ *   контейнер: bg surfaceTransparent, rx 20, padding 12/20, outline 2px activeElement
+ *   label:     caption2 onSurfaceSecondary
+ *   input:     callout1 onSurface (bold)
+ *   trailing:  X clear button (16×16) когда value не пустой
+ *   suggests:  отдельная карточка ниже с title-rows и тонкими divider-low между ними
  */
-export default function AddressSuggestField({ value, onChange, placeholder = 'Адрес' }: Props) {
+export default function AddressSuggestField({
+  value,
+  onChange,
+  label,
+  placeholder = 'Адрес',
+}: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -63,35 +71,76 @@ export default function AddressSuggestField({ value, onChange, placeholder = 'А
     setOpen(false)
   }
 
+  const handleClear = () => {
+    onChange('')
+    setSuggestions([])
+  }
+
   return (
-    <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-      <input
-        value={value}
-        onChange={(e) => { onChange(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => { setTimeout(() => setOpen(false), 150) }}
-        placeholder={placeholder}
-        style={{
-          width: '100%',
-          background: 'none',
-          border: 'none',
-          outline: 'none',
-          padding: 0,
-          ...text.caption2,
-          color: 'var(--color-on-surface)',
-          fontFamily: 'inherit',
-        }}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+      {/* Input card. padding 12/20: верх+низ помещают label+input (14+24+нижний gap=12).
+          Outline 2px activeElement; bg surfaceTransparent — вписывается между остальными карточками. */}
+      <div style={{
+        background: 'var(--color-surface-transparent)',
+        borderRadius: 20,
+        padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        outline: '2px solid var(--color-active-element)',
+        outlineOffset: -2,
+      }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          {label && (
+            <div style={{
+              ...text.caption2, color: 'var(--color-on-surface-secondary)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {label}
+            </div>
+          )}
+          <input
+            value={value}
+            onChange={(e) => { onChange(e.target.value); setOpen(true) }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => { setTimeout(() => setOpen(false), 150) }}
+            placeholder={placeholder}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              padding: 0,
+              ...text.callout1,
+              color: 'var(--color-on-surface)',
+              fontFamily: 'inherit',
+            }}
+          />
+        </div>
+        {value && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); handleClear() }}
+            aria-label="Очистить"
+            style={{
+              flexShrink: 0,
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {/* close 16×16 — крестик stroke=onSurfaceSecondary 1.5px */}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4L12 12M12 4L4 12" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Suggestions card — Figma 8746:54653: bg surfaceTransparent, rx 20,
+          ряды по 49px (padding 12/20), divider-low между. */}
       {open && suggestions.length > 0 && (
         <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 12px)',
-          left: -20, right: -20,
-          background: 'var(--color-surface)',
-          borderRadius: 12,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          background: 'var(--color-surface-transparent)',
+          borderRadius: 20,
           overflow: 'hidden',
-          zIndex: 20,
         }}>
           {suggestions.map((s, i) => (
             <button
@@ -101,15 +150,16 @@ export default function AddressSuggestField({ value, onChange, placeholder = 'А
               style={{
                 width: '100%', textAlign: 'left',
                 background: 'none', border: 'none', cursor: 'pointer',
-                padding: '12px 16px',
-                display: 'flex', flexDirection: 'column', gap: 2,
-                borderBottom: i < suggestions.length - 1 ? '1px solid var(--color-divider-low)' : 'none',
+                padding: '12px 20px',
+                ...text.body,
+                color: 'var(--color-on-surface)',
+                borderBottom: i < suggestions.length - 1
+                  ? '1px solid var(--color-divider-low)'
+                  : 'none',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}
             >
-              <span style={{ ...text.body, color: 'var(--color-on-surface)' }}>{s.title}</span>
-              {s.subtitle && (
-                <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{s.subtitle}</span>
-              )}
+              {s.subtitle ? `${s.title}, ${s.subtitle}` : s.title}
             </button>
           ))}
         </div>
