@@ -9,8 +9,8 @@
 
 ### Демо-ссылки
 
-- **Клиент к Анне Смирновой:** `https://max.ru/id9706002253_bot?startapp=ee5e98b7-0a08-4a01-bc38-4e3efaf165d7`
-- **Клиент к Дмитрию Козлову:** `https://max.ru/id9706002253_bot?startapp=f185d8cb-64d1-4dd1-be90-8e056c220889`
+- **Клиент к Анне Смирновой:** `https://max.ru/id9706002253_1_bot?startapp=ee5e98b7-0a08-4a01-bc38-4e3efaf165d7`
+- **Клиент к Дмитрию Козлову:** `https://max.ru/id9706002253_1_bot?startapp=f185d8cb-64d1-4dd1-be90-8e056c220889`
 - **Мастер:** `https://max.ru/id9706002253_bot?startapp=mmode`
 - **GitHub Pages:** `https://azhelezkin.github.io/crm4max/`
 

@@ -380,7 +380,7 @@ async function main() {
   console.log('✅ Готово!')
   console.log(`   Мастер : ${master.name}`)
   console.log(`   ID     : ${master.id}`)
-  console.log(`   Ссылка : https://max.ru/id9706002253_bot?startapp=${master.id}`)
+  console.log(`   Ссылка : https://max.ru/id9706002253_1_bot?startapp=${master.id}`)
   console.log(`   Рейтинг: ${agg._avg.rating?.toFixed(1)} ★`)
   console.log('════════════════════════════════════════════════════════\n')
 }

@@ -9,10 +9,17 @@ CRM-система для самозанятых мастеров красоты
 ## Демо и ссылки
 
 - **GitHub Pages:** https://azhelezkin.github.io/crm4max/ (деплой при пуше в `master`)
-- **Бот:** вебхук `POST /api/bot/webhook`, событие `bot_started`
-- Max Bot API: `POST /messages?chat_id=<id>` (chat_id в query, не в body)
+- **Боты — два:** `id9706002253_bot` (мастер-кабинет) и `id9706002253_1_bot` (клиент / запись).
+  - Webhook'и: `POST /api/bot/master/webhook` и `POST /api/bot/client/webhook` (старый `/api/bot/webhook` оставлен как алиас на мастер-бот, до перенастройки кабинета Max).
+  - Event: `bot_started`. Если мастер пишет в клиент-бот (или клиент — в мастер-бот), бот отвечает ссылкой на «свой» бот.
+  - Уведомления о записях: мастеру через master-бот, клиенту через client-бот.
+- Max Bot API: `POST /messages?chat_id=<id>` (chat_id в query, не в body).
 
-Сценарии `startapp` (`update.payload`): пусто/`qr` → QR сканер, UUID → запись к мастеру, `mmode` → кабинет мастера.
+Сценарии `startapp` (`update.payload`):
+- мастер-бот: `mmode` → кабинет мастера.
+- клиент-бот: пусто/`qr` → QR-сканер, UUID → запись к конкретному мастеру.
+
+Ссылка для шеринга от мастера (ShareLinkPage, QR-код) — всегда на клиентский бот: `https://max.ru/id9706002253_1_bot?startapp=<masterId>`.
 
 ## Структура
 

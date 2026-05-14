@@ -48,8 +48,13 @@ export default function ShareLinkPage() {
   const [copied, setCopied] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Ссылка ведёт в клиент-бот через ?start=<masterId>: у клиент-бота
+  // mini-app не зарегистрирован, поэтому используем ?start= — payload приходит
+  // в bot_started, бот шлёт клиенту welcome-кнопку «Записаться», открывающую
+  // mini-app мастер-бота. Имя клиентского бота переопределяется через VITE_CLIENT_BOT_NAME.
+  const clientBotName = (import.meta.env.VITE_CLIENT_BOT_NAME as string | undefined) || 'id9706002253_1_bot'
   const masterId = master?.id ?? ''
-  const deepLink = `https://max.ru/id9706002253_bot?startapp=${masterId}`
+  const deepLink = `https://max.ru/${clientBotName}?start=${masterId}`
   const hasLink = masterId.length > 0
 
   const handleCopy = async () => {
