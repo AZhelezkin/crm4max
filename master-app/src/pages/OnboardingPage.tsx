@@ -1,102 +1,36 @@
 import { text } from '@/styles/typography'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
-import {
-  CellList,
-  CellSimple,
-  CellInput,
-  CellHeader,
-  Panel,
-  Flex,
-  Grid,
-  Spinner,
-  Typography,
-  Container,
-} from '@maxhub/max-ui'
+import { Spinner } from '@maxhub/max-ui'
 import ToggleSwitch from '@/components/ToggleSwitch'
-import maskIconUrl from '@/assets/mask-icon.svg'
-import uploadIconUrl from '@/assets/upload-icon.svg'
-import locationAddImg from '@/assets/location-add.png'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
-import { categoriesApi, servicesApi } from '@/api/services.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
-import AddressPickerPortal, { type AddressPickerCoords } from '@/components/AddressPickerPortal'
+import AddressPickerPortal from '@/components/AddressPickerPortal'
 import AppHeader from '@/components/AppHeader'
-import CategoryFormPortal from '@/components/CategoryFormPortal'
-import ServiceFormPortal from '@/components/ServiceFormPortal'
-import { type LocalWorkPhoto, getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
 import {
-  onboardingFieldInputStyle,
-  onboardingFieldSuffixStyle,
-  onboardingFieldWithSuffixWrapStyle,
-  onboardingFieldWrapStyle,
-  onboardingInlineFieldStyle,
-  onboardingDiscountBadgeStyle,
-  onboardingListActionButtonStyle,
-  onboardingListButtonStyle,
-  onboardingListCardStyle,
-  onboardingListMediaStyle,
-  onboardingListSubtitleStyle,
-  onboardingListTitleStyle,
   onboardingPortalContentStyle,
-  onboardingPriceRowStyle,
   onboardingSectionCardStyle,
   onboardingSectionLabelStyle,
   onboardingSelectChevronStyle,
   onboardingSelectStyle,
   onboardingSelectWrapStyle,
-  onboardingSplitFieldsStyle,
   onboardingTimeSelectStyle,
   onboardingTimeSelectWrapStyle,
   onboardingToggleLabelStyle,
   onboardingToggleRowStyle,
-  serviceWorkPhotoAddIconStyle,
-  stepOneAddressButtonStyle,
-  stepOneAddressContentStyle,
-  stepOneAddressHintStyle,
-  stepOneAddressTitleStyle,
   primaryActionButtonBaseStyle,
-  stepOneCounterStyle,
   stepOneIntroTextStyle,
-  stepOnePhotoButtonBaseStyle,
-  stepOnePhotoContainerStyle,
-  stepOnePhotoPlaceholderStyle,
-  stepOnePhotoPreviewStyle,
-  stepOneTextareaStyle,
-  stepOneTextareaWrapStyle,
 } from '@/components/onboardingStepOne.styles'
-import { formatPrice, discountedPrice } from '@/types'
-// AddressSuggestInput used in address portal below
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 type Step = 0 | 1 | 2
 type ServicesSubStep = 'categories' | 'services'
 
-interface LocalCategory {
-  id?: string   // если уже сохранена
-  name: string
-  desc: string
-  photo: string | null
-  previewUrl: string | null
-}
-
-interface LocalService {
-  name: string
-  desc: string
-  duration: string
-  price: string
-  discountEnabled: boolean
-  discountPercent: number
-  photo: string | null        // S3 URL обложки, берется из первого фото работ
-  workPhotos: LocalWorkPhoto[]
-}
-
-const STEPS = ['Обо мне', 'График', 'Услуги'] as const
 const DAYS = [
   { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
   { v: 4, l: 'ЧТ' }, { v: 5, l: 'ПТ' }, { v: 6, l: 'СБ' }, { v: 7, l: 'ВС' },
@@ -306,160 +240,48 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок */}
-      {true && (
-        <>
-          {step === 0 && (
-            <AppHeader
-              title="Каким будет твой бизнес?"
-              onBack={() => navigate('/welcome')}
-            />
-          )}
-
-          {step === 1 && (
-            <AppHeader
-              title="Настройте график работы"
-              onBack={() => setStep(0)}
-            />
-          )}
-
-          {step === 2 && (
-            <AppHeader
-              title={servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
-              onBack={() => {
-                if (servicesSubStep === 'services') {
-                  editorRef.current?.goToCategories()
-                  setServicesSubStep('categories')
-                } else {
-                  setStep(1)
-                }
-              }}
-            />
-          )}
-        </>
+      {/* Заголовок (для step 0 back-кнопка отрисовывается внутри Step0Form — макет без title-bar) */}
+      {step === 1 && (
+        <AppHeader
+          title="Настройте график работы"
+          onBack={() => setStep(0)}
+        />
       )}
 
-      {/* Контент */}
-      <div style={{ ...onboardingPortalContentStyle, ...(step === 2 ? { display: 'none' } : {}) }}>
+      {step === 2 && (
+        <AppHeader
+          title={servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
+          onBack={() => {
+            if (servicesSubStep === 'services') {
+              editorRef.current?.goToCategories()
+              setServicesSubStep('categories')
+            } else {
+              setStep(1)
+            }
+          }}
+        />
+      )}
 
-        {/* ── Шаг 0: Обо мне ── */}
-        {step === 0 && (
-          <>
-            <div style={stepOneIntroTextStyle}>
-              Добавьте фото, чтобы вас узнавали с первого взгляда
-            </div>
+      {/* ── Шаг 0: Обо мне (новый макет: круглый back, hero-аватар, поля h=72, сегмент работа/выезд) ── */}
+      {step === 0 && (
+        <Step0Form
+          name={name} setName={setName}
+          phone={phone} phoneError={phoneError} onPhoneChange={handlePhoneChange}
+          description={description} setDescription={setDescription}
+          location={location}
+          homeVisit={homeVisit} setHomeVisit={setHomeVisit}
+          photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
+          setPhotoUrl={setPhotoUrl}
+          photoUploading={photoUploading} setPhotoUploading={setPhotoUploading}
+          photoInputRef={photoInputRef}
+          onPhotoChange={(e) => handlePhotoChange(e, setPhotoPreview, setPhotoUploading, (url) => setPhotoUrl(url), 'masters')}
+          onAddressClick={() => setShowAddressPortal(true)}
+          onBack={() => navigate('/welcome')}
+        />
+      )}
 
-            {/* Аватар */}
-            <div style={stepOnePhotoContainerStyle}>
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                disabled={photoUploading}
-                style={{
-                  ...stepOnePhotoButtonBaseStyle,
-                  cursor: photoUploading ? 'default' : 'pointer',
-                }}
-              >
-                {photoPreview
-                  ? (
-                    <img
-                      src={photoPreview}
-                      alt="Фото профиля"
-                      style={stepOnePhotoPreviewStyle}
-                    />
-                  )
-                  : <img src={uploadIconUrl} alt="Загрузить фото" style={stepOnePhotoPlaceholderStyle} />}
-
-                {photoUploading && <UploadingOverlay />}
-              </button>
-              <input
-                ref={photoInputRef} type="file" accept="image/*" hidden
-                onChange={(e) => handlePhotoChange(
-                  e,
-                  setPhotoPreview,
-                  setPhotoUploading,
-                  (url) => setPhotoUrl(url),
-                  'masters',
-                )}
-              />
-            </div>
-
-            {/* Имя */}
-            <CellList mode="island">
-              <CellInput
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Имя или название бизнеса*"
-              />
-            </CellList>
-
-            {/* Телефон */}
-            <div>
-              <CellList mode="island">
-                <CellInput
-                  value={phone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  placeholder="Телефон"
-                  inputMode="tel"
-                />
-              </CellList>
-              {phoneError && (
-                <div style={{ ...text.footnote, color: 'var(--color-error, var(--color-error-surface-accented))', padding: '4px 16px 0' }}>{phoneError}</div>
-              )}
-            </div>
-
-            {/* Описание */}
-            <CellList mode="island">
-              <div style={stepOneTextareaWrapStyle}>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 200))}
-                  placeholder="Описание"
-                  rows={3}
-                  style={stepOneTextareaStyle}
-                />
-                <span style={stepOneCounterStyle}>
-                  {description.length}/200
-                </span>
-              </div>
-            </CellList>
-
-            {/* Адрес */}
-            <CellList mode="island">
-              <button
-                onClick={() => setShowAddressPortal(true)}
-                style={stepOneAddressButtonStyle}
-              >
-                <img
-                  src={locationAddImg}
-                  alt="location"
-                  style={{ width: 24, height: 24, flexShrink: 0 }}
-                />
-                <div style={stepOneAddressContentStyle}>
-                  <div style={stepOneAddressTitleStyle}>
-                    Адрес
-                  </div>
-                  <div style={stepOneAddressHintStyle}>
-                    {location || 'Куда приезжать клиентам'}
-                  </div>
-                </div>
-                <ChevronIcon />
-              </button>
-            </CellList>
-
-            {/* Выезд на дом */}
-            <CellList mode="island">
-              <div style={onboardingToggleRowStyle}>
-                <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Выезд на дом</span>
-                <ToggleSwitch
-                  checked={homeVisit}
-                  onChange={setHomeVisit}
-                  aria-label="Выезд на дом"
-                />
-              </div>
-            </CellList>
-          </>
-        )}
+      {/* Контент (step 1) */}
+      <div style={{ ...onboardingPortalContentStyle, ...(step !== 1 ? { display: 'none' } : {}) }}>
 
         {/* ── Шаг 1: График ── */}
         {step === 1 && (
@@ -554,45 +376,80 @@ export default function OnboardingPage() {
         />
       )}
 
-      {/* Кнопка Далее / Готово */}
-      <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
-        {submitError && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: 'rgba(209, 50, 50, 0.12)',
-              color: 'var(--color-error-surface-accented)',
-              ...text.action,
-              lineHeight: 1.4,
-            }}
-          >
-            {submitError}
+      {/* Кнопка Далее / Готово
+          Step 0 (Figma 8794:65467): footer pt-8 px-12 pb-48, button h=60, radius 20,
+            disabled bg secondarySurfaceMuted + interactiveElementMuted text.
+          Step 1/2 (старый стиль): pt/pb 12 px-16, button h=48. */}
+      {(() => {
+        const disabled = saving || photoUploading || (step === 0 && !name.trim())
+        const buttonLabel = saving ? 'Сохраняем...' :
+          step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
+          step === 2 && servicesSubStep === 'categories' && catCount === 0 ? 'Пропустить' :
+          step === 2 && servicesSubStep === 'categories' ? 'Готово' :
+          'Далее'
+
+        const footerStyle: CSSProperties = step === 0
+          ? { padding: '8px 12px', paddingBottom: 'calc(48px + env(safe-area-inset-bottom))' }
+          : { padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }
+
+        const buttonStyle: CSSProperties = step === 0
+          ? {
+              width: '100%',
+              height: 60,
+              borderRadius: 20,
+              border: 'none',
+              padding: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...text.callout1,
+              cursor: disabled ? 'default' : 'pointer',
+              background: disabled
+                ? 'var(--color-secondary-surface-muted)'
+                : 'var(--color-primary-surface)',
+              color: disabled
+                ? 'var(--color-interactive-element-muted)'
+                : 'var(--color-on-primary-surface)',
+            }
+          : {
+              ...primaryActionButtonBaseStyle,
+              cursor: disabled ? 'default' : 'pointer',
+              background: disabled
+                ? 'var(--color-secondary-surface)'
+                : 'var(--color-primary-surface)',
+              color: disabled
+                ? 'var(--color-on-surface-secondary)'
+                : 'var(--color-on-primary-surface)',
+            }
+
+        return (
+          <div style={footerStyle}>
+            {submitError && (
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: '12px 14px',
+                  borderRadius: 14,
+                  background: 'rgba(209, 50, 50, 0.12)',
+                  color: 'var(--color-error-surface-accented)',
+                  ...text.action,
+                  lineHeight: 1.4,
+                }}
+              >
+                {submitError}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => { void handleNext() }}
+              style={buttonStyle}
+            >
+              {buttonLabel}
+            </button>
           </div>
-        )}
-        <button
-          type="button"
-          disabled={saving || photoUploading || (step === 0 && !name.trim())}
-          onClick={() => { void handleNext() }}
-          style={{
-            ...primaryActionButtonBaseStyle,
-            cursor: saving || photoUploading || (step === 0 && !name.trim()) ? 'default' : 'pointer',
-            background: saving || photoUploading || (step === 0 && !name.trim())
-              ? 'var(--color-secondary-surface)'
-              : 'var(--color-primary-surface)',
-            color: saving || photoUploading || (step === 0 && !name.trim())
-              ? 'var(--color-on-surface-secondary)'
-              : 'var(--color-on-primary-surface)',
-          }}
-        >
-          {saving ? 'Сохраняем...' :
-           step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
-           step === 2 && servicesSubStep === 'categories' && catCount === 0 ? 'Пропустить' :
-           step === 2 && servicesSubStep === 'categories' ? 'Готово' :
-           'Далее'}
-        </button>
-      </div>
+        )
+      })()}
 
 
       {/* ── Портал: Ввод адреса ── */}
@@ -611,15 +468,6 @@ export default function OnboardingPage() {
 }
 
 // ─── Вспомогательные компоненты ───────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ ...onboardingSectionLabelStyle, marginTop: 4, marginBottom: 0 }}>
-      {children}
-    </div>
-  )
-}
-
 
 function SelectField({ value, onChange, options }: {
   value: number; onChange: (v: string) => void
@@ -665,51 +513,6 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
   )
 }
 
-function BottomSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end' }}
-      onClick={onClose}
-    >
-      <div
-        style={{ background: 'var(--color-background)', borderRadius: '16px 16px 0 0', width: '100%', padding: 16, maxHeight: '90dvh', overflowY: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Ручка */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-secondary-surface)', margin: '0 auto 16px' }} />
-        <h2 style={{ ...text.subheadline, marginBottom: 16 }}>{title}</h2>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function CameraIcon({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <circle cx="12" cy="13" r="4" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" fill="none" />
-      <path d="M12 11v1" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-
-function EditIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-
-
-
 function UploadingOverlay() {
   return (
     <div style={{
@@ -722,23 +525,455 @@ function UploadingOverlay() {
   )
 }
 
-function LocationIcon() {
+// ─── Step 0: «Обо мне» (новый макет Figma 8794:54710) ─────────────────────────
+//
+// Layout: круглый back-button сверху → аватар 104×104 (фиолетовый градиент с
+// иконкой камеры) → подсказка → поля (имя, описание+caption, телефон) → сегмент
+// «Принимаю по адресу / Выезжаю / дистанционно» → адрес-кнопка (скрыта при
+// дистанционной работе). Кнопка «Далее» рисуется родителем (общий footer).
+
+interface Step0Props {
+  name: string
+  setName: (v: string) => void
+  phone: string
+  phoneError: string | null
+  onPhoneChange: (v: string) => void
+  description: string
+  setDescription: (v: string) => void
+  location: string
+  homeVisit: boolean
+  setHomeVisit: (v: boolean) => void
+  photoPreview: string | null
+  setPhotoPreview: (v: string | null) => void
+  setPhotoUrl: (v: string | null) => void
+  photoUploading: boolean
+  setPhotoUploading: (v: boolean) => void
+  photoInputRef: RefObject<HTMLInputElement>
+  onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onAddressClick: () => void
+  onBack: () => void
+}
+
+// Figma «Body 2» 17/24/400 ls -0.17 — текст полей.
+const fieldTextStyle: CSSProperties = { ...text.body2 }
+// Figma «Caption 2» 14/16/500 ls -0.028 — caption под полем + текст сегмента.
+const captionTextStyle: CSSProperties = { ...text.caption2 }
+
+function Step0Form(props: Step0Props) {
+  const {
+    name, setName,
+    phone, phoneError, onPhoneChange,
+    description, setDescription,
+    location,
+    homeVisit, setHomeVisit,
+    photoPreview, photoUploading, photoInputRef, onPhotoChange,
+    onAddressClick, onBack,
+  } = props
+
+  // Описание: auto-grow textarea (до 7 строк по 24px = 168px, потом скролл).
+  const descRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = descRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const maxContentH = 7 * 24 // 168
+    el.style.height = `${Math.min(el.scrollHeight, maxContentH)}px`
+  }, [description])
+
+  const showCounter = description.length >= 190
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Toolbar: круглая back-кнопка слева (Figma toolbarTop, h=56, px=12, py=6) */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', height: 56, flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Назад"
+          style={{
+            width: 44, height: 44,
+            borderRadius: '50%',
+            background: 'var(--color-background)',
+            color: 'var(--color-on-surface-soften)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <ArrowLeftIcon />
+        </button>
+      </div>
+
+      {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields) */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
+        padding: '32px 16px 0', width: '100%',
+      }}>
+        {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
+        <button
+          type="button"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={photoUploading}
+          aria-label="Загрузить фото профиля"
+          style={{
+            width: 104, height: 104,
+            borderRadius: '50%',
+            border: 'none',
+            padding: 0,
+            position: 'relative',
+            overflow: 'hidden',
+            background: photoPreview
+              ? 'transparent'
+              : 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
+            cursor: photoUploading ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {photoPreview ? (
+            <img
+              src={photoPreview}
+              alt="Фото профиля"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div style={{ color: '#FFFFFF', display: 'flex' }}>
+              <CameraBoldIcon />
+            </div>
+          )}
+          {photoUploading && <UploadingOverlay />}
+        </button>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={onPhotoChange}
+        />
+
+        {/* Подсказка под аватаром */}
+        <div style={{
+          ...text.body,
+          letterSpacing: -0.15,
+          color: 'var(--color-on-surface-soften)',
+          textAlign: 'center',
+        }}>
+          Добавьте фото, чтобы вас узнавали
+        </div>
+
+        {/* Поля */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
+          {/* Имя */}
+          <OnboardingField>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Имя или название бизнеса"
+              style={inputStyle}
+            />
+          </OnboardingField>
+
+          {/* Описание + caption (auto-grow, счётчик при ≥190) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            <div style={{
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 20,
+              minHeight: 72,
+              padding: '16px 20px',
+              width: '100%',
+              display: 'flex',
+            }}>
+              <textarea
+                ref={descRef}
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                placeholder="Описание"
+                rows={1}
+                style={{
+                  ...fieldTextStyle,
+                  width: '100%',
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  color: 'var(--color-on-surface)',
+                  resize: 'none',
+                  overflowY: 'auto',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                }}
+              />
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '0 8px',
+            }}>
+              <div style={{
+                ...captionTextStyle,
+                flex: 1,
+                color: 'var(--color-on-surface-secondary)',
+              }}>
+                Какие услуги вы представляете? Например, парикмахер-стилист
+              </div>
+              {showCounter && (
+                <div style={{
+                  ...captionTextStyle,
+                  color: 'var(--color-on-surface-secondary)',
+                  flexShrink: 0,
+                }}>
+                  {description.length}/200
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Телефон */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+            <OnboardingField>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => onPhoneChange(e.target.value)}
+                placeholder="Телефон"
+                style={inputStyle}
+              />
+            </OnboardingField>
+            {phoneError && (
+              <div style={{
+                ...text.footnote,
+                color: 'var(--color-error-surface-accented)',
+                padding: '0 8px',
+              }}>
+                {phoneError}
+              </div>
+            )}
+          </div>
+
+          {/* Address widget: сегмент + (опционально) поле адреса */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            <ServiceModeSegment value={homeVisit} onChange={setHomeVisit} />
+            {!homeVisit && (
+              <AddressButton location={location} onClick={onAddressClick} />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Поле ввода (single-line text) ────────────────────────────────────────────
+// Figma: bg surfaceTransparent, h=72, radius 20, padding 16/20, gap 12.
+function OnboardingField({ children }: { children: ReactNode }) {
+  return (
+    <div style={{
+      background: 'var(--color-surface-transparent)',
+      borderRadius: 20,
+      height: 72,
+      padding: '16px 20px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      width: '100%',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+const inputStyle: CSSProperties = {
+  ...fieldTextStyle,
+  width: '100%',
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  color: 'var(--color-on-surface)',
+  padding: 0,
+  fontFamily: 'inherit',
+}
+
+// ── Сегмент-контрол «По адресу / Дистанционно» ────────────────────────────────
+// Figma: 2 chip-кнопки 50/50, gap 8, h ≈ 72 (padding 12/8 + icon 24 + gap 4 + text 16×2).
+// Активный: bg activeSurface (#003D7F), icon + text — белые с opacity 0.8.
+// Неактивный: bg surfaceTransparent, icon + text — activeElement (#409BFE).
+function ServiceModeSegment({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  // value=false → «Принимаю по адресу» активно (homeVisit=false по умолчанию).
+  return (
+    <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+      <ModeChip
+        active={!value}
+        onClick={() => onChange(false)}
+        icon={<LocationOutlineIcon />}
+        label={<>Принимаю<br />по адресу</>}
+      />
+      <ModeChip
+        active={value}
+        onClick={() => onChange(true)}
+        icon={<CallIcon />}
+        label="Выезжаю / работаю дистанционно"
+      />
+    </div>
+  )
+}
+
+function ModeChip({ active, onClick, icon, label }: {
+  active: boolean; onClick: () => void; icon: ReactNode; label: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: active ? 'var(--color-active-surface)' : 'var(--color-surface-transparent)',
+        color: active ? 'rgba(255, 255, 255, 0.8)' : 'var(--color-active-element)',
+        border: 'none',
+        borderRadius: 20,
+        padding: '12px 8px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 4,
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ width: 24, height: 24, display: 'flex' }}>{icon}</div>
+      <div style={{
+        ...captionTextStyle,
+        textAlign: 'center',
+        color: 'inherit',
+      }}>
+        {label}
+      </div>
+    </button>
+  )
+}
+
+// ── Адрес-кнопка ──────────────────────────────────────────────────────────────
+// Figma: bg surfaceTransparent, h=72, radius 20, padding 16/20, gap 12.
+// Иконка-плюс-локейшен в круглом 44×44 контейнере (padding 10, radius 12).
+function AddressButton({ location, onClick }: { location: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: 'var(--color-surface-transparent)',
+        border: 'none',
+        borderRadius: 20,
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        cursor: 'pointer',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{
+        width: 44, height: 44,
+        borderRadius: 12,
+        padding: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        color: 'var(--color-interactive-element-muted)',
+      }}>
+        <LocationAddIcon />
+      </div>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+          ...text.callout1,
+          color: 'var(--color-on-surface)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          Адрес
+        </div>
+        <div style={{
+          ...captionTextStyle,
+          color: 'var(--color-on-surface-secondary)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {location || 'Куда приезжать клиентам'}
+        </div>
+      </div>
+      <div style={{
+        width: 16, height: 16,
+        display: 'flex',
+        flexShrink: 0,
+        color: 'var(--color-interactive-element-muted)',
+      }}>
+        <ChevronRightIcon />
+      </div>
+    </button>
+  )
+}
+
+// ─── Иконки (vuesax, viewBox указан в каждом SVG) ─────────────────────────────
+
+function ArrowLeftIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M12 13.43a3.12 3.12 0 1 0 0-6.24 3.12 3.12 0 0 0 0 6.24z"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" />
-      <path d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 0 1-7.21 0c-2.76-2.66-5.92-6.97-4.77-12.05z"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" />
-      <path d="M12 7.5v2M11 8.5h2" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-
-function ChevronIcon() {
+function CameraBoldIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path d="M9 18l6-6-6-6" stroke="var(--color-on-surface-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <path d="M24 8C23.1867 8 22.44 7.53333 22.0667 6.81333L21.1067 4.88C20.4933 3.66667 18.8933 2.66667 17.5333 2.66667H14.48C13.1067 2.66667 11.5067 3.66667 10.8933 4.88L9.93333 6.81333C9.56 7.53333 8.81333 8 8 8C5.10667 8 2.81333 10.44 3 13.32L3.69333 24.3333C3.85333 27.08 5.33333 29.3333 9.01333 29.3333H22.9867C26.6667 29.3333 28.1333 27.08 28.3067 24.3333L29 13.32C29.1867 10.44 26.8933 8 24 8ZM14 9.66667H18C18.5467 9.66667 19 10.12 19 10.6667C19 11.2133 18.5467 11.6667 18 11.6667H14C13.4533 11.6667 13 11.2133 13 10.6667C13 10.12 13.4533 9.66667 14 9.66667ZM16 24.16C13.52 24.16 11.4933 22.1467 11.4933 19.6533C11.4933 17.16 13.5067 15.1467 16 15.1467C18.4933 15.1467 20.5067 17.16 20.5067 19.6533C20.5067 22.1467 18.48 24.16 16 24.16Z" fill="currentColor" fillOpacity="0.6" />
+    </svg>
+  )
+}
+
+function LocationOutlineIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 13.43C13.7231 13.43 15.12 12.0331 15.12 10.31C15.12 8.58687 13.7231 7.19 12 7.19C10.2769 7.19 8.88 8.58687 8.88 10.31C8.88 12.0331 10.2769 13.43 12 13.43Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M3.62 8.49C5.59 -0.17 18.42 -0.16 20.38 8.5C21.53 13.58 18.37 17.88 15.6 20.54C13.59 22.48 10.41 22.48 8.39 20.54C5.63 17.88 2.47 13.57 3.62 8.49Z" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  )
+}
+
+function CallIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M21.97 18.33C21.97 18.69 21.89 19.06 21.72 19.42C21.55 19.78 21.33 20.12 21.04 20.44C20.55 20.98 20.01 21.37 19.4 21.62C18.8 21.87 18.15 22 17.45 22C16.43 22 15.34 21.76 14.19 21.27C13.04 20.78 11.89 20.12 10.75 19.29C9.6 18.45 8.51 17.52 7.47 16.49C6.44 15.45 5.51 14.36 4.68 13.22C3.86 12.08 3.2 10.94 2.72 9.81C2.24 8.67 2 7.58 2 6.54C2 5.86 2.12 5.21 2.36 4.61C2.6 4 2.98 3.44 3.51 2.94C4.15 2.31 4.85 2 5.59 2C5.87 2 6.15 2.06 6.4 2.18C6.66 2.3 6.89 2.48 7.07 2.74L9.39 6.01C9.57 6.26 9.7 6.49 9.79 6.71C9.88 6.92 9.93 7.13 9.93 7.32C9.93 7.56 9.86 7.8 9.72 8.03C9.59 8.26 9.4 8.5 9.16 8.74L8.4 9.53C8.29 9.64 8.24 9.77 8.24 9.93C8.24 10.01 8.25 10.08 8.27 10.16C8.3 10.24 8.33 10.3 8.35 10.36C8.53 10.69 8.84 11.12 9.28 11.64C9.73 12.16 10.21 12.69 10.73 13.22C11.27 13.75 11.79 14.24 12.32 14.69C12.84 15.13 13.27 15.43 13.61 15.61C13.66 15.63 13.72 15.66 13.79 15.69C13.87 15.72 13.95 15.73 14.04 15.73C14.21 15.73 14.34 15.67 14.45 15.56L15.21 14.81C15.46 14.56 15.7 14.37 15.93 14.25C16.16 14.11 16.39 14.04 16.64 14.04C16.83 14.04 17.03 14.08 17.25 14.17C17.47 14.26 17.7 14.39 17.95 14.56L21.26 16.91C21.52 17.09 21.7 17.3 21.81 17.55C21.91 17.8 21.97 18.05 21.97 18.33Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
+    </svg>
+  )
+}
+
+function LocationAddIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.25 11H14.75" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M12 13.75V8.25" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M3.62 8.49C5.59 -0.17 18.42 -0.16 20.38 8.5C21.53 13.58 18.37 17.88 15.6 20.54C13.59 22.48 10.41 22.48 8.39 20.54C5.63 17.88 2.47 13.57 3.62 8.49Z" stroke="currentColor" strokeWidth="1.75" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M5.94 13.28L10.2867 8.93333C10.8 8.42 10.8 7.58 10.2867 7.06667L5.94 2.72" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

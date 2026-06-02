@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 
@@ -8,7 +8,6 @@ import illustrationCalendar from '@/assets/welcome-slider/illustration-calendar.
 import illustrationBell from '@/assets/welcome-slider/illustration-bell.png'
 import illustrationAnalytics from '@/assets/welcome-slider/illustration-analytics.png'
 import illustrationCheck from '@/assets/welcome-slider/illustration-check.png'
-import ellipseGlow from '@/assets/welcome-slider/ellipse-glow.png'
 
 // ─── Данные ───────────────────────────────────────────────────────────────────
 
@@ -97,16 +96,19 @@ export default function WelcomePage() {
     )
   }
 
-  // ── Шаги 0..4: слайды ──
-  const slide = SLIDES[step]
+  // ── Шаги 0..4: слайды в track (translateX + transition, без overscroll) ──
   return (
     <Layout onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      <div style={{ flex: 1 }} />
-      <CenteredContent>
-        <IllustrationCard illustration={slide.illustration} />
-        <TextBlock title={slide.title} subtitle={slide.subtitle} />
-      </CenteredContent>
-      <div style={{ flex: 1 }} />
+      <SlideTrack currentIndex={step} count={SLIDES.length}>
+        {SLIDES.map((slide) => (
+          <Slide key={slide.title}>
+            <CenteredContent>
+              <IllustrationCard illustration={slide.illustration} />
+              <TextBlock title={slide.title} subtitle={slide.subtitle} />
+            </CenteredContent>
+          </Slide>
+        ))}
+      </SlideTrack>
       <Footer>
         <PaginationDots current={step} total={TOTAL_DOTS} />
         <div style={{ height: 40 }} />
@@ -124,6 +126,13 @@ interface LayoutProps {
   onTouchEnd?: (e: React.TouchEvent) => void
 }
 function Layout({ children, onTouchStart, onTouchEnd }: LayoutProps) {
+  // На time-of-mount ставим body-класс, отключающий глобальный hero-фон
+  // (макеты welcome-слайдера однотонные, без градиента/скругления/декора).
+  useEffect(() => {
+    document.body.classList.add('no-hero-bg')
+    return () => { document.body.classList.remove('no-hero-bg') }
+  }, [])
+
   return (
     <div
       onTouchStart={onTouchStart}
@@ -133,6 +142,55 @@ function Layout({ children, onTouchStart, onTouchEnd }: LayoutProps) {
         display: 'flex',
         flexDirection: 'column',
         color: 'var(--color-on-surface)',
+        // touch-action: pan-y — браузер обрабатывает только вертикальный скролл,
+        // горизонтальные жесты остаются нам (никакой «резинки» от back-swipe).
+        touchAction: 'pan-y',
+        overscrollBehaviorX: 'contain',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ─── Слайд-трек (horizontal translateX, плавная анимация смены шага) ──────────
+
+function SlideTrack({ currentIndex, count, children }: {
+  currentIndex: number
+  count: number
+  children: ReactNode
+}) {
+  return (
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+      <div
+        style={{
+          display: 'flex',
+          width: `${count * 100}%`,
+          height: '100%',
+          transform: `translateX(-${currentIndex * (100 / count)}%)`,
+          transition: 'transform 0.32s ease',
+          willChange: 'transform',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Slide({ children }: { children: ReactNode }) {
+  // Каждый слайд = вертикальный flex column с центрированием контента.
+  return (
+    <div
+      style={{
+        flex: '0 0 auto',
+        width: `${100 / SLIDES.length}%`,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 16px',
       }}
     >
       {children}
@@ -161,12 +219,11 @@ function Footer({ children }: { children: ReactNode }) {
 // ─── Карточка с иллюстрацией ──────────────────────────────────────────────────
 
 function IllustrationCard({ illustration }: { illustration: string }) {
-  // Figma: контейнер 300×300, эллипс 270.801×171.242 rotate 8° в центре, иллюстрация поверх.
+  // Figma: контейнер 300×300, эллипс 270.801×171.242 (rotate 8°) с linear-gradient
+  // #DAEBFF→#BBDAFF (top→bottom) в центре, иллюстрация поверх.
   return (
     <div style={{ position: 'relative', width: 300, height: 300, overflow: 'hidden' }}>
-      <img
-        src={ellipseGlow}
-        alt=""
+      <div
         aria-hidden
         style={{
           position: 'absolute',
@@ -175,6 +232,8 @@ function IllustrationCard({ illustration }: { illustration: string }) {
           left: '50%',
           top: 'calc(50% + 7px)',
           transform: 'translate(-50%, -50%) rotate(8deg)',
+          borderRadius: '50%',
+          background: 'linear-gradient(180deg, #DAEBFF 0%, #BBDAFF 100%)',
         }}
       />
       <img

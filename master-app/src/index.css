@@ -277,6 +277,19 @@ body {
   #root > div::before { animation: none; }
 }
 
+/* Отключение глобального hero-фона на отдельных экранах (welcome-слайдер):
+   макет требует однотонный фон без скруглений и без декора. Класс ставит
+   страница через useEffect. */
+body.no-hero-bg #root > div {
+  background: var(--color-background);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  clip-path: none;
+}
+body.no-hero-bg #root > div::before {
+  display: none;
+}
+
 button, input, textarea, select {
   color: inherit;
   font-family: inherit;
