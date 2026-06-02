@@ -99,7 +99,7 @@ export default function WelcomePage() {
   // ── Шаги 0..4: слайды в track (translateX + transition, без overscroll) ──
   return (
     <Layout onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      <SlideTrack currentIndex={step} count={SLIDES.length}>
+      <SlideTrack currentIndex={step}>
         {SLIDES.map((slide) => (
           <Slide key={slide.title}>
             <CenteredContent>
@@ -154,20 +154,25 @@ function Layout({ children, onTouchStart, onTouchEnd }: LayoutProps) {
 }
 
 // ─── Слайд-трек (horizontal translateX, плавная анимация смены шага) ──────────
+//
+// Архитектура: viewport (overflow hidden, width = 100% родителя) → track flex,
+// translateX(-N * 100%). Каждый Slide имеет `flex: 0 0 100%`, то есть ровно
+// 100% от viewport (= точный пиксельный размер), не зависит от количества
+// слайдов и не страдает от дробного деления процентов (раньше при 20% × 5
+// получался субпиксельный остаток и был виден соседний слайд).
 
-function SlideTrack({ currentIndex, count, children }: {
+function SlideTrack({ currentIndex, children }: {
   currentIndex: number
-  count: number
   children: ReactNode
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+    <div style={{ flex: 1, overflow: 'hidden' }}>
       <div
         style={{
           display: 'flex',
-          width: `${count * 100}%`,
+          width: '100%',
           height: '100%',
-          transform: `translateX(-${currentIndex * (100 / count)}%)`,
+          transform: `translate3d(-${currentIndex * 100}%, 0, 0)`,
           transition: 'transform 0.32s ease',
           willChange: 'transform',
         }}
@@ -179,12 +184,10 @@ function SlideTrack({ currentIndex, count, children }: {
 }
 
 function Slide({ children }: { children: ReactNode }) {
-  // Каждый слайд = вертикальный flex column с центрированием контента.
   return (
     <div
       style={{
-        flex: '0 0 auto',
-        width: `${100 / SLIDES.length}%`,
+        flex: '0 0 100%',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -219,13 +222,47 @@ function Footer({ children }: { children: ReactNode }) {
 // ─── Карточка с иллюстрацией ──────────────────────────────────────────────────
 
 function IllustrationCard({ illustration }: { illustration: string }) {
-  // Иллюстрации — композитные PNG 300×300 (эллипс уже встроен в файл из Figma).
+  // Figma: контейнер 300×300 overflow-clip.
+  // Слой 1 — эллипс 270.801×171.242 с linear-gradient #DAEBFF→#BBDAFF, поворот 8°,
+  //   центр со сдвигом +7px по Y (inline SVG, чтобы избежать MIME-проблем на Pages
+  //   и иметь точно тот же fill, что в исходных макетах).
+  // Слой 2 — transparent PNG-иллюстрация (3D-объект из Figma).
   return (
-    <img
-      src={illustration}
-      alt=""
-      style={{ width: 300, height: 300, display: 'block' }}
-    />
+    <div style={{ position: 'relative', width: 300, height: 300, overflow: 'hidden' }}>
+      <svg
+        aria-hidden
+        width="270.801"
+        height="171.242"
+        viewBox="0 0 270.801 171.242"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: 'calc(50% + 7px)',
+          transform: 'translate(-50%, -50%) rotate(8deg)',
+        }}
+      >
+        <ellipse cx="135.4" cy="85.6209" rx="135.4" ry="85.6209" fill="url(#welcomeEllipseGradient)" />
+        <defs>
+          <linearGradient id="welcomeEllipseGradient" x1="135.4" y1="0" x2="135.4" y2="171.242" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#DAEBFF" />
+            <stop offset="1" stopColor="#BBDAFF" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <img
+        src={illustration}
+        alt=""
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+      />
+    </div>
   )
 }
 
