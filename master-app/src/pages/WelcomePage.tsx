@@ -222,47 +222,14 @@ function Footer({ children }: { children: ReactNode }) {
 // ─── Карточка с иллюстрацией ──────────────────────────────────────────────────
 
 function IllustrationCard({ illustration }: { illustration: string }) {
-  // Figma: контейнер 300×300 overflow-clip.
-  // Слой 1 — эллипс 270.801×171.242 с linear-gradient #DAEBFF→#BBDAFF, поворот 8°,
-  //   центр со сдвигом +7px по Y (inline SVG, чтобы избежать MIME-проблем на Pages
-  //   и иметь точно тот же fill, что в исходных макетах).
-  // Слой 2 — transparent PNG-иллюстрация (3D-объект из Figma).
+  // PNG-карточки уже композированы (овал + 3D-сцена с точными размерами и
+  // offset'ом из Figma) скриптом master-app/tmp-composite-slides.cjs.
   return (
-    <div style={{ position: 'relative', width: 300, height: 300, overflow: 'hidden' }}>
-      <svg
-        aria-hidden
-        width="270.801"
-        height="171.242"
-        viewBox="0 0 270.801 171.242"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: 'calc(50% + 7px)',
-          transform: 'translate(-50%, -50%) rotate(8deg)',
-        }}
-      >
-        <ellipse cx="135.4" cy="85.6209" rx="135.4" ry="85.6209" fill="url(#welcomeEllipseGradient)" />
-        <defs>
-          <linearGradient id="welcomeEllipseGradient" x1="135.4" y1="0" x2="135.4" y2="171.242" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#DAEBFF" />
-            <stop offset="1" stopColor="#BBDAFF" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <img
-        src={illustration}
-        alt=""
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          display: 'block',
-        }}
-      />
-    </div>
+    <img
+      src={illustration}
+      alt=""
+      style={{ width: 300, height: 300, display: 'block' }}
+    />
   )
 }
 
