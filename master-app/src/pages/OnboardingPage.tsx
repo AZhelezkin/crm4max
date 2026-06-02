@@ -698,47 +698,23 @@ function Step0Form(props: Step0Props) {
 
         {/* Поля */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
-          {/* Имя */}
-          <OnboardingField>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Имя или название бизнеса"
-              style={inputStyle}
-            />
-          </OnboardingField>
+          {/* Имя — плавающий лейбл (макет 8794:60965) */}
+          <FloatingField
+            label="Имя или название бизнеса"
+            value={name}
+            onChange={setName}
+          />
 
-          {/* Описание + caption (auto-grow, счётчик при ≥190) */}
+          {/* Описание — плавающий лейбл, auto-grow, счётчик при ≥190 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-            <div style={{
-              background: 'var(--color-surface-transparent)',
-              borderRadius: 20,
-              minHeight: 72,
-              padding: '16px 20px',
-              width: '100%',
-              display: 'flex',
-            }}>
-              <textarea
-                ref={descRef}
-                value={description}
-                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
-                placeholder="Описание"
-                rows={1}
-                style={{
-                  ...fieldTextStyle,
-                  width: '100%',
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  color: 'var(--color-on-surface)',
-                  resize: 'none',
-                  overflowY: 'auto',
-                  padding: 0,
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
+            <FloatingField
+              multiline
+              label="Описание"
+              value={description}
+              onChange={(v) => setDescription(v.slice(0, 200))}
+              inputRef={descRef}
+              maxLength={200}
+            />
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -766,16 +742,13 @@ function Step0Form(props: Step0Props) {
 
           {/* Телефон */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
-            <OnboardingField>
-              <input
-                type="tel"
-                inputMode="tel"
-                value={phone}
-                onChange={(e) => onPhoneChange(e.target.value)}
-                placeholder="Телефон"
-                style={inputStyle}
-              />
-            </OnboardingField>
+            <FloatingField
+              label="Телефон"
+              value={phone}
+              onChange={onPhoneChange}
+              type="tel"
+              inputMode="tel"
+            />
             {phoneError && (
               <div style={{
                 ...text.footnote,
@@ -800,34 +773,129 @@ function Step0Form(props: Step0Props) {
   )
 }
 
-// ── Поле ввода (single-line text) ────────────────────────────────────────────
-// Figma: bg surfaceTransparent, h=72, radius 20, padding 16/20, gap 12.
-function OnboardingField({ children }: { children: ReactNode }) {
+// ── Поле с плавающим лейблом (макет 8794:60965) ──────────────────────────────
+// Пусто → плейсхолдер по центру. Есть значение/фокус → лейбл всплывает наверх
+// (caption, on-surface-secondary), значение под ним (body2). Фокус → фон surface
+// + рамка 2px active-element. Крестик очистки — при фокусе и непустом значении.
+// Вертикаль (single-line): 15 + label 16 + gap 2 + value 24 + 15 = 72.
+interface FloatingFieldProps {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  type?: string
+  inputMode?: 'text' | 'tel' | 'numeric' | 'email'
+  maxLength?: number
+  multiline?: boolean
+  inputRef?: RefObject<HTMLTextAreaElement>
+}
+
+function FloatingField({
+  label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, inputRef,
+}: FloatingFieldProps) {
+  const [focused, setFocused] = useState(false)
+  const floated = focused || value.length > 0
+
+  const innerInputStyle: CSSProperties = {
+    ...fieldTextStyle,
+    flex: 1,
+    minWidth: 0,
+    border: 'none',
+    outline: 'none',
+    background: 'transparent',
+    color: 'var(--color-on-surface)',
+    padding: 0,
+    fontFamily: 'inherit',
+  }
+
   return (
     <div style={{
-      background: 'var(--color-surface-transparent)',
-      borderRadius: 20,
-      height: 72,
-      padding: '16px 20px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
+      position: 'relative',
       width: '100%',
+      minHeight: 72,
+      boxSizing: 'border-box',
+      borderRadius: 20,
+      padding: '15px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      background: focused ? 'var(--color-surface)' : 'var(--color-surface-transparent)',
+      boxShadow: focused ? 'inset 0 0 0 2px var(--color-active-element)' : undefined,
+      transition: 'background 0.15s ease, box-shadow 0.15s ease',
     }}>
-      {children}
+      {floated && (
+        <span style={{
+          ...text.caption,
+          color: 'var(--color-on-surface-secondary)',
+          marginBottom: 2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          {label}
+        </span>
+      )}
+      <div style={{ display: 'flex', alignItems: multiline ? 'flex-start' : 'center', gap: 8, width: '100%' }}>
+        {multiline ? (
+          <textarea
+            ref={inputRef}
+            value={value}
+            placeholder={floated ? '' : label}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            rows={1}
+            maxLength={maxLength}
+            style={{ ...innerInputStyle, resize: 'none', overflowY: 'auto' }}
+          />
+        ) : (
+          <input
+            type={type}
+            inputMode={inputMode}
+            value={value}
+            placeholder={floated ? '' : label}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            maxLength={maxLength}
+            style={innerInputStyle}
+          />
+        )}
+        {focused && value.length > 0 && (
+          <button
+            type="button"
+            aria-label="Очистить"
+            // preventDefault на mousedown — чтобы не терять фокус поля при клике на крестик
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onChange('')}
+            style={{
+              flexShrink: 0,
+              width: 24,
+              height: 24,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-interactive-element-secondary)',
+            }}
+          >
+            <ClearFieldIcon />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-const inputStyle: CSSProperties = {
-  ...fieldTextStyle,
-  width: '100%',
-  border: 'none',
-  outline: 'none',
-  background: 'transparent',
-  color: 'var(--color-on-surface)',
-  padding: 0,
-  fontFamily: 'inherit',
+// Крестик очистки — X 10×10 (макет: M349 473L339 483 …), нормализован в 24×24.
+function ClearFieldIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M17 7L7 17M7 7L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 // ── Сегмент-контрол «По адресу / Дистанционно» ────────────────────────────────
