@@ -221,7 +221,9 @@ export default function AvatarCropPortal({ open, src, onCancel, onConfirm, outpu
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'var(--color-background)',
+        // hero-композиция как у #root>div (paint0-градиент + 2 круга + плёнка); портал
+        // рендерится в document.body, поэтому глобальный hero не наследуется — задаём явно.
+        background: 'var(--gradient-hero-background)',
         zIndex: 200,
         display: 'flex',
         flexDirection: 'column',
