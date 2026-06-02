@@ -87,6 +87,10 @@ export default function WelcomePage() {
     return (
       <Layout onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <Paywall />
+        {/* Spacer: всё свободное пространство уходит между списком фич и dots —
+            именно так в Figma макете блоки header+list лежат плотно сверху,
+            а точки/кнопка прижаты к низу. */}
+        <div style={{ flex: 1 }} />
         <Footer>
           <PaginationDots current={step} total={TOTAL_DOTS} />
           <div style={{ height: 40 }} />
@@ -327,16 +331,23 @@ function SecondaryButton({ children, onClick }: BtnProps) {
 // ─── Paywall (шаг 5) ──────────────────────────────────────────────────────────
 
 function Paywall() {
-  // Figma: блок отступ слева/справа 24, top 72, gap 48 между header'ом и списком.
+  // Figma 8884:58227: блок left:24 right:24 top:72 gap:48. Top=72 — это «16px
+  // от низа Max-toolbar». В Max WebApp нет env(safe-area-inset-top), он либо 0,
+  // либо равен высоте OS-нотча (на Android доходит до 50-80px и съедает экран
+  // дважды — раз вертикальные safe-areas уже учтены клиентом). Фиксированные
+  // 16px ровнее ложатся на оба окружения.
+  //
+  // Высота не растягивается — паттерн «контент-плотный-сверху + spacer + footer»
+  // распределяет пустое пространство ниже List (как в Figma, где между списком
+  // и точками виден большой воздух, а сами header+list лежат плотно).
   return (
     <div
       style={{
-        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: 48,
-        paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+        paddingTop: 16,
         paddingLeft: 24,
         paddingRight: 24,
         width: '100%',
