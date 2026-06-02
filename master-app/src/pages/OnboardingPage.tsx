@@ -632,10 +632,7 @@ function Step0Form(props: Step0Props) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
         padding: '32px 16px 0', width: '100%',
       }}>
-        {/* Аватар 104×104 — белый круг с фиолетовым градиентом (Figma «Gradient/
-            Bright/Violet» 239.74°: #844BB6 → #5F68E2). Хексы захардкожены, чтобы
-            не зависеть от темы — в hero-фоне на этом экране var(--color-grad-
-            violet-100) визуально сливается с фоном и аватар выглядит чёрным. */}
+        {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
         <button
           type="button"
           onClick={() => photoInputRef.current?.click()}
@@ -650,7 +647,7 @@ function Step0Form(props: Step0Props) {
             overflow: 'hidden',
             background: photoPreview
               ? 'transparent'
-              : 'linear-gradient(239.74deg, #844BB6 5.83%, #5F68E2 90.48%)',
+              : 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
             cursor: photoUploading ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
