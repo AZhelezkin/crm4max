@@ -10,6 +10,7 @@ import { scheduleApi } from '@/api/schedule.api'
 import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
+import AvatarCropPortal from '@/components/AvatarCropPortal'
 import AppHeader from '@/components/AppHeader'
 import {
   onboardingPortalContentStyle,
@@ -65,6 +66,7 @@ export default function OnboardingPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null)  // object URL для экрана обрезки
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [homeVisit, setHomeVisit] = useState(false)
 
@@ -117,30 +119,26 @@ export default function OnboardingPage() {
     setPhone(digits ? formatPhone(digits) : '')
   }
 
-  // Показывает локальный превью мгновенно, параллельно загружает в S3.
-  // onUploaded(s3url) вызывается после успешной загрузки.
-  const handlePhotoChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setPreview: (v: string | null) => void,
-    setUploading: (v: boolean) => void,
-    onUploaded: (url: string) => void,
-    folder: Parameters<typeof uploadPhoto>[1] = 'masters',
-  ) => {
+  // Аватар: выбор файла → экран обрезки (макет 8794:56697) → загрузка обрезанного в S3.
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''                      // позволяет выбрать тот же файл повторно
     if (!file) return
-    // Мгновенный превью
-    setPreview(URL.createObjectURL(file))
-    // Загрузка в S3
-    setUploading(true)
+    setAvatarCropSrc(URL.createObjectURL(file))
+  }
+
+  const uploadAvatar = async (file: File) => {
+    setPhotoPreview(URL.createObjectURL(file))
+    setPhotoUploading(true)
     try {
-      const url = await uploadPhoto(file, folder)
-      onUploaded(url)
+      const url = await uploadPhoto(file, 'masters')
+      setPhotoUrl(url)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       console.error('Ошибка загрузки фото:', msg)
       setSubmitError(`Не удалось загрузить фото: ${msg}`)
     } finally {
-      setUploading(false)
+      setPhotoUploading(false)
     }
   }
 
@@ -274,7 +272,7 @@ export default function OnboardingPage() {
           setPhotoUrl={setPhotoUrl}
           photoUploading={photoUploading} setPhotoUploading={setPhotoUploading}
           photoInputRef={photoInputRef}
-          onPhotoChange={(e) => handlePhotoChange(e, setPhotoPreview, setPhotoUploading, (url) => setPhotoUrl(url), 'masters')}
+          onPhotoChange={handleAvatarPick}
           onAddressClick={() => setShowAddressPortal(true)}
           onBack={() => navigate('/welcome')}
         />
@@ -460,6 +458,21 @@ export default function OnboardingPage() {
         onConfirm={(address, pickedCoords) => {
           setLocation(address)
           if (pickedCoords) setCoords(pickedCoords)
+        }}
+      />
+
+      {/* ── Портал: Обрезка аватара (макет 8794:56697) ── */}
+      <AvatarCropPortal
+        open={!!avatarCropSrc}
+        src={avatarCropSrc ?? ''}
+        onCancel={() => {
+          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+          setAvatarCropSrc(null)
+        }}
+        onConfirm={(file) => {
+          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+          setAvatarCropSrc(null)
+          void uploadAvatar(file)
         }}
       />
 
