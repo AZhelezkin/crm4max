@@ -219,34 +219,13 @@ function Footer({ children }: { children: ReactNode }) {
 // ─── Карточка с иллюстрацией ──────────────────────────────────────────────────
 
 function IllustrationCard({ illustration }: { illustration: string }) {
-  // Figma: контейнер 300×300, эллипс 270.801×171.242 (rotate 8°) с linear-gradient
-  // #DAEBFF→#BBDAFF (top→bottom) в центре, иллюстрация поверх.
+  // Иллюстрации — композитные PNG 300×300 (эллипс уже встроен в файл из Figma).
   return (
-    <div style={{ position: 'relative', width: 300, height: 300, overflow: 'hidden' }}>
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          width: 270.801,
-          height: 171.242,
-          left: '50%',
-          top: 'calc(50% + 7px)',
-          transform: 'translate(-50%, -50%) rotate(8deg)',
-          borderRadius: '50%',
-          background: 'linear-gradient(180deg, #DAEBFF 0%, #BBDAFF 100%)',
-        }}
-      />
-      <img
-        src={illustration}
-        alt=""
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-        }}
-      />
-    </div>
+    <img
+      src={illustration}
+      alt=""
+      style={{ width: 300, height: 300, display: 'block' }}
+    />
   )
 }
 
