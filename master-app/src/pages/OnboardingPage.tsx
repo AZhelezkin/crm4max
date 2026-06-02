@@ -587,12 +587,24 @@ function Step0Form(props: Step0Props) {
       style={{
         flex: 1,
         overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
+        position: 'relative',
       }}
     >
-      {/* Toolbar: круглая back-кнопка слева (Figma toolbarTop, h=56, px=12, py=6) */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', height: 56, flexShrink: 0 }}>
+      {/* Back-кнопка — absolute overlay (в Figma header.toolbarTop лежит
+          поверх Form, а не в потоке выше неё; иначе аватар съезжает на
+          лишних 56px вниз). pointer-events: none на обёртке, auto на
+          кнопке — чтобы скролл проходил, а саму кнопку можно тапать. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          display: 'flex', alignItems: 'center',
+          padding: '6px 12px',
+          height: 56,
+          zIndex: 1,
+          pointerEvents: 'none',
+        }}
+      >
         <button
           type="button"
           onClick={onBack}
@@ -606,18 +618,24 @@ function Step0Form(props: Step0Props) {
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
+            pointerEvents: 'auto',
           }}
         >
           <ArrowLeftIcon />
         </button>
       </div>
 
-      {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields) */}
+      {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields).
+          Top=32 — back-кнопка слева overlap’ается с этой зоной без конфликта
+          (avatar по центру, кнопка слева → не пересекаются по x). */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
         padding: '32px 16px 0', width: '100%',
       }}>
-        {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
+        {/* Аватар 104×104 — белый круг с фиолетовым градиентом (Figma «Gradient/
+            Bright/Violet» 239.74°: #844BB6 → #5F68E2). Хексы захардкожены, чтобы
+            не зависеть от темы — в hero-фоне на этом экране var(--color-grad-
+            violet-100) визуально сливается с фоном и аватар выглядит чёрным. */}
         <button
           type="button"
           onClick={() => photoInputRef.current?.click()}
@@ -632,7 +650,7 @@ function Step0Form(props: Step0Props) {
             overflow: 'hidden',
             background: photoPreview
               ? 'transparent'
-              : 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
+              : 'linear-gradient(239.74deg, #844BB6 5.83%, #5F68E2 90.48%)',
             cursor: photoUploading ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
