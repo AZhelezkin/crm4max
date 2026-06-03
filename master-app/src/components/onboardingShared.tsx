@@ -102,15 +102,17 @@ export interface FloatingFieldProps {
   align?: 'center' | 'top'
   /** Кол-во видимых строк textarea (multiline). */
   rows?: number
+  /** Суффикс справа от значения (например «₽», «%»). При наличии крестик не показывается. */
+  suffix?: string
 }
 
 export function FloatingField({
   label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, autoFocus, inputRef,
-  minHeight = 72, align = 'center', rows = 1,
+  minHeight = 72, align = 'center', rows = 1, suffix,
 }: FloatingFieldProps) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
-  const showClear = focused && value.length > 0
+  const showClear = focused && value.length > 0 && !suffix
 
   const innerInputStyle: CSSProperties = {
     ...text.body2,
@@ -166,18 +168,25 @@ export function FloatingField({
             style={{ ...innerInputStyle, resize: 'none', overflowY: 'auto' }}
           />
         ) : (
-          <input
-            type={type}
-            inputMode={inputMode}
-            value={value}
-            placeholder={floated ? '' : label}
-            autoFocus={autoFocus}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            maxLength={maxLength}
-            style={innerInputStyle}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type={type}
+              inputMode={inputMode}
+              value={value}
+              placeholder={floated ? '' : label}
+              autoFocus={autoFocus}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              maxLength={maxLength}
+              style={{ ...innerInputStyle, flex: 1, width: 'auto' }}
+            />
+            {suffix && (
+              <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flexShrink: 0 }}>
+                {suffix}
+              </span>
+            )}
+          </div>
         )}
       </div>
       {showClear && (

@@ -310,6 +310,9 @@ export default function OnboardingPage() {
             : 'var(--color-on-primary-surface)',
         }
 
+        // Кнопка завершения — только на home справочника; на списке/услугах футера нет.
+        if (step === 2 && servicesSubStep !== 'home') return null
+
         return (
           <div style={footerStyle}>
             {submitError && (

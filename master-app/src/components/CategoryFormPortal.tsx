@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { uploadPhoto } from '@/api/upload.api'
 import { HeroHeader, FloatingField, GradientAvatarButton } from '@/components/onboardingShared'
@@ -22,6 +22,8 @@ interface Props {
   onPhotoUploading: (v: boolean) => void
   onClose: () => void
   onSave: () => void
+  /** Удаление категории (только в режиме редактирования). */
+  onDelete?: () => void
 }
 
 // Создание/редактирование категории (макеты profile-category-create[-full]).
@@ -34,9 +36,12 @@ export default function CategoryFormPortal({
   desc, onDescChange,
   photoPreview, onPhotoPreview, onPhotoUrl,
   photoUploading, onPhotoUploading,
-  onClose, onSave,
+  onClose, onSave, onDelete,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  // Сбрасываем подтверждение удаления при закрытии формы.
+  useEffect(() => { if (!visible) setConfirmDelete(false) }, [visible])
 
   if (!visible) return null
 
@@ -141,6 +146,27 @@ export default function CategoryFormPortal({
         >
           {isEdit ? 'Сохранить' : 'Создать'}
         </button>
+
+        {/* Удаление (только редактирование) — двойной тап для подтверждения */}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={() => { if (confirmDelete) onDelete(); else setConfirmDelete(true) }}
+            style={{
+              width: '100%',
+              height: 48,
+              marginTop: 8,
+              border: 'none',
+              borderRadius: 20,
+              ...text.callout1,
+              cursor: 'pointer',
+              background: confirmDelete ? 'rgba(209, 50, 50, 0.12)' : 'transparent',
+              color: 'var(--color-error-surface-accented)',
+            }}
+          >
+            {confirmDelete ? 'Подтвердите удаление' : 'Удалить категорию'}
+          </button>
+        )}
       </div>
     </div>,
     document.body,

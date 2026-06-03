@@ -120,6 +120,14 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       load()
     }
 
+    // Удаление из формы редактирования категории.
+    const deleteCatForm = async () => {
+      if (!editCatId) return
+      await categoriesApi.remove(editCatId)
+      setShowCatForm(false)
+      load()
+    }
+
     // ─── Услуга ───────────────────────────────────────────────────────────────
 
     const openSvcForm = (service?: Service, defaultCatId?: string) => {
@@ -139,8 +147,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         )
       } else {
         setEditService(null)
-        setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('')
-        setSvcCategoryId(defaultCatId ?? categories[0]?.id ?? '')
+        setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('60')
+        setSvcCategoryId(defaultCatId ?? '')
         setSvcDiscountEnabled(false); setSvcDiscountPercent(10)
         setSvcWorkPhotos([])
       }
@@ -229,7 +237,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
                 <CategoryCard
                   key={cat.id}
                   cat={cat}
-                  onClick={() => { setSelectedCatId(cat.id); changeSubStep('services', cat.name) }}
+                  onClick={() => openCatForm(cat)}
                 />
               ))}
               <div style={{ marginTop: 8 }}>
@@ -270,6 +278,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onPhotoUploading={setCatPhotoUploading}
           onClose={() => setShowCatForm(false)}
           onSave={() => { void saveCatForm() }}
+          onDelete={editCatId ? () => { void deleteCatForm() } : undefined}
         />
 
         <ServiceFormPortal
@@ -289,6 +298,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onDiscountPercentChange={setSvcDiscountPercent}
           workPhotos={svcWorkPhotos}
           onWorkPhotosChange={setSvcWorkPhotos}
+          categories={categories.map((c) => ({ id: c.id, name: c.name, photo: c.photo }))}
+          categoryId={svcCategoryId}
+          onCategoryIdChange={setSvcCategoryId}
           onClose={() => setShowSvcForm(false)}
           onSave={() => { void saveSvcForm() }}
         />
@@ -372,12 +384,8 @@ function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () 
   )
 }
 
-// Карточка категории (список): аватар 44 + имя + описание/счётчик + шеврон.
+// Карточка категории (список): аватар 44 + имя + описание (если есть) + шеврон.
 function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
-  const count = cat.services.length
-  const subtitle = cat.description
-    || (count === 0 ? 'Нет услуг'
-      : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`)
   return (
     <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 16, textAlign: 'left' }}>
       <div style={{
@@ -394,9 +402,11 @@ function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) 
         <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {cat.name}
         </div>
-        <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
-          {subtitle}
-        </div>
+        {cat.description && (
+          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+            {cat.description}
+          </div>
+        )}
       </div>
       <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
         <ChevronRightIcon />

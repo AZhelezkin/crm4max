@@ -1,36 +1,16 @@
 import { text } from '@/styles/typography'
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
-import { Spinner } from '@maxhub/max-ui'
 import { uploadPhoto } from '@/api/upload.api'
-import maskIconUrl from '@/assets/mask-icon.svg'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
-import {
-  onboardingDiscountBadgeStyle,
-  onboardingFieldInputStyle,
-  onboardingFieldSuffixStyle,
-  onboardingFieldWithSuffixWrapStyle,
-  onboardingFieldWrapStyle,
-  onboardingPortalContentStyle,
-  onboardingPriceRowStyle,
-  onboardingSectionLabelStyle,
-  onboardingSelectChevronStyle,
-  onboardingSelectStyle,
-  onboardingSelectWrapStyle,
-  onboardingToggleLabelStyle,
-  primaryActionButtonBaseStyle,
-  serviceWorkPhotoAddIconStyle,
-  stepOneCounterStyle,
-  stepOneTextareaStyle,
-  stepOneTextareaWrapStyle,
-} from '@/components/onboardingStepOne.styles'
 import { formatPrice } from '@/types'
-
-const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50]
+import { HeroHeader, FloatingField, UploadingOverlay } from '@/components/onboardingShared'
+import ToggleSwitch from '@/components/ToggleSwitch'
 
 export interface ServiceFormCategoryItem {
   id: string
   name: string
+  photo?: string | null
 }
 
 interface Props {
@@ -51,7 +31,6 @@ interface Props {
   /** Фото работ. Компонент обновляет этот массив при загрузке/удалении. */
   workPhotos: LocalWorkPhoto[]
   onWorkPhotosChange: (photos: LocalWorkPhoto[]) => void
-  /** Если передано — показывается селект категории */
   categories?: ServiceFormCategoryItem[]
   categoryId?: string
   onCategoryIdChange?: (v: string) => void
@@ -59,6 +38,65 @@ interface Props {
   onSave: () => void
 }
 
+// Варианты длительности приёма (минуты).
+const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120, 150, 180, 240]
+
+function formatDur(min: number): string {
+  const h = Math.floor(min / 60), m = min % 60
+  if (h === 0) return `${m} мин`
+  const hWord = h === 1 ? 'час' : h < 5 ? 'часа' : 'часов'
+  return m === 0 ? `${h} ${hWord}` : `${h} ч ${m} мин`
+}
+
+// Подпись секции — 13px uppercase (как в справочнике).
+const sectionLabelStyle: CSSProperties = {
+  ...text.caption3Caps,
+  fontSize: 13,
+  color: 'var(--color-on-surface-secondary)',
+  marginTop: 24,
+  marginBottom: 12,
+}
+
+// Поле-пилюля h72 rx20 на surface-transparent (для пикеров).
+const pillFieldStyle: CSSProperties = {
+  position: 'relative',
+  height: 72,
+  borderRadius: 20,
+  background: 'var(--color-surface-transparent)',
+  padding: '0 44px 0 20px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+}
+
+const floatLabelStyle: CSSProperties = {
+  ...text.caption,
+  color: 'var(--color-on-surface-secondary)',
+  marginBottom: 2,
+}
+
+const fieldValueStyle: CSSProperties = {
+  ...text.body2,
+  color: 'var(--color-on-surface)',
+}
+
+// Прозрачный нативный select поверх пилюли — открывает системный пикер.
+const overlaySelectStyle: CSSProperties = {
+  position: 'absolute', inset: 0,
+  width: '100%', height: '100%',
+  opacity: 0,
+  border: 'none',
+  appearance: 'none',
+  background: 'transparent',
+  cursor: 'pointer',
+}
+
+const chevronStyle: CSSProperties = {
+  position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
+  pointerEvents: 'none', display: 'flex', color: 'var(--color-interactive-element-secondary)',
+}
+
+// Создание/редактирование услуги (макет profile-service-create).
 export default function ServiceFormPortal({
   visible, isEdit,
   name, onNameChange,
@@ -76,243 +114,210 @@ export default function ServiceFormPortal({
 
   if (!visible) return null
 
-  const canSave = name.trim() && !uploading
-
-  // Предпросмотр скидки
-  const discountedPriceNum =
-    discountEnabled && price
-      ? Math.round(Number(price) * 100 * (1 - discountPercent / 100))
-      : null
+  const canSave = !!name.trim() && !uploading
+  const durationMin = Number(duration) || 0
+  const selectedCat = categories?.find((c) => c.id === categoryId) ?? null
+  const discountedNum = discountEnabled && price
+    ? Math.round(Number(price) * 100 * (1 - discountPercent / 100))
+    : null
 
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'var(--color-background)',
+      background: 'var(--gradient-hero-background)',
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
       zIndex: 200,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Шапка */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '14px 4px 0', flexShrink: 0 }}>
-        <button
-          onClick={onClose}
-          style={{
-            width: 56, display: 'flex', justifyContent: 'center',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--color-primary-surface)', padding: 0,
-          }}
-        >
-          <BackArrowIcon />
-        </button>
-        <div style={{
-          flex: 1, textAlign: 'center',
-          ...text.titleSmall,
-          color: 'var(--color-on-surface)', letterSpacing: -0.3,
-        }}>
-          {isEdit ? 'Редактирование услуги' : 'Добавление услуги'}
-        </div>
-        <div style={{ width: 56 }} />
-      </div>
+      <HeroHeader title={isEdit ? 'Редактирование услуги' : 'Создание услуги'} onBack={onClose} />
 
-      {/* Контент */}
-      <div style={onboardingPortalContentStyle}>
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        padding: '8px 16px 0',
+        display: 'flex', flexDirection: 'column', gap: 8,
+      }}>
         {/* Название */}
-        <div style={onboardingFieldWrapStyle}>
-          <input
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Название. Пример: Укладка волос"
-            autoFocus
-            style={onboardingFieldInputStyle}
-          />
-        </div>
+        <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
 
         {/* Описание */}
-        <div style={{ ...onboardingFieldWrapStyle, position: 'relative' }}>
-          <div style={stepOneTextareaWrapStyle}>
-            <textarea
-              value={desc}
-              onChange={(e) => onDescChange(e.target.value.slice(0, 200))}
-              placeholder="Описание"
-              rows={3}
-              style={stepOneTextareaStyle}
-            />
-            <span style={stepOneCounterStyle}>{desc.length}/200</span>
+        <FloatingField
+          label="Описание"
+          value={desc}
+          onChange={(v) => onDescChange(v.slice(0, 200))}
+          multiline minHeight={120} align="top" rows={3} maxLength={200}
+        />
+
+        {/* Категория (пикер) */}
+        {onCategoryIdChange && (
+          <div style={{
+            ...pillFieldStyle, height: 76, marginTop: 16,
+            flexDirection: 'row', alignItems: 'center', gap: 16, paddingLeft: 20,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
+              background: 'var(--color-secondary-surface)',
+              color: 'var(--color-interactive-element-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {selectedCat?.photo
+                ? <img src={selectedCat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <FolderIcon />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...fieldValueStyle, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {selectedCat?.name ?? 'Без категории'}
+              </div>
+              <div style={floatLabelStyle}>Категория</div>
+            </div>
+            <span style={chevronStyle}><ChevronRightIcon /></span>
+            <select
+              value={categoryId ?? ''}
+              onChange={(e) => onCategoryIdChange(e.target.value)}
+              style={overlaySelectStyle}
+            >
+              <option value="">Без категории</option>
+              {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
+        )}
+
+        {/* ── Время приёма ── */}
+        <div style={sectionLabelStyle}>Время приёма</div>
+        <div style={pillFieldStyle}>
+          <span style={floatLabelStyle}>Продолжительность</span>
+          <span style={fieldValueStyle}>{durationMin > 0 ? formatDur(durationMin) : '—'}</span>
+          <span style={chevronStyle}><ChevronRightIcon /></span>
+          <select
+            value={durationMin || 60}
+            onChange={(e) => onDurationChange(e.target.value)}
+            style={overlaySelectStyle}
+          >
+            {DURATION_OPTIONS.map((m) => <option key={m} value={m}>{formatDur(m)}</option>)}
+          </select>
         </div>
 
-        {/* Длительность + Стоимость */}
-        <div style={{ display: 'flex', gap: '20%' }}>
-          {/* Длительность */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '40%' }}>
-            <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
-              <input
-                value={duration}
-                onChange={(e) => onDurationChange(e.target.value.replace(/\D/g, ''))}
-                placeholder="Длит."
-                inputMode="numeric"
-                style={onboardingFieldInputStyle}
-              />
-            </div>
-            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, ...text.body }}>мин</span>
-          </div>
-
-          {/* Стоимость */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '40%' }}>
-            <div style={{ ...onboardingFieldWithSuffixWrapStyle, flex: 1 }}>
-              <input
-                value={price}
-                onChange={(e) => onPriceChange(e.target.value.replace(/[^\d.]/, ''))}
-                placeholder="Цена"
-                inputMode="decimal"
-                style={onboardingFieldInputStyle}
-              />
-            </div>
-            <span style={{ ...onboardingFieldSuffixStyle, flexShrink: 0, ...text.body }}>₽</span>
-          </div>
-        </div>
+        {/* ── Стоимость за приём ── */}
+        <div style={sectionLabelStyle}>Стоимость за приём</div>
+        <FloatingField
+          label="Стоимость"
+          value={price}
+          onChange={(v) => onPriceChange(v.replace(/[^\d]/g, ''))}
+          inputMode="numeric"
+          suffix="₽"
+        />
 
         {/* Скидка */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
-          <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 26, flexShrink: 0 }}>
-            <input
-              type="checkbox"
-              checked={discountEnabled}
-              onChange={(e) => onDiscountEnabledChange(e.target.checked)}
-              style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-            />
-            <span style={{
-              position: 'absolute', inset: 0, borderRadius: 13, cursor: 'pointer',
-              background: discountEnabled ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
-              transition: 'background 0.2s',
-            }}>
-              <span style={{
-                position: 'absolute', top: 3, left: discountEnabled ? 21 : 3,
-                width: 20, height: 20, borderRadius: '50%', background: 'var(--color-on-primary-surface)',
-                transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              }} />
-            </span>
-          </label>
-          <span style={onboardingToggleLabelStyle}>Скидка</span>
-          {discountEnabled && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-              {discountedPriceNum !== null && (
-                <div style={onboardingPriceRowStyle}>
-                  <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>
-                    {formatPrice(discountedPriceNum)}
-                  </span>
-                  <span style={onboardingDiscountBadgeStyle}>{discountPercent}%</span>
-                </div>
-              )}
-              <div style={{ ...onboardingSelectWrapStyle, width: 92 }}>
-                <select
-                  value={discountPercent}
-                  onChange={(e) => onDiscountPercentChange(Number(e.target.value))}
-                  style={{ ...onboardingSelectStyle, padding: '11px 36px 11px 12px' }}
-                >
-                  {DISCOUNT_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-                <span style={onboardingSelectChevronStyle}>⌄</span>
-              </div>
-              <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>%</span>
-            </div>
-          )}
+        <div style={{
+          height: 72, borderRadius: 20, background: 'var(--color-surface-transparent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+        }}>
+          <span style={fieldValueStyle}>Скидка</span>
+          <ToggleSwitch checked={discountEnabled} onChange={onDiscountEnabledChange} aria-label="Скидка" />
         </div>
 
-        {/* Примеры работ */}
-        <div>
-          <div style={{ ...onboardingSectionLabelStyle, marginBottom: 8 }}>ПРИМЕРЫ РАБОТ</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {/* Кнопка добавления */}
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              style={{
-                width: 72, height: 72, borderRadius: 10,
-                background: 'var(--color-secondary-surface)', border: 'none',
-                cursor: uploading ? 'default' : 'pointer',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 4, opacity: uploading ? 0.5 : 1,
-              }}
-            >
-              {uploading
-                ? <Spinner size={24} appearance="contrast" />
-                : <img src={maskIconUrl} alt="upload" style={serviceWorkPhotoAddIconStyle} />
-              }
-            </button>
-
-            {/* Фото работ */}
-            {workPhotos.map((photo, i) => (
-              <div key={photo.id} style={{ position: 'relative', width: 72, height: 72 }}>
-                <img
-                  src={photo.previewUrl}
-                  alt=""
-                  style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }}
-                />
-                {photo.uploading && <UploadingOverlay />}
-                <button
-                  onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
-                  style={{
-                    position: 'absolute', top: -6, right: -6,
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: 'var(--color-error-surface-accented)', border: 'none',
-                    color: 'var(--color-on-primary-surface)', ...text.caption, lineHeight: 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', padding: 0,
-                  }}
-                >×</button>
-              </div>
-            ))}
-
-            {/* Скрытый input */}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={async (e) => {
-                const files = Array.from(e.target.files ?? [])
-                if (!files.length) return
-
-                const queued: LocalWorkPhoto[] = files.map((file, idx) => ({
-                  id: `work-photo-${Date.now()}-${idx}`,
-                  url: null,
-                  previewUrl: URL.createObjectURL(file),
-                  uploading: true,
-                }))
-
-                onWorkPhotosChange([...workPhotos, ...queued])
-                setUploading(true)
-                try {
-                  const results = await Promise.allSettled(
-                    files.map((file) => uploadPhoto(file, 'work')),
-                  )
-                  onWorkPhotosChange(
-                    [...workPhotos, ...queued].flatMap((photo) => {
-                      const idx = queued.findIndex((q) => q.id === photo.id)
-                      if (idx === -1) return [photo]
-                      const result = results[idx]
-                      if (!result || result.status === 'rejected') return []
-                      return [{ ...photo, url: result.value, previewUrl: result.value, uploading: false }]
-                    }),
-                  )
-                } catch (err) {
-                  console.error('Ошибка загрузки фото работ:', err)
-                } finally {
-                  setUploading(false)
-                  e.target.value = ''
-                }
-              }}
+        {discountEnabled && (
+          <>
+            <FloatingField
+              label="Проценты"
+              value={String(discountPercent || '')}
+              onChange={(v) => onDiscountPercentChange(Math.min(100, Number(v.replace(/\D/g, '')) || 0))}
+              inputMode="numeric"
+              suffix="%"
             />
-          </div>
+            {/* Итого — пилюля с бордером */}
+            <div style={{
+              height: 39, borderRadius: 19.5, border: '1px solid var(--color-surface)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+            }}>
+              <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>Итого</span>
+              <span style={{ ...text.body2, fontWeight: 600, color: 'var(--color-on-surface)' }}>
+                {discountedNum !== null ? formatPrice(discountedNum) : '—'}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* ── Примеры работ ── */}
+        <div style={sectionLabelStyle}>Примеры работ</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
+          {workPhotos.map((photo, i) => (
+            <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
+              <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {photo.uploading && <UploadingOverlay />}
+              <button
+                type="button"
+                aria-label="Удалить фото"
+                onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
+                style={{
+                  position: 'absolute', top: 8, right: 8,
+                  width: 36, height: 36, borderRadius: 12, border: 'none', padding: 0,
+                  background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                }}
+              >
+                <XIcon />
+              </button>
+            </div>
+          ))}
+
+          {/* Добавить фото */}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            style={{
+              aspectRatio: '121 / 170', borderRadius: 20, border: 'none',
+              background: 'var(--color-pattern-element)',
+              color: 'var(--color-interactive-element-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: uploading ? 'default' : 'pointer',
+            }}
+          >
+            <CameraIcon />
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={async (e) => {
+              const files = Array.from(e.target.files ?? [])
+              if (!files.length) return
+              const queued: LocalWorkPhoto[] = files.map((file, idx) => ({
+                id: `work-photo-${Date.now()}-${idx}`,
+                url: null,
+                previewUrl: URL.createObjectURL(file),
+                uploading: true,
+              }))
+              onWorkPhotosChange([...workPhotos, ...queued])
+              setUploading(true)
+              try {
+                const results = await Promise.allSettled(files.map((file) => uploadPhoto(file, 'work')))
+                onWorkPhotosChange(
+                  [...workPhotos, ...queued].flatMap((photo) => {
+                    const idx = queued.findIndex((q) => q.id === photo.id)
+                    if (idx === -1) return [photo]
+                    const result = results[idx]
+                    if (!result || result.status === 'rejected') return []
+                    return [{ ...photo, url: result.value, previewUrl: result.value, uploading: false }]
+                  }),
+                )
+              } catch (err) {
+                console.error('Ошибка загрузки фото работ:', err)
+              } finally {
+                setUploading(false)
+                e.target.value = ''
+              }
+            }}
+          />
         </div>
       </div>
 
-      {/* Кнопка */}
+      {/* Кнопка Создать / Сохранить — hero h60 rx20 */}
       <div style={{
-        padding: '12px 16px',
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+        padding: '8px 16px',
+        paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
         flexShrink: 0,
       }}>
         <button
@@ -320,13 +325,15 @@ export default function ServiceFormPortal({
           disabled={!canSave}
           onClick={onSave}
           style={{
-            ...primaryActionButtonBaseStyle,
+            width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            ...text.callout1,
             cursor: canSave ? 'pointer' : 'default',
-            background: canSave ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
-            color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface-secondary)',
+            background: canSave ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
+            color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
           }}
         >
-          Готово
+          {isEdit ? 'Сохранить' : 'Создать'}
         </button>
       </div>
     </div>,
@@ -334,22 +341,37 @@ export default function ServiceFormPortal({
   )
 }
 
-function BackArrowIcon() {
+// ─── Иконки ──────────────────────────────────────────────────────────────────
+
+function FolderIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="24" height="24" viewBox="46 214 24 24" fill="none">
+      <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" />
     </svg>
   )
 }
 
-function UploadingOverlay() {
+function ChevronRightIcon() {
   return (
-    <div style={{
-      position: 'absolute', inset: 0, borderRadius: 'inherit',
-      background: 'rgba(0,0,0,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <Spinner size={20} appearance="contrast-static" />
-    </div>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function XIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CameraIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <path d="M3 9.5C3 8.4 3.9 7.5 5 7.5H6.5L7.4 5.9C7.6 5.5 8 5.2 8.5 5.2H15.5C16 5.2 16.4 5.5 16.6 5.9L17.5 7.5H19C20.1 7.5 21 8.4 21 9.5V17C21 18.1 20.1 19 19 19H5C3.9 19 3 18.1 3 17V9.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+      <circle cx="12" cy="12.8" r="3.2" stroke="currentColor" strokeWidth="1.75" />
+    </svg>
   )
 }
