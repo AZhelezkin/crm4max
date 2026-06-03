@@ -2,7 +2,7 @@ import { text } from '@/styles/typography'
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
-import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
+import ServicesCatalog, { type ServicesCatalogHandle } from '@/components/ServicesCatalog'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
@@ -15,7 +15,7 @@ import { HeroHeader, FloatingField, ArrowLeftIcon, CameraBoldIcon, UploadingOver
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 type Step = 0 | 1 | 2
-type ServicesSubStep = 'categories' | 'services'
+type ServicesSubStep = 'home' | 'categories' | 'services'
 
 const DAYS = [
   { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
@@ -65,10 +65,10 @@ export default function OnboardingPage() {
   const [breakEnd, setBreakEnd] = useState('14:00')
 
   // ── Шаг 2: Услуги ──
-  const [servicesSubStep, setServicesSubStep] = useState<ServicesSubStep>('categories')
+  const [servicesSubStep, setServicesSubStep] = useState<ServicesSubStep>('home')
   const [servicesSelectedCatName, setServicesSelectedCatName] = useState('')
   const [catCount, setCatCount] = useState(0)
-  const editorRef = useRef<CategoriesServicesEditorHandle>(null)
+  const editorRef = useRef<ServicesCatalogHandle>(null)
 
   // ─── Хелперы ──────────────────────────────────────────────────────────────
 
@@ -187,14 +187,8 @@ export default function OnboardingPage() {
       }
 
       if (step === 2) {
-        if (servicesSubStep === 'services') {
-          editorRef.current?.goToCategories()
-          setServicesSubStep('categories')
-          setSaving(false)
-          return
-        }
-
-        // servicesSubStep === 'categories' — категории/услуги уже в БД, завершаем онбординг
+        // Навигация между home/categories/services — через back в шапке (goBack).
+        // Футер всегда завершает онбординг: категории/услуги уже сохранены в БД.
         await mastersApi.updateProfile({ isOnboarded: true })
         const master = await mastersApi.getMe()
         setMaster(master)
@@ -223,22 +217,17 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок: step 0 — back-кнопка внутри Step0Form; step 1 — header внутри Step1Form.
-          step 2: «Услуги» (пусто) / «Категории услуг» (есть категории) / имя категории (услуги). */}
+      {/* Заголовок step 2: home → «Услуги»; categories → «Категории услуг»; services → имя категории. */}
       {step === 2 && (
         <HeroHeader
           title={
-            servicesSubStep === 'services'
-              ? (servicesSelectedCatName || 'Услуги')
-              : catCount === 0 ? 'Услуги' : 'Категории услуг'
+            servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги')
+              : servicesSubStep === 'categories' ? 'Категории услуг'
+              : 'Услуги'
           }
           onBack={() => {
-            if (servicesSubStep === 'services') {
-              editorRef.current?.goToCategories()
-              setServicesSubStep('categories')
-            } else {
-              setStep(1)
-            }
+            // goBack: true — редактор поднялся на уровень выше; false — уже на home → выходим на шаг 1.
+            if (!editorRef.current?.goBack()) setStep(1)
           }}
         />
       )}
@@ -276,7 +265,7 @@ export default function OnboardingPage() {
       )}
 
       {step === 2 && (
-        <CategoriesServicesEditor
+        <ServicesCatalog
           ref={editorRef}
           onSubStepChange={(ss, catName) => {
             setServicesSubStep(ss)
@@ -294,9 +283,7 @@ export default function OnboardingPage() {
           || (step === 0 && !name.trim())
           || (step === 1 && workingDays.length === 0)
         const buttonLabel = saving ? 'Сохраняем...' :
-          step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
-          step === 2 && servicesSubStep === 'categories' && catCount === 0 ? 'Пропустить' :
-          step === 2 && servicesSubStep === 'categories' ? 'Готово' :
+          step === 2 ? (catCount === 0 ? 'Пропустить' : 'Готово') :
           'Далее'
 
         const footerStyle: CSSProperties = {

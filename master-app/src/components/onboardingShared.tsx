@@ -37,7 +37,8 @@ export function HeroHeader({ title, onBack }: { title: ReactNode; onBack: () => 
       >
         <ArrowLeftIcon />
       </button>
-      <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>{title}</div>
+      {/* Заголовок hero — 16/700 (по макетам: чистая кап-высота заглавной ≈11.5 → 16px). */}
+      <div style={{ ...text.subhead, fontWeight: 700, color: 'var(--color-on-surface)' }}>{title}</div>
     </div>
   )
 }

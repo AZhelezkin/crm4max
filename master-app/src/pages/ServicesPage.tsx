@@ -1,28 +1,29 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
+import ServicesCatalog, { type ServicesCatalogHandle } from '@/components/ServicesCatalog'
 import AppHeader from '@/components/AppHeader'
 
 export default function ServicesPage() {
   const navigate = useNavigate()
-  const editorRef = useRef<CategoriesServicesEditorHandle>(null)
-  const [title, setTitle] = useState('Категории услуг')
+  const editorRef = useRef<ServicesCatalogHandle>(null)
+  const [title, setTitle] = useState('Услуги')
 
   const handleBack = () => {
-    if (editorRef.current?.subStep === 'services') {
-      editorRef.current.goToCategories()
-    } else {
-      navigate(-1)
-    }
+    // goBack: false — справочник уже на home → выходим назад.
+    if (!editorRef.current?.goBack()) navigate(-1)
   }
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <AppHeader title={title} onBack={handleBack} />
-      <CategoriesServicesEditor
+      <ServicesCatalog
         ref={editorRef}
         onSubStepChange={(ss, catName) =>
-          setTitle(ss === 'services' ? (catName ?? 'Услуги') : 'Категории услуг')
+          setTitle(
+            ss === 'services' ? (catName ?? 'Услуги')
+              : ss === 'categories' ? 'Категории услуг'
+              : 'Услуги',
+          )
         }
       />
     </div>
