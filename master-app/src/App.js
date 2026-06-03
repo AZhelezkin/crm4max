@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 import ClientApp from '@client/ClientApp';
@@ -8,7 +8,9 @@ import ProfilePage from '@/pages/ProfilePage';
 import BookingsPage from '@/pages/BookingsPage';
 import ChatsPage from '@/pages/ChatsPage';
 import PaymentsPage from '@/pages/PaymentsPage';
+import PaymentsDayPage from '@/pages/PaymentsDayPage';
 import OnboardingPage from '@/pages/OnboardingPage';
+import WelcomePage from '@/pages/WelcomePage';
 import AboutMePage from '@/pages/AboutMePage';
 import SchedulePage from '@/pages/SchedulePage';
 import ServicesPage from '@/pages/ServicesPage';
@@ -16,17 +18,115 @@ import BookingDetailPage from '@/pages/BookingDetailPage';
 import CreateBookingPage from '@/pages/CreateBookingPage';
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage';
 import ShareLinkPage from '@/pages/ShareLinkPage';
+import MapTestPage from '@/pages/MapTestPage';
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
-//   ""      → клиент, QR сканер (нативная кнопка или бот без startapp)
-//   <UUID>  → клиент, запись к конкретному мастеру
-//   "mmode" → мастер (кабинет / онбординг)
-export const startParam = window.WebApp?.initDataUnsafe?.start_param ?? '';
-const isClientMode = startParam !== 'mmode';
-document.documentElement.dataset.theme = isClientMode ? 'client' : 'master';
+//   "mmode" → мастер (кабинет / онбординг) — быстрый путь
+//   <UUID>  → клиент, запись к конкретному мастеру — быстрый путь
+//   ""      → авто-определение: бэкенд проверяет max_user_id по БД
+//
+// Браузерный фолбэк: ?masterId=<UUID> в URL открывает клиентский режим
+// для этого мастера (используется для шаринга ссылок вне Max).
+function resolveStartParam() {
+    const fromMax = window.WebApp?.initDataUnsafe?.start_param;
+    if (fromMax)
+        return fromMax;
+    if (typeof window !== 'undefined') {
+        const masterId = new URLSearchParams(window.location.search).get('masterId');
+        if (masterId)
+            return masterId;
+    }
+    return '';
+}
+export const startParam = resolveStartParam();
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+// Deep-link из бот-уведомлений на BookingDetailPage:
+//   <masterId>-<bookingId>    → клиентское приложение, /my-bookings/<bookingId>
+//   m-<masterId>-<bookingId>  → мастер-приложение, /bookings/<bookingId>
+const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`, 'i');
+const MASTER_BOOKING_DEEPLINK_RE = new RegExp(`^m-(${UUID_PART})-(${UUID_PART})$`, 'i');
+export function getMasterBookingDeepLinkId() {
+    const m = MASTER_BOOKING_DEEPLINK_RE.exec(startParam ?? '');
+    // m[1]=masterId, m[2]=bookingId
+    return m ? m[2] : null;
+}
+function resolveInitialMode() {
+    if (startParam === 'mmode')
+        return 'master';
+    if (MASTER_BOOKING_DEEPLINK_RE.test(startParam))
+        return 'master';
+    if (UUID_RE.test(startParam))
+        return 'client';
+    if (CLIENT_BOOKING_DEEPLINK_RE.test(startParam))
+        return 'client';
+    return null;
+}
+function isMapTestHash() {
+    if (typeof window === 'undefined')
+        return false;
+    const hash = window.location.hash || '';
+    return hash.startsWith('#/map-test');
+}
 export default function App() {
-    if (isClientMode)
-        return _jsx(ClientApp, {});
-    return _jsx(MasterApp, {});
+    const [mode, setMode] = useState(resolveInitialMode);
+    useEffect(() => {
+        if (mode !== null)
+            return;
+        async function detect() {
+            try {
+                const initData = window.WebApp?.initData;
+                if (!initData) {
+                    setMode('client');
+                    return;
+                }
+                window.WebApp?.ready();
+                const apiUrl = import.meta.env.VITE_API_URL ?? '';
+                const res = await fetch(`${apiUrl}/api/auth/max`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init_data: initData }),
+                });
+                if (!res.ok) {
+                    setMode('client');
+                    return;
+                }
+                const data = await res.json();
+                if (data.role === 'master') {
+                    localStorage.setItem('masterToken', data.token);
+                    setMode('master');
+                }
+                else {
+                    setMode('client');
+                }
+            }
+            catch {
+                setMode('client');
+            }
+        }
+        detect();
+    }, [mode]);
+    if (isMapTestHash())
+        return _jsx(MapTestPage, {});
+    if (mode === null) {
+        return (_jsx("div", { style: {
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                height: '100dvh', background: 'var(--color-background)',
+            }, children: _jsx("span", { style: { color: 'var(--color-on-surface-secondary)' }, children: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430..." }) }));
+    }
+    return mode === 'client' ? _jsx(ClientApp, {}) : _jsx(MasterApp, {});
+}
+// Одноразовый deep-link редирект: при первом заходе на «/» в master-режиме
+// проверяем startparam=mb-<id> → /bookings/<id>. Флаг гарантирует, что
+// последующие переходы на «/» (например через нав-таб) уже не редиректят.
+let masterDeepLinkConsumed = false;
+function MasterIndexRoute() {
+    if (!masterDeepLinkConsumed) {
+        masterDeepLinkConsumed = true;
+        const id = getMasterBookingDeepLinkId();
+        if (id)
+            return _jsx(Navigate, { to: `/bookings/${id}`, replace: true });
+    }
+    return _jsx(ProfilePage, {});
 }
 function MasterApp() {
     const { init, isLoading, master } = useAuthStore();
@@ -36,10 +136,14 @@ function MasterApp() {
     if (isLoading) {
         return (_jsx("div", { style: {
                 display: 'flex', justifyContent: 'center', alignItems: 'center',
-                height: '100dvh', background: 'var(--color-bg)',
-            }, children: _jsx("span", { style: { color: 'var(--color-text-secondary)' }, children: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430..." }) }));
+                height: '100dvh', background: 'var(--color-background)',
+            }, children: _jsx("span", { style: { color: 'var(--color-on-surface-secondary)' }, children: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430..." }) }));
     }
     // Новый мастер, не прошедший онбординг; или мастер не авторизован
     const needsOnboarding = !master || !master.isOnboarded;
-    return (_jsx(BrowserRouter, { children: _jsxs(Routes, { children: [_jsx(Route, { path: "/onboarding", element: needsOnboarding ? _jsx(OnboardingPage, {}) : _jsx(Navigate, { to: "/", replace: true }) }), _jsxs(Route, { element: needsOnboarding ? _jsx(Navigate, { to: "/onboarding", replace: true }) : _jsx(Outlet, {}), children: [_jsxs(Route, { element: _jsx(MainLayout, {}), children: [_jsx(Route, { index: true, element: _jsx(ProfilePage, {}) }), _jsx(Route, { path: "bookings", element: _jsx(BookingsPage, {}) }), _jsx(Route, { path: "clients", element: _jsx(ChatsPage, {}) }), _jsx(Route, { path: "income", element: _jsx(PaymentsPage, {}) })] }), _jsx(Route, { path: "/bookings/new", element: _jsx(CreateBookingPage, {}) }), _jsx(Route, { path: "/bookings/:id", element: _jsx(BookingDetailPage, {}) }), _jsx(Route, { path: "/about", element: _jsx(AboutMePage, {}) }), _jsx(Route, { path: "/schedule", element: _jsx(SchedulePage, {}) }), _jsx(Route, { path: "/services", element: _jsx(ServicesPage, {}) }), _jsx(Route, { path: "/payment-settings", element: _jsx(PaymentSettingsPage, {}) }), _jsx(Route, { path: "/share", element: _jsx(ShareLinkPage, {}) })] }), _jsx(Route, { path: "*", element: _jsx(Navigate, { to: "/", replace: true }) })] }) }));
+    // Велком-сплэш — только если мастер ещё не начал заполнять профиль.
+    // Как только имя сохранено (шаг 0 онбординга), возвращаемся сразу на /onboarding.
+    const masterAlreadyStarted = Boolean(master?.name && master.name.trim().length > 0);
+    const firstStopForNewMaster = masterAlreadyStarted ? '/onboarding' : '/welcome';
+    return (_jsx(BrowserRouter, { children: _jsxs(Routes, { children: [_jsx(Route, { path: "/welcome", element: needsOnboarding ? _jsx(WelcomePage, {}) : _jsx(Navigate, { to: "/", replace: true }) }), _jsx(Route, { path: "/onboarding", element: needsOnboarding ? _jsx(OnboardingPage, {}) : _jsx(Navigate, { to: "/", replace: true }) }), _jsxs(Route, { element: needsOnboarding ? _jsx(Navigate, { to: firstStopForNewMaster, replace: true }) : _jsx(Outlet, {}), children: [_jsxs(Route, { element: _jsx(MainLayout, {}), children: [_jsx(Route, { index: true, element: _jsx(MasterIndexRoute, {}) }), _jsx(Route, { path: "bookings", element: _jsx(BookingsPage, {}) }), _jsx(Route, { path: "clients", element: _jsx(ChatsPage, {}) }), _jsx(Route, { path: "income", element: _jsx(PaymentsPage, {}) })] }), _jsx(Route, { path: "/bookings/new", element: _jsx(CreateBookingPage, {}) }), _jsx(Route, { path: "/bookings/:id", element: _jsx(BookingDetailPage, {}) }), _jsx(Route, { path: "/about", element: _jsx(AboutMePage, {}) }), _jsx(Route, { path: "/schedule", element: _jsx(SchedulePage, {}) }), _jsx(Route, { path: "/services", element: _jsx(ServicesPage, {}) }), _jsx(Route, { path: "/income/:date", element: _jsx(PaymentsDayPage, {}) }), _jsx(Route, { path: "/payment-settings", element: _jsx(PaymentSettingsPage, {}) }), _jsx(Route, { path: "/share", element: _jsx(ShareLinkPage, {}) })] }), _jsx(Route, { path: "*", element: _jsx(Navigate, { to: "/", replace: true }) })] }) }));
 }
