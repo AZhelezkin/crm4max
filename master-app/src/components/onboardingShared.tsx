@@ -37,8 +37,8 @@ export function HeroHeader({ title, onBack }: { title: ReactNode; onBack: () => 
       >
         <ArrowLeftIcon />
       </button>
-      {/* Заголовок hero — 16/700 (по макетам: чистая кап-высота заглавной ≈11.5 → 16px). */}
-      <div style={{ ...text.subhead, fontWeight: 700, color: 'var(--color-on-surface)' }}>{title}</div>
+      {/* Заголовок hero — Callout 1 17/700/-0.17 (Figma maxToolbar title, Nunito Sans Bold). */}
+      <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
     </div>
   )
 }

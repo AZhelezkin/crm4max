@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { useRef, useState, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { uploadPhoto } from '@/api/upload.api'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -48,17 +48,9 @@ function formatDur(min: number): string {
   return m === 0 ? `${h} ${hWord}` : `${h} ч ${m} мин`
 }
 
-// Подпись секции — 13px uppercase. По макету прижата к полю снизу: caps ≈40 от поля
-// выше и ≈15 до поля ниже. С учётом flex-gap 8: mt 29 (+8=37 до бокса, +3 до caps≈40), mb 7 (+8=15).
-const sectionLabelStyle: CSSProperties = {
-  ...text.caption3Caps,
-  fontSize: 13,
-  color: 'var(--color-on-surface-secondary)',
-  marginTop: 29,
-  marginBottom: 7,
-}
+// ─── Стили (значения из Figma profile-service-create, Nunito Sans) ─────────────
 
-// Поле-пилюля h72 rx20 на surface-transparent (для пикеров).
+// Пилюля h72 rx20 на surface-transparent.
 const pillFieldStyle: CSSProperties = {
   position: 'relative',
   height: 72,
@@ -70,10 +62,10 @@ const pillFieldStyle: CSSProperties = {
   justifyContent: 'center',
 }
 
-const fieldValueStyle: CSSProperties = {
-  ...text.body2,
-  color: 'var(--color-on-surface)',
-}
+// Тайтл строки/пикера — Callout 1 17/700/-0.17 (Bold), on-surface.
+const pickerTitleStyle: CSSProperties = { ...text.callout1, color: 'var(--color-on-surface)' }
+// Подзаголовок — Caption 2 14/500/-0.028, on-surface-secondary.
+const pickerSubtitleStyle: CSSProperties = { ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 2 }
 
 // Прозрачный нативный select поверх пилюли — открывает системный пикер.
 const overlaySelectStyle: CSSProperties = {
@@ -102,7 +94,17 @@ const addPhotoTileStyle: CSSProperties = {
   justifyContent: 'center',
 }
 
-// Создание/редактирование услуги (макет profile-service-create).
+// Подпись секции — Caption 3 CAPS 14/500/0.42 uppercase. Обёртка pt16 pb4 px8 (Figma sectionTitle).
+function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ padding: '16px 8px 4px' }}>
+      <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface)' }}>{children}</span>
+    </div>
+  )
+}
+
+// Создание/редактирование услуги (Figma node 8743:53223 profile-service-create).
+// Контент: gap 24 между группами; внутри групп gap 8; поля h72 / описание h120 / листы h76/h72.
 export default function ServiceFormPortal({
   visible, isEdit,
   name, onNameChange,
@@ -140,27 +142,28 @@ export default function ServiceFormPortal({
       <div style={{
         flex: 1, overflowY: 'auto',
         padding: '8px 16px 0',
-        display: 'flex', flexDirection: 'column', gap: 8,
+        display: 'flex', flexDirection: 'column', gap: 24,
       }}>
-        {/* Название */}
-        <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
+        {/* Группа: Название + Описание (gap 8) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
+          <FloatingField
+            label="Описание"
+            value={desc}
+            onChange={(v) => onDescChange(v.slice(0, 200))}
+            multiline minHeight={120} align="top" rows={3} maxLength={200}
+          />
+        </div>
 
-        {/* Описание */}
-        <FloatingField
-          label="Описание"
-          value={desc}
-          onChange={(v) => onDescChange(v.slice(0, 200))}
-          multiline minHeight={120} align="top" rows={3} maxLength={200}
-        />
-
-        {/* Категория (пикер) */}
+        {/* Категория (пикер) — лист h76 */}
         {onCategoryIdChange && (
           <div style={{
-            ...pillFieldStyle, height: 76, marginTop: 16,
-            flexDirection: 'row', alignItems: 'center', gap: 16, paddingLeft: 20,
+            position: 'relative', height: 76, borderRadius: 20,
+            background: 'var(--color-surface-transparent)',
+            display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px',
           }}>
             <div style={{
-              width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
+              width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
               color: 'var(--color-interactive-element-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -169,14 +172,16 @@ export default function ServiceFormPortal({
                 : <FolderIcon />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ ...pickerTitleStyle, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {selectedCat?.name ?? 'Без категории'}
               </div>
-              <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
+              <div style={pickerSubtitleStyle}>
                 {selectedCat ? 'Категория' : 'Можно выбрать'}
               </div>
             </div>
-            <span style={chevronStyle}><ChevronRightIcon /></span>
+            <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+              <ChevronRightIcon />
+            </span>
             <select
               value={categoryId ?? ''}
               onChange={(e) => onCategoryIdChange(e.target.value)}
@@ -188,111 +193,113 @@ export default function ServiceFormPortal({
           </div>
         )}
 
-        {/* ── Время приёма ── */}
-        <div style={sectionLabelStyle}>Время приёма</div>
-        <div style={pillFieldStyle}>
-          <span style={{ ...text.subhead, color: 'var(--color-on-surface)' }}>Продолжительность</span>
-          <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
-            {durationMin > 0 ? formatDur(durationMin) : 'Не выбрано'}
-          </span>
-          <span style={chevronStyle}><ChevronRightIcon /></span>
-          <select
-            value={durationMin || ''}
-            onChange={(e) => onDurationChange(e.target.value)}
-            style={overlaySelectStyle}
-          >
-            <option value="" disabled hidden>Не выбрано</option>
-            {DURATION_OPTIONS.map((m) => <option key={m} value={m}>{formatDur(m)}</option>)}
-          </select>
-        </div>
-
-        {/* ── Стоимость за приём ── */}
-        <div style={sectionLabelStyle}>Стоимость за приём</div>
-        <FloatingField
-          label="Стоимость"
-          value={price}
-          onChange={(v) => onPriceChange(v.replace(/[^\d]/g, ''))}
-          inputMode="numeric"
-          suffix="₽"
-        />
-
-        {/* Скидка */}
-        <div style={{
-          height: 72, borderRadius: 20, background: 'var(--color-surface-transparent)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
-        }}>
-          <span style={fieldValueStyle}>Скидка</span>
-          <ToggleSwitch checked={discountEnabled} onChange={onDiscountEnabledChange} aria-label="Скидка" />
-        </div>
-
-        {discountEnabled && (
-          <>
-            <FloatingField
-              label="Проценты"
-              value={String(discountPercent || '')}
-              onChange={(v) => onDiscountPercentChange(Math.min(100, Number(v.replace(/\D/g, '')) || 0))}
-              inputMode="numeric"
-              suffix="%"
-            />
-            {/* Итого — пилюля с бордером */}
-            <div style={{
-              height: 39, borderRadius: 19.5, border: '1px solid var(--color-surface)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
-            }}>
-              <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>Итого</span>
-              <span style={{ ...text.body2, fontWeight: 600, color: 'var(--color-on-surface)' }}>
-                {discountedNum !== null ? formatPrice(discountedNum) : '—'}
-              </span>
-            </div>
-          </>
-        )}
-
-        {/* ── Примеры работ ── */}
-        <div style={sectionLabelStyle}>Примеры работ</div>
-        {workPhotos.length === 0 ? (
-          // Пусто — один тайл добавления 138×170 (макет profile-service-create-new)
-          <div style={{ paddingBottom: 32 }}>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              style={{ ...addPhotoTileStyle, width: 138, aspectRatio: '138 / 170', cursor: uploading ? 'default' : 'pointer' }}
+        {/* Группа: Время приёма */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SectionTitle>Время приёма</SectionTitle>
+          <div style={pillFieldStyle}>
+            <span style={pickerTitleStyle}>Продолжительность</span>
+            <span style={pickerSubtitleStyle}>{durationMin > 0 ? formatDur(durationMin) : 'Не выбрано'}</span>
+            <span style={chevronStyle}><ChevronRightIcon /></span>
+            <select
+              value={durationMin || ''}
+              onChange={(e) => onDurationChange(e.target.value)}
+              style={overlaySelectStyle}
             >
-              <CameraIcon />
-            </button>
+              <option value="" disabled hidden>Не выбрано</option>
+              {DURATION_OPTIONS.map((m) => <option key={m} value={m}>{formatDur(m)}</option>)}
+            </select>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 32 }}>
-            {workPhotos.map((photo, i) => (
-              <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
-                <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {photo.uploading && <UploadingOverlay />}
-                <button
-                  type="button"
-                  aria-label="Удалить фото"
-                  onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
-                  style={{
-                    position: 'absolute', top: 8, right: 8,
-                    width: 36, height: 36, borderRadius: 12, border: 'none', padding: 0,
-                    background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  }}
-                >
-                  <XIcon />
-                </button>
+        </div>
+
+        {/* Группа: Стоимость за приём */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SectionTitle>Стоимость за приём</SectionTitle>
+          <FloatingField
+            label="Стоимость"
+            value={price}
+            onChange={(v) => onPriceChange(v.replace(/[^\d]/g, ''))}
+            inputMode="numeric"
+            suffix="₽"
+          />
+          {/* Скидка */}
+          <div style={{
+            height: 72, borderRadius: 20, background: 'var(--color-surface-transparent)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+          }}>
+            <span style={pickerTitleStyle}>Скидка</span>
+            <ToggleSwitch checked={discountEnabled} onChange={onDiscountEnabledChange} aria-label="Скидка" />
+          </div>
+
+          {discountEnabled && (
+            <>
+              <FloatingField
+                label="Проценты"
+                value={String(discountPercent || '')}
+                onChange={(v) => onDiscountPercentChange(Math.min(100, Number(v.replace(/\D/g, '')) || 0))}
+                inputMode="numeric"
+                suffix="%"
+              />
+              {/* Итого — пилюля с бордером */}
+              <div style={{
+                height: 39, borderRadius: 19.5, border: '1px solid var(--color-surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+              }}>
+                <span style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>Итого</span>
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+                  {discountedNum !== null ? formatPrice(discountedNum) : '—'}
+                </span>
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              style={{ ...addPhotoTileStyle, aspectRatio: '121 / 170', cursor: uploading ? 'default' : 'pointer' }}
-            >
-              <CameraIcon />
-            </button>
-          </div>
-        )}
-        <input
+            </>
+          )}
+        </div>
+
+        {/* Группа: Примеры работ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SectionTitle>Примеры работ</SectionTitle>
+          {workPhotos.length === 0 ? (
+            // Пусто — один тайл 138×170 (Figma media)
+            <div style={{ paddingBottom: 24 }}>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                style={{ ...addPhotoTileStyle, width: 138, aspectRatio: '138 / 170', cursor: uploading ? 'default' : 'pointer' }}
+              >
+                <CameraIcon />
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
+              {workPhotos.map((photo, i) => (
+                <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
+                  <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {photo.uploading && <UploadingOverlay />}
+                  <button
+                    type="button"
+                    aria-label="Удалить фото"
+                    onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
+                    style={{
+                      position: 'absolute', top: 8, right: 8,
+                      width: 36, height: 36, borderRadius: 12, border: 'none', padding: 0,
+                      background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    }}
+                  >
+                    <XIcon />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                style={{ ...addPhotoTileStyle, aspectRatio: '121 / 170', cursor: uploading ? 'default' : 'pointer' }}
+              >
+                <CameraIcon />
+              </button>
+            </div>
+          )}
+          <input
             ref={fileRef}
             type="file"
             accept="image/*"
@@ -328,11 +335,12 @@ export default function ServiceFormPortal({
               }
             }}
           />
+        </div>
       </div>
 
-      {/* Кнопка Создать / Сохранить — hero h60 rx20 */}
+      {/* Футер — px12 pt8 pb48 (Figma). Кнопка h60 rx20 «Сохранить». */}
       <div style={{
-        padding: '8px 16px',
+        padding: '8px 12px',
         paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
         flexShrink: 0,
       }}>
@@ -349,7 +357,7 @@ export default function ServiceFormPortal({
             color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
           }}
         >
-          {isEdit ? 'Сохранить' : 'Создать'}
+          Сохранить
         </button>
       </div>
     </div>,
@@ -383,11 +391,12 @@ function XIcon() {
   )
 }
 
+// Камера 45px (Figma camera, vuesax/linear).
 function CameraIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-      <path d="M3 9.5C3 8.4 3.9 7.5 5 7.5H6.5L7.4 5.9C7.6 5.5 8 5.2 8.5 5.2H15.5C16 5.2 16.4 5.5 16.6 5.9L17.5 7.5H19C20.1 7.5 21 8.4 21 9.5V17C21 18.1 20.1 19 19 19H5C3.9 19 3 18.1 3 17V9.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
-      <circle cx="12" cy="12.8" r="3.2" stroke="currentColor" strokeWidth="1.75" />
+    <svg width="45" height="45" viewBox="0 0 24 24" fill="none">
+      <path d="M3 9.5C3 8.4 3.9 7.5 5 7.5H6.5L7.4 5.9C7.6 5.5 8 5.2 8.5 5.2H15.5C16 5.2 16.4 5.5 16.6 5.9L17.5 7.5H19C20.1 7.5 21 8.4 21 9.5V17C21 18.1 20.1 19 19 19H5C3.9 19 3 18.1 3 17V9.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="12" cy="12.8" r="3.2" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   )
 }

@@ -314,11 +314,10 @@ export default ServicesCatalog
 
 // ─── Каталог: карточки и кнопки (макеты profile-services-empty / profile-category-list) ──
 
-// Метка секции «УСЛУГИ» — 13px uppercase (по макету кап-высота заглавных ≈9.5 → 13px).
+// Метка секции «УСЛУГИ» — Caption 3 CAPS 14/500 uppercase, on-surface (Figma).
 const editorSectionLabelStyle: CSSProperties = {
   ...text.caption3Caps,
-  fontSize: 13,
-  color: 'var(--color-on-surface-secondary)',
+  color: 'var(--color-on-surface)',
   marginBottom: 20,
 }
 
@@ -342,7 +341,7 @@ function AddCategoryCard({ onClick }: { onClick: () => void }) {
       <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
         <FolderIcon />
       </span>
-      <span style={{ flex: 1, textAlign: 'center', ...text.subhead, color: 'var(--color-on-surface)' }}>
+      <span style={{ flex: 1, textAlign: 'center', ...text.callout1, color: 'var(--color-on-surface)' }}>
         Добавить категорию
       </span>
       <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
@@ -370,10 +369,10 @@ function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () 
         <FolderIcon />
       </span>
       <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-        <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           Категории услуг
         </div>
-        <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
+        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
           {catCountLabel(count)}
         </div>
       </div>
@@ -399,11 +398,11 @@ function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) 
           : <FolderIcon />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {cat.name}
         </div>
         {cat.description && (
-          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
             {cat.description}
           </div>
         )}
