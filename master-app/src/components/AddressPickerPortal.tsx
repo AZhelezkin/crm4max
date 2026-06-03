@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
-import AppHeader from '@/components/AppHeader'
-import { primaryActionButtonBaseStyle } from '@/components/onboardingStepOne.styles'
+import { text } from '@/styles/typography'
 
 export interface AddressPickerCoords {
   lat: number
@@ -39,26 +38,31 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
         zIndex: 200,
         display: 'flex',
         flexDirection: 'column',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        overflow: 'hidden',
       }}
     >
-      <AppHeader title="Добавление адреса" onBack={onClose} />
-
-      {/* Поле ввода с подсказками */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      {/* Карта на весь экран + back-кнопка и поиск-пилюля поверх (макет 8794:63351) */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <AddressSuggestInput
           value={draft}
           onChange={setDraft}
           onGeocode={(lat, lng) => setCoords({ lat, lng })}
           confirmedAddress={draft}
+          onBack={onClose}
         />
       </div>
 
-      {/* Кнопка «Готово» */}
+      {/* «Готово» — плавающая кнопка снизу поверх карты (макет: x12 w366 h60 rx20, низ 48) */}
       <div
         style={{
-          padding: '16px 20px',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-          marginTop: 'auto',
+          position: 'absolute',
+          left: 0, right: 0, bottom: 0,
+          zIndex: 5,
+          padding: '0 12px',
+          paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
+          pointerEvents: 'none',
         }}
       >
         <button
@@ -68,10 +72,15 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
             onClose()
           }}
           style={{
-            ...primaryActionButtonBaseStyle,
-            cursor: 'pointer',
+            pointerEvents: 'auto',
+            width: '100%',
+            height: 60,
+            border: 'none',
+            borderRadius: 20,
             background: 'var(--color-primary-surface)',
             color: 'var(--color-on-primary-surface)',
+            cursor: 'pointer',
+            ...text.subheadline,
           }}
         >
           Готово

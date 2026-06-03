@@ -1,10 +1,5 @@
 import { text } from '@/styles/typography'
 import { useEffect, useRef, useState } from 'react'
-import {
-  stepOneAddressInputIconStyle,
-  stepOneAddressInputStyle,
-  stepOneAddressInputWrapStyle,
-} from '@/components/onboardingStepOne.styles'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
@@ -107,9 +102,11 @@ interface Props {
   onChange: (v: string) => void
   onGeocode?: (lat: number, lng: number) => void
   confirmedAddress?: string
+  /** Назад/закрыть — рендерит круглую кнопку слева от поиска (макет 8794:63351) */
+  onBack?: () => void
 }
 
-export default function AddressSuggestInput({ value, onChange, onGeocode, confirmedAddress = '' }: Props) {
+export default function AddressSuggestInput({ value, onChange, onGeocode, confirmedAddress = '', onBack }: Props) {
   // inputValue — «короткий» адрес, который видит пользователь (улица + дом).
   // Полный адрес отдаём наверх через onChange — он и летит в БД.
   const [inputValue, setInputValue] = useState(() => shortenAddress(value))
@@ -329,22 +326,43 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         <CenterPin />
       </div>
 
-      {/* Поле ввода — обёртка пропускает клики вниз, активен только сам пилюль-инпут */}
+      {/* Верхняя строка: back-кнопка + поиск-пилюля (макет 8794:63351).
+          Обёртка пропускает клики на карту, активны только кнопка и инпут.
+          back 44×44 (x12), пилюля h44 rx22 (x64, gap 8), оба фон --color-background. */}
       <div style={{
         position: 'relative', zIndex: 3,
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '12px 16px',
+        padding: '6px 12px',
         flexShrink: 0,
         pointerEvents: 'none',
       }}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Назад"
+            style={{
+              pointerEvents: 'auto',
+              width: 44, height: 44, flexShrink: 0,
+              borderRadius: '50%',
+              background: 'var(--color-background)',
+              color: 'var(--color-on-surface-soften)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <BackArrowIcon />
+          </button>
+        )}
         <div style={{
           flex: 1,
-          ...stepOneAddressInputWrapStyle,
-          background: 'rgba(15,15,17,0.68)',
-          backdropFilter: 'blur(6px)',
           pointerEvents: 'auto',
+          height: 44,
+          borderRadius: 22,
+          background: 'var(--color-background)',
+          display: 'flex', alignItems: 'center',
+          padding: '0 16px',
         }}>
-          <div style={stepOneAddressInputIconStyle}><SearchIcon /></div>
           <input
             value={inputValue}
             onChange={(e) => {
@@ -360,8 +378,17 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
               lastEmittedFullRef.current = next
               onChange(next)
             }}
-            placeholder="Адрес"
-            style={stepOneAddressInputStyle}
+            placeholder="Найти адрес"
+            style={{
+              ...text.body,
+              flex: 1,
+              minWidth: 0,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: 'var(--color-on-surface)',
+              padding: 0,
+            }}
           />
         </div>
       </div>
@@ -419,11 +446,11 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   )
 }
 
-function SearchIcon() {
+function BackArrowIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="7" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" />
-      <path d="M20 20L16.65 16.65" stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
