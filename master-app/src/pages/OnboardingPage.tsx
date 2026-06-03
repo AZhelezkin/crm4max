@@ -392,10 +392,10 @@ const WORK_TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${hh}:${mm}`
 })
 
-// Метка секции — Figma «Caption 3 CAPS» 14/16/500 uppercase, on-surface-secondary.
+// Метка секции — Figma «Caption 3 CAPS» 14/16/500 uppercase, on-surface-soften (#CECFD1).
 const step1SectionLabelStyle: CSSProperties = {
   ...text.caption3Caps,
-  color: 'var(--color-on-surface-secondary)',
+  color: 'var(--color-on-surface-soften)',
   marginBottom: 20,
 }
 
@@ -480,7 +480,7 @@ function Step1Form(props: Step1Props) {
                     borderRadius: 20,
                     border: 'none',
                     cursor: 'pointer',
-                    ...text.subhead,
+                    ...text.callout1,
                     background: active ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)',
                     color: active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
                   }}
@@ -511,7 +511,7 @@ function Step1Form(props: Step1Props) {
             justifyContent: 'space-between',
             padding: '0 20px',
           }}>
-            <span style={{ ...text.body2, fontWeight: 500, color: 'var(--color-on-surface)' }}>
+            <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
               Есть обед
             </span>
             <ToggleSwitch checked={hasBreak} onChange={setHasBreak} aria-label="Есть обед" />

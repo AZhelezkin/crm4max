@@ -15,6 +15,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Плейсхолдеры полей — on-surface-secondary (Figma value&label у пустого textField). */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
 /* Пульсация hero-декора. Реализована через transform: scale() на
    pseudo-element с радиальными кругами — это GPU-accelerated и не
    зависит от @property/calc-substitution внутри background-image
