@@ -69,12 +69,6 @@ const pillFieldStyle: CSSProperties = {
   justifyContent: 'center',
 }
 
-const floatLabelStyle: CSSProperties = {
-  ...text.caption,
-  color: 'var(--color-on-surface-secondary)',
-  marginBottom: 2,
-}
-
 const fieldValueStyle: CSSProperties = {
   ...text.body2,
   color: 'var(--color-on-surface)',
@@ -94,6 +88,17 @@ const overlaySelectStyle: CSSProperties = {
 const chevronStyle: CSSProperties = {
   position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
   pointerEvents: 'none', display: 'flex', color: 'var(--color-interactive-element-secondary)',
+}
+
+// Тайл «добавить фото» — pattern-element фон, камера по центру (rx20).
+const addPhotoTileStyle: CSSProperties = {
+  borderRadius: 20,
+  border: 'none',
+  background: 'var(--color-pattern-element)',
+  color: 'var(--color-interactive-element-secondary)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 }
 
 // Создание/редактирование услуги (макет profile-service-create).
@@ -155,7 +160,6 @@ export default function ServiceFormPortal({
           }}>
             <div style={{
               width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
-              background: 'var(--color-secondary-surface)',
               color: 'var(--color-interactive-element-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -164,10 +168,12 @@ export default function ServiceFormPortal({
                 : <FolderIcon />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...fieldValueStyle, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {selectedCat?.name ?? 'Без категории'}
               </div>
-              <div style={floatLabelStyle}>Категория</div>
+              <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
+                {selectedCat ? 'Категория' : 'Можно выбрать'}
+              </div>
             </div>
             <span style={chevronStyle}><ChevronRightIcon /></span>
             <select
@@ -184,14 +190,17 @@ export default function ServiceFormPortal({
         {/* ── Время приёма ── */}
         <div style={sectionLabelStyle}>Время приёма</div>
         <div style={pillFieldStyle}>
-          <span style={floatLabelStyle}>Продолжительность</span>
-          <span style={fieldValueStyle}>{durationMin > 0 ? formatDur(durationMin) : '—'}</span>
+          <span style={{ ...text.subhead, color: 'var(--color-on-surface)' }}>Продолжительность</span>
+          <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
+            {durationMin > 0 ? formatDur(durationMin) : 'Не выбрано'}
+          </span>
           <span style={chevronStyle}><ChevronRightIcon /></span>
           <select
-            value={durationMin || 60}
+            value={durationMin || ''}
             onChange={(e) => onDurationChange(e.target.value)}
             style={overlaySelectStyle}
           >
+            <option value="" disabled hidden>Не выбрано</option>
             {DURATION_OPTIONS.map((m) => <option key={m} value={m}>{formatDur(m)}</option>)}
           </select>
         </div>
@@ -239,43 +248,50 @@ export default function ServiceFormPortal({
 
         {/* ── Примеры работ ── */}
         <div style={sectionLabelStyle}>Примеры работ</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
-          {workPhotos.map((photo, i) => (
-            <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
-              <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              {photo.uploading && <UploadingOverlay />}
-              <button
-                type="button"
-                aria-label="Удалить фото"
-                onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
-                style={{
-                  position: 'absolute', top: 8, right: 8,
-                  width: 36, height: 36, borderRadius: 12, border: 'none', padding: 0,
-                  background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                }}
-              >
-                <XIcon />
-              </button>
-            </div>
-          ))}
-
-          {/* Добавить фото */}
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            style={{
-              aspectRatio: '121 / 170', borderRadius: 20, border: 'none',
-              background: 'var(--color-pattern-element)',
-              color: 'var(--color-interactive-element-secondary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: uploading ? 'default' : 'pointer',
-            }}
-          >
-            <CameraIcon />
-          </button>
-          <input
+        {workPhotos.length === 0 ? (
+          // Пусто — один тайл добавления 138×170 (макет profile-service-create-new)
+          <div style={{ paddingBottom: 24 }}>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              style={{ ...addPhotoTileStyle, width: 138, aspectRatio: '138 / 170', cursor: uploading ? 'default' : 'pointer' }}
+            >
+              <CameraIcon />
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
+            {workPhotos.map((photo, i) => (
+              <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
+                <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {photo.uploading && <UploadingOverlay />}
+                <button
+                  type="button"
+                  aria-label="Удалить фото"
+                  onClick={() => onWorkPhotosChange(workPhotos.filter((_, j) => j !== i))}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    width: 36, height: 36, borderRadius: 12, border: 'none', padding: 0,
+                    background: 'var(--color-secondary-surface)', color: 'var(--color-on-surface)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}
+                >
+                  <XIcon />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              style={{ ...addPhotoTileStyle, aspectRatio: '121 / 170', cursor: uploading ? 'default' : 'pointer' }}
+            >
+              <CameraIcon />
+            </button>
+          </div>
+        )}
+        <input
             ref={fileRef}
             type="file"
             accept="image/*"
@@ -311,7 +327,6 @@ export default function ServiceFormPortal({
               }
             }}
           />
-        </div>
       </div>
 
       {/* Кнопка Создать / Сохранить — hero h60 rx20 */}

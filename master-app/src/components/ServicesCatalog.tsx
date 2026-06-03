@@ -147,7 +147,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         )
       } else {
         setEditService(null)
-        setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('60')
+        setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('')
         setSvcCategoryId(defaultCatId ?? '')
         setSvcDiscountEnabled(false); setSvcDiscountPercent(10)
         setSvcWorkPhotos([])
