@@ -794,10 +794,11 @@ function FloatingField({
 }: FloatingFieldProps) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
+  const showClear = focused && value.length > 0
 
   const innerInputStyle: CSSProperties = {
     ...fieldTextStyle,
-    flex: 1,
+    width: '100%',
     minWidth: 0,
     border: 'none',
     outline: 'none',
@@ -822,19 +823,20 @@ function FloatingField({
       boxShadow: focused ? 'inset 0 0 0 2px var(--color-active-element)' : undefined,
       transition: 'background 0.15s ease, box-shadow 0.15s ease',
     }}>
-      {floated && (
-        <span style={{
-          ...text.caption,
-          color: 'var(--color-on-surface-secondary)',
-          marginBottom: 2,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {label}
-        </span>
-      )}
-      <div style={{ display: 'flex', alignItems: multiline ? 'flex-start' : 'center', gap: 8, width: '100%' }}>
+      {/* paddingRight резервирует место под крестик, чтобы текст не залезал под него */}
+      <div style={{ display: 'flex', flexDirection: 'column', paddingRight: showClear ? 32 : 0 }}>
+        {floated && (
+          <span style={{
+            ...text.caption,
+            color: 'var(--color-on-surface-secondary)',
+            marginBottom: 2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {label}
+          </span>
+        )}
         {multiline ? (
           <textarea
             ref={inputRef}
@@ -860,31 +862,34 @@ function FloatingField({
             style={innerInputStyle}
           />
         )}
-        {focused && value.length > 0 && (
-          <button
-            type="button"
-            aria-label="Очистить"
-            // preventDefault на mousedown — чтобы не терять фокус поля при клике на крестик
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onChange('')}
-            style={{
-              flexShrink: 0,
-              width: 24,
-              height: 24,
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-interactive-element-secondary)',
-            }}
-          >
-            <ClearFieldIcon />
-          </button>
-        )}
       </div>
+      {showClear && (
+        <button
+          type="button"
+          aria-label="Очистить"
+          // preventDefault на mousedown — чтобы не терять фокус поля при клике на крестик
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onChange('')}
+          style={{
+            position: 'absolute',
+            right: 20,
+            top: '50%',
+            transform: 'translateY(-50%)',   // крестик по центру высоты поля (макет 8794:60965)
+            width: 24,
+            height: 24,
+            padding: 0,
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-interactive-element-secondary)',
+          }}
+        >
+          <ClearFieldIcon />
+        </button>
+      )}
     </div>
   )
 }
