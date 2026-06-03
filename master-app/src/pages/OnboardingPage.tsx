@@ -1,9 +1,8 @@
 import { text } from '@/styles/typography'
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import CategoriesServicesEditor, { type CategoriesServicesEditorHandle } from '@/components/CategoriesServicesEditor'
-import { Spinner } from '@maxhub/max-ui'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import { mastersApi } from '@/api/masters.api'
 import { scheduleApi } from '@/api/schedule.api'
@@ -11,8 +10,7 @@ import { uploadPhoto } from '@/api/upload.api'
 import { useAuthStore } from '@/store/auth.store'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import AvatarCropPortal from '@/components/AvatarCropPortal'
-import AppHeader from '@/components/AppHeader'
-import { primaryActionButtonBaseStyle } from '@/components/onboardingStepOne.styles'
+import { HeroHeader, FloatingField, ArrowLeftIcon, CameraBoldIcon, UploadingOverlay } from '@/components/onboardingShared'
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -61,7 +59,7 @@ export default function OnboardingPage() {
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5])
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('17:00')
-  const [buffer, setBuffer] = useState(30)
+  const [buffer, setBuffer] = useState(0)
   const [hasBreak, setHasBreak] = useState(false)
   const [breakStart, setBreakStart] = useState('13:00')
   const [breakEnd, setBreakEnd] = useState('14:00')
@@ -225,10 +223,15 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок: step 0 — back-кнопка внутри Step0Form; step 1 — header внутри Step1Form (макет shedule.svg). */}
+      {/* Заголовок: step 0 — back-кнопка внутри Step0Form; step 1 — header внутри Step1Form.
+          step 2: «Услуги» (пусто) / «Категории услуг» (есть категории) / имя категории (услуги). */}
       {step === 2 && (
-        <AppHeader
-          title={servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
+        <HeroHeader
+          title={
+            servicesSubStep === 'services'
+              ? (servicesSelectedCatName || 'Услуги')
+              : catCount === 0 ? 'Услуги' : 'Категории услуг'
+          }
           onBack={() => {
             if (servicesSubStep === 'services') {
               editorRef.current?.goToCategories()
@@ -283,12 +286,10 @@ export default function OnboardingPage() {
         />
       )}
 
-      {/* Кнопка Далее / Готово
-          Step 0/1 (макеты 8794:65467 / shedule.svg): footer pt-8 pb-48, button h=60, radius 20,
-            disabled bg secondarySurfaceMuted + interactiveElementMuted text. Step 0 px-12, step 1 px-16.
-          Step 2 (старый стиль): pt/pb 12 px-16, button h=48. */}
+      {/* Кнопка Далее / Готово — единый hero-стиль (макеты 8794:65467 / shedule.svg /
+          profile-services-empty): footer pt-8 pb-48, button h=60 radius 20, disabled
+          bg secondarySurfaceMuted + interactiveElementMuted. Step 0 px-12, step 1/2 px-16. */}
       {(() => {
-        const heroButton = step === 0 || step === 1
         const disabled = saving || photoUploading
           || (step === 0 && !name.trim())
           || (step === 1 && workingDays.length === 0)
@@ -298,39 +299,29 @@ export default function OnboardingPage() {
           step === 2 && servicesSubStep === 'categories' ? 'Готово' :
           'Далее'
 
-        const footerStyle: CSSProperties = heroButton
-          ? { padding: step === 0 ? '8px 12px' : '8px 16px', paddingBottom: 'calc(48px + env(safe-area-inset-bottom))' }
-          : { padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }
+        const footerStyle: CSSProperties = {
+          padding: step === 0 ? '8px 12px' : '8px 16px',
+          paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
+        }
 
-        const buttonStyle: CSSProperties = heroButton
-          ? {
-              width: '100%',
-              height: 60,
-              borderRadius: 20,
-              border: 'none',
-              padding: 18,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...text.callout1,
-              cursor: disabled ? 'default' : 'pointer',
-              background: disabled
-                ? 'var(--color-secondary-surface-muted)'
-                : 'var(--color-primary-surface)',
-              color: disabled
-                ? 'var(--color-interactive-element-muted)'
-                : 'var(--color-on-primary-surface)',
-            }
-          : {
-              ...primaryActionButtonBaseStyle,
-              cursor: disabled ? 'default' : 'pointer',
-              background: disabled
-                ? 'var(--color-secondary-surface)'
-                : 'var(--color-primary-surface)',
-              color: disabled
-                ? 'var(--color-on-surface-secondary)'
-                : 'var(--color-on-primary-surface)',
-            }
+        const buttonStyle: CSSProperties = {
+          width: '100%',
+          height: 60,
+          borderRadius: 20,
+          border: 'none',
+          padding: 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...text.callout1,
+          cursor: disabled ? 'default' : 'pointer',
+          background: disabled
+            ? 'var(--color-secondary-surface-muted)'
+            : 'var(--color-primary-surface)',
+          color: disabled
+            ? 'var(--color-interactive-element-muted)'
+            : 'var(--color-on-primary-surface)',
+        }
 
         return (
           <div style={footerStyle}>
@@ -393,18 +384,6 @@ export default function OnboardingPage() {
 }
 
 // ─── Вспомогательные компоненты ───────────────────────────────────────────────
-
-function UploadingOverlay() {
-  return (
-    <div style={{
-      position: 'absolute', inset: 0, borderRadius: 'inherit',
-      background: 'rgba(0,0,0,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <Spinner size={20} appearance="contrast-static" />
-    </div>
-  )
-}
 
 // ─── Step 1: «График работы» (макет shedule.svg, node 8820:29745) ─────────────
 //
@@ -485,37 +464,7 @@ function Step1Form(props: Step1Props) {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
-      {/* Header h=56: back 44×44 (left 12) + центрированный заголовок */}
-      <div style={{
-        position: 'relative',
-        height: 56,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '6px 12px',
-      }}>
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Назад"
-          style={{
-            position: 'absolute',
-            left: 12,
-            width: 44, height: 44,
-            borderRadius: '50%',
-            background: 'var(--color-background)',
-            color: 'var(--color-on-surface-soften)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <ArrowLeftIcon />
-        </button>
-        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>
-          График работы
-        </div>
-      </div>
+      <HeroHeader title="График работы" onBack={onBack} />
 
       {/* Контент: padding 16 по бокам; header→группа1 и группа→группа = 34 */}
       <div style={{
@@ -605,20 +554,160 @@ function Step1Form(props: Step1Props) {
   )
 }
 
-// Строка времени «С — До»: две селект-пилюли + тире по центру (gap 33 из макета). */
+// Строка границ «С … – До …»: левая пилюля — префикс «С», правая — «До»,
+// тире по центру (gap из макета). Тап по пилюле открывает колесо-пикер.
 function TimeRange({ startValue, onStartChange, endValue, onEndChange }: {
   startValue: string; onStartChange: (v: string) => void
   endValue: string; onEndChange: (v: string) => void
 }) {
-  const opts = WORK_TIME_OPTIONS.map((t) => ({ value: t, label: t }))
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ flex: 1 }}>
-        <SelectPill value={startValue} onChange={onStartChange} options={opts} />
+        <TimePillButton prefix="С" value={startValue} onChange={onStartChange} />
       </div>
       <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>–</span>
       <div style={{ flex: 1 }}>
-        <SelectPill value={endValue} onChange={onEndChange} options={opts} />
+        <TimePillButton prefix="До" value={endValue} onChange={onEndChange} />
+      </div>
+    </div>
+  )
+}
+
+// Время без ведущего нуля у часа: "09:00" → "9:00" (как в макете).
+function fmtTime(t: string): string {
+  const [h, m] = t.split(':')
+  return `${Number(h)}:${m}`
+}
+
+// Пилюля h=72 rx=20: префикс «С/До» (secondary) + значение (on-surface) + шеврон.
+// Тап → колесо-пикер TimeWheel.
+function TimePillButton({ prefix, value, onChange }: {
+  prefix: string; value: string; onChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 72,
+          borderRadius: 20,
+          border: 'none',
+          background: 'var(--color-surface-transparent)',
+          padding: '0 44px 0 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+        }}
+      >
+        <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>{prefix}</span>
+        <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{fmtTime(value)}</span>
+        <span style={step1ChevronStyle}><ChevronDownIcon /></span>
+      </button>
+      {open && <TimeWheel value={value} onChange={onChange} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+// ── Колесо-пикер времени (макет Frame 2131327916) ──────────────────────────────
+// Bottom-sheet: вертикальный scroll-snap список получасовых значений; центральный
+// ряд крупный/белый, соседние тускнеют (opacity 1→0.85→0.72→0.6 = #D7/#C2/#AE на
+// фоне #0E0F11) и мельче (24→18→15→12). Полоса выбора — две тонкие линии в центре.
+// Без кнопки «Выбрать»: тап по ряду выбирает и закрывает; скролл двигает колесо,
+// закрытие по фону фиксирует центрированное значение.
+const WHEEL_ROW_H = 30        // шаг центров рядов (≈29 из макета)
+const WHEEL_VISIBLE = 7       // 3 сверху + центр + 3 снизу (6:00…12:00 в макете)
+const WHEEL_PAD = (WHEEL_VISIBLE * WHEEL_ROW_H - WHEEL_ROW_H) / 2  // крайние центрируются
+
+function TimeWheel({ value, onChange, onClose }: {
+  value: string; onChange: (v: string) => void; onClose: () => void
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const startIdx = Math.max(0, WORK_TIME_OPTIONS.indexOf(value))
+  const [centerIdx, setCenterIdx] = useState(startIdx)
+
+  // Центрируем текущее значение один раз при открытии (без анимации).
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = startIdx * WHEEL_ROW_H
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    const idx = Math.min(WORK_TIME_OPTIONS.length - 1, Math.max(0, Math.round(el.scrollTop / WHEEL_ROW_H)))
+    if (idx !== centerIdx) setCenterIdx(idx)
+  }
+
+  // Закрытие по фону фиксирует центрированное значение.
+  const commitAndClose = () => { onChange(WORK_TIME_OPTIONS[centerIdx]); onClose() }
+
+  const rowStyle = (dist: number): CSSProperties => ({
+    height: WHEEL_ROW_H,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    scrollSnapAlign: 'center',
+    fontSize: dist === 0 ? 24 : dist === 1 ? 18 : dist === 2 ? 15 : 12,
+    lineHeight: 1,
+    fontWeight: dist === 0 ? 500 : 400,
+    color: 'var(--color-on-surface)',
+    opacity: dist === 0 ? 1 : dist === 1 ? 0.85 : dist === 2 ? 0.72 : 0.6,
+    cursor: 'pointer',
+    transition: 'font-size 0.12s, opacity 0.12s',
+  })
+
+  return (
+    <div
+      onClick={commitAndClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--color-background)',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          padding: '16px 0 calc(16px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div style={{ position: 'relative', height: WHEEL_VISIBLE * WHEEL_ROW_H }}>
+          {/* полоса выбора — две тонкие линии по центру */}
+          <div style={{
+            position: 'absolute', left: 20, right: 20,
+            top: '50%', height: WHEEL_ROW_H, transform: 'translateY(-50%)',
+            borderTop: '1px solid var(--color-divider-low)',
+            borderBottom: '1px solid var(--color-divider-low)',
+            pointerEvents: 'none',
+          }} />
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            style={{
+              height: '100%', overflowY: 'auto',
+              scrollSnapType: 'y mandatory',
+              padding: `${WHEEL_PAD}px 0`,
+              boxSizing: 'border-box',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {WORK_TIME_OPTIONS.map((t, i) => (
+              <div
+                key={t}
+                onClick={() => { onChange(t); onClose() }}
+                style={rowStyle(Math.abs(i - centerIdx))}
+              >
+                {fmtTime(t)}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -676,8 +765,6 @@ interface Step0Props {
   onBack: () => void
 }
 
-// Figma «Body 2» 17/24/400 ls -0.17 — текст полей.
-const fieldTextStyle: CSSProperties = { ...text.body2 }
 // Figma «Caption 2» 14/16/500 ls -0.028 — caption под полем + текст сегмента.
 const captionTextStyle: CSSProperties = { ...text.caption2 }
 
@@ -883,135 +970,7 @@ function Step0Form(props: Step0Props) {
   )
 }
 
-// ── Поле с плавающим лейблом (макет 8794:60965) ──────────────────────────────
-// Пусто → плейсхолдер по центру. Есть значение/фокус → лейбл всплывает наверх
-// (caption, on-surface-secondary), значение под ним (body2). Фокус → фон surface
-// + рамка 2px active-element. Крестик очистки — при фокусе и непустом значении.
-// Вертикаль (single-line): 15 + label 16 + gap 2 + value 24 + 15 = 72.
-interface FloatingFieldProps {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  type?: string
-  inputMode?: 'text' | 'tel' | 'numeric' | 'email'
-  maxLength?: number
-  multiline?: boolean
-  inputRef?: RefObject<HTMLTextAreaElement>
-}
-
-function FloatingField({
-  label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, inputRef,
-}: FloatingFieldProps) {
-  const [focused, setFocused] = useState(false)
-  const floated = focused || value.length > 0
-  const showClear = focused && value.length > 0
-
-  const innerInputStyle: CSSProperties = {
-    ...fieldTextStyle,
-    width: '100%',
-    minWidth: 0,
-    border: 'none',
-    outline: 'none',
-    background: 'transparent',
-    color: 'var(--color-on-surface)',
-    padding: 0,
-    fontFamily: 'inherit',
-  }
-
-  return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      minHeight: 72,
-      boxSizing: 'border-box',
-      borderRadius: 20,
-      padding: '15px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      background: focused ? 'var(--color-surface)' : 'var(--color-surface-transparent)',
-      boxShadow: focused ? 'inset 0 0 0 2px var(--color-active-element)' : undefined,
-      transition: 'background 0.15s ease, box-shadow 0.15s ease',
-    }}>
-      {/* paddingRight резервирует место под крестик, чтобы текст не залезал под него */}
-      <div style={{ display: 'flex', flexDirection: 'column', paddingRight: showClear ? 32 : 0 }}>
-        {floated && (
-          <span style={{
-            ...text.caption,
-            color: 'var(--color-on-surface-secondary)',
-            marginBottom: 2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {label}
-          </span>
-        )}
-        {multiline ? (
-          <textarea
-            ref={inputRef}
-            value={value}
-            placeholder={floated ? '' : label}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            rows={1}
-            maxLength={maxLength}
-            style={{ ...innerInputStyle, resize: 'none', overflowY: 'auto' }}
-          />
-        ) : (
-          <input
-            type={type}
-            inputMode={inputMode}
-            value={value}
-            placeholder={floated ? '' : label}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            maxLength={maxLength}
-            style={innerInputStyle}
-          />
-        )}
-      </div>
-      {showClear && (
-        <button
-          type="button"
-          aria-label="Очистить"
-          // preventDefault на mousedown — чтобы не терять фокус поля при клике на крестик
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onChange('')}
-          style={{
-            position: 'absolute',
-            right: 20,
-            top: '50%',
-            transform: 'translateY(-50%)',   // крестик по центру высоты поля (макет 8794:60965)
-            width: 24,
-            height: 24,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-interactive-element-secondary)',
-          }}
-        >
-          <ClearFieldIcon />
-        </button>
-      )}
-    </div>
-  )
-}
-
-// Крестик очистки — X 10×10 (макет: M349 473L339 483 …), нормализован в 24×24.
-function ClearFieldIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M17 7L7 17M7 7L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
+// FloatingField / ClearFieldIcon вынесены в @/components/onboardingShared.
 
 // ── Сегмент-контрол «По адресу / Дистанционно» ────────────────────────────────
 // Figma: 2 chip-кнопки 50/50, gap 8, h ≈ 72 (padding 12/8 + icon 24 + gap 4 + text 16×2).
@@ -1136,23 +1095,7 @@ function AddressButton({ location, onClick }: { location: string; onClick: () =>
 }
 
 // ─── Иконки (vuesax, viewBox указан в каждом SVG) ─────────────────────────────
-
-function ArrowLeftIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function CameraBoldIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-      <path d="M24 8C23.1867 8 22.44 7.53333 22.0667 6.81333L21.1067 4.88C20.4933 3.66667 18.8933 2.66667 17.5333 2.66667H14.48C13.1067 2.66667 11.5067 3.66667 10.8933 4.88L9.93333 6.81333C9.56 7.53333 8.81333 8 8 8C5.10667 8 2.81333 10.44 3 13.32L3.69333 24.3333C3.85333 27.08 5.33333 29.3333 9.01333 29.3333H22.9867C26.6667 29.3333 28.1333 27.08 28.3067 24.3333L29 13.32C29.1867 10.44 26.8933 8 24 8ZM14 9.66667H18C18.5467 9.66667 19 10.12 19 10.6667C19 11.2133 18.5467 11.6667 18 11.6667H14C13.4533 11.6667 13 11.2133 13 10.6667C13 10.12 13.4533 9.66667 14 9.66667ZM16 24.16C13.52 24.16 11.4933 22.1467 11.4933 19.6533C11.4933 17.16 13.5067 15.1467 16 15.1467C18.4933 15.1467 20.5067 17.16 20.5067 19.6533C20.5067 22.1467 18.48 24.16 16 24.16Z" fill="currentColor" fillOpacity="0.6" />
-    </svg>
-  )
-}
+// ArrowLeftIcon / CameraBoldIcon вынесены в @/components/onboardingShared.
 
 function LocationOutlineIcon() {
   return (

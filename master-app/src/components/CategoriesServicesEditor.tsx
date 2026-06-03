@@ -1,6 +1,5 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Button as MaxButton } from '@maxhub/max-ui'
+import { forwardRef, useEffect, useImperativeHandle, useState, type CSSProperties } from 'react'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
@@ -13,7 +12,6 @@ import {
   onboardingListActionButtonStyle,
   onboardingListButtonStyle,
   onboardingListCardStyle,
-  onboardingListMediaStyle,
   onboardingListSubtitleStyle,
   onboardingListTitleStyle,
   onboardingPriceRowStyle,
@@ -34,6 +32,7 @@ interface CategoriesServicesEditorProps {
 const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, CategoriesServicesEditorProps>(
   ({ onSubStepChange, onCategoryCountChange }, ref) => {
     const [categories, setCategories] = useState<Category[]>([])
+    const [allServices, setAllServices] = useState<Service[]>([])
     const [subStep, setSubStep] = useState<'categories' | 'services'>('categories')
     const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
 
@@ -59,12 +58,16 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
     const [svcWorkPhotos, setSvcWorkPhotos] = useState<LocalWorkPhoto[]>([])
 
     const load = () =>
-      categoriesApi.list().then((cats) => {
+      Promise.all([categoriesApi.list(), servicesApi.list()]).then(([cats, svcs]) => {
         setCategories(cats)
+        setAllServices(svcs)
         onCategoryCountChange?.(cats.length)
       }).catch(() => {})
 
     useEffect(() => { load() }, [])
+
+    // Услуги без категории — показываем в пустом состоянии (категорий ещё нет).
+    const uncategorizedServices = allServices.filter((s) => !s.categoryId)
 
     const changeSubStep = (ss: 'categories' | 'services', catName?: string) => {
       setSubStep(ss)
@@ -181,122 +184,56 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
-          {/* ── Список категорий ── */}
+          {/* ── Категории: пусто (макет #1) / список (макет #3) ── */}
           {subStep === 'categories' && (
-            <>
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  onClick={() => { setSelectedCatId(cat.id); changeSubStep('services', cat.name) }}
-                  style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
-                >
-                  <div style={onboardingListButtonStyle}>
-                    <div style={onboardingListMediaStyle}>
-                      {cat.photo
-                        ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ ...text.titleSmall }}>✂️</span>
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...onboardingListTitleStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {cat.name}
-                        {cat.services.some((s) => s.discountPercent) && (
-                          <span style={onboardingDiscountBadgeStyle}>% скидки</span>
-                        )}
-                      </div>
-                      <div style={onboardingListSubtitleStyle}>
-                        {cat.services.length === 0
-                          ? 'Нет услуг'
-                          : `${cat.services.length} ${cat.services.length === 1 ? 'услуга' : cat.services.length < 5 ? 'услуги' : 'услуг'}`}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openCatForm(cat) }}
-                        style={onboardingListActionButtonStyle}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); void handleDeleteCategory(cat.id) }}
-                        style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
+            categories.length === 0 ? (
+              // Пусто: CTA-карточка «Добавить категорию» + секция «Услуги» с «+ Добавить услугу».
+              <>
+                <AddCategoryCard onClick={() => openCatForm()} />
+                <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* label mb 12 + gap 8 = 20 до контента */}
+                  <div style={{ ...editorSectionLabelStyle, marginBottom: 12 }}>Услуги</div>
+                  {uncategorizedServices.map((s) => (
+                    <ServiceCard
+                      key={s.id}
+                      service={s}
+                      onEdit={() => openSvcForm(s)}
+                      onDelete={() => { void handleDeleteService(s.id) }}
+                    />
+                  ))}
+                  <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
                 </div>
-              ))}
-
-              <MaxButton
-                appearance="themed"
-                mode="secondary"
-                size="medium"
-                stretched
-                onClick={() => openCatForm()}
-              >
-                + Добавить категорию
-              </MaxButton>
-            </>
+              </>
+            ) : (
+              // Список категорий + «+ Добавить категорию».
+              <>
+                {categories.map((cat) => (
+                  <CategoryCard
+                    key={cat.id}
+                    cat={cat}
+                    onClick={() => { setSelectedCatId(cat.id); changeSubStep('services', cat.name) }}
+                  />
+                ))}
+                <div style={{ marginTop: 8 }}>
+                  <AddRowButton label="Добавить категорию" onClick={() => openCatForm()} />
+                </div>
+              </>
+            )
           )}
 
-          {/* ── Список услуг ── */}
+          {/* ── Список услуг категории ── */}
           {subStep === 'services' && selectedCat && (
             <>
-              {selectedCat.services.map((s) => {
-                const dPrice = discountedPrice(s.price, s.discountPercent)
-                return (
-                  <div
-                    key={s.id}
-                    onClick={() => openSvcForm(s)}
-                    style={{ ...onboardingListCardStyle, cursor: 'pointer' }}
-                  >
-                    <div style={onboardingListButtonStyle}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={onboardingListTitleStyle}>{s.name}</div>
-                        <div style={onboardingListSubtitleStyle}>{formatDuration(s.duration)}</div>
-                        <div style={onboardingPriceRowStyle}>
-                          {dPrice !== null ? (
-                            <>
-                              <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>{formatPrice(dPrice)}</span>
-                              <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
-                              <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
-                            </>
-                          ) : (
-                            <span style={{ ...text.action }}>{formatPrice(s.price)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); openSvcForm(s) }}
-                          style={onboardingListActionButtonStyle}
-                        >
-                          <EditIcon />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); void handleDeleteService(s.id) }}
-                          style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+              {selectedCat.services.map((s) => (
+                <ServiceCard
+                  key={s.id}
+                  service={s}
+                  onEdit={() => openSvcForm(s)}
+                  onDelete={() => { void handleDeleteService(s.id) }}
+                />
+              ))}
 
-              <MaxButton
-                appearance="themed"
-                mode="secondary"
-                size="medium"
-                stretched
-                onClick={() => openSvcForm(undefined, selectedCat.id)}
-              >
-                + Добавить услугу
-              </MaxButton>
+              <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined, selectedCat.id)} />
             </>
           )}
 
@@ -346,7 +283,163 @@ const CategoriesServicesEditor = forwardRef<CategoriesServicesEditorHandle, Cate
 CategoriesServicesEditor.displayName = 'CategoriesServicesEditor'
 export default CategoriesServicesEditor
 
+// ─── Каталог: карточки и кнопки (макеты profile-services-empty / profile-category-list) ──
+
+// Метка секции «УСЛУГИ» — Figma «Caption 3 CAPS» 14/16/500 uppercase.
+const editorSectionLabelStyle: CSSProperties = {
+  ...text.caption3Caps,
+  color: 'var(--color-on-surface-secondary)',
+  marginBottom: 20,
+}
+
+// Карточка h76 rx20 на surface-transparent — общая оболочка карточек каталога.
+const catalogCardStyle: CSSProperties = {
+  height: 76,
+  borderRadius: 20,
+  border: 'none',
+  cursor: 'pointer',
+  background: 'var(--color-surface-transparent)',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 20px',
+  width: '100%',
+}
+
+// CTA-карточка «Добавить категорию» (пустое состояние): папка + центр-текст + шеврон.
+function AddCategoryCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
+      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+        <FolderIcon />
+      </span>
+      <span style={{ flex: 1, textAlign: 'center', ...text.subhead, color: 'var(--color-on-surface)' }}>
+        Добавить категорию
+      </span>
+      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+        <ChevronRightIcon />
+      </span>
+    </button>
+  )
+}
+
+// Карточка категории (список): аватар 44 + имя + описание/счётчик + шеврон.
+function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
+  const count = cat.services.length
+  const subtitle = cat.description
+    || (count === 0 ? 'Нет услуг'
+      : `${count} ${count === 1 ? 'услуга' : count < 5 ? 'услуги' : 'услуг'}`)
+  return (
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 16, textAlign: 'left' }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
+        background: 'var(--color-secondary-surface)',
+        color: 'var(--color-interactive-element-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {cat.photo
+          ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <FolderIcon />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ ...text.subhead, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {cat.name}
+        </div>
+        <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+          {subtitle}
+        </div>
+      </div>
+      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+        <ChevronRightIcon />
+      </span>
+    </button>
+  )
+}
+
+// Компактная кнопка-строка «+ Добавить …»: h36 rx12 secondary-surface, «+» + текст.
+function AddRowButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%', height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
+        background: 'var(--color-secondary-surface)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        color: 'var(--color-on-surface)',
+      }}
+    >
+      <PlusIcon />
+      <span style={{ ...text.subhead }}>{label}</span>
+    </button>
+  )
+}
+
+// Карточка услуги (список услуг категории + услуги без категории в пустом состоянии).
+function ServiceCard({ service: s, onEdit, onDelete }: {
+  service: Service; onEdit: () => void; onDelete: () => void
+}) {
+  const dPrice = discountedPrice(s.price, s.discountPercent)
+  return (
+    <div onClick={onEdit} style={{ ...onboardingListCardStyle, cursor: 'pointer' }}>
+      <div style={onboardingListButtonStyle}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={onboardingListTitleStyle}>{s.name}</div>
+          <div style={onboardingListSubtitleStyle}>{formatDuration(s.duration)}</div>
+          <div style={onboardingPriceRowStyle}>
+            {dPrice !== null ? (
+              <>
+                <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>{formatPrice(dPrice)}</span>
+                <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
+                <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
+              </>
+            ) : (
+              <span style={{ ...text.action }}>{formatPrice(s.price)}</span>
+            )}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }} style={onboardingListActionButtonStyle}>
+            <EditIcon />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete() }}
+            style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Иконки ──────────────────────────────────────────────────────────────────
+
+// Папка — оригинальный path из макета (нормализован viewBox под x48-68/y216-236).
+function FolderIcon() {
+  return (
+    <svg width="24" height="24" viewBox="46 214 24 24" fill="none">
+      <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4 8H12M8 4V12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 function EditIcon() {
   return (
