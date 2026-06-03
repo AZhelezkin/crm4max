@@ -37,6 +37,9 @@ export const text = {
   /** 17 / 24 / 700 letterSpacing -0.17px — Figma «Callout 1», заголовок в карточке-листе (служба, мастер). */
   callout1:       { fontSize: 17, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.17 },
 
+  /** 14 / 20 / 700 letterSpacing -0.14px — Figma «Callout 2», текст вторичных кнопок («+ Добавить категорию/услугу»). */
+  callout2:       { fontSize: 14, lineHeight: '20px', fontWeight: 700, letterSpacing: -0.14 },
+
   /** 17 / 24 / 400 letterSpacing -0.17px — Figma «Body 2», крупный обычный (табы, заметные подписи). */
   body2:          { fontSize: 17, lineHeight: '24px', fontWeight: 400, letterSpacing: -0.17 },
 

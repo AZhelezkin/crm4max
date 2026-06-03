@@ -113,6 +113,7 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
   - `text.titleSmall` — 20/26/700, заголовок раздела/портала
   - `text.headline` — 18/24/600, заголовок карточки
   - `text.callout1` — 17/24/700 ls −0.17, заголовок в карточке-листе (Figma «Callout 1»)
+  - `text.callout2` — 14/20/700 ls −0.14, текст вторичных кнопок «+ Добавить …» (Figma «Callout 2»)
   - `text.body2` — 17/24/400 ls −0.17, крупный обычный текст, табы (Figma «Body 2»)
   - `text.body2Medium` — 17/24/500 ls 0.34, лейблы дней недели в календаре («Пн», «Вт»…) (Figma «_calendar2Day», 2% от font-size)
   - `text.subhead` — 16/22/600, подзаголовок, ярлык поля

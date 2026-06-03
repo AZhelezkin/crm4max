@@ -394,7 +394,7 @@ function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () 
 // Карточка категории (список): аватар 44 + имя + описание (если есть) + шеврон.
 function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 16, textAlign: 'left' }}>
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12, textAlign: 'left' }}>
       <div style={{
         width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
         background: 'var(--color-secondary-surface)',
@@ -410,7 +410,7 @@ function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) 
           {cat.name}
         </div>
         {cat.description && (
-          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {cat.description}
           </div>
         )}
@@ -432,11 +432,11 @@ function AddRowButton({ label, onClick }: { label: string; onClick: () => void }
         width: '100%', height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
         background: 'var(--color-secondary-surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        color: 'var(--color-on-surface)',
+        color: 'var(--color-interactive-element-accented)',
       }}
     >
       <PlusIcon />
-      <span style={{ ...text.footnoteStrong }}>{label}</span>
+      <span style={{ ...text.callout2 }}>{label}</span>
     </button>
   )
 }
