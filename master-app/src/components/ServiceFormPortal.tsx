@@ -48,13 +48,14 @@ function formatDur(min: number): string {
   return m === 0 ? `${h} ${hWord}` : `${h} ч ${m} мин`
 }
 
-// Подпись секции — 13px uppercase (как в справочнике).
+// Подпись секции — 13px uppercase. По макету прижата к полю снизу: caps ≈40 от поля
+// выше и ≈15 до поля ниже. С учётом flex-gap 8: mt 29 (+8=37 до бокса, +3 до caps≈40), mb 7 (+8=15).
 const sectionLabelStyle: CSSProperties = {
   ...text.caption3Caps,
   fontSize: 13,
   color: 'var(--color-on-surface-secondary)',
-  marginTop: 24,
-  marginBottom: 12,
+  marginTop: 29,
+  marginBottom: 7,
 }
 
 // Поле-пилюля h72 rx20 на surface-transparent (для пикеров).
@@ -250,7 +251,7 @@ export default function ServiceFormPortal({
         <div style={sectionLabelStyle}>Примеры работ</div>
         {workPhotos.length === 0 ? (
           // Пусто — один тайл добавления 138×170 (макет profile-service-create-new)
-          <div style={{ paddingBottom: 24 }}>
+          <div style={{ paddingBottom: 32 }}>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -261,7 +262,7 @@ export default function ServiceFormPortal({
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 32 }}>
             {workPhotos.map((photo, i) => (
               <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
                 <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
