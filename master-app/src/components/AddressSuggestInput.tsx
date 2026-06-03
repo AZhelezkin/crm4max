@@ -360,8 +360,8 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
           height: 44,
           borderRadius: 22,
           background: 'var(--color-background)',
-          display: 'flex', alignItems: 'center',
-          padding: '0 16px',
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 12px 0 16px',
         }}>
           <input
             value={inputValue}
@@ -390,6 +390,30 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
               padding: 0,
             }}
           />
+          {/* Крестик очистки внутри пилюли (макет 8794:64272) — при непустом вводе */}
+          {inputValue && (
+            <button
+              type="button"
+              aria-label="Очистить"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setInputValue('')
+                setSuggestEnabled(false)
+                setSuggestions([])
+                lastEmittedFullRef.current = ''
+                onChange('')
+              }}
+              style={{
+                flexShrink: 0,
+                width: 24, height: 24, padding: 0,
+                border: 'none', background: 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--color-interactive-element)',
+              }}
+            >
+              <ClearIcon />
+            </button>
+          )}
         </div>
       </div>
 
@@ -451,6 +475,15 @@ function BackArrowIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Крестик очистки — X 10×10 (макет 8794:64272: M359 147L349 157…), нормализован в 24×24.
+function ClearIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M17 7L7 17M7 7L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
