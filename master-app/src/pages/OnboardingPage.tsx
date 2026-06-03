@@ -214,6 +214,41 @@ export default function OnboardingPage() {
 
   // ─── Рендер ───────────────────────────────────────────────────────────────
 
+  // Кнопка завершения шага — рендерится в конце скролла каждого шага (не прибита к низу).
+  const footerDisabled = saving || photoUploading
+    || (step === 0 && !name.trim())
+    || (step === 1 && workingDays.length === 0)
+  const footerLabel = saving ? 'Сохраняем...'
+    : step === 2 ? (catCount === 0 ? 'Пропустить' : 'Готово')
+    : 'Далее'
+  const footerNode = (
+    <>
+      {submitError && (
+        <div style={{
+          marginBottom: 12, padding: '12px 14px', borderRadius: 14,
+          background: 'rgba(209, 50, 50, 0.12)', color: 'var(--color-error-surface-accented)',
+          ...text.action, lineHeight: 1.4,
+        }}>
+          {submitError}
+        </div>
+      )}
+      <button
+        type="button"
+        disabled={footerDisabled}
+        onClick={() => { void handleNext() }}
+        style={{
+          width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
+          cursor: footerDisabled ? 'default' : 'pointer',
+          background: footerDisabled ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+          color: footerDisabled ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
+        }}
+      >
+        {footerLabel}
+      </button>
+    </>
+  )
+
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
@@ -247,6 +282,7 @@ export default function OnboardingPage() {
           onPhotoChange={handleAvatarPick}
           onAddressClick={() => setShowAddressPortal(true)}
           onBack={() => navigate('/welcome')}
+          footer={footerNode}
         />
       )}
 
@@ -261,6 +297,7 @@ export default function OnboardingPage() {
           breakStart={breakStart} setBreakStart={setBreakStart}
           breakEnd={breakEnd} setBreakEnd={setBreakEnd}
           onBack={() => setStep(0)}
+          footer={footerNode}
         />
       )}
 
@@ -272,75 +309,9 @@ export default function OnboardingPage() {
             if (catName) setServicesSelectedCatName(catName)
           }}
           onCategoryCountChange={setCatCount}
+          footer={footerNode}
         />
       )}
-
-      {/* Кнопка Далее / Готово — единый hero-стиль (макеты 8794:65467 / shedule.svg /
-          profile-services-empty): footer pt-8 pb-48, button h=60 radius 20, disabled
-          bg secondarySurfaceMuted + interactiveElementMuted. Step 0 px-12, step 1/2 px-16. */}
-      {(() => {
-        const disabled = saving || photoUploading
-          || (step === 0 && !name.trim())
-          || (step === 1 && workingDays.length === 0)
-        const buttonLabel = saving ? 'Сохраняем...' :
-          step === 2 ? (catCount === 0 ? 'Пропустить' : 'Готово') :
-          'Далее'
-
-        const footerStyle: CSSProperties = {
-          padding: step === 0 ? '8px 12px' : '8px 16px',
-          paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
-        }
-
-        const buttonStyle: CSSProperties = {
-          width: '100%',
-          height: 60,
-          borderRadius: 20,
-          border: 'none',
-          padding: 18,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...text.callout1,
-          cursor: disabled ? 'default' : 'pointer',
-          background: disabled
-            ? 'var(--color-secondary-surface-muted)'
-            : 'var(--color-primary-surface)',
-          color: disabled
-            ? 'var(--color-interactive-element-muted)'
-            : 'var(--color-on-primary-surface)',
-        }
-
-        // Кнопка завершения — только на home справочника; на списке/услугах футера нет.
-        if (step === 2 && servicesSubStep !== 'home') return null
-
-        return (
-          <div style={footerStyle}>
-            {submitError && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: '12px 14px',
-                  borderRadius: 14,
-                  background: 'rgba(209, 50, 50, 0.12)',
-                  color: 'var(--color-error-surface-accented)',
-                  ...text.action,
-                  lineHeight: 1.4,
-                }}
-              >
-                {submitError}
-              </div>
-            )}
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => { void handleNext() }}
-              style={buttonStyle}
-            >
-              {buttonLabel}
-            </button>
-          </div>
-        )
-      })()}
 
 
       {/* ── Портал: Ввод адреса ── */}
@@ -440,6 +411,7 @@ interface Step1Props {
   breakEnd: string
   setBreakEnd: (v: string) => void
   onBack: () => void
+  footer?: ReactNode
 }
 
 function Step1Form(props: Step1Props) {
@@ -449,7 +421,7 @@ function Step1Form(props: Step1Props) {
     buffer, setBuffer,
     hasBreak, setHasBreak,
     breakStart, setBreakStart, breakEnd, setBreakEnd,
-    onBack,
+    onBack, footer,
   } = props
 
   return (
@@ -459,7 +431,7 @@ function Step1Form(props: Step1Props) {
       {/* Контент: padding 16 по бокам; header→группа1 и группа→группа = 34 */}
       <div style={{
         marginTop: 34,
-        padding: '0 16px 32px',
+        padding: '0 16px 0',
         display: 'flex',
         flexDirection: 'column',
         gap: 34,
@@ -540,6 +512,12 @@ function Step1Form(props: Step1Props) {
           />
         </div>
       </div>
+
+      {footer && (
+        <div style={{ padding: '24px 16px calc(48px + env(safe-area-inset-bottom))' }}>
+          {footer}
+        </div>
+      )}
     </div>
   )
 }
@@ -753,6 +731,7 @@ interface Step0Props {
   onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onAddressClick: () => void
   onBack: () => void
+  footer?: ReactNode
 }
 
 // Figma «Caption 2» 14/16/500 ls -0.028 — caption под полем + текст сегмента.
@@ -766,7 +745,7 @@ function Step0Form(props: Step0Props) {
     location,
     homeVisit, setHomeVisit,
     photoPreview, photoUploading, photoInputRef, onPhotoChange,
-    onAddressClick, onBack,
+    onAddressClick, onBack, footer,
   } = props
 
   // Описание: auto-grow textarea (до 7 строк по 24px = 168px, потом скролл).
@@ -827,10 +806,9 @@ function Step0Form(props: Step0Props) {
       {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields).
           Top=32 — back-кнопка слева overlap’ается с этой зоной без конфликта
           (avatar по центру, кнопка слева → не пересекаются по x). */}
-      {/* paddingBottom 35: зазор до кнопки «Далее» = 35 + 8 (pt футера) = 43px (макет 8794:62699) */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
-        padding: '32px 16px 35px', width: '100%',
+        padding: '32px 16px 0', width: '100%',
       }}>
         {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
         <button
@@ -956,6 +934,12 @@ function Step0Form(props: Step0Props) {
           </div>
         </div>
       </div>
+
+      {footer && (
+        <div style={{ padding: '24px 16px calc(48px + env(safe-area-inset-bottom))' }}>
+          {footer}
+        </div>
+      )}
     </div>
   )
 }

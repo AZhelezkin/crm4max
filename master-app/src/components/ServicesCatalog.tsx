@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useState, type CSSProperties } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState, type CSSProperties, type ReactNode } from 'react'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
@@ -31,10 +31,12 @@ export interface ServicesCatalogHandle {
 interface ServicesCatalogProps {
   onSubStepChange?: (subStep: CatalogSubStep, catName?: string) => void
   onCategoryCountChange?: (count: number) => void
+  /** Кнопка завершения (онбординг) — рендерится в конце контента home. */
+  footer?: ReactNode
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onSubStepChange, onCategoryCountChange }, ref) => {
+  ({ onSubStepChange, onCategoryCountChange, footer }, ref) => {
     const [categories, setCategories] = useState<Category[]>([])
     const [allServices, setAllServices] = useState<Service[]>([])
     const [subStep, setSubStep] = useState<CatalogSubStep>('home')
@@ -227,6 +229,12 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
                 ))}
                 <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
               </div>
+
+              {footer && (
+                <div style={{ paddingTop: 16, paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
+                  {footer}
+                </div>
+              )}
             </>
           )}
 

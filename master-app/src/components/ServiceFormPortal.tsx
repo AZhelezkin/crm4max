@@ -141,7 +141,7 @@ export default function ServiceFormPortal({
 
       <div style={{
         flex: 1, overflowY: 'auto',
-        padding: '8px 16px 0',
+        padding: '8px 16px calc(48px + env(safe-area-inset-bottom))',
         display: 'flex', flexDirection: 'column', gap: 24,
       }}>
         {/* Группа: Название + Описание (gap 8) */}
@@ -258,7 +258,7 @@ export default function ServiceFormPortal({
           <SectionTitle>Примеры работ</SectionTitle>
           {workPhotos.length === 0 ? (
             // Пусто — один тайл 138×170 (Figma media)
-            <div style={{ paddingBottom: 24 }}>
+            <div>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
@@ -269,7 +269,7 @@ export default function ServiceFormPortal({
               </button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, paddingBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               {workPhotos.map((photo, i) => (
                 <div key={photo.id} style={{ position: 'relative', aspectRatio: '121 / 170', borderRadius: 20, overflow: 'hidden' }}>
                   <img src={photo.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -336,20 +336,14 @@ export default function ServiceFormPortal({
             }}
           />
         </div>
-      </div>
 
-      {/* Футер — px12 pt8 pb48 (Figma). Кнопка h60 rx20 «Сохранить». */}
-      <div style={{
-        padding: '8px 12px',
-        paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
-        flexShrink: 0,
-      }}>
+        {/* Кнопка «Сохранить» — в конце контента (скроллится вместе с ним, не прибита к низу). */}
         <button
           type="button"
           disabled={!canSave}
           onClick={onSave}
           style={{
-            width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
+            width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18, marginTop: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             ...text.callout1,
             cursor: canSave ? 'pointer' : 'default',

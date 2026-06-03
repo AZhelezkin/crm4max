@@ -62,7 +62,7 @@ export default function CategoryFormPortal({
         onBack={onClose}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px calc(48px + env(safe-area-inset-bottom))' }}>
         {/* Аватар 104 (фиолетовый градиент + камера / фото) */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GradientAvatarButton
@@ -117,14 +117,7 @@ export default function CategoryFormPortal({
             maxLength={200}
           />
         </div>
-      </div>
-
-      {/* Кнопка Создать / Сохранить — hero-стиль h60 rx20 */}
-      <div style={{
-        padding: '8px 16px',
-        paddingBottom: 'calc(48px + env(safe-area-inset-bottom))',
-        flexShrink: 0,
-      }}>
+        {/* Кнопки — в конце контента (скроллятся вместе с ним, не прибиты к низу) */}
         <button
           type="button"
           disabled={!canSave}
@@ -132,6 +125,7 @@ export default function CategoryFormPortal({
           style={{
             width: '100%',
             height: 60,
+            marginTop: 24,
             borderRadius: 20,
             border: 'none',
             padding: 18,
