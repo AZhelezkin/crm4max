@@ -12,20 +12,7 @@ import { useAuthStore } from '@/store/auth.store'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import AvatarCropPortal from '@/components/AvatarCropPortal'
 import AppHeader from '@/components/AppHeader'
-import {
-  onboardingPortalContentStyle,
-  onboardingSectionCardStyle,
-  onboardingSectionLabelStyle,
-  onboardingSelectChevronStyle,
-  onboardingSelectStyle,
-  onboardingSelectWrapStyle,
-  onboardingTimeSelectStyle,
-  onboardingTimeSelectWrapStyle,
-  onboardingToggleLabelStyle,
-  onboardingToggleRowStyle,
-  primaryActionButtonBaseStyle,
-  stepOneIntroTextStyle,
-} from '@/components/onboardingStepOne.styles'
+import { primaryActionButtonBaseStyle } from '@/components/onboardingStepOne.styles'
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -73,7 +60,7 @@ export default function OnboardingPage() {
   // ── Шаг 1: График ──
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5])
   const [startTime, setStartTime] = useState('09:00')
-  const [endTime, setEndTime] = useState('18:00')
+  const [endTime, setEndTime] = useState('17:00')
   const [buffer, setBuffer] = useState(30)
   const [hasBreak, setHasBreak] = useState(false)
   const [breakStart, setBreakStart] = useState('13:00')
@@ -238,14 +225,7 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок (для step 0 back-кнопка отрисовывается внутри Step0Form — макет без title-bar) */}
-      {step === 1 && (
-        <AppHeader
-          title="Настройте график работы"
-          onBack={() => setStep(0)}
-        />
-      )}
-
+      {/* Заголовок: step 0 — back-кнопка внутри Step0Form; step 1 — header внутри Step1Form (макет shedule.svg). */}
       {step === 2 && (
         <AppHeader
           title={servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги') : 'Категории услуг'}
@@ -278,90 +258,19 @@ export default function OnboardingPage() {
         />
       )}
 
-      {/* Контент (step 1) */}
-      <div style={{ ...onboardingPortalContentStyle, ...(step !== 1 ? { display: 'none' } : {}) }}>
-
-        {/* ── Шаг 1: График ── */}
-        {step === 1 && (
-          <>
-            <div style={stepOneIntroTextStyle}>
-              Выберите дни и время, когда вам удобно принимать клиентов
-            </div>
-
-            <div style={onboardingSectionCardStyle}>
-              <div style={onboardingSectionLabelStyle}>
-                ДНИ НЕДЕЛИ
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
-                {DAYS.map((d) => (
-                  <button
-                    key={d.v}
-                    onClick={() => toggleDay(d.v)}
-                    style={{
-                      border: 'none',
-                      borderRadius: 12,
-                      height: 36,
-                      ...text.footnote,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      background: workingDays.includes(d.v) ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface)',
-                      color: workingDays.includes(d.v) ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
-                    }}
-                  >
-                    {d.l}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={onboardingSectionCardStyle}>
-              <div style={onboardingSectionLabelStyle}>
-                ВРЕМЯ РАБОТЫ
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <TimeSelect value={startTime} onChange={setStartTime} />
-                <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
-                <TimeSelect value={endTime} onChange={setEndTime} />
-              </div>
-            </div>
-
-            <div style={onboardingSectionCardStyle}>
-              <div style={onboardingSectionLabelStyle}>
-                ПЕРЕРЫВ МЕЖДУ ПРИЕМАМИ
-              </div>
-              <SelectField
-                value={buffer}
-                onChange={(v) => setBuffer(Number(v))}
-                options={BUFFER_OPTIONS.map((m) => ({ value: m, label: m === 0 ? 'Без перерыва' : `${m} мин` }))}
-              />
-            </div>
-
-            <div style={onboardingSectionCardStyle}>
-              <div style={onboardingToggleRowStyle}>
-                <span style={{ ...onboardingToggleLabelStyle, flex: 1 }}>Обед</span>
-                <ToggleSwitch
-                  checked={hasBreak}
-                  onChange={setHasBreak}
-                  aria-label="Обед"
-                />
-              </div>
-              {hasBreak && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={onboardingSectionLabelStyle}>ВРЕМЯ ОБЕДА</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <TimeSelect value={breakStart} onChange={setBreakStart} />
-                    <span style={{ color: 'var(--color-on-surface-secondary)', fontWeight: 600 }}>—</span>
-                    <TimeSelect value={breakEnd} onChange={setBreakEnd} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ── Шаг 2: Категории + Услуги (CategoriesServicesEditor renderит свой скролл и порталы, не внутри обёртки) ── */}
-
-      </div>
+      {/* ── Шаг 1: График работы (макет shedule.svg, node 8820:29745) ── */}
+      {step === 1 && (
+        <Step1Form
+          workingDays={workingDays} toggleDay={toggleDay}
+          startTime={startTime} setStartTime={setStartTime}
+          endTime={endTime} setEndTime={setEndTime}
+          buffer={buffer} setBuffer={setBuffer}
+          hasBreak={hasBreak} setHasBreak={setHasBreak}
+          breakStart={breakStart} setBreakStart={setBreakStart}
+          breakEnd={breakEnd} setBreakEnd={setBreakEnd}
+          onBack={() => setStep(0)}
+        />
+      )}
 
       {step === 2 && (
         <CategoriesServicesEditor
@@ -375,22 +284,25 @@ export default function OnboardingPage() {
       )}
 
       {/* Кнопка Далее / Готово
-          Step 0 (Figma 8794:65467): footer pt-8 px-12 pb-48, button h=60, radius 20,
-            disabled bg secondarySurfaceMuted + interactiveElementMuted text.
-          Step 1/2 (старый стиль): pt/pb 12 px-16, button h=48. */}
+          Step 0/1 (макеты 8794:65467 / shedule.svg): footer pt-8 pb-48, button h=60, radius 20,
+            disabled bg secondarySurfaceMuted + interactiveElementMuted text. Step 0 px-12, step 1 px-16.
+          Step 2 (старый стиль): pt/pb 12 px-16, button h=48. */}
       {(() => {
-        const disabled = saving || photoUploading || (step === 0 && !name.trim())
+        const heroButton = step === 0 || step === 1
+        const disabled = saving || photoUploading
+          || (step === 0 && !name.trim())
+          || (step === 1 && workingDays.length === 0)
         const buttonLabel = saving ? 'Сохраняем...' :
           step === 2 && servicesSubStep === 'services' ? '← Назад к категориям' :
           step === 2 && servicesSubStep === 'categories' && catCount === 0 ? 'Пропустить' :
           step === 2 && servicesSubStep === 'categories' ? 'Готово' :
           'Далее'
 
-        const footerStyle: CSSProperties = step === 0
-          ? { padding: '8px 12px', paddingBottom: 'calc(48px + env(safe-area-inset-bottom))' }
+        const footerStyle: CSSProperties = heroButton
+          ? { padding: step === 0 ? '8px 12px' : '8px 16px', paddingBottom: 'calc(48px + env(safe-area-inset-bottom))' }
           : { padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }
 
-        const buttonStyle: CSSProperties = step === 0
+        const buttonStyle: CSSProperties = heroButton
           ? {
               width: '100%',
               height: 60,
@@ -482,50 +394,6 @@ export default function OnboardingPage() {
 
 // ─── Вспомогательные компоненты ───────────────────────────────────────────────
 
-function SelectField({ value, onChange, options }: {
-  value: number; onChange: (v: string) => void
-  options: { value: number; label: string }[]
-}) {
-  return (
-    <div style={onboardingSelectWrapStyle}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={onboardingSelectStyle}
-      >
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <span style={onboardingSelectChevronStyle}>
-        ⌄
-      </span>
-    </div>
-  )
-}
-
-function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-  const [h, m] = value.split(':')
-  return (
-    <div style={onboardingTimeSelectWrapStyle}>
-      <select
-        value={h}
-        onChange={(e) => onChange(`${e.target.value}:${m}`)}
-        style={onboardingTimeSelectStyle}
-      >
-        {hours.map((hh) => <option key={hh} value={hh}>{hh}</option>)}
-      </select>
-      <span style={{ color: 'var(--color-on-surface-secondary)' }}>:</span>
-      <select
-        value={m}
-        onChange={(e) => onChange(`${h}:${e.target.value}`)}
-        style={onboardingTimeSelectStyle}
-      >
-        {['00', '15', '30', '45'].map((mm) => <option key={mm} value={mm}>{mm}</option>)}
-      </select>
-    </div>
-  )
-}
-
 function UploadingOverlay() {
   return (
     <div style={{
@@ -535,6 +403,247 @@ function UploadingOverlay() {
     }}>
       <Spinner size={20} appearance="contrast-static" />
     </div>
+  )
+}
+
+// ─── Step 1: «График работы» (макет shedule.svg, node 8820:29745) ─────────────
+//
+// Header: круглый back 44×44 (left 12) + центрированный заголовок (titleSmall) —
+// лежит на hero-градиенте (#root > div). Секции:
+//   РАБОЧИЕ ДНИ — grid 4 кол × gap 8, кнопки h=69 rx=20 (88.75 = (379−24)/4)
+//   ВРЕМЯ РАБОТЫ — две пилюли h=72 + тире; тоггл «Есть обед»; ниже время обеда
+//   ПЕРЕРЫВ МЕЖДУ ПРИЁМАМИ — пилюля-селект h=72
+// Отступы из макета (наши координаты = SVG−124): header→секция и секция→секция = 34,
+// лейбл→контент = 20, строка времени→тоггл = 8.
+
+// Время для «С/До» — шаг 30 мин (00:00 … 23:30). Дефолты 09:00–17:00 и обед 13:00–14:00 кратны 30.
+const WORK_TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hh = String(Math.floor(i / 2)).padStart(2, '0')
+  const mm = i % 2 === 0 ? '00' : '30'
+  return `${hh}:${mm}`
+})
+
+// Метка секции — Figma «Caption 3 CAPS» 14/16/500 uppercase, on-surface-secondary.
+const step1SectionLabelStyle: CSSProperties = {
+  ...text.caption3Caps,
+  color: 'var(--color-on-surface-secondary)',
+  marginBottom: 20,
+}
+
+// Селект-пилюля h=72 rx=20: текст body2 слева (pad 20), место под шеврон справа (pad 44).
+const step1PillSelectStyle: CSSProperties = {
+  width: '100%',
+  height: 72,
+  borderRadius: 20,
+  border: 'none',
+  outline: 'none',
+  appearance: 'none',
+  background: 'var(--color-surface-transparent)',
+  color: 'var(--color-on-surface)',
+  ...text.body2,
+  padding: '0 44px 0 20px',
+  cursor: 'pointer',
+}
+
+const step1ChevronStyle: CSSProperties = {
+  position: 'absolute',
+  right: 20,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  pointerEvents: 'none',
+  display: 'flex',
+  color: 'var(--color-interactive-element-secondary)',
+}
+
+interface Step1Props {
+  workingDays: number[]
+  toggleDay: (d: number) => void
+  startTime: string
+  setStartTime: (v: string) => void
+  endTime: string
+  setEndTime: (v: string) => void
+  buffer: number
+  setBuffer: (v: number) => void
+  hasBreak: boolean
+  setHasBreak: (v: boolean) => void
+  breakStart: string
+  setBreakStart: (v: string) => void
+  breakEnd: string
+  setBreakEnd: (v: string) => void
+  onBack: () => void
+}
+
+function Step1Form(props: Step1Props) {
+  const {
+    workingDays, toggleDay,
+    startTime, setStartTime, endTime, setEndTime,
+    buffer, setBuffer,
+    hasBreak, setHasBreak,
+    breakStart, setBreakStart, breakEnd, setBreakEnd,
+    onBack,
+  } = props
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+      {/* Header h=56: back 44×44 (left 12) + центрированный заголовок */}
+      <div style={{
+        position: 'relative',
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6px 12px',
+      }}>
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Назад"
+          style={{
+            position: 'absolute',
+            left: 12,
+            width: 44, height: 44,
+            borderRadius: '50%',
+            background: 'var(--color-background)',
+            color: 'var(--color-on-surface-soften)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <ArrowLeftIcon />
+        </button>
+        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>
+          График работы
+        </div>
+      </div>
+
+      {/* Контент: padding 16 по бокам; header→группа1 и группа→группа = 34 */}
+      <div style={{
+        marginTop: 34,
+        padding: '0 16px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 34,
+      }}>
+        {/* ── РАБОЧИЕ ДНИ ── */}
+        <div>
+          <div style={step1SectionLabelStyle}>Рабочие дни</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {DAYS.map((d) => {
+              const active = workingDays.includes(d.v)
+              return (
+                <button
+                  key={d.v}
+                  type="button"
+                  onClick={() => toggleDay(d.v)}
+                  style={{
+                    height: 69,
+                    borderRadius: 20,
+                    border: 'none',
+                    cursor: 'pointer',
+                    ...text.subhead,
+                    background: active ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)',
+                    color: active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
+                  }}
+                >
+                  {d.l}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── ВРЕМЯ РАБОТЫ ── */}
+        <div>
+          <div style={step1SectionLabelStyle}>Время работы</div>
+          <TimeRange
+            startValue={startTime} onStartChange={setStartTime}
+            endValue={endTime} onEndChange={setEndTime}
+          />
+
+          {/* «Есть обед» — карта h=68 rx=20, отступ 8 от строки времени */}
+          <div style={{
+            marginTop: 8,
+            height: 68,
+            borderRadius: 20,
+            background: 'var(--color-surface-transparent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 20px',
+          }}>
+            <span style={{ ...text.body2, fontWeight: 500, color: 'var(--color-on-surface)' }}>
+              Есть обед
+            </span>
+            <ToggleSwitch checked={hasBreak} onChange={setHasBreak} aria-label="Есть обед" />
+          </div>
+
+          {hasBreak && (
+            <div style={{ marginTop: 8 }}>
+              <TimeRange
+                startValue={breakStart} onStartChange={setBreakStart}
+                endValue={breakEnd} onEndChange={setBreakEnd}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ── ПЕРЕРЫВ МЕЖДУ ПРИЁМАМИ ── */}
+        <div>
+          <div style={step1SectionLabelStyle}>Перерыв между приёмами</div>
+          <SelectPill
+            value={String(buffer)}
+            onChange={(v) => setBuffer(Number(v))}
+            options={BUFFER_OPTIONS.map((m) => ({
+              value: String(m),
+              label: m === 0 ? 'Без перерыва' : `${m} мин`,
+            }))}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Строка времени «С — До»: две селект-пилюли + тире по центру (gap 33 из макета). */
+function TimeRange({ startValue, onStartChange, endValue, onEndChange }: {
+  startValue: string; onStartChange: (v: string) => void
+  endValue: string; onEndChange: (v: string) => void
+}) {
+  const opts = WORK_TIME_OPTIONS.map((t) => ({ value: t, label: t }))
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ flex: 1 }}>
+        <SelectPill value={startValue} onChange={onStartChange} options={opts} />
+      </div>
+      <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>–</span>
+      <div style={{ flex: 1 }}>
+        <SelectPill value={endValue} onChange={onEndChange} options={opts} />
+      </div>
+    </div>
+  )
+}
+
+function SelectPill({ value, onChange, options }: {
+  value: string; onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={step1PillSelectStyle}>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <span style={step1ChevronStyle}><ChevronDownIcon /></span>
+    </div>
+  )
+}
+
+// Шеврон-вниз 10×5 (макет M154 495.5L159 500.5L164 495.5), нормализован в 16×16.
+function ChevronDownIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -641,9 +750,10 @@ function Step0Form(props: Step0Props) {
       {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields).
           Top=32 — back-кнопка слева overlap’ается с этой зоной без конфликта
           (avatar по центру, кнопка слева → не пересекаются по x). */}
+      {/* paddingBottom 35: зазор до кнопки «Далее» = 35 + 8 (pt футера) = 43px (макет 8794:62699) */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
-        padding: '32px 16px 0', width: '100%',
+        padding: '32px 16px 35px', width: '100%',
       }}>
         {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
         <button
