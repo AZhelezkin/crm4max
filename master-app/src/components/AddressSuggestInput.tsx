@@ -417,41 +417,56 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         </div>
       </div>
 
-      {/* Список подсказок */}
-      {suggestions.length > 0 && (
-        <div style={{ position: 'relative', zIndex: 3, overflowY: 'auto', minHeight: 0 }}>
-          {suggestions.map((s, i) => (
-            <button
-              key={i}
-              onMouseDown={(e) => { e.preventDefault(); handleSelect(s) }}
-              onClick={() => handleSelect(s)}
-              style={{
-                width: '100%', background: 'rgba(15,15,17,0.82)', border: 'none',
-                padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
-                borderBottom: '1px solid rgba(255,255,255,0.12)',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}
-            >
-              <LocationIcon />
-              <div style={{ flex: 1 }}>
-                <div style={{ ...text.body, color: 'var(--color-on-surface)', fontWeight: 500 }}>{s.title}</div>
-                {s.subtitle && (
-                  <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>{s.subtitle}</div>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-      {inputValue.trim() && suggestEnabled && suggestions.length === 0 && (
+      {/* Выдача результатов — плавающая карточка (макет 8794:64793): surface, rx20,
+          двойная тень. Обёртка пропускает клики на карту, активна сама карточка. */}
+      {(suggestions.length > 0 || (inputValue.trim() && suggestEnabled)) && (
         <div style={{
           position: 'relative', zIndex: 3,
-          padding: '18px 16px', textAlign: 'center',
-          color: 'var(--color-on-surface-secondary)', ...text.action,
-          background: 'rgba(15,15,17,0.82)',
+          padding: '8px 12px 0',
           pointerEvents: 'none',
         }}>
-          Ничего не найдено
+          <div style={{
+            pointerEvents: 'auto',
+            background: 'var(--color-surface)',
+            borderRadius: 20,
+            boxShadow: '0 4px 4px -4px rgba(12,12,13,0.05), 0 16px 32px -4px rgba(12,12,13,0.10)',
+            overflow: 'hidden',
+          }}>
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(s) }}
+                onClick={() => handleSelect(s)}
+                style={{
+                  width: '100%', background: 'transparent', border: 'none',
+                  padding: '14px 20px', textAlign: 'left', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                }}
+              >
+                <LocationIcon />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    ...text.bodyMedium, color: 'var(--color-on-surface)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>{s.title}</div>
+                  {s.subtitle && (
+                    <div style={{
+                      ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>{s.subtitle}</div>
+                  )}
+                </div>
+              </button>
+            ))}
+            {suggestions.length === 0 && inputValue.trim() && suggestEnabled && (
+              <div style={{
+                padding: '18px 20px', textAlign: 'center',
+                color: 'var(--color-on-surface-secondary)', ...text.action,
+              }}>
+                Ничего не найдено
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -489,9 +504,11 @@ function ClearIcon() {
 }
 
 function LocationIcon() {
+  // Контурный пин (макет 8794:64793, stroke #CECFD1 = on-surface-soften)
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="var(--color-on-surface-secondary)" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--color-on-surface-soften)' }}>
+      <path d="M12 13.43C13.7231 13.43 15.12 12.0331 15.12 10.31C15.12 8.58687 13.7231 7.19 12 7.19C10.2769 7.19 8.88 8.58687 8.88 10.31C8.88 12.0331 10.2769 13.43 12 13.43Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M3.62 8.49C5.59 -0.17 18.42 -0.16 20.38 8.5C21.53 13.58 18.37 17.88 15.6 20.54C13.59 22.48 10.41 22.48 8.39 20.54C5.63 17.88 2.47 13.57 3.62 8.49Z" stroke="currentColor" strokeWidth="2" />
     </svg>
   )
 }
