@@ -104,18 +104,20 @@ export interface FloatingFieldProps {
   rows?: number
   /** Суффикс справа от значения (например «₽», «%»). При наличии крестик не показывается. */
   suffix?: string
+  /** Значение поля жирным (Figma «Callout 1» 17/700) вместо обычного body2 — макеты клиента. */
+  valueBold?: boolean
 }
 
 export function FloatingField({
   label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, autoFocus, inputRef,
-  minHeight = 72, align = 'center', rows = 1, suffix,
+  minHeight = 72, align = 'center', rows = 1, suffix, valueBold = false,
 }: FloatingFieldProps) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
   const showClear = focused && value.length > 0 && !suffix
 
   const innerInputStyle: CSSProperties = {
-    ...text.body2,
+    ...(valueBold ? text.callout1 : text.body2),
     width: '100%',
     minWidth: 0,
     border: 'none',

@@ -6,7 +6,7 @@ import ClientApp from '@client/ClientApp'
 import MainLayout from '@/components/MainLayout'
 import ProfilePage from '@/pages/ProfilePage'
 import BookingsPage from '@/pages/BookingsPage'
-import ChatsPage from '@/pages/ChatsPage'
+import ClientsPage from '@/pages/ClientsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 import PaymentsDayPage from '@/pages/PaymentsDayPage'
 
@@ -176,7 +176,7 @@ function MasterApp() {
           <Route element={<MainLayout />}>
             <Route index element={<MasterIndexRoute />} />
             <Route path="bookings" element={<BookingsPage />} />
-            <Route path="clients" element={<ChatsPage />} />
+            <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />
           </Route>
 

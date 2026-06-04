@@ -58,6 +58,16 @@ export interface Service {
   workPhotos: ServicePhoto[]
 }
 
+/** Клиент в адресной книге мастера (вкладка «Клиенты»). id — строки MasterClient. */
+export interface Client {
+  id: string
+  name: string
+  phone: string | null
+  photo: string | null
+  /** true — клиент есть в Max (записывался); false — добавлен мастером вручную. */
+  isMaxUser: boolean
+}
+
 export interface Booking {
   id: string
   date: string           // "2025-03-25"
