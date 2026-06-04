@@ -1,8 +1,34 @@
 import { prisma } from '../../db/client'
 
+// Псевдо-категория, в которую на карточке мастера сводятся все услуги без категории
+// (Service.categoryId === null). В БД её нет — добавляем в хвост categories при сериализации.
+const UNCATEGORIZED_CATEGORY_ID = 'uncategorized'
+
+// Догружает услуги без категории и, если они есть, дописывает синтетическую
+// категорию «Услуги без категории» в конец master.categories.
+async function appendUncategorized(
+  master: { categories: unknown[] },
+  masterId: string,
+  activeOnly: boolean,
+): Promise<void> {
+  const services = await prisma.service.findMany({
+    where: { masterId, categoryId: null, ...(activeOnly ? { isActive: true } : {}) },
+    include: { workPhotos: { orderBy: { order: 'asc' } } },
+  })
+  if (services.length) {
+    ;(master.categories as unknown[]).push({
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: 'Услуги без категории',
+      description: null,
+      photo: null,
+      services,
+    })
+  }
+}
+
 export const mastersService = {
   async getPublicProfile(masterId: string) {
-    return prisma.master.findUniqueOrThrow({
+    const master = await prisma.master.findUniqueOrThrow({
       where: { id: masterId },
       select: {
         id: true,
@@ -31,10 +57,12 @@ export const mastersService = {
         },
       },
     })
+    await appendUncategorized(master, masterId, true)
+    return master
   },
 
   async getProfile(masterId: string) {
-    return prisma.master.findUniqueOrThrow({
+    const master = await prisma.master.findUniqueOrThrow({
       where: { id: masterId },
       include: {
         schedule: true,
@@ -47,6 +75,8 @@ export const mastersService = {
         },
       },
     })
+    await appendUncategorized(master, masterId, false)
+    return master
   },
 
   async updateProfile(masterId: string, data: {

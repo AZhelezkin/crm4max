@@ -2,7 +2,7 @@ import { text } from '@/styles/typography'
 import { forwardRef, useEffect, useImperativeHandle, useState, type CSSProperties, type ReactNode } from 'react'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
-import { formatPrice, formatDuration, discountedPrice } from '@/types'
+import { formatPrice, formatDuration, discountedPrice, UNCATEGORIZED_CATEGORY_ID } from '@/types'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -26,6 +26,8 @@ export interface ServicesCatalogHandle {
   categoryCount: number
   /** Назад на уровень выше. true — обработано внутри; false — уже на home (родитель выходит). */
   goBack: () => boolean
+  /** Открыть список услуг без категории (deep-link с карточки мастера). */
+  openUncategorized: () => void
 }
 
 interface ServicesCatalogProps {
@@ -80,16 +82,29 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       onSubStepChange?.(ss, catName)
     }
 
+    const isUncatStep = selectedCatId === UNCATEGORIZED_CATEGORY_ID
+
     useImperativeHandle(ref, () => ({
       subStep,
-      selectedCatName: categories.find((c) => c.id === selectedCatId)?.name ?? '',
+      selectedCatName: isUncatStep
+        ? 'Услуги без категории'
+        : categories.find((c) => c.id === selectedCatId)?.name ?? '',
       categoryCount: categories.length,
       goBack: () => {
-        if (subStep === 'services') { changeSubStep('categories'); return true }
+        if (subStep === 'services') {
+          // Услуги без категории открыты deep-link'ом с карточки → выходим назад (на профиль),
+          // а не в список категорий, которого в этом потоке не было.
+          if (isUncatStep) return false
+          changeSubStep('categories'); return true
+        }
         if (subStep === 'categories') { changeSubStep('home'); return true }
         return false
       },
-    }), [subStep, categories, selectedCatId])
+      openUncategorized: () => {
+        setSelectedCatId(UNCATEGORIZED_CATEGORY_ID)
+        changeSubStep('services', 'Услуги без категории')
+      },
+    }), [subStep, categories, selectedCatId, isUncatStep])
 
     // ─── Категория ────────────────────────────────────────────────────────────
 
@@ -254,10 +269,10 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
             </>
           )}
 
-          {/* ── Список услуг категории ── */}
-          {subStep === 'services' && selectedCat && (
+          {/* ── Список услуг категории (или услуг без категории при isUncatStep) ── */}
+          {subStep === 'services' && (selectedCat || isUncatStep) && (
             <>
-              {selectedCat.services.map((s) => (
+              {(selectedCat ? selectedCat.services : uncategorizedServices).map((s) => (
                 <ServiceCard
                   key={s.id}
                   service={s}
@@ -266,7 +281,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
                 />
               ))}
 
-              <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined, selectedCat.id)} />
+              <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined, selectedCat?.id)} />
             </>
           )}
 

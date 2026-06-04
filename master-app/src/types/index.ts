@@ -35,6 +35,10 @@ export interface Category {
   services: Service[]
 }
 
+/** Синтетическая категория-папка, в которую бэкенд сводит услуги без категории
+ *  (Service.categoryId === null). Приходит последней в master.categories. */
+export const UNCATEGORIZED_CATEGORY_ID = 'uncategorized'
+
 export interface ServicePhoto {
   id: string
   url: string

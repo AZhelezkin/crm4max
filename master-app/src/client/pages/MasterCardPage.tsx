@@ -6,6 +6,7 @@ import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
+import { UNCATEGORIZED_CATEGORY_ID } from '@/types'
 import BottomNav from '@client/components/BottomNav'
 import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 import { startParam } from '@/App'
@@ -948,6 +949,7 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
        Между карточками gap=8. Padding внутри подгоняется под содержимое. */
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {categories.map((cat) => {
+        const isUncat = cat.id === UNCATEGORIZED_CATEGORY_ID
         const hasDiscount = cat.services.some((s) => s.discountPercent)
         const preview = cat.services.map((s) => s.name).join(' • ')
 
@@ -963,17 +965,31 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
               cursor: 'pointer',
             }}
           >
-            {/* Аватар категории 44×44 (макет: rect 36,518 → 36,518+44 ⇒ 44×44, rx=22). */}
-            <div style={{
-              width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-              overflow: 'hidden', background: 'var(--color-surface)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {cat.photo
-                ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
-              }
-            </div>
+            {/* Аватар категории 44×44 (макет: rect 36,518 → 36,518+44 ⇒ 44×44, rx=22).
+                Для «Услуги без категории» — фиолетовый градиент + белая папка (макет 8905:49213). */}
+            {isUncat ? (
+              <div style={{
+                width: 44, height: 44, borderRadius: 22, flexShrink: 0,
+                background: 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {/* vuesax/linear/folder 20×20, белая */}
+                <svg width="20" height="20" viewBox="46 214 24 24" fill="none">
+                  <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="#FFFFFF" strokeWidth="1.75" strokeMiterlimit="10"/>
+                </svg>
+              </div>
+            ) : (
+              <div style={{
+                width: 44, height: 44, borderRadius: 22, flexShrink: 0,
+                overflow: 'hidden', background: 'var(--color-surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {cat.photo
+                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
+                }
+              </div>
+            )}
 
             {/* Название + (опц. бейдж скидки) + описание.
                 Title — Figma «Callout 1» (17/24/700 ls −0.17), gap=6 между title и tag. */}
@@ -998,18 +1014,20 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                   </span>
                 )}
               </div>
-              {/* Description — Figma «Caption 2» (14/16/500). До 2 строк, далее ellipsis;
-                  обрезка идёт по доступной ширине между аватаром и шевроном. */}
-              <div style={{
-                color: 'var(--color-on-surface-secondary)', ...text.caption2,
-                display: '-webkit-box',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: 2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {cat.description || preview}
-              </div>
+              {/* Description — Figma «Caption 2» (14/16/500). До 2 строк, далее ellipsis.
+                  У синтетической «Услуги без категории» подзаголовка нет (макет 8905:49213). */}
+              {!isUncat && (
+                <div style={{
+                  color: 'var(--color-on-surface-secondary)', ...text.caption2,
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {cat.description || preview}
+                </div>
+              )}
             </div>
 
             {/* Chevron → 16×16 (interactiveElementSecondary) */}
