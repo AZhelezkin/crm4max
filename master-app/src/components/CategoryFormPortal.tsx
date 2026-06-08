@@ -39,9 +39,9 @@ export default function CategoryFormPortal({
   onClose, onSave, onDelete,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  // Сбрасываем подтверждение удаления при закрытии формы.
-  useEffect(() => { if (!visible) setConfirmDelete(false) }, [visible])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // Закрываем диалог удаления при закрытии формы.
+  useEffect(() => { if (!visible) setShowDeleteConfirm(false) }, [visible])
 
   if (!visible) return null
 
@@ -141,28 +141,91 @@ export default function CategoryFormPortal({
           {isEdit ? 'Сохранить' : 'Создать'}
         </button>
 
-        {/* Удаление (только редактирование) — двойной тап для подтверждения */}
+        {/* Удаление (только редактирование): trash 20 + «Удалить категорию» (on-error-surface-lite),
+            h44 rx12, прозрачный фон. Тап → диалог подтверждения (макеты 9771:44509 / 9771:44619). */}
         {onDelete && (
           <button
             type="button"
-            onClick={() => { if (confirmDelete) onDelete(); else setConfirmDelete(true) }}
+            onClick={() => setShowDeleteConfirm(true)}
             style={{
               width: '100%',
-              height: 48,
+              height: 44,
               marginTop: 8,
               border: 'none',
-              borderRadius: 20,
-              ...text.callout1,
+              borderRadius: 12,
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
               cursor: 'pointer',
-              background: confirmDelete ? 'rgba(209, 50, 50, 0.12)' : 'transparent',
-              color: 'var(--color-error-surface-accented)',
+              color: 'var(--color-on-error-surface-lite)',
             }}
           >
-            {confirmDelete ? 'Подтвердите удаление' : 'Удалить категорию'}
+            <TrashIcon />
+            <span style={{ ...text.callout1 }}>Удалить категорию</span>
           </button>
         )}
       </div>
+
+      {/* Диалог подтверждения удаления категории (макет 9771:44619). */}
+      {onDelete && showDeleteConfirm && (
+        <div
+          onClick={() => setShowDeleteConfirm(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 32px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 329, boxSizing: 'border-box',
+              background: 'var(--color-surface)', borderRadius: 24, padding: '20px 16px 24px',
+              display: 'flex', flexDirection: 'column',
+            }}
+          >
+            <div style={{ padding: '0 8px 8px', fontSize: 20, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.4, color: 'var(--color-on-surface)' }}>
+              Удаление категории
+            </div>
+            <div style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>
+              Вы уверены, что хотите удалить категорию?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => { setShowDeleteConfirm(false); onDelete() }}
+                style={{
+                  width: '100%', height: 44, borderRadius: 22, border: 'none', cursor: 'pointer',
+                  background: 'var(--color-error-surface-lite)', ...text.callout1, color: 'var(--color-on-error-surface-lite)',
+                }}
+              >
+                Удалить
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  width: '100%', height: 44, borderRadius: 22, border: 'none', cursor: 'pointer',
+                  background: 'var(--color-background)', ...text.callout1, color: 'var(--color-on-surface)',
+                }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
+  )
+}
+
+// vuesax/linear/trash 20×20 — для кнопки «Удалить категорию».
+function TrashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M17.5 4.983c-2.775-.275-5.567-.417-8.35-.417-1.65 0-3.3.084-4.95.25l-1.7.167M8.083 4.142l.184-1.092c.133-.792.233-1.383 1.641-1.383h2.184c1.408 0 1.516.625 1.641 1.391l.184 1.084M16.146 7.617l-.542 8.391c-.091 1.309-.166 2.325-2.491 2.325H6.887c-2.325 0-2.4-1.016-2.491-2.325l-.542-8.391M8.108 13.75h3.775M7.5 10.417h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
