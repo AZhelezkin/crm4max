@@ -11,17 +11,10 @@ type Toast = { kind: 'success' | 'error'; text: string } | null
 
 dayjs.locale('ru')
 
-const TAX_RATE = 0.04
-
-type Tab = 'income' | 'taxes' | 'card'
-
 interface MonthSummary {
   key: string
   label: string
-  monthAbbr: string
-  year: string
   total: number
-  tax: number
 }
 
 interface DayEntry {
@@ -29,7 +22,6 @@ interface DayEntry {
   day: number
   monthShort: string
   total: number
-  tax: number
   paymentCount: number
   hasUnpaid: boolean
 }
@@ -49,10 +41,20 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// «1 запись» / «2 записи» / «5 записей» — русская плюрализация по count.
+function pluralRecords(n: number): string {
+  const m10 = n % 10
+  const m100 = n % 100
+  let word: string
+  if (m10 === 1 && m100 !== 11) word = 'запись'
+  else if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) word = 'записи'
+  else word = 'записей'
+  return `${n} ${word}`
+}
+
 export default function PaymentsPage() {
   const navigate = useNavigate()
   const [payments, setPayments] = useState<Payment[]>([])
-  const [tab, setTab] = useState<Tab>('income')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
   const [exporting, setExporting] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
@@ -143,11 +145,9 @@ export default function PaymentsPage() {
         const d = dayjs(key + '-01')
         return {
           key,
-          label: capitalize(d.format("MMMM 'YY")),
-          monthAbbr: capitalize(d.format('MMM').replace('.', '')),
-          year: d.format('YYYY'),
+          // «Апрель ’26» — название месяца + апостроф + двузначный год.
+          label: capitalize(d.format('MMMM')) + ' ’' + d.format('YY'),
           total,
-          tax: Math.round(total * TAX_RATE),
         }
       })
   }, [payments])
@@ -170,7 +170,6 @@ export default function PaymentsPage() {
           day: d.date(),
           monthShort: d.format('MMM').replace('.', ''),
           total: 0,
-          tax: 0,
           paymentCount: 0,
           hasUnpaid: false,
         }
@@ -183,433 +182,198 @@ export default function PaymentsPage() {
         entry.paymentCount += 1
       }
     }
-    for (const e of map.values()) e.tax = Math.round(e.total * TAX_RATE)
     return Array.from(map.values()).sort((a, b) => a.day - b.day)
   }, [payments, selectedMonth])
 
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
-      {/* Header: 56px, centered title, upload icon right */}
-      <header
+      {/* Тулбар: h56, заголовок «Доход» по центру, экспорт-пилюля справа (макет 8712-44229). */}
+      <div
         style={{
+          position: 'relative',
           height: 56,
-          position: 'sticky',
-          top: 0,
-          background: 'var(--color-background)',
-          zIndex: 10,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'flex-end',
+          padding: '6px 12px',
         }}
       >
-        <h1 style={{ ...text.subheadline, color: 'var(--color-on-surface)', margin: 0 }}>Доход</h1>
-        <button
-          aria-label="Экспорт"
-          onClick={handleExport}
-          disabled={exporting}
+        <div
           style={{
             position: 'absolute',
-            right: 14,
-            top: 18,
-            width: 20,
-            height: 20,
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: exporting ? 'default' : 'pointer',
-            opacity: exporting ? 0.5 : 1,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            pointerEvents: 'none',
+            ...text.callout1,
+            color: 'var(--color-on-surface)',
           }}
         >
-          <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 10.18V0.01" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </header>
-
-      {/* Tabs: 23px gap from header → tab text; underline 13px below text */}
-      <div style={{ display: 'flex', gap: 36, padding: '0 14px', marginTop: 23 }}>
-        <TabButton label="Доход" active={tab === 'income'} onClick={() => setTab('income')} />
-        <TabButton label="Налоги" active={tab === 'taxes'} onClick={() => setTab('taxes')} />
-        <TabButton label="Карта" active={tab === 'card'} onClick={() => setTab('card')} />
+          Доход
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: 4,
+            background: 'var(--color-background)',
+            borderRadius: 22,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Экспорт"
+            onClick={handleExport}
+            disabled={exporting}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 6,
+              cursor: exporting ? 'default' : 'pointer',
+              opacity: exporting ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-on-surface)',
+            }}
+          >
+            <ExportIcon />
+          </button>
+        </div>
       </div>
 
-      {tab === 'income' && (
-      <>
-      {/* Months horizontal scroll */}
+      {/* Карточки месяцев — горизонтальный скролл (макет 8712-44751). */}
       <div
         style={{
           display: 'flex',
-          gap: 10,
-          padding: '20px 14px 0',
+          alignItems: 'center',
+          gap: 12,
+          padding: '8px 16px 0',
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}
       >
         {months.map((m) => {
           const active = m.key === selectedMonth
+          const fg = active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)'
           return (
             <div
               key={m.key}
               onClick={() => setSelectedMonth(m.key)}
               style={{
-                flex: '0 0 164px',
-                height: 106,
-                background: active ? 'var(--color-primary-surface)' : 'var(--color-surface)',
-                borderRadius: 20,
-                padding: '18px 16px 10px',
-                color: 'var(--color-on-primary-surface)',
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 4,
+                padding: 16,
+                borderRadius: 18,
                 cursor: 'pointer',
-                boxSizing: 'border-box',
+                background: active ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)',
               }}
             >
-              <div
-                style={{
-                  ...text.action,
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  color: active ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
-                }}
-              >
-                {m.label}
-              </div>
-              <div
-                style={{
-                  ...text.titleSmall,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  marginTop: 22,
-                  color: 'var(--color-on-primary-surface)',
-                }}
-              >
-                {formatRub(m.total)}
-              </div>
-              <div
-                style={{
-                  ...text.caption,
-                  lineHeight: 1,
-                  marginTop: 10,
-                  color: active ? 'rgba(255,255,255,0.6)' : 'var(--color-on-surface-secondary)',
-                }}
-              >
-                Налог: {formatRub(m.tax, 2)}
-              </div>
+              <div style={{ ...text.caption2, color: fg, whiteSpace: 'nowrap' }}>{m.label}</div>
+              <div style={{ ...text.callout1, color: fg, whiteSpace: 'nowrap' }}>{formatRub(m.total, 2)}</div>
             </div>
           )
         })}
         {months.length === 0 && (
-          <div style={{ color: 'var(--color-on-surface-secondary)', padding: 16 }}>Пока нет поступлений</div>
+          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', padding: '8px 0' }}>
+            Пока нет поступлений
+          </div>
         )}
       </div>
 
-      {/* Day rows */}
-      <div style={{ marginTop: 20, padding: '0 14px' }}>
+      {/* Список по дням (макет 8712-44890). Разделители — Plate (pattern-element). */}
+      <div style={{ paddingTop: 16, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column' }}>
         {days.map((d) => (
           <div
             key={d.date}
             onClick={() => navigate(`/income/${d.date}`)}
             style={{
               display: 'flex',
-              alignItems: 'stretch',
-              minHeight: 57,
-              borderTop: '1px solid var(--color-surface)',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              borderTop: '1px solid var(--color-pattern-element)',
               cursor: 'pointer',
             }}
           >
-            <div
-              style={{
-                width: 71,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}
-            >
-              <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>
+            {/* Дата — колонка 50px, текст центрируется по строке суммы (pt 12 против pt 8). */}
+            <div style={{ width: 50, flexShrink: 0, paddingTop: 12 }}>
+              <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>
                 {d.day} {d.monthShort}
               </span>
-              <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
-                {d.paymentCount}
-              </span>
             </div>
-            <div style={{ width: 1, background: 'var(--color-surface)' }} />
+            {/* Значение — flex-1, левый разделитель 3px Plate. */}
             <div
               style={{
                 flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                minWidth: 0,
+                borderLeft: '3px solid var(--color-pattern-element)',
                 paddingLeft: 16,
+                paddingTop: 8,
+                paddingBottom: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
               }}
             >
-              <div>
-                <div style={{ ...text.bodyMedium, lineHeight: 1, color: 'var(--color-on-surface)' }}>
+              {d.hasUnpaid ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 12 }}>
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
+                    {formatRub(d.total)}
+                  </span>
+                  <span
+                    style={{
+                      ...text.label3Caps,
+                      color: 'var(--color-on-error-surface-lite)',
+                      background: 'var(--color-error-surface-lite)',
+                      borderRadius: 8,
+                      padding: '7px 6px 6px',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Есть неоплаты
+                  </span>
+                </div>
+              ) : (
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
                   {formatRub(d.total)}
-                </div>
-                <div style={{ ...text.captionSmall, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
-                  {formatRub(d.tax)}
-                </div>
-              </div>
-              {d.hasUnpaid && (
-                <div
-                  style={{
-                    background: 'rgba(206, 66, 89, 0.3)',
-                    color: 'var(--color-error-surface-accented)',
-                    ...text.captionSmall,
-                    fontWeight: 500,
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  есть неоплата
-                </div>
+                </span>
               )}
+              <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>
+                {pluralRecords(d.paymentCount)}
+              </span>
             </div>
           </div>
         ))}
         {selectedMonth && days.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет поступлений в этом месяце
           </div>
         )}
       </div>
-      </>
-      )}
-
-      {tab === 'taxes' && (
-        <>
-          {/* ИНН card */}
-          <div style={{ padding: '20px 14px 0' }}>
-            <div
-              style={{
-                background: 'var(--color-surface)',
-                borderRadius: 20,
-                height: 116,
-                boxSizing: 'border-box',
-                padding: '19px 22px 19px 23px',
-                position: 'relative',
-              }}
-            >
-              {/* Row 1: label + badge + pencil */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>ИНН</span>
-                <div
-                  style={{
-                    background: 'rgba(66, 206, 89, 0.3)',
-                    color: 'var(--color-success-surface-accented)',
-                    ...text.captionSmall,
-                    fontWeight: 600,
-                    letterSpacing: 0.5,
-                    padding: '5px 12px',
-                    borderRadius: 6,
-                    lineHeight: 1,
-                  }}
-                >
-                  ПРОВЕРЕНО
-                </div>
-              </div>
-              <button
-                aria-label="Изменить ИНН"
-                style={{
-                  position: 'absolute',
-                  top: 18,
-                  right: 18,
-                  width: 14,
-                  height: 14,
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-              >
-                <svg width="14" height="14" viewBox="370 277 16 18" fill="none">
-                  <path
-                    d="M378.84 280.4L373.366 286.193C373.16 286.413 372.96 286.846 372.92 287.146L372.673 289.306C372.586 290.086 373.146 290.62 373.92 290.486L376.066 290.12C376.366 290.066 376.786 289.846 376.993 289.62L382.466 283.826C383.413 282.826 383.84 281.686 382.366 280.293C380.9 278.913 379.786 279.4 378.84 280.4Z"
-                    stroke="var(--color-on-surface-secondary)"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M377.927 281.366C378.213 283.206 379.707 284.613 381.56 284.8"
-                    stroke="var(--color-on-surface-secondary)"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M372 292.667H384"
-                    stroke="var(--color-on-surface-secondary)"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              {/* Row 2: number */}
-              <div
-                style={{
-                  ...text.titleSmall,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  color: 'var(--color-on-primary-surface)',
-                  marginTop: 23,
-                  letterSpacing: 0.5,
-                }}
-              >
-                77 22 123456 78
-              </div>
-              {/* Row 3: name */}
-              <div style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 6 }}>
-                Олег Алексеевич С.
-              </div>
-            </div>
-          </div>
-
-          {/* Section header */}
-          <div
-            style={{
-              marginTop: 26,
-              padding: '0 14px',
-              ...text.captionSmall,
-              fontWeight: 500,
-              letterSpacing: 0.5,
-              color: 'var(--color-on-surface-secondary)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Суммы чеков, отправленные в ФНС
-          </div>
-
-          {/* Tax rows */}
-          <div style={{ marginTop: 15, padding: '0 14px' }}>
-            {months.map((m, idx) => {
-              const isPaid = idx > 0
-              const dueLabel = isPaid
-                ? null
-                : `ОПЛАТА ${dayjs(m.key + '-01').add(1, 'month').date(28).format('D MMMM').toUpperCase()}`
-              return (
-                <div
-                  key={m.key}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'stretch',
-                    minHeight: 57,
-                    borderTop: '1px solid var(--color-surface)',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 71,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface)' }}>
-                      {m.monthAbbr}
-                    </span>
-                    <span style={{ ...text.action, lineHeight: 1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
-                      {m.year}
-                    </span>
-                  </div>
-                  <div style={{ width: 3, background: 'var(--color-surface)' }} />
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      paddingLeft: 16,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          ...text.callout,
-                          fontWeight: 500,
-                          lineHeight: 1,
-                          color: 'var(--color-on-surface)',
-                        }}
-                      >
-                        {formatNum(m.tax, 2)}<span style={{ opacity: 0.6 }}> ₽</span>
-                      </div>
-                      {isPaid ? (
-                        <div
-                          style={{
-                            background: 'rgba(66, 206, 89, 0.3)',
-                            color: 'var(--color-success-surface-accented)',
-                            ...text.captionSmall,
-                            fontWeight: 600,
-                            letterSpacing: 0.5,
-                            padding: '5px 12px',
-                            borderRadius: 6,
-                            lineHeight: 1,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          ОПЛАЧЕНО
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            color: 'rgba(211, 212, 214, 0.6)',
-                            ...text.captionSmall,
-                            fontWeight: 600,
-                            letterSpacing: 0.5,
-                            padding: '5px 12px',
-                            borderRadius: 6,
-                            lineHeight: 1,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {dueLabel}
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        ...text.captionSmall,
-                        lineHeight: 1,
-                        color: 'var(--color-on-surface-secondary)',
-                        marginTop: 8,
-                      }}
-                    >
-                      Доход: {formatNum(m.total, 2)}<span style={{ color: 'var(--color-on-surface)', opacity: 0.6 }}> ₽</span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            {months.length === 0 && (
-              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
-                Пока нет данных
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {tab === 'card' && (
-        <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 60 }}>
-          Раздел в разработке
-        </div>
-      )}
 
       {toast && createPortal(
         <ToastView toast={toast} onClose={() => setToast(null)} />,
         document.body,
       )}
     </div>
+  )
+}
+
+// vuesax/linear/export (24×24) — стрелка вверх из «лотка». Path'ы из макета 8712-44229.
+function ExportIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.32 6.5L11.88 3.94L14.44 6.5" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.88 14.18V4.01" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12C4 16.42 7 20 12 20C17 20 20 16.42 20 12" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -669,47 +433,5 @@ function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; tex
       <div style={{ flex: 1, ...text.action, lineHeight: 1.35, color: 'var(--color-on-surface)' }}>{toast.text}</div>
       <style>{`@keyframes crm4max-toast-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
     </div>
-  )
-}
-
-function TabButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: 'none',
-        border: 'none',
-        padding: '0 0 16px',
-        ...text.callout,
-        lineHeight: '17px',
-        fontWeight: active ? 600 : 400,
-        color: active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)',
-        position: 'relative',
-        cursor: 'pointer',
-      }}
-    >
-      {label}
-      {active && (
-        <span
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 3,
-            background: 'var(--color-primary-surface)',
-            borderRadius: 2,
-          }}
-        />
-      )}
-    </button>
   )
 }
