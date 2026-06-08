@@ -402,15 +402,20 @@ function catCountLabel(n: number): string {
 // + счётчик 13 + шеврон. Тап → экран списка категорий.
 function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 23, paddingLeft: 30 }}>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
+      {/* Папка в чипе 44×44 (p10 rx12), как в макете 8743:51031 — не голая иконка. */}
+      <div style={{
+        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--color-interactive-element-secondary)',
+      }}>
         <FolderIcon />
-      </span>
+      </div>
       <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
         <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           Категории услуг
         </div>
-        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 2 }}>
+        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
           {catCountLabel(count)}
         </div>
       </div>
