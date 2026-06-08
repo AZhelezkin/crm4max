@@ -76,19 +76,20 @@ export default function CreateBookingPage() {
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
 
-  // Перенос из карточки записи (как в кабинете клиента): входим сразу в выбор даты
-  // того же флоу, тап по слоту делает bookingsApi.reschedule.
-  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string } | null
+  // Вход во флоу через navigation state:
+  //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
+  //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги).
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string } | null
 
   const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>(
-    rescheduleInit?.rescheduleId ? 'date' : 'category',
+    rescheduleInit?.rescheduleId ? 'date' : rescheduleInit?.categoryId ? 'service' : 'category',
   )
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [clientsLoaded, setClientsLoaded] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(rescheduleInit?.categoryId ?? null)
   const [searchMode, setSearchMode] = useState(false)
   const [query, setQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)

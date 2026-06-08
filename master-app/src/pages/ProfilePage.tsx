@@ -314,9 +314,7 @@ export default function ProfilePage() {
           master.categories.length
             ? <ServicesList
                 categories={master.categories}
-                onCategoryClick={(cat) => navigate('/services',
-                  cat.id === UNCATEGORIZED_CATEGORY_ID ? { state: { openUncategorized: true } } : undefined,
-                )}
+                onCategoryClick={(cat) => navigate('/bookings/new', { state: { categoryId: cat.id } })}
               />
             : <EmptyState
                 label="Услуги ещё не добавлены"
