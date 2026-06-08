@@ -604,7 +604,7 @@ export default function CreateBookingPage() {
     const addressText = homeVisit ? address.trim() : master?.location ?? ''
     const succPrice = selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price : 0
     return (
-      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 220 }}>
+      <div style={{ minHeight: '100dvh' }}>
         {/* Шапка: зелёная галочка + «Запись создана!» + «Закрыть» */}
         <div style={{ height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -683,8 +683,8 @@ export default function CreateBookingPage() {
           </div>
         </div>
 
-        {/* Футер: «Добавить в календарь» + Перенести / Чат / Отменить */}
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--color-background)', padding: '8px 12px calc(48px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Футер: «Добавить в календарь» + Перенести / Чат / Отменить — в конце контента, не прибит к низу */}
+        <div style={{ padding: '16px 12px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
             <CalendarIcon />
             <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>

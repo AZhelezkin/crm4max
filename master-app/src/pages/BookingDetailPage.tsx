@@ -113,7 +113,7 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: canAct ? 270 : 24 }}>
+    <div style={{ minHeight: '100dvh' }}>
       {/* Шапка: назад + «Запись» */}
       <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
@@ -193,9 +193,9 @@ export default function BookingDetailPage() {
         )}
       </div>
 
-      {/* Действия (для активной записи) */}
+      {/* Действия (для активной записи) — в конце контента, не прибиты к низу */}
       {canAct && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--color-background)', padding: '8px 12px calc(48px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '16px 12px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!paid && (
             <button type="button" disabled={busy} onClick={() => { void handleConfirmPayment() }} style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', cursor: busy ? 'default' : 'pointer', ...text.callout1, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
               Подтвердить оплату
