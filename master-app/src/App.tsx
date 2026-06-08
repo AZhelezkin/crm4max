@@ -13,6 +13,7 @@ import PaymentsDayPage from '@/pages/PaymentsDayPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
+import SettingsPage from '@/pages/SettingsPage'
 import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
 import BookingDetailPage from '@/pages/BookingDetailPage'
@@ -182,6 +183,7 @@ function MasterApp() {
 
           <Route path="/bookings/new" element={<CreateBookingPage />} />
           <Route path="/bookings/:id" element={<BookingDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/services" element={<ServicesPage />} />

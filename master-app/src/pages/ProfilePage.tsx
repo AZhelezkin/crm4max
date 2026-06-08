@@ -112,7 +112,7 @@ export default function ProfilePage() {
         </button>
         <button
           type="button"
-          onClick={() => navigate('/about')}
+          onClick={() => navigate('/settings')}
           aria-label="Настройки профиля"
           style={toolbarPillBtnStyle}
         >
