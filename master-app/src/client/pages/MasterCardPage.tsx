@@ -995,13 +995,14 @@ function ServicesList({ categories, onCategoryClick }: { categories: Category[];
                 Title — Figma «Callout 1» (17/24/700 ls −0.17), gap=6 между title и tag. */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
                 {hasDiscount && (
                   /* Tag: высота 20 (Figma metadata), горизонт. padding 6, текст
                      центрирован через line-height:20. См. комментарий у homeVisit-тэга. */
                   <span style={{
                     borderRadius: 4,
                     display: 'inline-block',
+                    flexShrink: 0,
                     height: 20,
                     padding: '0 6px',
                     boxSizing: 'border-box',

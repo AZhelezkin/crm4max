@@ -651,11 +651,12 @@ function ServicesList({
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{cat.name}</span>
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
                 {hasDiscount && (
                   <span style={{
                     borderRadius: 4,
                     display: 'inline-block',
+                    flexShrink: 0,
                     height: 20,
                     padding: '0 6px',
                     boxSizing: 'border-box',
