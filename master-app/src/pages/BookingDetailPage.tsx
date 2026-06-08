@@ -210,9 +210,9 @@ export default function BookingDetailPage() {
               <RepeatIcon />
               <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
             </button>
-            <button type="button" onClick={() => navigate('/clients')} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+            <button type="button" disabled style={{ ...chipStyle, flex: 1, minWidth: 0, cursor: 'default', color: 'var(--color-interactive-element-muted)' }}>
               <MessageTextIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Чат</span>
+              <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
             </button>
             <button type="button" onClick={() => { void handleCancel() }} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
               <CloseCircleIcon />
