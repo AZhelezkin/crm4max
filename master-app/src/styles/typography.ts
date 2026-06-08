@@ -19,6 +19,9 @@ export const text = {
   /** 28 / 36 / 800 letterSpacing -0.84px — Figma «H2», hero-имя в карточке мастера. */
   h2:             { fontSize: 28, lineHeight: '36px', fontWeight: 800, letterSpacing: -0.84 },
 
+  /** 22 / 26 / 700 letterSpacing -0.66px — Figma «H3», заголовок-дата в тулбаре «Расписания». */
+  h3:             { fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66 },
+
   /** 24 / 30 / 700 — заголовок страницы. */
   title:          { fontSize: 24, lineHeight: '30px', fontWeight: 700 },
 
@@ -54,6 +57,9 @@ export const text = {
 
   /** 15 / 20 / 400 — основной текст. */
   body:           { fontSize: 15, lineHeight: '20px', fontWeight: 400 },
+
+  /** 15 / 20 / 400 letterSpacing -0.15px — Figma «Caption 1», вторичный текст списков (цена, время, подпись). */
+  caption1:       { fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15 },
 
   /** 15 / 20 / 500 — основной текст medium (имена, лейблы кнопок). */
   bodyMedium:     { fontSize: 15, lineHeight: '20px', fontWeight: 500 },

@@ -1,18 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
-import { useAuthStore } from '@/store/auth.store'
 import type { Booking } from '@/types'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 
 function formatRub(kop: number): string {
   return (kop / 100).toLocaleString('ru-RU') + ' ₽'
@@ -22,17 +18,20 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
-
-interface GridCell {
-  day: number
-  date: string
-  dow: number // 0=Пн .. 6=Вс
+// Ячейки месяца: пустые null в начале (до 1-го числа по ISO-неделе) и в конце добора недели.
+function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[] {
+  const daysInMonth = monthStart.daysInMonth()
+  const startOffset = (monthStart.day() || 7) - 1 // ISO: Пн=0 … Вс=6
+  const cells: (dayjs.Dayjs | null)[] = [
+    ...Array(startOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => monthStart.add(i, 'day')),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+  return cells
 }
 
 export default function BookingsPage() {
   const navigate = useNavigate()
-  const master = useAuthStore((s) => s.master)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
@@ -41,365 +40,269 @@ export default function BookingsPage() {
     bookingsApi.list().then(setBookings).catch(() => {})
   }, [])
 
-  // Рабочие минуты в день по расписанию мастера (минус обед)
-  const workMinutes = useMemo(() => {
-    if (!master?.schedule) return 8 * 60
-    const s = master.schedule
-    const startM = timeToMinutes(s.startTime)
-    const endM = timeToMinutes(s.endTime)
-    const breakM =
-      s.breakStart && s.breakEnd
-        ? timeToMinutes(s.breakEnd) - timeToMinutes(s.breakStart)
-        : 0
-    return Math.max(1, endM - startM - breakM)
-  }, [master?.schedule])
-
-  // % загрузки по дате (0..100)
-  const loadByDate = useMemo(() => {
-    const totals = new Map<string, number>()
-    for (const b of bookings) {
-      if (b.status === 'CANCELLED') continue
-      totals.set(b.date, (totals.get(b.date) ?? 0) + b.service.duration)
-    }
-    const result = new Map<string, number>()
-    for (const [date, mins] of totals) {
-      result.set(date, Math.min(100, (mins / workMinutes) * 100))
-    }
-    return result
-  }, [bookings, workMinutes])
-
-  // Записи выбранного дня (без CANCELLED), по возрастанию времени
-  const dayBookings = useMemo(() => {
-    return bookings
-      .filter((b) => b.date === selectedDate && b.status !== 'CANCELLED')
-      .sort((a, b) => a.time.localeCompare(b.time))
-  }, [bookings, selectedDate])
-
-  // Сетка дней месяца с пустыми ячейками в начале и конце
-  const gridDays = useMemo<Array<GridCell | null>>(() => {
-    const startOfMonth = currentMonth.startOf('month')
-    const daysInMonth = currentMonth.daysInMonth()
-    // dayjs .day(): 0=Вс, 1=Пн .. 6=Сб. Переводим в ISO 0=Пн..6=Вс.
-    const startDow = (startOfMonth.day() + 6) % 7
-    const totalCells = Math.ceil((daysInMonth + startDow) / 7) * 7
-    const days: Array<GridCell | null> = []
-    for (let i = 0; i < totalCells; i++) {
-      const dayNum = i - startDow + 1
-      if (dayNum < 1 || dayNum > daysInMonth) {
-        days.push(null)
-      } else {
-        const date = currentMonth.date(dayNum).format('YYYY-MM-DD')
-        const dow = i % 7
-        days.push({ day: dayNum, date, dow })
-      }
-    }
-    return days
-  }, [currentMonth])
-
   const today = dayjs().format('YYYY-MM-DD')
-  const now = dayjs()
 
-  // Свайп месяца
+  // Даты с хотя бы одной не отменённой записью — под зелёную риску в ячейке.
+  const datesWithBookings = useMemo(() => {
+    const s = new Set<string>()
+    for (const b of bookings) if (b.status !== 'CANCELLED') s.add(b.date)
+    return s
+  }, [bookings])
+
+  // Записи выбранного дня (без CANCELLED), по возрастанию времени.
+  const dayBookings = useMemo(
+    () =>
+      bookings
+        .filter((b) => b.date === selectedDate && b.status !== 'CANCELLED')
+        .sort((a, b) => a.time.localeCompare(b.time)),
+    [bookings, selectedDate],
+  )
+
+  const cells = useMemo(() => buildMonthGrid(currentMonth), [currentMonth])
+
+  // Свайп месяца влево/вправо.
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX)
-  }
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStartX(e.touches[0].clientX)
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX === null) return
     const dx = e.changedTouches[0].clientX - touchStartX
-    if (Math.abs(dx) > 50) {
-      setCurrentMonth((m) => (dx > 0 ? m.subtract(1, 'month') : m.add(1, 'month')))
-    }
+    if (Math.abs(dx) > 50) setCurrentMonth((m) => (dx > 0 ? m.subtract(1, 'month') : m.add(1, 'month')))
     setTouchStartX(null)
   }
 
+  const selectedDayjs = dayjs(selectedDate)
+
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
-      {/* Header: только "+" кнопка справа */}
-      <header
-        style={{
-          height: 56,
-          position: 'sticky',
-          top: 0,
-          background: 'var(--color-background)',
-          zIndex: 10,
-        }}
-      >
-        <button
-          aria-label="Создать запись"
-          onClick={() => navigate('/bookings/new')}
+      {/* Тулбар: дата выбранного дня слева (H3), синяя «+»-пилюля справа (макет 8718-37858). */}
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 12 }}>
+        <h1
           style={{
-            position: 'absolute',
-            top: 14,
-            right: 14,
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            background: 'var(--color-primary-surface)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8H13" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M8 3V13" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-      </header>
-
-      {/* Селектор месяца */}
-      <div
-        style={{
-          marginTop: 35,
-          padding: '0 14px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            ...text.body,
-            fontWeight: 500,
+            ...text.h3,
             color: 'var(--color-on-surface)',
+            margin: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
-          <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
-            <path
-              d="M0 0L4 4L8 0"
-              stroke="var(--color-on-surface)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <div style={{ display: 'flex' }}>
+          {selectedDayjs.format('D MMMM, YYYY')}
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-primary-surface)', borderRadius: 22, flexShrink: 0 }}>
           <button
-            aria-label="Предыдущий месяц"
-            onClick={() => setCurrentMonth((m) => m.subtract(1, 'month'))}
+            type="button"
+            aria-label="Создать запись"
+            onClick={() => navigate('/bookings/new')}
             style={{
-              width: 40,
-              height: 40,
               background: 'none',
               border: 'none',
-              padding: 0,
+              padding: 6,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: 'var(--color-on-primary-surface)',
             }}
           >
-            <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-              <path
-                d="M7 1L1 6L7 11"
-                stroke="var(--color-on-surface)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            aria-label="Следующий месяц"
-            onClick={() => setCurrentMonth((m) => m.add(1, 'month'))}
-            style={{
-              width: 40,
-              height: 40,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-              <path
-                d="M1 1L7 6L1 11"
-                stroke="var(--color-on-surface)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <AddIcon />
           </button>
         </div>
       </div>
 
-      {/* Заголовок дней недели */}
-      <div
-        style={{
-          marginTop: 34,
-          padding: '0 14px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-        }}
-      >
-        {WEEKDAYS.map((d) => (
-          <div
-            key={d}
-            style={{
-              textAlign: 'center',
-              ...text.action,
-              fontWeight: 500,
-              color: 'var(--color-divider-mid)',
-              lineHeight: 1,
-            }}
-          >
-            {d}
+      {/* Календарь (макет 8718-37990): controls / daysOfWeek / daysGrid, gap 8. */}
+      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        {/* controls: месяц + стрелки */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 4px 12px 8px', borderRadius: 100 }}>
+            <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
+            <ArrowDownIcon />
           </div>
-        ))}
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button type="button" aria-label="Предыдущий месяц" onClick={() => setCurrentMonth((m) => m.subtract(1, 'month'))} style={iconBtnStyle}>
+              <ChevronIcon dir="left" />
+            </button>
+            <button type="button" aria-label="Следующий месяц" onClick={() => setCurrentMonth((m) => m.add(1, 'month'))} style={iconBtnStyle}>
+              <ChevronIcon dir="right" />
+            </button>
+          </div>
+        </div>
 
-      {/* Сетка дней */}
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          marginTop: 20,
-          padding: '0 14px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-        }}
-      >
-        {gridDays.map((cell, idx) => {
-          if (!cell) return <div key={`e${idx}`} style={{ height: 54 }} />
-          const isToday = cell.date === today
-          const isSelected = cell.date === selectedDate
-          const isPast = cell.date < today
-          const isWeekend = cell.dow >= 5
-          const load = loadByDate.get(cell.date) ?? 0
-
-          return (
+        {/* daysOfWeek */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          {WEEKDAYS.map((d) => (
             <div
-              key={cell.date}
-              onClick={() => setSelectedDate(cell.date)}
-              style={{
-                height: 54,
-                position: 'relative',
-                borderRadius: 12,
-                background: isToday ? 'var(--color-primary-surface)' : 'transparent',
-                border: !isToday && isSelected ? '2px solid var(--color-primary-surface)' : '2px solid transparent',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                cursor: 'pointer',
-                opacity: isPast && !isToday ? 0.5 : 1,
-                boxSizing: 'border-box',
-              }}
+              key={d}
+              style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.body2Medium, color: 'var(--color-on-surface-secondary)' }}
             >
-              <span
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* daysGrid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          {cells.map((day, i) => {
+            if (!day) return <div key={`e${i}`} style={{ minHeight: 56 }} />
+            const val = day.format('YYYY-MM-DD')
+            const isPast = val < today
+            const isToday = val === today
+            const isSelected = val === selectedDate
+            const isWeekend = (day.day() || 7) >= 6
+            const hasAppts = datesWithBookings.has(val)
+            // Текст: будни/выходные × прошлое/настоящее (как в кабинете клиента).
+            const color = isWeekend
+              ? isPast
+                ? 'var(--color-error-element-muted)'
+                : 'var(--color-error-surface-accented)'
+              : isPast
+                ? 'var(--color-interactive-element-muted)'
+                : 'var(--color-interactive-element-accented)'
+            return (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setSelectedDate(val)}
                 style={{
-                  ...text.subheadRegular,
-                  fontWeight: 400,
-                  lineHeight: 1,
-                  marginTop: 18,
-                  color: isToday ? 'var(--color-on-primary-surface)' : isWeekend ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
+                  minHeight: 56,
+                  padding: '8px 4px',
+                  borderRadius: 12,
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  ...text.callout1,
+                  color,
+                  background: isToday ? 'var(--color-pattern-element)' : 'transparent',
+                  border: isSelected ? '1.5px solid var(--color-interactive-element-accented)' : '1.5px solid transparent',
+                  cursor: 'pointer',
+                  position: 'relative',
                 }}
               >
-                {cell.day}
-              </span>
-              {load > 0 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: '50%',
-                    bottom: 9,
-                    width: 40,
-                    marginLeft: -20,
-                  }}
-                >
-                  <div
+                {day.date()}
+                {hasAppts && (
+                  <span
                     style={{
-                      width: `${load}%`,
-                      height: 3,
-                      borderRadius: 1.5,
-                      background: isToday ? 'var(--color-on-primary-surface)' : 'var(--color-success-surface-accented)',
+                      position: 'absolute',
+                      bottom: 8,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 16,
+                      height: 4,
+                      borderRadius: 100,
+                      background: 'var(--color-on-success-surface-lite)',
                     }}
                   />
-                </div>
-              )}
-            </div>
-          )
-        })}
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Записи выбранного дня */}
-      <div style={{ marginTop: 20, padding: '0 14px' }}>
-        {dayBookings.map((b) => {
-          const endTime = dayjs(`${b.date}T${b.time}`).add(b.service.duration, 'minute')
-          const isCompleted = b.status === 'COMPLETED' || endTime.isBefore(now)
-          const textColor = isCompleted ? 'var(--color-on-surface-secondary)' : 'var(--color-on-surface)'
-          const line = isCompleted ? ('line-through' as const) : ('none' as const)
-
-          return (
-            <div
-              key={b.id}
-              onClick={() => navigate(`/bookings/${b.id}`)}
-              style={{
-                display: 'flex',
-                alignItems: 'stretch',
-                minHeight: 57,
-                borderTop: '1px solid var(--color-surface)',
-                cursor: 'pointer',
-              }}
-            >
-              <div
-                style={{
-                  width: 71,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-              >
-                <span style={{ ...text.action, lineHeight: 1, color: textColor }}>{b.time}</span>
-              </div>
-              <div style={{ width: 1, background: 'var(--color-surface)' }} />
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  paddingLeft: 16,
-                }}
-              >
-                <div
-                  style={{
-                    ...text.action,
-                    fontWeight: 600,
-                    lineHeight: 1,
-                    color: textColor,
-                    textDecoration: line,
-                  }}
-                >
-                  {b.service.name}
-                </div>
-                <div
-                  style={{
-                    ...text.caption,
-                    lineHeight: 1,
-                    color: 'var(--color-on-surface-secondary)',
-                    marginTop: 6,
-                    textDecoration: line,
-                  }}
-                >
-                  {formatRub(b.service.price)}
-                </div>
-              </div>
+      {/* Список записей дня (макет 8718-47821): дивайдеры divider-low h8, секция-заголовок, строки. */}
+      <div style={{ marginTop: 8, padding: '0 8px', display: 'flex', flexDirection: 'column' }}>
+        {dayBookings.length > 0 ? (
+          <>
+            <Divider />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 16, paddingBottom: 8, paddingLeft: 8, paddingRight: 8 }}>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{selectedDayjs.format('D MMMM')}</span>
+              <span style={{ ...text.body2, color: 'var(--color-on-success-surface-lite)' }}>•</span>
+              <span style={{ ...text.body2, color: 'var(--color-on-surface-muted)' }}>{capitalize(selectedDayjs.format('dddd'))}</span>
             </div>
-          )
-        })}
+            {dayBookings.map((b) => (
+              <Fragment key={b.id}>
+                <Divider />
+                <AppointmentRow booking={b} onClick={() => navigate(`/bookings/${b.id}`)} />
+              </Fragment>
+            ))}
+            <Divider />
+          </>
+        ) : (
+          <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет записей на этот день</div>
+        )}
       </div>
     </div>
+  )
+}
+
+// Строка записи: зелёная риска статуса (2×44), услуга + цена слева, время (начало/конец) справа.
+function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () => void }) {
+  const endTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute').format('HH:mm')
+  return (
+    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', width: '100%', cursor: 'pointer' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-start' }}>
+        <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
+          <div style={{ width: 2, height: 44, borderRadius: 1, background: 'var(--color-on-success-surface-lite)' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 8, paddingTop: 8, paddingBottom: 8 }}>
+          <div style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {booking.service.name}
+          </div>
+          <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {formatRub(booking.service.price)}
+          </div>
+        </div>
+      </div>
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
+        <div style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{booking.time}</div>
+        <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{endTime}</div>
+      </div>
+    </div>
+  )
+}
+
+// Дивайдер: 8px высота с центрированной 1px-линией divider-low.
+function Divider() {
+  return (
+    <div style={{ height: 8, display: 'flex', alignItems: 'center' }}>
+      <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+    </div>
+  )
+}
+
+const iconBtnStyle: React.CSSProperties = {
+  padding: 12,
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+// vuesax/linear/add (24×24).
+function AddIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M6 12H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/arrow-down (12×12).
+function ArrowDownIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M2.5 4.5L6 8L9.5 4.5" stroke="var(--color-on-surface-secondary)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/arrow-left|right (20×20).
+function ChevronIcon({ dir }: { dir: 'left' | 'right' }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path
+        d={dir === 'left' ? 'M12.5 4L6.5 10L12.5 16' : 'M7.5 4L13.5 10L7.5 16'}
+        stroke="var(--color-on-surface-secondary)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

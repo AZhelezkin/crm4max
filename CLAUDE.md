@@ -109,6 +109,7 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
 - **Типографика — только через text-стили** из `master-app/src/styles/typography.ts` (`import { text } from '@/styles/typography'`). Не писать `fontSize`/`fontWeight`/`lineHeight` руками.
   - `text.display` — 32/38/700, крупный hero-заголовок (Welcome, Deposit)
   - `text.h2` — 28/36/800 ls −0.84, имя в hero-карточке мастера (Figma «H2»)
+  - `text.h3` — 22/26/700 ls −0.66, заголовок-дата в тулбаре «Расписания» (Figma «H3»)
   - `text.title` — 24/30/700, заголовок страницы
   - `text.titleSmall` — 20/26/700, заголовок раздела/портала
   - `text.headline` — 18/24/600, заголовок карточки
@@ -118,6 +119,7 @@ CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты →
   - `text.body2Medium` — 17/24/500 ls 0.34, лейблы дней недели в календаре («Пн», «Вт»…) (Figma «_calendar2Day», 2% от font-size)
   - `text.subhead` — 16/22/600, подзаголовок, ярлык поля
   - `text.body` — 15/20/400, основной текст
+  - `text.caption1` — 15/20/400 ls −0.15, вторичный текст списков — цена, время, подпись (Figma «Caption 1»)
   - `text.bodyStrong` — 15/20/600, выделенный основной текст (имя клиента, цена)
   - `text.action` — 14/18/500, текст кнопок, чипов, табов (legacy)
   - `text.caption2` — 14/16/500 ls −0.028, компактный второстепенный — chip-label, описания, счётчики (Figma «Caption 2»)
