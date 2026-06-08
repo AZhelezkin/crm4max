@@ -78,7 +78,7 @@ async function main() {
       // Группируем по категориям
       const byCategory = new Map()
       for (const service of masterServices) {
-        const catKey = service.category?.name || 'Без категории'
+        const catKey = service.category?.name || 'Услуги без категории'
         if (!byCategory.has(catKey)) {
           byCategory.set(catKey, [])
         }

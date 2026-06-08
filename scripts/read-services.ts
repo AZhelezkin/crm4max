@@ -66,7 +66,7 @@ async function main() {
         if (category) {
           console.log(`   📂 Категория: ${category.name}`)
         } else {
-          console.log(`   📂 Без категории`)
+          console.log(`   📂 Услуги без категории`)
         }
 
         for (const service of catServices) {

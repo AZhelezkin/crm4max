@@ -92,7 +92,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     useImperativeHandle(ref, () => ({
       subStep,
       selectedCatName: isUncatStep
-        ? 'Без категории'
+        ? 'Услуги без категории'
         : categories.find((c) => c.id === selectedCatId)?.name ?? '',
       categoryCount: categories.length,
       goBack: () => {
@@ -107,7 +107,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       },
       openUncategorized: () => {
         setSelectedCatId(UNCATEGORIZED_CATEGORY_ID)
-        changeSubStep('services', 'Без категории')
+        changeSubStep('services', 'Услуги без категории')
       },
     }), [subStep, categories, selectedCatId, isUncatStep])
 
@@ -267,7 +267,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
                     <ServiceListCard
                       key={s.id}
                       name={s.name}
-                      categoryName={categories.find((c) => c.id === s.categoryId)?.name ?? 'Без категории'}
+                      categoryName={categories.find((c) => c.id === s.categoryId)?.name ?? 'Услуги без категории'}
                       onClick={() => openSvcForm(s)}
                     />
                   ))}

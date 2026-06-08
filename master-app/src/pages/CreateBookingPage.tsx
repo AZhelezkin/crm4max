@@ -57,7 +57,7 @@ export default function CreateBookingPage() {
     }
   }, [master?.id, serviceId, date])
 
-  // Пункты списка категорий: свои категории + синтетическая «Без категории».
+  // Пункты списка категорий: свои категории + синтетическая «Услуги без категории».
   const items = useMemo<CategoryItem[]>(() => {
     const uncategorized = allServices.filter((s) => s.categoryId == null)
     const list: CategoryItem[] = categories.map((c) => ({
@@ -71,7 +71,7 @@ export default function CreateBookingPage() {
     if (uncategorized.length) {
       list.push({
         id: UNCATEGORIZED_CATEGORY_ID,
-        name: 'Без категории',
+        name: 'Услуги без категории',
         description: null,
         photo: null,
         hasDiscount: uncategorized.some((s) => s.discountPercent),
@@ -334,7 +334,7 @@ function PillButton({ onClick, ariaLabel, children }: { onClick: () => void; ari
   )
 }
 
-// Аватар категории 44: фото; иначе фолдер (фиолетовый градиент для «Без категории», surface для остальных).
+// Аватар категории 44: фото; иначе фолдер (фиолетовый градиент для «Услуги без категории», surface для остальных).
 function CategoryAvatar({ photo, uncategorized }: { photo: string | null; uncategorized: boolean }) {
   return (
     <div

@@ -176,7 +176,7 @@ export default function ServiceFormPortal({
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...pickerTitleStyle, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {selectedCat?.name ?? 'Без категории'}
+                {selectedCat?.name ?? 'Услуги без категории'}
               </div>
               <div style={pickerSubtitleStyle}>
                 {selectedCat ? 'Категория' : 'Можно выбрать'}
@@ -364,7 +364,7 @@ export default function ServiceFormPortal({
         <WheelPicker
           open={openPicker === 'category'}
           value={categoryId ?? ''}
-          options={[{ value: '', label: 'Без категории' }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+          options={[{ value: '', label: 'Услуги без категории' }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))]}
           onSelect={onCategoryIdChange}
           onClose={() => setOpenPicker(null)}
         />
