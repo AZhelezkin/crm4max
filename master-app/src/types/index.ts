@@ -77,8 +77,11 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
   paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
   notes: string | null
-  master: { id: string; name: string; photo: string | null }
-  client: { id: string; name: string; photo: string | null }
+  /** Адрес выезда мастера (если задан); null — услуга у мастера. */
+  clientAddress: string | null
+  remind: boolean
+  master: { id: string; name: string; photo: string | null; location: string | null; lat: number | null; lng: number | null }
+  client: { id: string; name: string; phone: string | null; photo: string | null }
   service: Service
   payments: Payment[]
 }
