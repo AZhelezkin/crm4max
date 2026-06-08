@@ -43,6 +43,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [allServices, setAllServices] = useState<Service[]>([])
     const [subStep, setSubStep] = useState<CatalogSubStep>('home')
     const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
+    // Активный таб в секции «Услуги» на home: 'all' или id категории.
+    const [activeServiceTab, setActiveServiceTab] = useState('all')
 
     // Форма категории
     const [showCatForm, setShowCatForm] = useState(false)
@@ -213,6 +215,15 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
     const selectedCat = categories.find((c) => c.id === selectedCatId) ?? null
 
+    // Табы секции «Услуги»: «Все» + по категории (счётчик = число услуг в ней).
+    const serviceTabs = [
+      { id: 'all', name: 'Все', count: allServices.length },
+      ...categories.map((c) => ({ id: c.id, name: c.name, count: c.services.length })),
+    ]
+    const shownServices = activeServiceTab === 'all'
+      ? allServices
+      : (categories.find((c) => c.id === activeServiceTab)?.services ?? [])
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
@@ -230,19 +241,29 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
                 />
               )}
 
-              {/* Блок «УСЛУГИ» — всегда: подзаголовок + услуги без категории + «+ Добавить услугу».
-                  label mb 12 + gap 8 = 20 до контента; группа отступает 24 (+gap 8 = 32) от блока выше. */}
-              <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ ...editorSectionLabelStyle, marginBottom: 12 }}>Услуги</div>
-                {uncategorizedServices.map((s) => (
-                  <ServiceCard
-                    key={s.id}
-                    service={s}
-                    onEdit={() => openSvcForm(s)}
-                    onDelete={() => { void handleDeleteService(s.id) }}
-                  />
-                ))}
-                <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
+              {/* Блок «УСЛУГИ» (макет 8743:42301): заголовок секции + табы-категории + список услуг.
+                  Карточка = имя + категория + chevron; тап → форма (удаление теперь там). */}
+              <div style={{ marginTop: 8 }}>
+                {/* sectionTitle pt16 pb4 px8 */}
+                <div style={{ padding: '16px 8px 4px' }}>
+                  <div style={{ ...text.caption3Caps, color: 'var(--color-on-surface)' }}>Услуги</div>
+                </div>
+
+                {/* Табы: «Все» + по категории; gap 32, px 24, горизонтальный скролл. */}
+                <ServiceTabs tabs={serviceTabs} active={activeServiceTab} onChange={setActiveServiceTab} />
+
+                {/* Карточки услуг выбранного таба (tabs→card 16, между карточками 8). */}
+                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {shownServices.map((s) => (
+                    <ServiceListCard
+                      key={s.id}
+                      name={s.name}
+                      categoryName={categories.find((c) => c.id === s.categoryId)?.name ?? 'Без категории'}
+                      onClick={() => openSvcForm(s)}
+                    />
+                  ))}
+                  <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
+                </div>
               </div>
 
               {footer && (
@@ -326,6 +347,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onCategoryIdChange={setSvcCategoryId}
           onClose={() => setShowSvcForm(false)}
           onSave={() => { void saveSvcForm() }}
+          onDelete={editService ? () => { void handleDeleteService(editService.id); setShowSvcForm(false) } : undefined}
         />
       </div>
     )
@@ -336,13 +358,6 @@ ServicesCatalog.displayName = 'ServicesCatalog'
 export default ServicesCatalog
 
 // ─── Каталог: карточки и кнопки (макеты profile-services-empty / profile-category-list) ──
-
-// Метка секции «УСЛУГИ» — Caption 3 CAPS 14/500 uppercase, on-surface (Figma).
-const editorSectionLabelStyle: CSSProperties = {
-  ...text.caption3Caps,
-  color: 'var(--color-on-surface)',
-  marginBottom: 20,
-}
 
 // Карточка h76 rx20 на surface-transparent — общая оболочка карточек каталога.
 const catalogCardStyle: CSSProperties = {
@@ -493,6 +508,92 @@ function ServiceCard({ service: s, onEdit, onDelete }: {
         </div>
       </div>
     </div>
+  )
+}
+
+// Табы секции «Услуги» (макет 8743:51857): «Все» + по категории, gap 32, px 24, гориз. скролл.
+// Активный таб — active-element (label/counter-text/underline) + active-surface (counter bg);
+// неактивный — on-surface-secondary + secondary-surface. Лейбл Body2, счётчик Caption2.
+function ServiceTabs({ tabs, active, onChange }: {
+  tabs: { id: string; name: string; count: number }[]
+  active: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <div style={{
+      display: 'flex', gap: 32, overflowX: 'auto',
+      // bleed до краёв экрана (родитель px16) + собственный px24 из макета.
+      marginLeft: -16, marginRight: -16, padding: '0 24px',
+      marginTop: 8, // sectionTitle-bottom(316) → tabs(324) = 8
+      scrollbarWidth: 'none',
+    }}>
+      {tabs.map((t) => {
+        const isActive = t.id === active
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            style={{
+              flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, padding: '7px 0' }}>
+              <span style={{
+                ...text.body2, whiteSpace: 'nowrap',
+                color: isActive ? 'var(--color-active-element)' : 'var(--color-on-surface-secondary)',
+              }}>
+                {t.name}
+              </span>
+              <span style={{
+                minWidth: 24, padding: 3, borderRadius: 20, boxSizing: 'border-box',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                ...text.caption2,
+                background: isActive ? 'var(--color-active-surface)' : 'var(--color-secondary-surface)',
+                color: isActive ? 'var(--color-active-element)' : 'var(--color-on-surface-secondary)',
+              }}>
+                {t.count}
+              </span>
+            </div>
+            <div style={{
+              width: '100%', height: 3, borderRadius: '20px 20px 0 0',
+              background: isActive ? 'var(--color-active-element)' : 'transparent',
+            }} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Карточка услуги в списке home (макет 8743:51800): имя (callout1) + категория (caption2) + chevron.
+// Тап → форма редактирования (там же удаление). Без инлайн-цены/действий.
+function ServiceListCard({ name, categoryName, onClick }: {
+  name: string; categoryName: string; onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        background: 'var(--color-surface-transparent)', border: 'none', cursor: 'pointer',
+        borderRadius: 20, padding: '16px 20px', textAlign: 'left',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {name}
+        </div>
+        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {categoryName}
+        </div>
+      </div>
+      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
+        <ChevronRightIcon />
+      </span>
+    </button>
   )
 }
 
