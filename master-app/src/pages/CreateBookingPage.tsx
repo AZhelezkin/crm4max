@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
-import type { Category, Service } from '@/types'
+import type { Category, Schedule, Service } from '@/types'
 import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
+import ToggleSwitch from '@/components/ToggleSwitch'
+
+dayjs.locale('ru')
 
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
+const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 interface CategoryItem {
   id: string
@@ -25,17 +31,35 @@ interface Section {
   services: Service[]
 }
 
-// Флоу создания записи мастером (макеты 8746-41312 / 8746-41313):
-// category → service → details (дата/время; будет переверстан по следующим макетам).
+function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[][] {
+  const startOffset = (monthStart.day() || 7) - 1 // ISO: Пн=0 … Вс=6
+  const daysInMonth = monthStart.daysInMonth()
+  const cells: (dayjs.Dayjs | null)[] = [
+    ...Array(startOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => monthStart.add(i, 'day')),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+  const weeks: (dayjs.Dayjs | null)[][] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  return weeks
+}
+
+function isWorkingDay(day: dayjs.Dayjs, schedule: Schedule | null): boolean {
+  if (!schedule) return true
+  return schedule.workingDays.includes(day.day() || 7)
+}
+
+// Флоу создания записи мастером (макеты 8746-41312/41313/41318/41317):
+// category → service → date → time → [клиент/адрес — по следующему макету].
 export default function CreateBookingPage() {
   const navigate = useNavigate()
   const master = useAuthStore((s) => s.master)
+  const schedule = master?.schedule ?? null
 
-  const [step, setStep] = useState<'category' | 'service' | 'details'>('category')
+  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time'>('category')
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [loaded, setLoaded] = useState(false)
-  // null — без фильтра по категории (глобальный список/поиск)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [searchMode, setSearchMode] = useState(false)
   const [query, setQuery] = useState('')
@@ -44,7 +68,11 @@ export default function CreateBookingPage() {
   const [serviceId, setServiceId] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
+  const [remind, setRemind] = useState(true)
   const [slots, setSlots] = useState<string[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [availability, setAvailability] = useState<Record<string, boolean>>({})
+  const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -57,9 +85,25 @@ export default function CreateBookingPage() {
       .catch(() => setLoaded(true))
   }, [])
 
+  // Доступность дней (3 месяца) для выбранной услуги.
+  useEffect(() => {
+    if (!master?.id || !serviceId) return
+    const from = dayjs().format('YYYY-MM-DD')
+    const to = dayjs().startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
+    setAvailabilityLoaded(false)
+    mastersApi.getAvailability(master.id, from, to, serviceId)
+      .then((a) => { setAvailability(a); setAvailabilityLoaded(true) })
+      .catch(() => setAvailabilityLoaded(true))
+  }, [master?.id, serviceId])
+
+  // Слоты выбранного дня.
   useEffect(() => {
     if (master?.id && serviceId && date) {
-      mastersApi.getSlots(master.id, date, serviceId).then(setSlots).catch(() => setSlots([]))
+      setSlotsLoading(true)
+      mastersApi.getSlots(master.id, date, serviceId)
+        .then(setSlots)
+        .catch(() => setSlots([]))
+        .finally(() => setSlotsLoading(false))
     } else {
       setSlots([])
     }
@@ -69,7 +113,6 @@ export default function CreateBookingPage() {
     if (searchMode) searchInputRef.current?.focus()
   }, [searchMode])
 
-  // Пункты списка категорий: свои категории + синтетическая «Услуги без категории».
   const items = useMemo<CategoryItem[]>(() => {
     const uncategorized = allServices.filter((s) => s.categoryId == null)
     const list: CategoryItem[] = categories.map((c) => ({
@@ -93,8 +136,6 @@ export default function CreateBookingPage() {
     return list
   }, [categories, allServices])
 
-  // Секции услуг для шага «service»: только активные услуги, по выбранной категории
-  // (или все, если selectedCategoryId === null — для глобального поиска).
   const baseSections = useMemo<Section[]>(() => {
     const uncat = allServices.filter((s) => s.categoryId == null && s.isActive)
     const all: Section[] = categories
@@ -131,8 +172,9 @@ export default function CreateBookingPage() {
 
   const pickService = (s: Service) => {
     setServiceId(s.id)
+    setDate('')
     setTime('')
-    setStep('details')
+    setStep('date')
   }
 
   const backFromService = () => {
@@ -142,6 +184,12 @@ export default function CreateBookingPage() {
     } else {
       setStep('category')
     }
+  }
+
+  const handleSelectDate = (d: dayjs.Dayjs) => {
+    setDate(d.format('YYYY-MM-DD'))
+    setTime('')
+    setStep('time')
   }
 
   const handleSave = async () => {
@@ -237,7 +285,6 @@ export default function CreateBookingPage() {
     const nothing = loaded && sections.length === 0
     return (
       <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
-        {/* Тулбар: назад + (заголовок + поиск) / (поле поиска) */}
         <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
           <PillButton onClick={backFromService} ariaLabel="Назад">
             <ArrowLeftIcon />
@@ -307,70 +354,166 @@ export default function CreateBookingPage() {
     )
   }
 
-  // ─── Шаг 3: дата / время (интерим) ──────────────────────────────────────────
-  const saveDisabled = saving || !serviceId || !date || !time
-  return (
-    <div style={{ minHeight: '100dvh' }}>
-      <Toolbar title="Создать запись" onBack={() => setStep('service')} />
-
-      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {selectedService && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {selectedService.name}
+  // ─── Шаг 3: выбор даты (макет 8746-41318) ───────────────────────────────────
+  if (step === 'date') {
+    const today = dayjs().startOf('day')
+    const months = [0, 1, 2].map((o) => today.startOf('month').add(o, 'month'))
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <Toolbar title="Выберите дату" subtitle={selectedService?.name} onBack={() => setStep('service')} />
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {!availabilityLoaded && (
+            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загружаем…</div>
+          )}
+          {availabilityLoaded && months.map((monthStart) => (
+            <div key={monthStart.format('YYYY-MM')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ paddingLeft: 6 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', padding: '14px 4px 14px 8px', borderRadius: 100 }}>
+                  <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-secondary)' }}>{monthStart.format('MMMM YYYY')}</span>
+                </div>
               </div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-                {formatPrice(discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price)} · {selectedService.duration} мин
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', width: '100%' }}>
+                {DAY_NAMES.map((d) => (
+                  <div key={d} style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.body2Medium, color: 'var(--color-on-surface-secondary)' }}>
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
+                {buildMonthGrid(monthStart).flat().map((day, i) => {
+                  if (!day) return <div key={`e${i}`} style={{ minHeight: 56 }} />
+                  const val = day.format('YYYY-MM-DD')
+                  const isPast = day.isBefore(today)
+                  const isToday = day.isSame(today)
+                  const isSelected = val === date
+                  const working = isWorkingDay(day, schedule)
+                  const disabled = isPast || !working
+                  const isWeekend = (day.day() || 7) >= 6
+                  const hasSlots = availability[val]
+                  let bg = 'transparent'
+                  if (isSelected || hasSlots === true) bg = 'var(--color-active-surface)'
+                  else if (hasSlots === false) bg = 'var(--color-secondary-surface-muted)'
+                  const dim = isPast || (!working && hasSlots !== true && !isSelected)
+                  const color = isWeekend
+                    ? dim ? 'var(--color-error-element-muted)' : 'var(--color-error-surface-accented)'
+                    : dim ? 'var(--color-interactive-element-muted)' : 'var(--color-interactive-element-accented)'
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => !disabled && handleSelectDate(day)}
+                      disabled={disabled}
+                      style={{
+                        minHeight: 56,
+                        padding: '8px 4px',
+                        borderRadius: 10,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        ...text.callout1,
+                        background: bg,
+                        color,
+                        border: 'none',
+                        cursor: disabled ? 'default' : 'pointer',
+                        position: 'relative',
+                      }}
+                    >
+                      {day.date()}
+                      {isToday && (
+                        <span style={{ position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', width: 12, height: 2, borderRadius: 1, background: 'var(--color-error-surface-accented)' }} />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
-          </div>
-        )}
-
-        <div>
-          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Дата</div>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid var(--color-divider-low)', ...text.body }}
-          />
+          ))}
         </div>
+      </div>
+    )
+  }
 
-        {slots.length > 0 && (
-          <div>
-            <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Время</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {slots.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setTime(s)}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: 8,
-                    ...text.bodyMedium,
-                    background: time === s ? 'var(--color-primary-surface)' : 'var(--color-surface)',
-                    color: time === s ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)',
-                    border: '1px solid var(--color-divider-low)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
+  // ─── Шаг 4: выбор времени (макет 8746-41317) ────────────────────────────────
+  const selectedDayjs = dayjs(date)
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <Toolbar title="Выберите время" subtitle={selectedService?.name} onBack={() => setStep('date')} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Карточка выбранной даты → назад к выбору даты */}
         <button
           type="button"
-          disabled={saveDisabled}
+          onClick={() => setStep('date')}
+          style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {selectedDayjs.format('D MMMM, dd')}
+            </div>
+            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
+          </div>
+          <EditIcon />
+        </button>
+
+        {/* Слоты */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+          <div style={{ padding: '24px 8px 8px' }}>
+            <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>ДОСТУПНЫЕ СЛОТЫ</span>
+          </div>
+          {slotsLoading ? (
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загружаем…</div>
+          ) : slots.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {slots.map((s) => {
+                const isSel = time === s
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setTime(s)}
+                    style={{
+                      height: 69,
+                      padding: '12px 0',
+                      borderRadius: 18,
+                      background: isSel ? 'var(--color-active-surface)' : 'var(--color-surface-transparent)',
+                      color: isSel ? 'var(--color-interactive-element-accented)' : 'var(--color-on-surface)',
+                      ...text.callout1,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {s}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Напоминание */}
+        <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Напомнить за 1 час</div>
+            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Бот напишет в МАХ</div>
+          </div>
+          <ToggleSwitch checked={remind} onChange={setRemind} aria-label="Напомнить за 1 час" />
+        </div>
+
+        {/* Интерим-кнопка сохранения (до экранов «клиент/адрес» и «подтверждение»). */}
+        <button
+          type="button"
+          disabled={saving || !time}
           onClick={() => { void handleSave() }}
           style={{
             width: '100%',
             height: 60,
-            marginTop: 8,
+            marginTop: 16,
             borderRadius: 20,
             border: 'none',
             padding: 18,
@@ -378,19 +521,19 @@ export default function CreateBookingPage() {
             alignItems: 'center',
             justifyContent: 'center',
             ...text.callout1,
-            cursor: saveDisabled ? 'default' : 'pointer',
-            background: saveDisabled ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
-            color: saveDisabled ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
+            cursor: saving || !time ? 'default' : 'pointer',
+            background: saving || !time ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+            color: saving || !time ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
           }}
         >
-          {saving ? 'Сохраняем...' : 'Сохранить'}
+          {saving ? 'Сохраняем...' : 'Сохранить запись'}
         </button>
       </div>
     </div>
   )
 }
 
-// Карточка услуги (макет 8746-41313): название [+ скидка], описание, цена (со скидкой — зачёркнутая старая).
+// Карточка услуги (макет 8746-41313): название, описание, цена (со скидкой — зачёркнутая старая).
 function ServiceItem({ service, onClick }: { service: Service; onClick: () => void }) {
   const dPrice = discountedPrice(service.price, service.discountPercent)
   const hasDiscount = dPrice !== null
@@ -445,7 +588,6 @@ function ServiceItem({ service, onClick }: { service: Service; onClick: () => vo
   )
 }
 
-// Бейдж «% скидки» на карточке категории.
 function DiscountBadge() {
   return (
     <span
@@ -466,32 +608,22 @@ function DiscountBadge() {
   )
 }
 
-// ─── Тулбар: назад-пилюля слева, заголовок по центру, опц. trailing справа ────
-function Toolbar({ title, onBack, trailing }: { title: string; onBack: () => void; trailing?: React.ReactNode }) {
+// ─── Тулбар: назад-пилюля слева, заголовок (+опц. подзаголовок) по центру, опц. trailing ──
+function Toolbar({ title, subtitle, onBack, trailing }: { title: string; subtitle?: string; onBack: () => void; trailing?: React.ReactNode }) {
   return (
     <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
       <PillButton onClick={onBack} ariaLabel="Назад">
         <ArrowLeftIcon />
       </PillButton>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          textAlign: 'center',
-          pointerEvents: 'none',
-          ...text.callout1,
-          color: 'var(--color-on-surface)',
-        }}
-      >
-        {title}
+      <div style={{ position: 'absolute', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
+        <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
+        {subtitle && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{subtitle}</div>}
       </div>
       {trailing ?? <div style={{ width: 44 }} />}
     </div>
   )
 }
 
-// Пилюля-кнопка тулбара: bg background, r22, p4 + внутренняя кнопка p6 с иконкой 24.
 function PillButton({ onClick, ariaLabel, children }: { onClick: () => void; ariaLabel: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
@@ -507,7 +639,6 @@ function PillButton({ onClick, ariaLabel, children }: { onClick: () => void; ari
   )
 }
 
-// Аватар категории 44: фото; иначе фолдер (фиолетовый градиент для «Услуги без категории», surface для остальных).
 function CategoryAvatar({ photo, uncategorized }: { photo: string | null; uncategorized: boolean }) {
   return (
     <div
@@ -532,7 +663,6 @@ function CategoryAvatar({ photo, uncategorized }: { photo: string | null; uncate
   )
 }
 
-// vuesax/linear/folder (20×20).
 function FolderIcon({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -576,6 +706,17 @@ function ClearIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/edit-2 (16×16) — карандаш на карточке даты.
+function EditIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 14.6667H14" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
