@@ -707,23 +707,22 @@ export default function CreateBookingPage() {
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Клиент */}
+        {/* Клиент (макет 8748-52035): не выбран → «Выбрать клиента / из списка» без аватара;
+            выбран → аватар + имя + телефон. Справа всегда user-square. */}
         <button type="button" onClick={() => setStep('client')} style={listItemStyle}>
-          {selectedClient ? (
-            <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />
-          ) : (
-            <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <UserSquareIcon size={24} />
-            </div>
-          )}
+          {selectedClient && <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...text.callout1, color: selectedClient ? 'var(--color-on-surface)' : 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {selectedClient ? selectedClient.name : 'Выберите клиента'}
+            <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {selectedClient ? selectedClient.name : 'Выбрать клиента'}
             </div>
-            {selectedClient?.phone && (
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatPhone(selectedClient.phone)}
-              </div>
+            {selectedClient ? (
+              selectedClient.phone && (
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {formatPhone(selectedClient.phone)}
+                </div>
+              )
+            ) : (
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>из списка</div>
             )}
           </div>
           <UserSquareIcon size={16} />
