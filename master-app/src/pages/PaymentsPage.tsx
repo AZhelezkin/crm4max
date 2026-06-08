@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
 import { text } from '@/styles/typography'
-
-type Toast = { kind: 'success' | 'error'; text: string } | null
+import { usePaymentsExport } from '@/hooks/usePaymentsExport'
+import { ExportToast } from '@/components/ExportToast'
 
 dayjs.locale('ru')
 
@@ -56,80 +55,11 @@ export default function PaymentsPage() {
   const navigate = useNavigate()
   const [payments, setPayments] = useState<Payment[]>([])
   const [selectedMonth, setSelectedMonth] = useState<string>('')
-  const [exporting, setExporting] = useState(false)
-  const [toast, setToast] = useState<Toast>(null)
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const showToast = (t: Toast) => {
-    setToast(t)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    if (t) toastTimer.current = setTimeout(() => setToast(null), 4000)
-  }
-
-  useEffect(() => () => {
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-  }, [])
-
-  // Pre-signed URL на xlsx хранится в state, потому что
-  // window.WebApp.downloadFile требует активного user-gesture
-  // (клика), а любой await разорвал бы цепочку. Поэтому URL
-  // тянем заранее (на маунте и после «протухания» ~4 мин),
-  // а на клике синхронно отдаём его нативному мосту.
-  const exportRef = useRef<{ url: string; filename: string; fetchedAt: number } | null>(null)
-
-  const fetchExportUrl = async () => {
-    try {
-      const res = await paymentsApi.exportXlsx()
-      exportRef.current = { ...res, fetchedAt: Date.now() }
-    } catch (err) {
-      console.error('[payments] pre-fetch export url failed', err)
-      exportRef.current = null
-    }
-  }
-
-  const handleExport = () => {
-    if (exporting) return
-    const fresh = exportRef.current && Date.now() - exportRef.current.fetchedAt < 4 * 60 * 1000
-    if (fresh && exportRef.current) {
-      // Синхронный вызов внутри click handler — Max-мост видит user gesture.
-      const { url, filename } = exportRef.current
-      try {
-        const ret = window.WebApp?.downloadFile?.(url, filename) as
-          | Promise<{ status?: string }>
-          | undefined
-        if (ret && typeof ret.then === 'function') {
-          ret.then(
-            (r) => {
-              if (r?.status === 'downloading') {
-                showToast({ kind: 'success', text: 'Файл сохранён в папку Max' })
-              }
-              // status === 'cancelled' — пользователь передумал, молчим.
-            },
-            (e) => {
-              console.error('[payments] downloadFile rejected', e)
-              showToast({ kind: 'error', text: 'Не удалось скачать файл. Попробуйте ещё раз.' })
-            },
-          )
-        }
-      } catch (err) {
-        console.error('[payments] downloadFile threw', err)
-        showToast({ kind: 'error', text: 'Не удалось скачать файл.' })
-      }
-      // Сразу готовим URL под следующее нажатие.
-      fetchExportUrl()
-      return
-    }
-    // URL не готов — тянем и просим кликнуть ещё раз.
-    setExporting(true)
-    fetchExportUrl().finally(() => {
-      setExporting(false)
-      showToast({ kind: 'success', text: 'Файл готов — нажмите «Скачать» ещё раз' })
-    })
-  }
+  // Без даты — экспорт всех оплат.
+  const { exporting, handleExport, toast, dismissToast } = usePaymentsExport()
 
   useEffect(() => {
     paymentsApi.list().then(setPayments).catch(() => {})
-    fetchExportUrl()
   }, [])
 
   const months = useMemo<MonthSummary[]>(() => {
@@ -358,10 +288,7 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      {toast && createPortal(
-        <ToastView toast={toast} onClose={() => setToast(null)} />,
-        document.body,
-      )}
+      <ExportToast toast={toast} onClose={dismissToast} />
     </div>
   )
 }
@@ -374,64 +301,5 @@ function ExportIcon() {
       <path d="M11.88 14.18V4.01" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 12C4 16.42 7 20 12 20C17 20 20 16.42 20 12" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  )
-}
-
-function ToastView({ toast, onClose }: { toast: { kind: 'success' | 'error'; text: string }; onClose: () => void }) {
-  const isSuccess = toast.kind === 'success'
-  const accent = isSuccess ? 'var(--color-success-surface-accented)' : 'var(--color-error-surface-accented)'
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        top: 'calc(12px + env(safe-area-inset-top))',
-        left: 12,
-        right: 12,
-        zIndex: 1000,
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-divider-low)',
-        borderRadius: 14,
-        padding: '12px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-        animation: 'crm4max-toast-in 0.22s ease-out',
-      }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          flexShrink: 0,
-          borderRadius: '50%',
-          background: `${accent}22`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          {isSuccess ? (
-            <path
-              d="M5 12.5l4.5 4.5L19 7.5"
-              stroke={accent}
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ) : (
-            <>
-              <path d="M12 8v5" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
-              <circle cx="12" cy="16.5" r="1.2" fill={accent} />
-              <circle cx="12" cy="12" r="9" stroke={accent} strokeWidth="2" />
-            </>
-          )}
-        </svg>
-      </div>
-      <div style={{ flex: 1, ...text.action, lineHeight: 1.35, color: 'var(--color-on-surface)' }}>{toast.text}</div>
-      <style>{`@keyframes crm4max-toast-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-    </div>
   )
 }

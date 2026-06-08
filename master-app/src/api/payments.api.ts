@@ -5,8 +5,9 @@ export const paymentsApi = {
   list: () =>
     api.get<Payment[]>('/payments').then((r) => r.data),
 
-  exportXlsx: () =>
+  // date (YYYY-MM-DD) — детализация только за этот день; без даты — все оплаты.
+  exportXlsx: (date?: string) =>
     api
-      .get<{ url: string; filename: string }>('/payments/export')
+      .get<{ url: string; filename: string }>('/payments/export', date ? { params: { date } } : undefined)
       .then((r) => r.data),
 }

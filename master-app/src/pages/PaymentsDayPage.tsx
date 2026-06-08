@@ -5,6 +5,8 @@ import 'dayjs/locale/ru'
 import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
 import { text } from '@/styles/typography'
+import { usePaymentsExport } from '@/hooks/usePaymentsExport'
+import { ExportToast } from '@/components/ExportToast'
 
 dayjs.locale('ru')
 
@@ -27,6 +29,8 @@ export default function PaymentsDayPage() {
   const { date } = useParams<{ date: string }>()
   const navigate = useNavigate()
   const [payments, setPayments] = useState<Payment[]>([])
+  // Экспорт детализации только за этот день.
+  const { exporting, handleExport, toast, dismissToast } = usePaymentsExport(date)
 
   useEffect(() => {
     paymentsApi.list().then(setPayments).catch(() => {})
@@ -91,8 +95,12 @@ export default function PaymentsDayPage() {
           <button
             type="button"
             aria-label="Экспорт"
+            onClick={handleExport}
+            disabled={exporting}
             style={{
-              background: 'none', border: 'none', padding: 6, cursor: 'pointer',
+              background: 'none', border: 'none', padding: 6,
+              cursor: exporting ? 'default' : 'pointer',
+              opacity: exporting ? 0.5 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'var(--color-on-surface)',
             }}
@@ -120,6 +128,8 @@ export default function PaymentsDayPage() {
           </div>
         )}
       </div>
+
+      <ExportToast toast={toast} onClose={dismissToast} />
     </div>
   )
 }
