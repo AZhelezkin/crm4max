@@ -6,6 +6,7 @@ import { bookingsApi } from '@/api/bookings.api'
 import type { Booking } from '@/types'
 import { discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 dayjs.locale('ru')
 
@@ -64,6 +65,7 @@ export default function BookingDetailPage() {
   const navigate = useNavigate()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
 
   useEffect(() => {
     if (id) bookingsApi.getById(id).then(setBooking).catch(() => {})
@@ -214,12 +216,23 @@ export default function BookingDetailPage() {
               <MessageTextIcon />
               <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
             </button>
-            <button type="button" onClick={() => { void handleCancel() }} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
+            <button type="button" onClick={() => setConfirmCancel(true)} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
               <CloseCircleIcon />
               <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
             </button>
           </div>
         </div>
+      )}
+
+      {confirmCancel && (
+        <ConfirmDialog
+          title="Отменить запись"
+          message="Вы действительно хотите отменить запись? Клиент получит уведомление."
+          confirmLabel="Отменить запись"
+          cancelLabel="Назад"
+          onConfirm={() => { setConfirmCancel(false); void handleCancel() }}
+          onCancel={() => setConfirmCancel(false)}
+        />
       )}
     </div>
   )

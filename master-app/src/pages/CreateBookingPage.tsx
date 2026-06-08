@@ -12,6 +12,7 @@ import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types
 import { text } from '@/styles/typography'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import AddressSuggestField from '@client/components/AddressSuggestField'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 dayjs.locale('ru')
 
@@ -106,6 +107,8 @@ export default function CreateBookingPage() {
   const [error, setError] = useState<string | null>(null)
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
   const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
+  const [pendingReschedule, setPendingReschedule] = useState<string | null>(null)
+  const [confirmCancel, setConfirmCancel] = useState(false)
 
   useEffect(() => {
     Promise.all([categoriesApi.list(), servicesApi.list()])
@@ -254,17 +257,22 @@ export default function CreateBookingPage() {
   const onSlotTap = (s: string) => {
     setTime(s)
     if (rescheduleId) {
-      void (async () => {
-        try {
-          await bookingsApi.reschedule(rescheduleId, { date, time: s })
-        } catch (e) {
-          console.error('[booking] reschedule failed', e)
-        }
-        navigate('/bookings')
-      })()
+      setPendingReschedule(s) // спросим подтверждение переноса
     } else {
       setStep('confirm')
     }
+  }
+
+  const doReschedule = async () => {
+    if (!rescheduleId || !pendingReschedule) return
+    const t = pendingReschedule
+    setPendingReschedule(null)
+    try {
+      await bookingsApi.reschedule(rescheduleId, { date, time: t })
+    } catch (e) {
+      console.error('[booking] reschedule failed', e)
+    }
+    navigate('/bookings')
   }
 
   const handleReschedule = () => {
@@ -559,6 +567,17 @@ export default function CreateBookingPage() {
             <ToggleSwitch checked={remind} onChange={setRemind} aria-label="Напомнить за 1 час" />
           </div>
         </div>
+
+        {pendingReschedule && (
+          <ConfirmDialog
+            title="Перенести запись"
+            message={`Перенести запись на ${selectedDayjs.format('D MMMM')}, ${pendingReschedule}?`}
+            confirmLabel="Перенести"
+            danger={false}
+            onConfirm={() => { void doReschedule() }}
+            onCancel={() => setPendingReschedule(null)}
+          />
+        )}
       </div>
     )
   }
@@ -698,12 +717,23 @@ export default function CreateBookingPage() {
               <MessageTextIcon />
               <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
             </button>
-            <button type="button" onClick={() => { void handleCancelBooking() }} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
+            <button type="button" onClick={() => setConfirmCancel(true)} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
               <CloseCircleIcon />
               <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
             </button>
           </div>
         </div>
+
+        {confirmCancel && (
+          <ConfirmDialog
+            title="Отменить запись"
+            message="Вы действительно хотите отменить запись? Клиент получит уведомление."
+            confirmLabel="Отменить запись"
+            cancelLabel="Назад"
+            onConfirm={() => { setConfirmCancel(false); void handleCancelBooking() }}
+            onCancel={() => setConfirmCancel(false)}
+          />
+        )}
       </div>
     )
   }
