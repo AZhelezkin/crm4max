@@ -237,7 +237,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
               {/* Верхний блок: нет категорий → CTA «Добавить категорию»; есть → сводка «Категории услуг».
                   До загрузки — резервируем высоту (72), чтобы не мигать CTA-карточкой и не дёргать секцию ниже. */}
               {!loaded ? (
-                <div style={{ height: 72, flexShrink: 0 }} />
+                <div style={{ height: 76, flexShrink: 0 }} />
               ) : categories.length === 0 ? (
                 <AddCategoryCard onClick={() => openCatForm()} />
               ) : (
@@ -407,9 +407,9 @@ function catCountLabel(n: number): string {
 // Верхний блок-сводка «Категории услуг» (макет listItem.svg): папка x32 + заголовок 16
 // + счётчик 13 + шеврон. Тап → экран списка категорий.
 function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () => void }) {
-  // height 72 = 16 + текст 40 + 16 → ровно 16px над и под текстом (в макете чип 44 выше текста).
+  // h76 (catalogCardStyle) по макету 8743:51031: чип 44 → 16px сверху/снизу, текст 40 центрируется.
   return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12, height: 72 }}>
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
       {/* Папка в чипе 44×44 (p10 rx12), как в макете 8743:51031 — не голая иконка. */}
       <div style={{
         width: 44, height: 44, borderRadius: 12, flexShrink: 0,
