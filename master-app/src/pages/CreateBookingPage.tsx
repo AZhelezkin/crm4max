@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { categoriesApi, servicesApi } from '@/api/services.api'
@@ -70,11 +70,18 @@ function formatPhone(phone: string | null): string {
 // category → service → date → time → confirm (клиент/адрес/итог) → запись.
 export default function CreateBookingPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const master = useAuthStore((s) => s.master)
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
 
-  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>('category')
+  // Перенос из карточки записи (как в кабинете клиента): входим сразу в выбор даты
+  // того же флоу, тап по слоту делает bookingsApi.reschedule.
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string } | null
+
+  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>(
+    rescheduleInit?.rescheduleId ? 'date' : 'category',
+  )
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -85,7 +92,7 @@ export default function CreateBookingPage() {
   const [query, setQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  const [serviceId, setServiceId] = useState('')
+  const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
@@ -98,7 +105,7 @@ export default function CreateBookingPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
-  const [rescheduleId, setRescheduleId] = useState<string | null>(null)
+  const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
 
   useEffect(() => {
     Promise.all([categoriesApi.list(), servicesApi.list()])
@@ -402,7 +409,18 @@ export default function CreateBookingPage() {
     const months = [0, 1, 2].map((o) => today.startOf('month').add(o, 'month'))
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-        <Toolbar title={rescheduleId ? 'Новая дата' : 'Выберите дату'} subtitle={selectedService?.name} onBack={() => setStep(rescheduleId ? 'success' : 'service')} />
+        <Toolbar
+          title={rescheduleId ? 'Новая дата' : 'Выберите дату'}
+          subtitle={selectedService?.name}
+          onBack={() => {
+            if (rescheduleId) {
+              if (createdBooking) setStep('success')
+              else navigate(-1)
+            } else {
+              setStep('service')
+            }
+          }}
+        />
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {!availabilityLoaded && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загружаем…</div>

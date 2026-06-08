@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
-import { mastersApi } from '@/api/masters.api'
 import type { Booking } from '@/types'
 import { discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
@@ -64,23 +63,11 @@ export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [booking, setBooking] = useState<Booking | null>(null)
-  const [reschedule, setReschedule] = useState(false)
-  const [newDate, setNewDate] = useState('')
-  const [newTime, setNewTime] = useState('')
-  const [slots, setSlots] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (id) bookingsApi.getById(id).then(setBooking).catch(() => {})
   }, [id])
-
-  useEffect(() => {
-    if (reschedule && newDate && booking) {
-      mastersApi.getSlots(booking.master.id, newDate, booking.service.id).then(setSlots).catch(() => setSlots([]))
-    } else {
-      setSlots([])
-    }
-  }, [reschedule, newDate, booking])
 
   if (!booking) return null
 
@@ -103,17 +90,6 @@ export default function BookingDetailPage() {
     if (busy) return
     setBusy(true)
     try { setBooking(await bookingsApi.confirmPayment(booking.id)) } finally { setBusy(false) }
-  }
-
-  const handleRescheduleSubmit = async () => {
-    if (!newDate || !newTime || busy) return
-    setBusy(true)
-    try {
-      setBooking(await bookingsApi.reschedule(booking.id, { date: newDate, time: newTime }))
-      setReschedule(false)
-      setNewDate('')
-      setNewTime('')
-    } finally { setBusy(false) }
   }
 
   const handleCancel = async () => {
@@ -217,27 +193,8 @@ export default function BookingDetailPage() {
         )}
       </div>
 
-      {/* Перенос — нижняя панель с выбором новой даты/времени */}
-      {reschedule && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--color-background)', padding: '12px 16px calc(16px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 -8px 24px rgba(0,0,0,0.35)' }}>
-          <div style={{ ...text.subhead, color: 'var(--color-on-surface)' }}>Новая дата и время</div>
-          <input type="date" value={newDate} onChange={(e) => { setNewDate(e.target.value); setNewTime('') }} style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid var(--color-divider-low)', ...text.body }} />
-          {slots.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {slots.map((s) => (
-                <button key={s} type="button" onClick={() => setNewTime(s)} style={{ padding: '10px 16px', borderRadius: 10, ...text.bodyMedium, cursor: 'pointer', background: newTime === s ? 'var(--color-primary-surface)' : 'var(--color-surface)', color: newTime === s ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)', border: '1px solid var(--color-divider-low)' }}>{s}</button>
-              ))}
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" disabled={!newDate || !newTime || busy} onClick={() => { void handleRescheduleSubmit() }} style={{ flex: 1, height: 52, borderRadius: 16, border: 'none', ...text.callout1, cursor: (!newDate || !newTime || busy) ? 'default' : 'pointer', background: (!newDate || !newTime || busy) ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)', color: (!newDate || !newTime || busy) ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)' }}>Подтвердить</button>
-            <button type="button" onClick={() => setReschedule(false)} style={{ flex: 1, height: 52, borderRadius: 16, border: 'none', cursor: 'pointer', background: 'var(--color-surface-transparent)', ...text.callout1, color: 'var(--color-on-surface)' }}>Отмена</button>
-          </div>
-        </div>
-      )}
-
       {/* Действия (для активной записи) */}
-      {!reschedule && canAct && (
+      {canAct && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--color-background)', padding: '8px 12px calc(48px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!paid && (
             <button type="button" disabled={busy} onClick={() => { void handleConfirmPayment() }} style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', cursor: busy ? 'default' : 'pointer', ...text.callout1, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
@@ -249,7 +206,7 @@ export default function BookingDetailPage() {
             <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
           </button>
           <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-            <button type="button" onClick={() => setReschedule(true)} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+            <button type="button" onClick={() => navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id } })} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
               <RepeatIcon />
               <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
             </button>
