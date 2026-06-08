@@ -6,6 +6,7 @@ import type { LocalWorkPhoto } from '@/lib/workPhotos'
 import { formatPrice } from '@/types'
 import { HeroHeader, FloatingField, UploadingOverlay } from '@/components/onboardingShared'
 import ToggleSwitch from '@/components/ToggleSwitch'
+import WheelPicker from '@/components/WheelPicker'
 
 export interface ServiceFormCategoryItem {
   id: string
@@ -69,17 +70,6 @@ const pickerTitleStyle: CSSProperties = { ...text.callout1, color: 'var(--color-
 // Подзаголовок — Caption 2 14/500/-0.028, on-surface-secondary.
 const pickerSubtitleStyle: CSSProperties = { ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 2 }
 
-// Прозрачный нативный select поверх пилюли — открывает системный пикер.
-const overlaySelectStyle: CSSProperties = {
-  position: 'absolute', inset: 0,
-  width: '100%', height: '100%',
-  opacity: 0,
-  border: 'none',
-  appearance: 'none',
-  background: 'transparent',
-  cursor: 'pointer',
-}
-
 const chevronStyle: CSSProperties = {
   position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
   pointerEvents: 'none', display: 'flex', color: 'var(--color-interactive-element-secondary)',
@@ -122,6 +112,8 @@ export default function ServiceFormPortal({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Открытый picker (категория/длительность) — типовое колесо вместо нативного <select>.
+  const [openPicker, setOpenPicker] = useState<'category' | 'duration' | null>(null)
   // Сбрасываем подтверждение удаления при закрытии формы.
   useEffect(() => { if (!visible) setConfirmDelete(false) }, [visible])
 
@@ -162,13 +154,17 @@ export default function ServiceFormPortal({
           />
         </div>
 
-        {/* Категория (пикер) — лист h76 */}
+        {/* Категория (пикер) — лист h76, тап → колесо WheelPicker */}
         {onCategoryIdChange && (
-          <div style={{
-            position: 'relative', height: 76, borderRadius: 20,
-            background: 'var(--color-surface-transparent)',
-            display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px',
-          }}>
+          <button
+            type="button"
+            onClick={() => setOpenPicker('category')}
+            style={{
+              height: 76, borderRadius: 20, border: 'none', cursor: 'pointer', textAlign: 'left',
+              background: 'var(--color-surface-transparent)',
+              display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', width: '100%',
+            }}
+          >
             <div style={{
               width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
               color: 'var(--color-interactive-element-secondary)',
@@ -189,33 +185,17 @@ export default function ServiceFormPortal({
             <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
               <ChevronRightIcon />
             </span>
-            <select
-              value={categoryId ?? ''}
-              onChange={(e) => onCategoryIdChange(e.target.value)}
-              style={overlaySelectStyle}
-            >
-              <option value="">Без категории</option>
-              {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
+          </button>
         )}
 
         {/* Группа: Время приёма */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <SectionTitle>Время приёма</SectionTitle>
-          <div style={pillFieldStyle}>
+          <button type="button" onClick={() => setOpenPicker('duration')} style={{ ...pillFieldStyle, border: 'none', cursor: 'pointer', textAlign: 'left', alignItems: 'flex-start' }}>
             <span style={pickerTitleStyle}>Продолжительность</span>
             <span style={pickerSubtitleStyle}>{durationMin > 0 ? formatDur(durationMin) : 'Не выбрано'}</span>
             <span style={chevronStyle}><ChevronRightIcon /></span>
-            <select
-              value={durationMin || ''}
-              onChange={(e) => onDurationChange(e.target.value)}
-              style={overlaySelectStyle}
-            >
-              <option value="" disabled hidden>Не выбрано</option>
-              {DURATION_OPTIONS.map((m) => <option key={m} value={m}>{formatDur(m)}</option>)}
-            </select>
-          </div>
+          </button>
         </div>
 
         {/* Группа: Стоимость за приём */}
@@ -378,6 +358,24 @@ export default function ServiceFormPortal({
         )}
         </div>
       </div>
+
+      {/* Типовые колёса выбора (вместо нативного <select>). */}
+      {onCategoryIdChange && (
+        <WheelPicker
+          open={openPicker === 'category'}
+          value={categoryId ?? ''}
+          options={[{ value: '', label: 'Без категории' }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+          onSelect={onCategoryIdChange}
+          onClose={() => setOpenPicker(null)}
+        />
+      )}
+      <WheelPicker
+        open={openPicker === 'duration'}
+        value={duration}
+        options={DURATION_OPTIONS.map((m) => ({ value: String(m), label: formatDur(m) }))}
+        onSelect={onDurationChange}
+        onClose={() => setOpenPicker(null)}
+      />
     </div>,
     document.body,
   )
