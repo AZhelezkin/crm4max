@@ -45,6 +45,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
     // Активный таб в секции «Услуги» на home: 'all' или id категории.
     const [activeServiceTab, setActiveServiceTab] = useState('all')
+    // Данные загружены — чтобы не мигать «Добавить категорию» до прихода категорий.
+    const [loaded, setLoaded] = useState(false)
 
     // Форма категории
     const [showCatForm, setShowCatForm] = useState(false)
@@ -72,7 +74,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         setCategories(cats)
         setAllServices(svcs)
         onCategoryCountChange?.(cats.length)
-      }).catch(() => {})
+        setLoaded(true)
+      }).catch(() => setLoaded(true))
 
     useEffect(() => { load() }, [])
 
@@ -231,8 +234,11 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           {/* ── HOME: верхний блок (папка) + блок «УСЛУГИ» ── */}
           {subStep === 'home' && (
             <>
-              {/* Верхний блок: нет категорий → CTA «Добавить категорию»; есть → сводка «Категории услуг» (listItem.svg) */}
-              {categories.length === 0 ? (
+              {/* Верхний блок: нет категорий → CTA «Добавить категорию»; есть → сводка «Категории услуг».
+                  До загрузки — резервируем высоту (72), чтобы не мигать CTA-карточкой и не дёргать секцию ниже. */}
+              {!loaded ? (
+                <div style={{ height: 72, flexShrink: 0 }} />
+              ) : categories.length === 0 ? (
                 <AddCategoryCard onClick={() => openCatForm()} />
               ) : (
                 <CategoriesSummaryCard
