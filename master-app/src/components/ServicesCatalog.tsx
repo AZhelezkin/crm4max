@@ -366,8 +366,11 @@ export default ServicesCatalog
 // ─── Каталог: карточки и кнопки (макеты profile-services-empty / profile-category-list) ──
 
 // Карточка h76 rx20 на surface-transparent — общая оболочка карточек каталога.
+// flexShrink: 0 — иначе в скролл-контейнере (flex column) карточка сжимается ниже 76
+// при обилии контента (home-экран), а на лёгком экране остаётся 76 → разная высота.
 const catalogCardStyle: CSSProperties = {
   height: 76,
+  flexShrink: 0,
   borderRadius: 20,
   border: 'none',
   cursor: 'pointer',
@@ -471,7 +474,7 @@ function AddRowButton({ label, onClick }: { label: string; onClick: () => void }
       type="button"
       onClick={onClick}
       style={{
-        width: '100%', height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
+        width: '100%', height: 36, flexShrink: 0, borderRadius: 12, border: 'none', cursor: 'pointer',
         background: 'var(--color-secondary-surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         color: 'var(--color-interactive-element-accented)',
@@ -589,7 +592,7 @@ function ServiceListCard({ name, categoryName, onClick }: {
       type="button"
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%', flexShrink: 0,
         background: 'var(--color-surface-transparent)', border: 'none', cursor: 'pointer',
         borderRadius: 20, padding: '16px 20px', textAlign: 'left',
       }}
