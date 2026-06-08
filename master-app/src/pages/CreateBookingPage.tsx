@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Category, Service } from '@/types'
-import { UNCATEGORIZED_CATEGORY_ID } from '@/types'
+import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
@@ -19,19 +19,27 @@ interface CategoryItem {
   isUncat: boolean
 }
 
-// Флоу создания записи мастером (макет 8746-41312):
-// шаг «category» — выбор категории, шаг «details» — услуга/дата/время (форма; будет
-// переверстана по следующим макетам флоу).
+interface Section {
+  id: string
+  name: string
+  services: Service[]
+}
+
+// Флоу создания записи мастером (макеты 8746-41312 / 8746-41313):
+// category → service → details (дата/время; будет переверстан по следующим макетам).
 export default function CreateBookingPage() {
   const navigate = useNavigate()
   const master = useAuthStore((s) => s.master)
 
-  const [step, setStep] = useState<'category' | 'details'>('category')
+  const [step, setStep] = useState<'category' | 'service' | 'details'>('category')
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [loaded, setLoaded] = useState(false)
-  // null — без фильтра по категории (вход через поиск)
+  // null — без фильтра по категории (глобальный список/поиск)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [searchMode, setSearchMode] = useState(false)
+  const [query, setQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [serviceId, setServiceId] = useState('')
   const [date, setDate] = useState('')
@@ -57,6 +65,10 @@ export default function CreateBookingPage() {
     }
   }, [master?.id, serviceId, date])
 
+  useEffect(() => {
+    if (searchMode) searchInputRef.current?.focus()
+  }, [searchMode])
+
   // Пункты списка категорий: свои категории + синтетическая «Услуги без категории».
   const items = useMemo<CategoryItem[]>(() => {
     const uncategorized = allServices.filter((s) => s.categoryId == null)
@@ -81,26 +93,55 @@ export default function CreateBookingPage() {
     return list
   }, [categories, allServices])
 
-  // Услуги для шага «details», отфильтрованные по выбранной категории.
-  const detailServices = useMemo<Service[]>(() => {
-    if (selectedCategoryId == null) return allServices
-    if (selectedCategoryId === UNCATEGORIZED_CATEGORY_ID) return allServices.filter((s) => s.categoryId == null)
-    return allServices.filter((s) => s.categoryId === selectedCategoryId)
-  }, [allServices, selectedCategoryId])
+  // Секции услуг для шага «service»: только активные услуги, по выбранной категории
+  // (или все, если selectedCategoryId === null — для глобального поиска).
+  const baseSections = useMemo<Section[]>(() => {
+    const uncat = allServices.filter((s) => s.categoryId == null && s.isActive)
+    const all: Section[] = categories
+      .map((c) => ({ id: c.id, name: c.name, services: c.services.filter((s) => s.isActive) }))
+      .filter((sec) => sec.services.length)
+    if (uncat.length) all.push({ id: UNCATEGORIZED_CATEGORY_ID, name: 'Услуги без категории', services: uncat })
+    if (selectedCategoryId == null) return all
+    return all.filter((sec) => sec.id === selectedCategoryId)
+  }, [categories, allServices, selectedCategoryId])
+
+  const q = query.trim().toLowerCase()
+  const sections = useMemo<Section[]>(() => {
+    if (!q) return baseSections
+    return baseSections
+      .map((sec) => ({ ...sec, services: sec.services.filter((s) => s.name.toLowerCase().includes(q)) }))
+      .filter((sec) => sec.services.length)
+  }, [baseSections, q])
+
+  const selectedService = useMemo(() => allServices.find((s) => s.id === serviceId) ?? null, [allServices, serviceId])
 
   const openCategory = (id: string) => {
     setSelectedCategoryId(id)
-    setServiceId('')
+    setSearchMode(false)
+    setQuery('')
+    setStep('service')
+  }
+
+  const openGlobalSearch = () => {
+    setSelectedCategoryId(null)
+    setQuery('')
+    setSearchMode(true)
+    setStep('service')
+  }
+
+  const pickService = (s: Service) => {
+    setServiceId(s.id)
     setTime('')
     setStep('details')
   }
 
-  // Поиск: пока ведёт к шагу «details» по всем услугам (отдельный экран поиска — в следующих макетах).
-  const openSearch = () => {
-    setSelectedCategoryId(null)
-    setServiceId('')
-    setTime('')
-    setStep('details')
+  const backFromService = () => {
+    if (searchMode) {
+      setSearchMode(false)
+      setQuery('')
+    } else {
+      setStep('category')
+    }
   }
 
   const handleSave = async () => {
@@ -122,12 +163,11 @@ export default function CreateBookingPage() {
           title="Выберите категорию"
           onBack={() => navigate(-1)}
           trailing={
-            <PillButton onClick={openSearch} ariaLabel="Поиск">
+            <PillButton onClick={openGlobalSearch} ariaLabel="Поиск">
               <SearchIcon />
             </PillButton>
           }
         />
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
           {loaded && items.length === 0 && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
@@ -167,23 +207,7 @@ export default function CreateBookingPage() {
                   >
                     {item.name}
                   </span>
-                  {item.hasDiscount && (
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        height: 20,
-                        padding: '0 6px',
-                        boxSizing: 'border-box',
-                        borderRadius: 4,
-                        background: 'var(--color-error-surface-lite)',
-                        color: 'var(--color-on-error-surface-lite)',
-                        ...text.label3Caps,
-                        lineHeight: '20px',
-                      }}
-                    >
-                      % скидки
-                    </span>
-                  )}
+                  {item.hasDiscount && <DiscountBadge />}
                 </div>
                 {item.description && (
                   <div
@@ -208,27 +232,100 @@ export default function CreateBookingPage() {
     )
   }
 
-  // ─── Шаг 2: услуга / дата / время (интерим-форма) ───────────────────────────
+  // ─── Шаг 2: выбор услуги (макет 8746-41313) ─────────────────────────────────
+  if (step === 'service') {
+    const nothing = loaded && sections.length === 0
+    return (
+      <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
+        {/* Тулбар: назад + (заголовок + поиск) / (поле поиска) */}
+        <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
+          <PillButton onClick={backFromService} ariaLabel="Назад">
+            <ArrowLeftIcon />
+          </PillButton>
+          {searchMode ? (
+            <div style={{ flex: 1, minWidth: 0, height: 44, background: 'var(--color-background)', borderRadius: 22, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px' }}>
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Поиск"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'var(--color-on-surface)',
+                  fontFamily: 'inherit',
+                  fontSize: 18,
+                  lineHeight: '24px',
+                  fontWeight: 400,
+                  padding: 0,
+                }}
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Очистить"
+                  onClick={() => { setQuery(''); searchInputRef.current?.focus() }}
+                  style={{ width: 20, height: 20, flexShrink: 0, padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface-secondary)' }}
+                >
+                  <ClearIcon />
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', ...text.callout1, color: 'var(--color-on-surface)' }}>
+                Выберите услугу
+              </div>
+              <PillButton onClick={() => setSearchMode(true)} ariaLabel="Поиск">
+                <SearchIcon />
+              </PillButton>
+            </>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
+          {nothing && (
+            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
+              {searchMode ? 'Ничего не найдено' : 'В этой категории нет услуг'}
+            </div>
+          )}
+          {sections.map((sec) => (
+            <div key={sec.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ padding: '16px 8px 4px' }}>
+                <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface)' }}>{sec.name}</span>
+              </div>
+              {sec.services.map((s) => (
+                <ServiceItem key={s.id} service={s} onClick={() => pickService(s)} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Шаг 3: дата / время (интерим) ──────────────────────────────────────────
+  const saveDisabled = saving || !serviceId || !date || !time
   return (
     <div style={{ minHeight: '100dvh' }}>
-      <Toolbar title="Создать запись" onBack={() => setStep('category')} />
+      <Toolbar title="Создать запись" onBack={() => setStep('service')} />
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div>
-          <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Услуга</div>
-          <select
-            value={serviceId}
-            onChange={(e) => setServiceId(e.target.value)}
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-divider-low)', ...text.body }}
-          >
-            <option value="">Выберите услугу</option>
-            {detailServices.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} — {s.duration} мин
-              </option>
-            ))}
-          </select>
-        </div>
+        {selectedService && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedService.name}
+              </div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+                {formatPrice(discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price)} · {selectedService.duration} мин
+              </div>
+            </div>
+          </div>
+        )}
 
         <div>
           <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', marginBottom: 6, fontWeight: 500 }}>Дата</div>
@@ -268,7 +365,7 @@ export default function CreateBookingPage() {
 
         <button
           type="button"
-          disabled={saving || !serviceId || !date || !time}
+          disabled={saveDisabled}
           onClick={() => { void handleSave() }}
           style={{
             width: '100%',
@@ -281,15 +378,91 @@ export default function CreateBookingPage() {
             alignItems: 'center',
             justifyContent: 'center',
             ...text.callout1,
-            cursor: saving || !serviceId || !date || !time ? 'default' : 'pointer',
-            background: saving || !serviceId || !date || !time ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
-            color: saving || !serviceId || !date || !time ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
+            cursor: saveDisabled ? 'default' : 'pointer',
+            background: saveDisabled ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+            color: saveDisabled ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
           }}
         >
           {saving ? 'Сохраняем...' : 'Сохранить'}
         </button>
       </div>
     </div>
+  )
+}
+
+// Карточка услуги (макет 8746-41313): название [+ скидка], описание, цена (со скидкой — зачёркнутая старая).
+function ServiceItem({ service, onClick }: { service: Service; onClick: () => void }) {
+  const dPrice = discountedPrice(service.price, service.discountPercent)
+  const hasDiscount = dPrice !== null
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'var(--color-surface-transparent)',
+        borderRadius: 20,
+        padding: '16px 20px',
+        border: 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {service.name}
+            </span>
+          </div>
+          {service.description && (
+            <div
+              style={{
+                ...text.caption2,
+                color: 'var(--color-on-surface-secondary)',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 2,
+                overflow: 'hidden',
+              }}
+            >
+              {service.description}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(dPrice ?? service.price)}</span>
+          {hasDiscount && (
+            <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(service.price)}</span>
+          )}
+        </div>
+      </div>
+      <ArrowRightIcon />
+    </button>
+  )
+}
+
+// Бейдж «% скидки» на карточке категории.
+function DiscountBadge() {
+  return (
+    <span
+      style={{
+        flexShrink: 0,
+        height: 20,
+        padding: '0 6px',
+        boxSizing: 'border-box',
+        borderRadius: 4,
+        background: 'var(--color-error-surface-lite)',
+        color: 'var(--color-on-error-surface-lite)',
+        ...text.label3Caps,
+        lineHeight: '20px',
+      }}
+    >
+      % скидки
+    </span>
   )
 }
 
@@ -395,6 +568,14 @@ function ArrowRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
       <path d="M5.5 3L10.5 8L5.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ClearIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
