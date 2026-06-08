@@ -395,7 +395,7 @@ const step1ChevronStyle: CSSProperties = {
   color: 'var(--color-interactive-element-secondary)',
 }
 
-interface Step1Props {
+export interface Step1Props {
   workingDays: number[]
   toggleDay: (d: number) => void
   startTime: string
@@ -414,7 +414,7 @@ interface Step1Props {
   footer?: ReactNode
 }
 
-function Step1Form(props: Step1Props) {
+export function Step1Form(props: Step1Props) {
   const {
     workingDays, toggleDay,
     startTime, setStartTime, endTime, setEndTime,
@@ -711,7 +711,7 @@ function ChevronDownIcon() {
 // «Принимаю по адресу / Выезжаю / дистанционно» → адрес-кнопка (скрыта при
 // дистанционной работе). Кнопка «Далее» рисуется родителем (общий footer).
 
-interface Step0Props {
+export interface Step0Props {
   name: string
   setName: (v: string) => void
   phone: string
@@ -737,7 +737,7 @@ interface Step0Props {
 // Figma «Caption 2» 14/16/500 ls -0.028 — caption под полем + текст сегмента.
 const captionTextStyle: CSSProperties = { ...text.caption2 }
 
-function Step0Form(props: Step0Props) {
+export function Step0Form(props: Step0Props) {
   const {
     name, setName,
     phone, phoneError, onPhoneChange,
