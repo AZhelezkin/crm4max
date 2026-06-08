@@ -24,6 +24,17 @@ interface Props {
   onSave: () => void
   /** Удаление категории (только в режиме редактирования). */
   onDelete?: () => void
+  /** Сколько услуг в категории — для предупреждения в диалоге удаления. */
+  serviceCount?: number
+}
+
+// «N услуга/услуги/услуг станут без категории» — склонение для предупреждения в диалоге.
+function servicesWithoutCategoryLabel(n: number): string {
+  const m10 = n % 10, m100 = n % 100
+  const word = m10 === 1 && m100 !== 11 ? 'услуга станет'
+    : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? 'услуги станут'
+    : 'услуг станут'
+  return `${n} ${word} без категории`
 }
 
 // Создание/редактирование категории (макеты profile-category-create[-full]).
@@ -36,7 +47,7 @@ export default function CategoryFormPortal({
   desc, onDescChange,
   photoPreview, onPhotoPreview, onPhotoUrl,
   photoUploading, onPhotoUploading,
-  onClose, onSave, onDelete,
+  onClose, onSave, onDelete, serviceCount = 0,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -189,7 +200,7 @@ export default function CategoryFormPortal({
               Удаление категории
             </div>
             <div style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>
-              Вы уверены, что хотите удалить категорию?
+              Вы уверены, что хотите удалить категорию?{serviceCount > 0 ? ` ${servicesWithoutCategoryLabel(serviceCount)}.` : ''}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
               <button

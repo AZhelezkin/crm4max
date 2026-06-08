@@ -145,6 +145,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     // Удаление из формы редактирования категории.
     const deleteCatForm = async () => {
       if (!editCatId) return
+      // Если удаляемая категория была активным табом «Услуги» — сбрасываем на «Все»,
+      // иначе таб укажет в никуда и список окажется пустым.
+      if (activeServiceTab === editCatId) setActiveServiceTab('all')
       await categoriesApi.remove(editCatId)
       setShowCatForm(false)
       load()
@@ -329,6 +332,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onClose={() => setShowCatForm(false)}
           onSave={() => { void saveCatForm() }}
           onDelete={editCatId ? () => { void deleteCatForm() } : undefined}
+          serviceCount={categories.find((c) => c.id === editCatId)?.services.length ?? 0}
         />
 
         <ServiceFormPortal

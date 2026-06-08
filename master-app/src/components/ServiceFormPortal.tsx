@@ -147,8 +147,10 @@ export default function ServiceFormPortal({
       <div style={{
         flex: 1, overflowY: 'auto',
         padding: '8px 16px calc(48px + env(safe-area-inset-bottom))',
-        display: 'flex', flexDirection: 'column', gap: 24,
       }}>
+        {/* Контент — во внутренней content-height flex-колонке. Внешний контейнер блочный,
+            иначе flex-shrink сжимает fixed-height пилюли/кнопки при переполнении формы. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Группа: Название + Описание (gap 8) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
@@ -374,6 +376,7 @@ export default function ServiceFormPortal({
             {confirmDelete ? 'Подтвердите удаление' : 'Удалить услугу'}
           </button>
         )}
+        </div>
       </div>
     </div>,
     document.body,
