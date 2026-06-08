@@ -401,8 +401,9 @@ function catCountLabel(n: number): string {
 // Верхний блок-сводка «Категории услуг» (макет listItem.svg): папка x32 + заголовок 16
 // + счётчик 13 + шеврон. Тап → экран списка категорий.
 function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () => void }) {
+  // height 72 = 16 + текст 40 + 16 → ровно 16px над и под текстом (в макете чип 44 выше текста).
   return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
+    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12, height: 72 }}>
       {/* Папка в чипе 44×44 (p10 rx12), как в макете 8743:51031 — не голая иконка. */}
       <div style={{
         width: 44, height: 44, borderRadius: 12, flexShrink: 0,
