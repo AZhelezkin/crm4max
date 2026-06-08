@@ -912,10 +912,17 @@ function ServiceItem({ service, onClick }: { service: Service; onClick: () => vo
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(dPrice ?? service.price)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ ...text.callout1, color: hasDiscount ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)' }}>
+            {formatPrice(dPrice ?? service.price)}
+          </span>
           {hasDiscount && (
-            <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(service.price)}</span>
+            <>
+              <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(service.price)}</span>
+              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', boxSizing: 'border-box', borderRadius: 8, background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)', ...text.label2Caps }}>
+                Скидка
+              </span>
+            </>
           )}
         </div>
       </div>
