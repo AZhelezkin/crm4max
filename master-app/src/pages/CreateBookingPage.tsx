@@ -11,6 +11,7 @@ import type { Category, Client, Schedule, Service } from '@/types'
 import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 import ToggleSwitch from '@/components/ToggleSwitch'
+import AddressPickerPortal from '@/components/AddressPickerPortal'
 
 dayjs.locale('ru')
 
@@ -90,7 +91,7 @@ export default function CreateBookingPage() {
   const [remind, setRemind] = useState(true)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [address, setAddress] = useState('')
-  const [addressFocused, setAddressFocused] = useState(false)
+  const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>({})
@@ -568,19 +569,18 @@ export default function CreateBookingPage() {
           <UserSquareIcon size={16} />
         </button>
 
-        {/* Адрес выезда — только для мастера на выезде */}
+        {/* Адрес выезда — только для мастера на выезде. Тап → пикер с картой и саджестами Яндекса (как при вводе адреса мастером). */}
         {homeVisit && (
-          <div style={{ background: 'var(--color-surface)', borderRadius: 20, border: `2px solid ${addressFocused ? 'var(--color-primary-surface)' : 'transparent'}`, padding: '16px 20px', boxSizing: 'border-box' }}>
+          <button
+            type="button"
+            onClick={() => setShowAddressPortal(true)}
+            style={{ background: 'var(--color-surface)', borderRadius: 20, border: 'none', padding: '16px 20px', boxSizing: 'border-box', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', textAlign: 'left' }}
+          >
             <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Адрес выезда</span>
-            <input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              onFocus={() => setAddressFocused(true)}
-              onBlur={() => setAddressFocused(false)}
-              placeholder="Город, улица, дом, квартира…"
-              style={{ width: '100%', border: 'none', outline: 'none', background: 'none', ...text.callout1, color: 'var(--color-on-surface)', padding: 0, marginTop: 2 }}
-            />
-          </div>
+            <span style={{ ...text.callout1, color: address ? 'var(--color-on-surface)' : 'var(--color-on-surface-muted)', marginTop: 2, maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {address || 'Город, улица, дом, квартира…'}
+            </span>
+          </button>
         )}
 
         {/* Услуга */}
@@ -654,6 +654,13 @@ export default function CreateBookingPage() {
           {saving ? 'Записываем…' : 'Записать'}
         </button>
       </div>
+
+      <AddressPickerPortal
+        open={showAddressPortal}
+        value={address}
+        onClose={() => setShowAddressPortal(false)}
+        onConfirm={(addr) => setAddress(addr)}
+      />
     </div>
   )
 }
