@@ -7,7 +7,7 @@ import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
 import { useAuthStore } from '@/store/auth.store'
-import type { Category, Client, Schedule, Service } from '@/types'
+import type { Booking, Category, Client, Schedule, Service } from '@/types'
 import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 import ToggleSwitch from '@/components/ToggleSwitch'
@@ -74,7 +74,7 @@ export default function CreateBookingPage() {
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
 
-  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client'>('category')
+  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>('category')
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -98,6 +98,8 @@ export default function CreateBookingPage() {
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([categoriesApi.list(), servicesApi.list()])
@@ -223,7 +225,7 @@ export default function CreateBookingPage() {
     setSaving(true)
     setError(null)
     try {
-      await bookingsApi.create({
+      const booking = await bookingsApi.create({
         masterId: master.id,
         serviceId,
         date,
@@ -232,13 +234,62 @@ export default function CreateBookingPage() {
         remind,
         clientAddress: homeVisit ? address.trim() : undefined,
       })
-      navigate('/bookings')
+      setCreatedBooking(booking)
+      setStep('success')
     } catch (e) {
       console.error('[booking] create failed', e)
       setError('Не удалось создать запись. Попробуйте ещё раз.')
     } finally {
       setSaving(false)
     }
+  }
+
+  // Тап по слоту: в обычном флоу → подтверждение; в режиме переноса → reschedule существующей записи.
+  const onSlotTap = (s: string) => {
+    setTime(s)
+    if (rescheduleId) {
+      void (async () => {
+        try {
+          await bookingsApi.reschedule(rescheduleId, { date, time: s })
+        } catch (e) {
+          console.error('[booking] reschedule failed', e)
+        }
+        navigate('/bookings')
+      })()
+    } else {
+      setStep('confirm')
+    }
+  }
+
+  const handleReschedule = () => {
+    if (!createdBooking) return
+    setRescheduleId(createdBooking.id)
+    setTime('')
+    setStep('date')
+  }
+
+  const handleCancelBooking = async () => {
+    if (!createdBooking) return
+    try {
+      await bookingsApi.cancel(createdBooking.id)
+    } catch (e) {
+      console.error('[booking] cancel failed', e)
+    }
+    navigate('/bookings')
+  }
+
+  // Google-календарь: TEMPLATE-ссылка (openLink). Если нужен другой провайдер/ICS — поменяем.
+  const handleAddToCalendar = () => {
+    if (!selectedService) return
+    const start = dayjs(`${date}T${time}`)
+    const end = start.add(selectedService.duration, 'minute')
+    const fmt = (d: dayjs.Dayjs) => d.format('YYYYMMDDTHHmmss')
+    const loc = homeVisit ? address.trim() : master?.location ?? ''
+    const url =
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedService.name)}` +
+      `&dates=${fmt(start)}/${fmt(end)}${loc ? `&location=${encodeURIComponent(loc)}` : ''}`
+    if (window.WebApp?.openLink) window.WebApp.openLink(url)
+    else window.open(url, '_blank')
   }
 
   // ─── Шаг 1: выбор категории (макет 8746-41312) ──────────────────────────────
@@ -352,7 +403,7 @@ export default function CreateBookingPage() {
     const months = [0, 1, 2].map((o) => today.startOf('month').add(o, 'month'))
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-        <Toolbar title="Выберите дату" subtitle={selectedService?.name} onBack={() => setStep('service')} />
+        <Toolbar title={rescheduleId ? 'Новая дата' : 'Выберите дату'} subtitle={selectedService?.name} onBack={() => setStep(rescheduleId ? 'success' : 'service')} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {!availabilityLoaded && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загружаем…</div>
@@ -460,7 +511,7 @@ export default function CreateBookingPage() {
                     <button
                       key={s}
                       type="button"
-                      onClick={() => { setTime(s); setStep('confirm') }}
+                      onClick={() => onSlotTap(s)}
                       style={{
                         height: 69,
                         padding: '12px 0',
@@ -525,6 +576,116 @@ export default function CreateBookingPage() {
               </button>
             )
           })}
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Шаг 7: успех «Запись создана!» (макет 8746-41315) ──────────────────────
+  if (step === 'success') {
+    const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
+    const addressText = homeVisit ? address.trim() : master?.location ?? ''
+    const succPrice = selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price : 0
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 220 }}>
+        {/* Шапка: зелёная галочка + «Запись создана!» + «Закрыть» */}
+        <div style={{ height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: 'linear-gradient(149.74deg, var(--color-grad-green-vibrance-0) 7.31%, var(--color-grad-green-vibrance-100) 91.96%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IcoTickCircle />
+            </div>
+            <div style={{ flex: 1, minWidth: 0, ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Запись создана!
+            </div>
+          </div>
+          <button type="button" onClick={() => navigate('/bookings')} style={{ height: 44, padding: '0 10px', borderRadius: 22, background: 'var(--color-background)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, ...text.callout1, color: 'var(--color-on-surface)' }}>
+            Закрыть
+          </button>
+        </div>
+
+        <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Клиент */}
+          {selectedClient && (
+            <div style={{ ...listItemStyle, cursor: 'default' }}>
+              <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedClient.name}</div>
+                {selectedClient.phone && (
+                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatPhone(selectedClient.phone)}</div>
+                )}
+              </div>
+              <UserSquareIcon size={16} />
+            </div>
+          )}
+
+          {/* Адрес */}
+          {addressText && (
+            <div style={{ ...listItemStyle, cursor: 'default' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'break-word' }}>{addressText}</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{homeVisit ? 'Адрес выезда' : 'Адрес мастера'}</div>
+              </div>
+              <LocationIcon />
+            </div>
+          )}
+
+          {/* Услуга + статус оплаты */}
+          {selectedService && (
+            <div style={{ ...listItemStyle, cursor: 'default' }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedService.name}</div>
+                  {selectedService.description && (
+                    <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{selectedService.description}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(succPrice)}</span>
+                  <span style={{ ...text.label2Caps, display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', borderRadius: 8, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Дата */}
+          <div style={{ ...listItemStyle, cursor: 'default' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
+            </div>
+            <EditIcon />
+          </div>
+
+          {/* Время */}
+          <div style={{ ...listItemStyle, cursor: 'default' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{time}</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
+            </div>
+            <EditIcon />
+          </div>
+        </div>
+
+        {/* Футер: «Добавить в календарь» + Перенести / Чат / Отменить */}
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--color-background)', padding: '8px 12px calc(48px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
+            <CalendarIcon />
+            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
+          </button>
+          <div style={{ display: 'flex', gap: 4, width: '100%' }}>
+            <button type="button" onClick={handleReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+              <RepeatIcon />
+              <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
+            </button>
+            <button type="button" onClick={() => navigate('/clients')} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+              <MessageTextIcon />
+              <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Чат</span>
+            </button>
+            <button type="button" onClick={() => { void handleCancelBooking() }} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
+              <CloseCircleIcon />
+              <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -676,6 +837,25 @@ const listItemStyle: React.CSSProperties = {
   border: 'none',
   cursor: 'pointer',
   textAlign: 'left',
+}
+
+const chipStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 4,
+  background: 'var(--color-surface-transparent)',
+  borderRadius: 18,
+  padding: '12px 8px',
+  border: 'none',
+  cursor: 'pointer',
+  color: 'var(--color-active-element)',
+}
+
+const PAYMENT_BADGE: Record<Booking['paymentStatus'], { label: string; bg: string; color: string }> = {
+  UNPAID: { label: 'НЕ ОПЛАЧЕНО', bg: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)' },
+  DEPOSIT_PAID: { label: 'ДЕПОЗИТ', bg: 'var(--color-warning-surface-lite)', color: 'var(--color-on-warning-surface-lite)' },
+  PAID: { label: 'ОПЛАЧЕНО', bg: 'var(--color-success-surface-lite)', color: 'var(--color-on-success-surface-lite)' },
 }
 
 function ServiceItem({ service, onClick }: { service: Service; onClick: () => void }) {
@@ -838,6 +1018,72 @@ function CalendarEditIcon() {
       <path d="M19.21 15.77L15.67 19.31C15.53 19.45 15.4 19.71 15.37 19.9L15.18 21.25C15.11 21.74 15.45 22.08 15.94 22.01L17.29 21.82C17.48 21.79 17.75 21.66 17.88 21.52L21.42 17.98C22.03 17.37 22.32 16.66 21.42 15.76C20.53 14.87 19.82 15.16 19.21 15.77Z" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M18.7 16.28C19 17.36 19.84 18.2 20.92 18.5" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5V12" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/bold/tick-circle (24×24) — белая на зелёном градиенте.
+function IcoTickCircle() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Zm-1.13-7.83 4.95-4.95a.749.749 0 0 0-.53-1.28.74.74 0 0 0-.53.22l-4.42 4.42-1.62-1.62a.754.754 0 0 0-1.06 0 .749.749 0 0 0 0 1.06l2.15 2.15c.15.15.34.22.53.22.19 0 .38-.07.53-.22Z" fill="var(--color-on-primary-surface)" />
+    </svg>
+  )
+}
+
+// vuesax/linear/location (16×16).
+function LocationIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8 8.95C9.149 8.95 10.08 8.019 10.08 6.87C10.08 5.722 9.149 4.79 8 4.79C6.851 4.79 5.92 5.722 5.92 6.87C5.92 8.019 6.851 8.95 8 8.95Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5" />
+      <path d="M2.413 5.66C3.727 -0.107 12.28 -0.1 13.587 5.667C14.353 9.054 12.247 11.92 10.4 13.694C9.06 14.987 6.94 14.987 5.593 13.694C3.753 11.92 1.647 9.047 2.413 5.66Z" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+// vuesax/linear/repeat (24×24) — наследует цвет чипа.
+function RepeatIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M2.83 14.32V7.6c0-2.94 2.4-5.34 5.34-5.34h7.66" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m13.7 4.43 2.13-2.13L13.7.17" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21.17 9.68v6.72c0 2.94-2.4 5.34-5.34 5.34H8.17" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.3 19.57 8.17 21.7l2.13 2.13" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/message-text (24×24).
+function MessageTextIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 8h10M7 13h6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/close-circle (24×24).
+function CloseCircleIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.17 14.83 14.83 9.17M14.83 14.83 9.17 9.17" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/calendar (24×24).
+function CalendarIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8 2V5" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 2V5" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 9.09H20.5" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.6947 13.7H15.7037" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.9955 13.7H12.0045" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.29431 13.7H8.30329" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
