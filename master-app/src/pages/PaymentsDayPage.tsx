@@ -8,14 +8,19 @@ import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
+// Фиолетовый градиент аватара без фото (тот же, что в ClientsPage / списках клиентов).
+const VIOLET_GRADIENT =
+  'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.482%)'
+
 function formatRub(kop: number): string {
   return (kop / 100).toLocaleString('ru-RU') + ' ₽'
 }
 
-const STATUS_LABEL: Record<Payment['status'], string> = {
-  PAID: 'ОПЛАЧЕНО',
-  DEPOSIT_PAID: 'ОПЛАЧЕНО',
-  UNPAID: 'НЕ ОПЛАЧЕНО',
+// Инициалы: первые буквы первых двух слов имени.
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
 }
 
 export default function PaymentsDayPage() {
@@ -41,70 +46,76 @@ export default function PaymentsDayPage() {
   const titleDate = date ? dayjs(date).format('D MMMM YYYY') : ''
 
   return (
-    <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
-      {/* Header */}
-      <header
+    <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)' }}>
+      {/* Тулбар: назад слева, экспорт справа, дата по центру (макет 8712-47004). */}
+      <div
         style={{
+          position: 'relative',
           height: 56,
-          position: 'sticky',
-          top: 0,
-          background: 'var(--color-background)',
-          zIndex: 10,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 12px',
         }}
       >
-        <button
-          onClick={() => navigate(-1)}
-          aria-label="Назад"
+        <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22 }}>
+          <button
+            type="button"
+            aria-label="Назад"
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none', border: 'none', padding: 6, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--color-on-surface)',
+            }}
+          >
+            <ArrowLeftIcon />
+          </button>
+        </div>
+
+        <div
           style={{
             position: 'absolute',
-            left: 14,
-            top: 16,
-            width: 24,
-            height: 24,
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            pointerEvents: 'none',
+            ...text.callout1,
             color: 'var(--color-on-surface)',
           }}
         >
-          <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
-            <path d="M9 1L1 8L9 15" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <h1 style={{ ...text.subheadline, color: 'var(--color-on-surface)', margin: 0 }}>{titleDate}</h1>
-        <button
-          aria-label="Экспорт"
-          style={{
-            position: 'absolute',
-            right: 14,
-            top: 18,
-            width: 20,
-            height: 20,
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-          }}
-        >
-          <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-            <path d="M5.32 2.56L8 0l2.56 2.56" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 10.18V0.01" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M0 8c0 4.42 3 8 8 8s8-3.58 8-8" stroke="var(--color-on-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </header>
+          {titleDate}
+        </div>
 
-      {/* Cards */}
-      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22 }}>
+          <button
+            type="button"
+            aria-label="Экспорт"
+            style={{
+              background: 'none', border: 'none', padding: 6, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--color-on-surface)',
+            }}
+          >
+            <ExportIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Список оплат за день (макет 8712-47994): карточки на surface-transparent, gap 12. */}
+      <div
+        style={{
+          padding: '8px 16px calc(24px + env(safe-area-inset-bottom))',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
         {dayPayments.map((p) => (
           <DayCard key={p.id} payment={p} />
         ))}
         {dayPayments.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет оплат за этот день
           </div>
         )}
@@ -115,9 +126,9 @@ export default function PaymentsDayPage() {
 
 function DayCard({ payment }: { payment: Payment }) {
   const isUnpaid = payment.status === 'UNPAID'
-  const badgeBg = isUnpaid ? 'rgba(206, 66, 89, 0.3)' : 'rgba(66, 206, 89, 0.3)'
-  const badgeColor = isUnpaid ? 'var(--color-error-surface-accented)' : 'var(--color-success-surface-accented)'
-  const amountColor = isUnpaid ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)'
+  const tagBg = isUnpaid ? 'var(--color-error-surface-lite)' : 'var(--color-success-surface-lite)'
+  const tagColor = isUnpaid ? 'var(--color-on-error-surface-lite)' : 'var(--color-on-success-surface-lite)'
+  const statusLabel = isUnpaid ? 'Не оплачено' : 'Оплачено'
 
   const serviceName = payment.booking?.service.name ?? '—'
   const clientName = payment.booking?.client.name ?? ''
@@ -127,89 +138,117 @@ function DayCard({ payment }: { payment: Payment }) {
   return (
     <div
       style={{
-        background: 'var(--color-surface)',
+        background: 'var(--color-surface-transparent)',
         borderRadius: 20,
-        padding: '18px 20px 13px',
-        height: 115,
-        boxSizing: 'border-box',
+        padding: 16,
         display: 'flex',
         flexDirection: 'column',
+        gap: 8,
       }}
     >
-      {/* Row 1: service name + time */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-        <div
-          style={{
-            ...text.action,
-            fontWeight: 600,
-            lineHeight: 1,
-            color: 'var(--color-on-surface)',
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {serviceName}
-        </div>
-        <div style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{time}</div>
-      </div>
-
-      {/* Row 2: avatar + client name */}
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 13, gap: 8 }}>
-        {clientPhoto ? (
-          <img
-            src={clientPhoto}
-            alt=""
-            style={{ width: 24, height: 24, borderRadius: 12, objectFit: 'cover' }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              background: 'var(--color-divider-low)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...text.captionSmall,
-              color: 'var(--color-on-surface-secondary)',
-            }}
-          >
-            {clientName ? clientName[0].toUpperCase() : ''}
-          </div>
-        )}
-        <span style={{ ...text.footnote, lineHeight: 1, color: 'var(--color-on-surface-secondary)' }}>{clientName}</span>
-      </div>
-
-      {/* Row 3: amount + badge */}
+      {/* Строка 1: название услуги. */}
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: 'auto',
+          ...text.callout1,
+          color: 'var(--color-on-surface)',
+          width: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}
       >
-        <div style={{ ...text.subheadline, lineHeight: 1, color: amountColor }}>
-          {formatRub(payment.amount)}
+        {serviceName}
+      </div>
+
+      {/* Строка 2: клиент (аватар + имя) слева, время справа. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+          <Avatar name={clientName} photo={clientPhoto} />
+          <span
+            style={{
+              ...text.caption2,
+              color: 'var(--color-on-surface-secondary)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {clientName}
+          </span>
         </div>
-        <div
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          {time}
+        </span>
+      </div>
+
+      {/* Строка 3: сумма слева, статус-тег справа. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8 }}>
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>
+          {formatRub(payment.amount)}
+        </span>
+        <span
           style={{
-            background: badgeBg,
-            color: badgeColor,
-            ...text.captionSmall,
-            fontWeight: 600,
-            letterSpacing: 0.5,
-            padding: '5px 12px',
-            borderRadius: 6,
-            lineHeight: 1,
+            ...text.label3Caps,
+            color: tagColor,
+            background: tagBg,
+            borderRadius: 8,
+            padding: '7px 6px 6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
         >
-          {STATUS_LABEL[payment.status]}
-        </div>
+          {statusLabel}
+        </span>
       </div>
     </div>
+  )
+}
+
+// Аватар клиента 24px: фото, иначе фиолетовый градиент + инициалы (label 3 CAPS).
+function Avatar({ name, photo }: { name: string; photo: string | null }) {
+  return (
+    <div
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        flexShrink: 0,
+        overflow: 'hidden',
+        background: photo ? 'var(--color-surface)' : VIOLET_GRADIENT,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {photo ? (
+        <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <span style={{ ...text.label3Caps, color: 'var(--color-on-surface)' }}>{initials(name)}</span>
+      )}
+    </div>
+  )
+}
+
+// vuesax/linear/arrow-left (24×24).
+function ArrowLeftIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/export (24×24) — стрелка вверх из «лотка».
+function ExportIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9.32 6.5L11.88 3.94L14.44 6.5" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.88 14.18V4.01" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12C4 16.42 7 20 12 20C17 20 20 16.42 20 12" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
