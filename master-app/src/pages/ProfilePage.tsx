@@ -92,47 +92,17 @@ export default function ProfilePage() {
   return (
     <div style={{ minHeight: '100dvh', overflowX: 'hidden' }}>
 
-      {/* ── Floating toolbar над hero (Figma toolbarTop, 8717:50168) ───────
-            56px, gap-between, padding 6/12. Левая/правая кнопки — circle 36 в
-            обёртке bg=background, rounded 22, p=4. Левая = Share (/share),
-            правая = Settings cog (/about). Не sticky, без своего bg, fold-в hero
-            через z-index. */}
+      {/* ── Floating toolbar над hero (Figma toolbarTop, 8717:50168) — стиль обновлённых
+            экранов: слева рейтинг, справа пилюля действий [Поделиться][Настройки]
+            (bg-background, rounded22, p4, gap12). Не sticky, без своего bg, fold-в hero. */}
       <div style={{
         height: 56, padding: '6px 12px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'relative', zIndex: 5,
       }}>
-        <button
-          type="button"
-          onClick={() => navigate('/share')}
-          aria-label="Поделиться"
-          style={toolbarPillBtnStyle}
-        >
-          <ProfileShareIcon />
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/settings')}
-          aria-label="Настройки профиля"
-          style={toolbarPillBtnStyle}
-        >
-          <SettingsCogIcon />
-        </button>
-      </div>
-
-      {/* HERO: декор (gradient + circles + blur) — глобальный, через --gradient-hero-background
-          на #root > div. Здесь только layout: padding 0/24 (top сдвинут toolbar'ом). */}
-      <div style={{ position: 'relative', paddingBottom: 24 }}>
-
-        {/* Рейтинг (top-right): звезда + число, без подложки. Star 18×16
-            fill=warningSurfaceAccented, text body / onSurfaceSecondary.
-            top=-35 относительно hero — садится в правую половину toolbarTop
-            между правой круглой кнопкой и центром экрана. */}
-        {master.rating > 0 && (
-          <div style={{
-            position: 'absolute', top: -35, right: 64, zIndex: 6,
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}>
+        {/* Рейтинг (слева): звезда 18×16 + число (body / onSurfaceSecondary). */}
+        {master.rating > 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 6 }}>
             <svg width="18" height="16" viewBox="346 144 18 16" fill="none">
               <path d="M356.442 144.925L357.909 147.859C358.109 148.267 358.642 148.659 359.092 148.734L361.75 149.175C363.45 149.459 363.85 150.692 362.625 151.909L360.559 153.975C360.209 154.325 360.017 155 360.125 155.484L360.717 158.042C361.184 160.067 360.109 160.85 358.317 159.792L355.825 158.317C355.375 158.05 354.634 158.05 354.175 158.317L351.684 159.792C349.9 160.85 348.817 160.059 349.284 158.042L349.875 155.484C349.984 155 349.792 154.325 349.442 153.975L347.375 151.909C346.159 150.692 346.55 149.459 348.25 149.175L350.909 148.734C351.35 148.659 351.884 148.267 352.084 147.859L353.55 144.925C354.35 143.334 355.65 143.334 356.442 144.925" fill="var(--color-warning-surface-accented)"/>
             </svg>
@@ -140,7 +110,27 @@ export default function ProfilePage() {
               {master.rating.toFixed(1)}
             </span>
           </div>
-        )}
+        ) : <div />}
+
+        {/* Действия (справа): пилюля — share слева от шестерёнки. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: 4,
+          background: 'var(--color-background)', borderRadius: 22,
+        }}>
+          <button type="button" onClick={() => navigate('/share')} aria-label="Поделиться" style={toolbarIconBtnStyle}>
+            <ProfileShareIcon />
+          </button>
+          <button type="button" onClick={() => navigate('/settings')} aria-label="Настройки профиля" style={toolbarIconBtnStyle}>
+            <SettingsCogIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* HERO: декор (gradient + circles + blur) — глобальный, через --gradient-hero-background
+          на #root > div. Здесь только layout: padding 0/24 (top сдвинут toolbar'ом). */}
+      <div style={{ position: 'relative', paddingBottom: 24 }}>
+
+        {/* (Рейтинг переехал в тулбар слева.) */}
 
         {/* Аватар + декоративное кольцо. Контейнер 108×108 (по 2px overshoot для ring),
             внутри аватар 104×104 со смещением 2,2. Кольцо — 3 stroke-арки:
@@ -593,10 +583,10 @@ export default function ProfilePage() {
 
 // ─── Helper-стиль для floating toolbar-кнопок ─────────────────────────────────
 
-const toolbarPillBtnStyle = {
-  display: 'flex', alignItems: 'center', padding: 4, borderRadius: 22,
-  background: 'var(--color-background)',
-  border: 'none', cursor: 'pointer',
+// Иконка-кнопка внутри пилюли действий тулбара (без своего фона, padding 6 вокруг icon 24).
+const toolbarIconBtnStyle = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6,
+  background: 'none', border: 'none', cursor: 'pointer',
 } as const
 
 // ─── ServicesList ─────────────────────────────────────────────────────────────
