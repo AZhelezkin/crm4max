@@ -92,7 +92,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     useImperativeHandle(ref, () => ({
       subStep,
       selectedCatName: isUncatStep
-        ? 'Услуги без категории'
+        ? 'Без категории'
         : categories.find((c) => c.id === selectedCatId)?.name ?? '',
       categoryCount: categories.length,
       goBack: () => {
@@ -107,7 +107,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       },
       openUncategorized: () => {
         setSelectedCatId(UNCATEGORIZED_CATEGORY_ID)
-        changeSubStep('services', 'Услуги без категории')
+        changeSubStep('services', 'Без категории')
       },
     }), [subStep, categories, selectedCatId, isUncatStep])
 
