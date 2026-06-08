@@ -61,6 +61,8 @@ export interface Service {
 /** Клиент в адресной книге мастера (вкладка «Клиенты»). id — строки MasterClient. */
 export interface Client {
   id: string
+  /** Глобальный Client (Max) — нужен для создания записи мастером; null у добавленных вручную. */
+  clientId: string | null
   name: string
   phone: string | null
   photo: string | null

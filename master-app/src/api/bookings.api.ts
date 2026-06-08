@@ -14,6 +14,8 @@ export const bookingsApi = {
     date: string
     time: string
     clientId?: string
+    remind?: boolean
+    clientAddress?: string | null
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
 
   confirmPayment: (id: string) =>
