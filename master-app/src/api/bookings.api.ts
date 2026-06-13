@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Booking } from '@/types'
+import type { Booking, BookingPackage } from '@/types'
 
 export const bookingsApi = {
   list: (params?: { status?: string; from?: string; to?: string }) =>
@@ -19,6 +19,17 @@ export const bookingsApi = {
     remind?: boolean
     clientAddress?: string | null
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
+
+  /** Запись на услугу-абонемент: даты+время на все N приёмов сразу. */
+  createPackage: (data: {
+    masterId: string
+    serviceId: string
+    slots: { date: string; time: string }[]
+    clientId?: string
+    masterClientId?: string
+    remind?: boolean
+    clientAddress?: string | null
+  }) => api.post<BookingPackage>('/bookings/package', data).then((r) => r.data),
 
   confirmPayment: (id: string) =>
     api.post<Booking>(`/bookings/${id}/confirm-payment`).then((r) => r.data),

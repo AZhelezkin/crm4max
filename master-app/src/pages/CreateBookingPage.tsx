@@ -19,6 +19,24 @@ dayjs.locale('ru')
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
+// Дни недели (ISO 1=Пн … 7=Вс) для режима абонемента «По неделям».
+const WEEKDAYS = [
+  { iso: 1, label: 'Пн' }, { iso: 2, label: 'Вт' }, { iso: 3, label: 'Ср' },
+  { iso: 4, label: 'Чт' }, { iso: 5, label: 'Пт' }, { iso: 6, label: 'Сб' }, { iso: 7, label: 'Вс' },
+]
+
+// N приёмов абонемента раскладываются по выбранным дням недели вперёд (от завтра).
+function generateWeeklySlots(weekdays: number[], time: string, count: number): { date: string; time: string }[] {
+  if (!time || weekdays.length === 0 || count <= 0) return []
+  const res: { date: string; time: string }[] = []
+  let d = dayjs().add(1, 'day')
+  for (let guard = 0; res.length < count && guard < 400; guard++) {
+    if (weekdays.includes(d.day() || 7)) res.push({ date: d.format('YYYY-MM-DD'), time })
+    d = d.add(1, 'day')
+  }
+  return res
+}
+
 interface CategoryItem {
   id: string
   name: string
@@ -82,7 +100,7 @@ export default function CreateBookingPage() {
   //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага категории).
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client } | null
 
-  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>(
+  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'success'>(
     rescheduleInit?.rescheduleId ? 'date' : rescheduleInit?.categoryId ? 'service' : 'category',
   )
   const [categories, setCategories] = useState<Category[]>([])
@@ -111,6 +129,14 @@ export default function CreateBookingPage() {
   const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
   const [pendingReschedule, setPendingReschedule] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
+
+  // Абонемент (Service.sessionsCount > 1): режим выбора слотов и сами слоты.
+  const [packageMode, setPackageMode] = useState<'days' | 'weeks'>('days')
+  const [packageSlots, setPackageSlots] = useState<{ date: string; time: string }[]>([])
+  const [packageSessionIndex, setPackageSessionIndex] = useState<number | null>(null)
+  const [weekdays, setWeekdays] = useState<number[]>([])
+  const [weekTime, setWeekTime] = useState('')
+  const [weekTimeOptions, setWeekTimeOptions] = useState<string[]>([])
 
   useEffect(() => {
     Promise.all([categoriesApi.list(), servicesApi.list()])
@@ -152,6 +178,17 @@ export default function CreateBookingPage() {
   // Шаги флоу (категория/услуга/дата/время/подтверждение) — один роут /bookings/new.
   // Сбрасываем прокрутку при смене шага, иначе следующий шаг открывается «промотанным».
   useEffect(() => { window.scrollTo(0, 0) }, [step])
+
+  // Абонемент «По неделям»: сетка времён по ближайшему рабочему дню (как шаблон).
+  useEffect(() => {
+    if (step !== 'package' || packageMode !== 'weeks' || !master?.id || !serviceId) return
+    const wd = schedule?.workingDays ?? [1, 2, 3, 4, 5, 6, 7]
+    let d = dayjs().add(1, 'day')
+    for (let i = 0; i < 14 && !wd.includes(d.day() || 7); i++) d = d.add(1, 'day')
+    mastersApi.getSlots(master.id, d.format('YYYY-MM-DD'), serviceId)
+      .then(setWeekTimeOptions)
+      .catch(() => setWeekTimeOptions([]))
+  }, [step, packageMode, master?.id, serviceId, schedule])
 
   const items = useMemo<CategoryItem[]>(() => {
     const uncategorized = allServices.filter((s) => s.categoryId == null)
@@ -195,6 +232,7 @@ export default function CreateBookingPage() {
   }, [baseSections, q])
 
   const selectedService = useMemo(() => allServices.find((s) => s.id === serviceId) ?? null, [allServices, serviceId])
+  const isPackageService = (selectedService?.sessionsCount ?? 1) > 1
 
   const openCategory = (id: string) => {
     setSelectedCategoryId(id)
@@ -214,7 +252,14 @@ export default function CreateBookingPage() {
     setServiceId(s.id)
     setDate('')
     setTime('')
-    setStep('date')
+    if (s.sessionsCount > 1) {
+      // Услуга-абонемент → экран выбора слотов на все приёмы (По дням / По неделям).
+      setPackageSlots([]); setPackageMode('days'); setPackageSessionIndex(null)
+      setWeekdays([]); setWeekTime('')
+      setStep('package')
+    } else {
+      setStep('date')
+    }
   }
 
   const backFromService = () => {
@@ -261,10 +306,49 @@ export default function CreateBookingPage() {
     }
   }
 
-  // Тап по слоту: в обычном флоу → подтверждение; в режиме переноса → reschedule существующей записи.
+  // Создание записи на абонемент (все N приёмов сразу).
+  const handleSavePackage = async () => {
+    if (!master || !selectedService || !selectedClient) return
+    if (homeVisit && !address.trim()) return
+    const slots = packageMode === 'days'
+      ? packageSlots.filter((s) => s && s.date && s.time)
+      : generateWeeklySlots(weekdays, weekTime, selectedService.sessionsCount)
+    if (slots.length !== selectedService.sessionsCount) return
+    setSaving(true)
+    setError(null)
+    try {
+      await bookingsApi.createPackage({
+        masterId: master.id,
+        serviceId: selectedService.id,
+        slots,
+        masterClientId: selectedClient.id,
+        remind,
+        clientAddress: homeVisit ? address.trim() : undefined,
+      })
+      navigate('/bookings')
+    } catch (e) {
+      const slot = (e as { response?: { data?: { slot?: { date: string; time: string } } } })?.response?.data?.slot
+      setError(slot
+        ? `Слот ${dayjs(slot.date).format('D MMMM')} ${slot.time} уже занят — выберите другой`
+        : 'Не удалось создать запись. Попробуйте ещё раз.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Тап по слоту: абонемент → слот приёма; перенос → reschedule; иначе → подтверждение.
   const onSlotTap = (s: string) => {
     setTime(s)
-    if (rescheduleId) {
+    if (packageSessionIndex !== null) {
+      const idx = packageSessionIndex
+      setPackageSlots((prev) => {
+        const next = [...prev]
+        next[idx] = { date, time: s }
+        return next
+      })
+      setPackageSessionIndex(null)
+      setStep('package')
+    } else if (rescheduleId) {
       setPendingReschedule(s) // спросим подтверждение переноса
     } else {
       setStep('confirm')
@@ -427,9 +511,11 @@ export default function CreateBookingPage() {
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar
           title={rescheduleId ? 'Новая дата' : 'Выберите дату'}
-          subtitle={selectedService?.name}
+          subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name}
           onBack={() => {
-            if (rescheduleId) {
+            if (packageSessionIndex !== null) {
+              setPackageSessionIndex(null); setStep('package')
+            } else if (rescheduleId) {
               if (createdBooking) setStep('success')
               else navigate(-1)
             } else {
@@ -514,9 +600,14 @@ export default function CreateBookingPage() {
   // ─── Шаг 4: выбор времени (макет 8746-41317) ────────────────────────────────
   if (step === 'time') {
     const selectedDayjs = dayjs(date)
+    // Абонемент: убираем слоты, занятые другими приёмами в этот же день.
+    const takenTimes = packageSessionIndex !== null
+      ? new Set(packageSlots.filter((s, i) => i !== packageSessionIndex && s && s.date === date).map((s) => s.time))
+      : new Set<string>()
+    const visibleSlots = slots.filter((s) => !takenTimes.has(s))
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-        <Toolbar title="Выберите время" subtitle={selectedService?.name} onBack={() => setStep('date')} />
+        <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => setStep('date')} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button type="button" onClick={() => setStep('date')} style={{ ...listItemStyle, gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -534,11 +625,11 @@ export default function CreateBookingPage() {
             </div>
             {slotsLoading ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загружаем…</div>
-            ) : slots.length === 0 ? (
+            ) : visibleSlots.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {slots.map((s) => {
+                {visibleSlots.map((s) => {
                   const isSel = time === s
                   return (
                     <button
@@ -590,11 +681,185 @@ export default function CreateBookingPage() {
     )
   }
 
+  // ─── Шаг абонемента: выбор слотов на все приёмы (По дням / По неделям) ───────
+  if (step === 'package' && selectedService) {
+    const N = selectedService.sessionsCount
+    const unit = discountedPrice(selectedService.price, selectedService.discountPercent)
+    const hasDiscount = unit !== null
+    const discTotal = (unit ?? selectedService.price) * N
+    const fullTotal = selectedService.price * N
+    const daysFilled = packageSlots.filter((s) => s && s.date && s.time)
+    const weeksSlots = generateWeeklySlots(weekdays, weekTime, N)
+    const finalCount = packageMode === 'days' ? daysFilled.length : weeksSlots.length
+    const canSavePkg = !saving && finalCount === N && !!selectedClient && (!homeVisit || !!address.trim())
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <Toolbar
+          title="Абонемент"
+          subtitle={selectedService.name}
+          onBack={() => setStep('service')}
+          trailing={
+            <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
+              <button type="button" onClick={() => navigate('/bookings')} style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', ...text.callout1, color: 'var(--color-on-surface)' }}>
+                Закрыть
+              </button>
+            </div>
+          }
+        />
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Клиент */}
+          <button type="button" onClick={() => setStep('client')} style={listItemStyle}>
+            {selectedClient && <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {selectedClient ? selectedClient.name : 'Выбрать клиента'}
+              </div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {selectedClient ? (selectedClient.isMaxUser ? formatPhone(selectedClient.phone) : 'Без аккаунта Max — без уведомления') : 'из списка'}
+              </div>
+            </div>
+            <UserSquareIcon size={16} />
+          </button>
+
+          {/* Адрес выезда */}
+          {homeVisit && (
+            <AddressSuggestField value={address} onChange={setAddress} label="Адрес выезда" placeholder="Город, улица, дом, квартира…" />
+          )}
+
+          {/* Услуга + стоимость абонемента (цена × N) */}
+          <div style={{ ...listItemStyle, cursor: 'default' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedService.name}</div>
+                {selectedService.description && (
+                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{selectedService.description}</div>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {hasDiscount ? (
+                  <>
+                    <span style={{ ...text.callout1, color: 'var(--color-error-surface-accented)' }}>{formatPrice(discTotal)}</span>
+                    <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(fullTotal)}</span>
+                    <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', boxSizing: 'border-box', borderRadius: 8, background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)', ...text.label2Caps }}>Скидка</span>
+                  </>
+                ) : (
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(fullTotal)}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Сегмент По дням / По неделям */}
+          <div style={{ display: 'flex', gap: 4, height: 44, alignItems: 'center', padding: 4, borderRadius: 16, background: 'var(--color-surface-transparent)' }}>
+            {(['days', 'weeks'] as const).map((m) => {
+              const active = packageMode === m
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPackageMode(m)}
+                  style={{ flex: 1, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout2, background: active ? 'var(--color-secondary-surface)' : 'transparent', color: active ? 'var(--color-interactive-element-accented)' : 'var(--color-interactive-element)' }}
+                >
+                  {m === 'days' ? 'По дням' : 'По неделям'}
+                </button>
+              )
+            })}
+          </div>
+
+          {packageMode === 'days' ? (
+            Array.from({ length: N }).map((_, i) => {
+              const slot = packageSlots[i]
+              const filled = !!(slot && slot.date && slot.time)
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { setPackageSessionIndex(i); setDate(''); setTime(''); setStep('date') }}
+                  style={listItemStyle}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {filled ? dayjs(slot.date).format('D MMMM, dd') : 'Выбрать дату и время'}
+                    </div>
+                    {filled && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{slot.time}</div>}
+                  </div>
+                  <ArrowRightIcon />
+                </button>
+              )
+            })
+          ) : (
+            <>
+              <div style={{ padding: '24px 8px 8px', display: 'flex', justifyContent: 'center' }}>
+                <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>Каждую неделю по выбранным дням</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {WEEKDAYS.map((w) => {
+                  const sel = weekdays.includes(w.iso)
+                  const allowed = !schedule || schedule.workingDays.includes(w.iso)
+                  return (
+                    <button
+                      key={w.iso}
+                      type="button"
+                      disabled={!allowed}
+                      onClick={() => setWeekdays((p) => (p.includes(w.iso) ? p.filter((x) => x !== w.iso) : [...p, w.iso]))}
+                      style={{ flex: 1, height: 69, borderRadius: 20, border: 'none', ...text.callout1, background: sel ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)', color: sel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)', opacity: allowed ? 1 : 0.4, cursor: allowed ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {w.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ padding: '24px 8px 8px', display: 'flex', justifyContent: 'center' }}>
+                <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>Время</span>
+              </div>
+              {weekTimeOptions.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '16px 0' }}>Нет доступных слотов</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {weekTimeOptions.map((t) => {
+                    const sel = weekTime === t
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setWeekTime(t)}
+                        style={{ height: 69, borderRadius: 20, border: 'none', ...text.callout1, background: sel ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)', color: sel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        {t}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {error && (
+            <div style={{ ...text.caption1, color: 'var(--color-error-surface-accented)', padding: '0 8px' }}>{error}</div>
+          )}
+        </div>
+
+        <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
+          <button
+            type="button"
+            disabled={!canSavePkg}
+            onClick={() => { void handleSavePackage() }}
+            style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, ...text.callout1, cursor: canSavePkg ? 'pointer' : 'default', background: canSavePkg ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)', color: canSavePkg ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)' }}
+          >
+            <CalendarEditIcon />
+            {saving ? 'Записываем…' : 'Записать'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // ─── Шаг 6: выбор клиента (адресная книга) ──────────────────────────────────
   if (step === 'client') {
     return (
       <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
-        <Toolbar title="Выберите клиента" onBack={() => setStep('confirm')} />
+        <Toolbar title="Выберите клиента" onBack={() => setStep(isPackageService ? 'package' : 'confirm')} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
           {clientsLoaded && clients.length === 0 && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
@@ -605,7 +870,7 @@ export default function CreateBookingPage() {
             <button
               key={c.id}
               type="button"
-              onClick={() => { setSelectedClient(c); setStep('confirm') }}
+              onClick={() => { setSelectedClient(c); setStep(isPackageService ? 'package' : 'confirm') }}
               style={listItemStyle}
             >
               <ClientAvatar name={c.name} photo={c.photo} />
