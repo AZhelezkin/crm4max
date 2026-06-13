@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
@@ -71,7 +71,11 @@ function ToolbarButton({ onClick, ariaLabel, children }: {
 
 export default function CalendarPage() {
   const navigate = useNavigate()
-  const { masterId, service, date, time, remind, setDateTime, setRemind } = useBookingStore()
+  const location = useLocation()
+  // Режим выбора слота для приёма абонемента: пришли с PackageBookingPage с индексом.
+  const sessionIndex = (location.state as { sessionIndex?: number } | null)?.sessionIndex
+  const isSession = typeof sessionIndex === 'number'
+  const { masterId, service, date, time, remind, slots: pkgSlots, setDateTime, setSlot, setRemind } = useBookingStore()
 
   const today = dayjs().startOf('day')
   const [step, setStep] = useState<'date' | 'time'>('date')
@@ -128,16 +132,30 @@ export default function CalendarPage() {
   }
 
   const handleSelectTime = (t: string) => {
-    setDateTime(selectedDate, t)
-    navigate('/book/confirm')
+    if (isSession) {
+      // Абонемент: записываем слот выбранного приёма и возвращаемся к списку приёмов.
+      setSlot(sessionIndex, selectedDate, t)
+      navigate(-1)
+    } else {
+      setDateTime(selectedDate, t)
+      navigate('/book/confirm')
+    }
   }
 
   const selectedTime = time && date === selectedDate ? time : ''
   const selectedDayjs = dayjs(selectedDate)
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
+  // В режиме абонемента убираем слоты, уже выбранные для других приёмов в этот день.
+  const takenTimes = isSession
+    ? new Set(pkgSlots.filter((s, i) => i !== sessionIndex && s && s.date === selectedDate).map((s) => s.time))
+    : new Set<string>()
+  const visibleSlots = slots.filter((s) => !takenTimes.has(s))
+
   const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
-  const headerSubtitle = service?.name ?? ''
+  const headerSubtitle = isSession
+    ? `Приём ${sessionIndex + 1} из ${service?.sessionsCount ?? ''}`
+    : (service?.name ?? '')
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -369,11 +387,11 @@ export default function CalendarPage() {
                 bg=surfaceTransparent, text=callout1 onSurface. */}
             {slotsLoading ? (
               <SlotsGridSkeleton />
-            ) : slots.length === 0 ? (
+            ) : visibleSlots.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {slots.map((s) => {
+                {visibleSlots.map((s) => {
                   const isSel = selectedTime === s
                   return (
                     <button

@@ -67,6 +67,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [svcDuration, setSvcDuration] = useState('')
     const [svcDiscountEnabled, setSvcDiscountEnabled] = useState(false)
     const [svcDiscountPercent, setSvcDiscountPercent] = useState(10)
+    // Абонемент: тип записи и число приёмов (2..10). Цена/скидка — за один приём.
+    const [svcIsPackage, setSvcIsPackage] = useState(false)
+    const [svcSessionsCount, setSvcSessionsCount] = useState(2)
     const [svcWorkPhotos, setSvcWorkPhotos] = useState<LocalWorkPhoto[]>([])
 
     const load = () =>
@@ -165,6 +168,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         setSvcCategoryId(service.categoryId ?? '')
         setSvcDiscountEnabled(!!service.discountPercent)
         setSvcDiscountPercent(service.discountPercent ?? 10)
+        setSvcIsPackage(service.sessionsCount > 1)
+        setSvcSessionsCount(service.sessionsCount > 1 ? service.sessionsCount : 2)
         setSvcWorkPhotos(
           (service.workPhotos ?? []).map((p) => ({
             id: p.id, url: p.url, previewUrl: p.url, uploading: false,
@@ -175,6 +180,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('')
         setSvcCategoryId(defaultCatId ?? '')
         setSvcDiscountEnabled(false); setSvcDiscountPercent(10)
+        setSvcIsPackage(false); setSvcSessionsCount(2)
         setSvcWorkPhotos([])
       }
       setShowSvcForm(true)
@@ -190,6 +196,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         duration: Number(svcDuration) || 30,
         categoryId: svcCategoryId || undefined,
         discountPercent: svcDiscountEnabled ? svcDiscountPercent : undefined,
+        sessionsCount: svcIsPackage ? svcSessionsCount : 1,
         photo: firstPhotoUrl || undefined,
       }
       if (editService) {
@@ -350,6 +357,10 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onDiscountEnabledChange={setSvcDiscountEnabled}
           discountPercent={svcDiscountPercent}
           onDiscountPercentChange={setSvcDiscountPercent}
+          isPackage={svcIsPackage}
+          onIsPackageChange={setSvcIsPackage}
+          sessionsCount={svcSessionsCount}
+          onSessionsCountChange={setSvcSessionsCount}
           workPhotos={svcWorkPhotos}
           onWorkPhotosChange={setSvcWorkPhotos}
           categories={categories.map((c) => ({ id: c.id, name: c.name, photo: c.photo }))}

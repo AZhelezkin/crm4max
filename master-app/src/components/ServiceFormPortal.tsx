@@ -29,6 +29,12 @@ interface Props {
   onDiscountEnabledChange: (v: boolean) => void
   discountPercent: number
   onDiscountPercentChange: (v: number) => void
+  /** Тип записи: false — одиночная, true — абонемент (курс из N приёмов). */
+  isPackage: boolean
+  onIsPackageChange: (v: boolean) => void
+  /** Число приёмов в абонементе (2..10). Цена/скидка указываются за один приём. */
+  sessionsCount: number
+  onSessionsCountChange: (v: number) => void
   /** Фото работ. Компонент обновляет этот массив при загрузке/удалении. */
   workPhotos: LocalWorkPhoto[]
   onWorkPhotosChange: (photos: LocalWorkPhoto[]) => void
@@ -43,6 +49,9 @@ interface Props {
 
 // Варианты длительности приёма (минуты).
 const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120, 150, 180, 240]
+
+// Число приёмов в абонементе — от 2 до 10.
+const SESSIONS_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 function formatDur(min: number): string {
   const h = Math.floor(min / 60), m = min % 60
@@ -105,6 +114,8 @@ export default function ServiceFormPortal({
   price, onPriceChange,
   discountEnabled, onDiscountEnabledChange,
   discountPercent, onDiscountPercentChange,
+  isPackage, onIsPackageChange,
+  sessionsCount, onSessionsCountChange,
   workPhotos, onWorkPhotosChange,
   categories, categoryId, onCategoryIdChange,
   onClose, onSave, onDelete,
@@ -112,8 +123,8 @@ export default function ServiceFormPortal({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  // Открытый picker (категория/длительность) — типовое колесо вместо нативного <select>.
-  const [openPicker, setOpenPicker] = useState<'category' | 'duration' | null>(null)
+  // Открытый picker (категория/длительность/число приёмов) — колесо вместо нативного <select>.
+  const [openPicker, setOpenPicker] = useState<'category' | 'duration' | 'sessions' | null>(null)
   // Сбрасываем подтверждение удаления при закрытии формы.
   useEffect(() => { if (!visible) setConfirmDelete(false) }, [visible])
 
@@ -143,6 +154,22 @@ export default function ServiceFormPortal({
         {/* Контент — во внутренней content-height flex-колонке. Внешний контейнер блочный,
             иначе flex-shrink сжимает fixed-height пилюли/кнопки при переполнении формы. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Тип записи — segment-control «Одиночная / Абонемент» (Figma 9762:65203). */}
+        <BookingModeTabs isPackage={isPackage} onChange={onIsPackageChange} />
+
+        {/* Количество приёмов — только в абонементе, пикер 2..10 (Figma 9762:65447). */}
+        {isPackage && (
+          <button
+            type="button"
+            onClick={() => setOpenPicker('sessions')}
+            style={{ ...pillFieldStyle, border: 'none', cursor: 'pointer', textAlign: 'left', alignItems: 'flex-start' }}
+          >
+            <span style={pickerTitleStyle}>Количество приёмов</span>
+            <span style={pickerSubtitleStyle}>{sessionsCount}</span>
+            <span style={chevronStyle}><ChevronRightIcon /></span>
+          </button>
+        )}
+
         {/* Группа: Название + Описание (gap 8) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
@@ -376,8 +403,49 @@ export default function ServiceFormPortal({
         onSelect={onDurationChange}
         onClose={() => setOpenPicker(null)}
       />
+      <WheelPicker
+        open={openPicker === 'sessions'}
+        value={String(sessionsCount)}
+        options={SESSIONS_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
+        onSelect={(v) => onSessionsCountChange(Number(v))}
+        onClose={() => setOpenPicker(null)}
+      />
     </div>,
     document.body,
+  )
+}
+
+// Segment-control «Одиночная / Абонемент» (Figma 9762:65203).
+// Контейнер h44 p4 rx16 surface-transparent gap4; кнопки flex-1 h36 rx12.
+// Активная — secondary-surface + interactive-element-accented (#F2F2F5);
+// неактивная — прозрачная + interactive-element (#BCBECC). Текст Callout 2.
+function BookingModeTabs({ isPackage, onChange }: { isPackage: boolean; onChange: (v: boolean) => void }) {
+  const tabs = [
+    { label: 'Одиночная', active: !isPackage, on: () => onChange(false) },
+    { label: 'Абонемент', active: isPackage, on: () => onChange(true) },
+  ]
+  return (
+    <div style={{
+      display: 'flex', gap: 4, height: 44, alignItems: 'center', padding: 4,
+      borderRadius: 16, background: 'var(--color-surface-transparent)', width: '100%',
+    }}>
+      {tabs.map((t) => (
+        <button
+          key={t.label}
+          type="button"
+          onClick={t.on}
+          style={{
+            flex: 1, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            ...text.callout2,
+            background: t.active ? 'var(--color-secondary-surface)' : 'transparent',
+            color: t.active ? 'var(--color-interactive-element-accented)' : 'var(--color-interactive-element)',
+          }}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
   )
 }
 

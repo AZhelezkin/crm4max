@@ -55,7 +55,7 @@ function IcoCalendarEdit() {
 
 export default function ServiceDetailPage() {
   const navigate = useNavigate()
-  const { masterId, service, categoryName } = useBookingStore()
+  const { masterId, service, categoryName, clearSlots } = useBookingStore()
 
   useEffect(() => {
     if (!masterId || !service) navigate('/')
@@ -198,7 +198,11 @@ export default function ServiceDetailPage() {
         background: 'var(--color-background)',
       }}>
         <button
-          onClick={() => navigate('/book/calendar')}
+          onClick={() => {
+            // Услуга-абонемент (N приёмов) → экран выбора слотов на весь курс.
+            if (service.sessionsCount > 1) { clearSlots(); navigate('/book/package') }
+            else navigate('/book/calendar')
+          }}
           style={{
             width: '100%', height: 60, borderRadius: 20,
             background: 'var(--color-primary-surface)',

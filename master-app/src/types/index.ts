@@ -53,6 +53,9 @@ export interface Service {
   duration: number
   price: number           // копейки
   discountPercent: number | null  // 0-100%
+  /** Сколько приёмов нужно записать сразу: 1 = обычная услуга, >1 = абонемент.
+   *  price и discountPercent — за один приём; стоимость абонемента = price × N. */
+  sessionsCount: number
   photo: string | null
   isActive: boolean
   workPhotos: ServicePhoto[]
@@ -84,6 +87,30 @@ export interface Booking {
   client: { id: string; name: string; phone: string | null; photo: string | null }
   service: Service
   payments: Payment[]
+}
+
+/** Сеанс внутри пакета (курса) — лёгкая строка Booking без вложенных связей. */
+export interface PackageSession {
+  id: string
+  date: string
+  time: string
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
+  paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
+  sessionIndex: number | null
+  remind: boolean
+  clientAddress: string | null
+}
+
+/** Пакет записей (курс из N сеансов одной услуги). */
+export interface BookingPackage {
+  id: string
+  sessionsTotal: number
+  totalAmount: number       // копейки — цена курса на момент записи
+  paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
+  master: { id: string; name: string; photo: string | null; location: string | null }
+  client: { id: string; name: string; phone: string | null; photo: string | null }
+  service: Service
+  bookings: PackageSession[]
 }
 
 export interface Payment {
