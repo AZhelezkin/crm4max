@@ -59,8 +59,13 @@ export default function ClientsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return clients
+    // Цифры запроса сравниваем с телефоном ТОЛЬКО если они есть: иначе ''.includes('')
+    // даёт true для всех и поиск по имени показывает весь список.
+    const qDigits = q.replace(/\D/g, '')
     return clients.filter(
-      (c) => c.name.toLowerCase().includes(q) || (c.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, '')),
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (qDigits.length > 0 && (c.phone ?? '').replace(/\D/g, '').includes(qDigits)),
     )
   }, [clients, query])
 
