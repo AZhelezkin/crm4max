@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useState, type CSSProperties, type ReactNode } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { categoriesApi, servicesApi } from '@/api/services.api'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice, UNCATEGORIZED_CATEGORY_ID } from '@/types'
@@ -71,6 +71,11 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [svcIsPackage, setSvcIsPackage] = useState(false)
     const [svcSessionsCount, setSvcSessionsCount] = useState(2)
     const [svcWorkPhotos, setSvcWorkPhotos] = useState<LocalWorkPhoto[]>([])
+
+    // Под-экраны (home/categories/services) живут в одном скролл-контейнере —
+    // сбрасываем его прокрутку при переключении, иначе экран открывается «промотанным».
+    const scrollRef = useRef<HTMLDivElement>(null)
+    useEffect(() => { scrollRef.current?.scrollTo(0, 0) }, [subStep])
 
     const load = () =>
       Promise.all([categoriesApi.list(), servicesApi.list()]).then(([cats, svcs]) => {
@@ -239,7 +244,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
           {/* ── HOME: верхний блок (папка) + блок «УСЛУГИ» ── */}
           {subStep === 'home' && (

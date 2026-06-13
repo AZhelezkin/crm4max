@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-rout
 import { useAuthStore } from '@client/store/auth.store'
 import { useBookingStore } from '@client/store/booking.store'
 import { startParam } from '@/App'
+import ScrollToTop from '@/components/ScrollToTop'
 import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
@@ -81,6 +82,7 @@ export default function ClientApp() {
 
   return (
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/book/categories" element={<CategorySelectPage />} />

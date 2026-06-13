@@ -149,6 +149,10 @@ export default function CreateBookingPage() {
     if (searchMode) searchInputRef.current?.focus()
   }, [searchMode])
 
+  // Шаги флоу (категория/услуга/дата/время/подтверждение) — один роут /bookings/new.
+  // Сбрасываем прокрутку при смене шага, иначе следующий шаг открывается «промотанным».
+  useEffect(() => { window.scrollTo(0, 0) }, [step])
+
   const items = useMemo<CategoryItem[]>(() => {
     const uncategorized = allServices.filter((s) => s.categoryId == null)
     const list: CategoryItem[] = categories.map((c) => ({

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store'
 import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
+import ScrollToTop from '@/components/ScrollToTop'
 import ProfilePage from '@/pages/ProfilePage'
 import BookingsPage from '@/pages/BookingsPage'
 import ClientsPage from '@/pages/ClientsPage'
@@ -159,6 +160,7 @@ function MasterApp() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Велком-сплэш — только для новых мастеров, до первого клика по «Присоединиться» */}
         <Route

@@ -52,6 +52,10 @@ export default function ClientsPage() {
 
   useEffect(() => { load() }, [])
 
+  // Под-экраны (список/детали/форма) живут на одном роуте /clients — сбрасываем
+  // прокрутку при переключении, иначе экран открывается «промотанным».
+  useEffect(() => { window.scrollTo(0, 0) }, [view])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return clients
