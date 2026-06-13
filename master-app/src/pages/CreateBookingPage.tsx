@@ -78,8 +78,9 @@ export default function CreateBookingPage() {
 
   // Вход во флоу через navigation state:
   //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
-  //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги).
-  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string } | null
+  //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги),
+  //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага категории).
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client } | null
 
   const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'confirm' | 'client' | 'success'>(
     rescheduleInit?.rescheduleId ? 'date' : rescheduleInit?.categoryId ? 'service' : 'category',
@@ -98,7 +99,7 @@ export default function CreateBookingPage() {
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
   const [address, setAddress] = useState('')
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)

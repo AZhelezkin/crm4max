@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { text } from '@/styles/typography'
 import { clientsApi } from '@/api/clients.api'
@@ -32,6 +33,7 @@ const VIOLET_GRADIENT =
   'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.482%)'
 
 export default function ClientsPage() {
+  const navigate = useNavigate()
   const [clients, setClients] = useState<Client[]>([])
   const [loaded, setLoaded] = useState(false)
   const [view, setView] = useState<View>('list')
@@ -152,6 +154,7 @@ export default function ClientsPage() {
           onBack={() => setView('list')}
           onEdit={openEdit}
           onDelete={() => setDeleting(true)}
+          onBook={() => navigate('/bookings/new', { state: { client: selected } })}
         />
       )}
 
@@ -380,9 +383,11 @@ function ClientForm({
 
 // ─── Карточка клиента ───────────────────────────────────────────────────────────
 
-function ClientDetail({ client, onBack, onEdit, onDelete }: {
-  client: Client; onBack: () => void; onEdit: () => void; onDelete: () => void
+function ClientDetail({ client, onBack, onEdit, onDelete, onBook }: {
+  client: Client; onBack: () => void; onEdit: () => void; onDelete: () => void; onBook: () => void
 }) {
+  // Запись доступна только для клиентов с аккаунтом Max (есть глобальный clientId).
+  const bookable = client.clientId != null
   return (
     <>
       <div style={{ ...toolbarStyle, justifyContent: 'space-between' }}>
@@ -414,24 +419,28 @@ function ClientDetail({ client, onBack, onEdit, onDelete }: {
           )}
         </div>
 
-        {/* Кнопки пока без навигации (по ТЗ) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-          <ActionRow label="Записать на приём" onClick={() => { /* TODO: навигация позже */ }} />
-          <ActionRow label="Написать в MAX" onClick={() => { /* TODO: навигация позже */ }} />
+          {/* «Записать на приём» → флоу записи мастером с предвыбранным клиентом.
+              Для клиентов без аккаунта Max запись недоступна (нужен clientId). */}
+          <ActionRow label="Записать на приём" onClick={onBook} disabled={!bookable} />
+          {/* «Написать в MAX» — пока без навигации (нет инфраструктуры чата). */}
+          <ActionRow label="Написать в MAX" onClick={() => { /* TODO */ }} disabled />
         </div>
       </div>
     </>
   )
 }
 
-function ActionRow({ label, onClick }: { label: string; onClick: () => void }) {
+function ActionRow({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: 'flex', alignItems: 'center', gap: 12, width: '100%', height: 56,
-        background: 'var(--color-surface-transparent)', border: 'none', cursor: 'pointer',
+        background: 'var(--color-surface-transparent)', border: 'none',
+        cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,
         borderRadius: 20, padding: '16px 20px', textAlign: 'left',
       }}
     >
