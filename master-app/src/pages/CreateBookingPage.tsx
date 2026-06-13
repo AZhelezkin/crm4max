@@ -232,10 +232,10 @@ export default function CreateBookingPage() {
     setStep('time')
   }
 
-  const canSave = !!selectedClient?.clientId && (!homeVisit || !!address.trim()) && !saving
+  const canSave = !!selectedClient && (!homeVisit || !!address.trim()) && !saving
 
   const handleSave = async () => {
-    if (!master || !serviceId || !date || !time || !selectedClient?.clientId) return
+    if (!master || !serviceId || !date || !time || !selectedClient) return
     if (homeVisit && !address.trim()) return
     setSaving(true)
     setError(null)
@@ -245,7 +245,9 @@ export default function CreateBookingPage() {
         serviceId,
         date,
         time,
-        clientId: selectedClient.clientId,
+        // Передаём строку адресной книги — бэкенд резолвит глобального клиента,
+        // в т.ч. для ручного клиента без Max (создаст синтетического, без уведомления).
+        masterClientId: selectedClient.id,
         remind,
         clientAddress: homeVisit ? address.trim() : undefined,
       })
@@ -599,25 +601,23 @@ export default function CreateBookingPage() {
               Нет клиентов. Добавьте на вкладке «Клиенты».
             </div>
           )}
-          {clients.map((c) => {
-            const bookable = c.clientId != null
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { if (bookable) { setSelectedClient(c); setStep('confirm') } }}
-                style={{ ...listItemStyle, opacity: bookable ? 1 : 0.45, cursor: bookable ? 'pointer' : 'default' }}
-              >
-                <ClientAvatar name={c.name} photo={c.photo} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {bookable ? formatPhone(c.phone) : 'Нет аккаунта Max — запись недоступна'}
-                  </div>
+          {clients.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => { setSelectedClient(c); setStep('confirm') }}
+              style={listItemStyle}
+            >
+              <ClientAvatar name={c.name} photo={c.photo} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {/* Ручной клиент (без Max) записывается без уведомления — помечаем. */}
+                  {c.isMaxUser ? formatPhone(c.phone) : 'Без аккаунта Max — без уведомления'}
                 </div>
-              </button>
-            )
-          })}
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     )

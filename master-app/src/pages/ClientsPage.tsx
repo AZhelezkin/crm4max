@@ -390,8 +390,6 @@ function ClientForm({
 function ClientDetail({ client, onBack, onEdit, onDelete, onBook }: {
   client: Client; onBack: () => void; onEdit: () => void; onDelete: () => void; onBook: () => void
 }) {
-  // Запись доступна только для клиентов с аккаунтом Max (есть глобальный clientId).
-  const bookable = client.clientId != null
   return (
     <>
       <div style={{ ...toolbarStyle, justifyContent: 'space-between' }}>
@@ -425,8 +423,8 @@ function ClientDetail({ client, onBack, onEdit, onDelete, onBook }: {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
           {/* «Записать на приём» → флоу записи мастером с предвыбранным клиентом.
-              Для клиентов без аккаунта Max запись недоступна (нужен clientId). */}
-          <ActionRow label="Записать на приём" onClick={onBook} disabled={!bookable} />
+              Работает и для ручных клиентов без Max (их просто не уведомляют). */}
+          <ActionRow label="Записать на приём" onClick={onBook} />
           {/* «Написать в MAX» — пока без навигации (нет инфраструктуры чата). */}
           <ActionRow label="Написать в MAX" onClick={() => { /* TODO */ }} disabled />
         </div>
