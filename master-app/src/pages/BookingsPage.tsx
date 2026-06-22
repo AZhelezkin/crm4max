@@ -3,12 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
-import type { Booking } from '@/types'
+import { scheduleApi } from '@/api/schedule.api'
+import type { Booking, Schedule } from '@/types'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
+
+// Максимальная длина индикатора занятости под датой (px) = 100% рабочего дня.
+const INDICATOR_MAX_W = 16
+
+const toMin = (t: string) => {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
 
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -38,6 +47,7 @@ function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[] {
 export default function BookingsPage() {
   const navigate = useNavigate()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [schedule, setSchedule] = useState<Schedule | null>(null)
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
 
@@ -56,16 +66,32 @@ export default function BookingsPage() {
 
   useEffect(() => {
     bookingsApi.list().then(setBookings).catch(() => {})
+    scheduleApi.get().then(setSchedule).catch(() => {})
   }, [])
 
   const today = dayjs().format('YYYY-MM-DD')
 
-  // Даты с хотя бы одной не отменённой записью — под зелёную риску в ячейке.
-  const datesWithBookings = useMemo(() => {
-    const s = new Set<string>()
-    for (const b of bookings) if (b.status !== 'CANCELLED') s.add(b.date)
-    return s
+  // Сумма длительностей не отменённых записей по дате (минуты) — занятость дня.
+  const bookedMinutesByDate = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const b of bookings) {
+      if (b.status === 'CANCELLED') continue
+      map.set(b.date, (map.get(b.date) ?? 0) + b.service.duration)
+    }
+    return map
   }, [bookings])
+
+  // Длина рабочего дня (минуты) по дню недели (ISO 1..7), за вычетом обеда.
+  // 0 — день не рабочий. Используется как 100% для длины индикатора.
+  const workingMinutesByDow = useMemo(() => {
+    const map: Record<number, number> = {}
+    if (!schedule) return map
+    let win = toMin(schedule.endTime) - toMin(schedule.startTime)
+    if (schedule.breakStart && schedule.breakEnd) win -= toMin(schedule.breakEnd) - toMin(schedule.breakStart)
+    win = Math.max(0, win)
+    for (const dow of schedule.workingDays) map[dow] = win
+    return map
+  }, [schedule])
 
   // Записи выбранного дня (без CANCELLED), по возрастанию времени.
   const dayBookings = useMemo(
@@ -225,7 +251,13 @@ export default function BookingsPage() {
             const isToday = val === today
             const isSelected = val === selectedDate
             const isWeekend = (day.day() || 7) >= 6
-            const hasAppts = datesWithBookings.has(val)
+            const bookedMin = bookedMinutesByDate.get(val) ?? 0
+            const hasAppts = bookedMin > 0
+            // Длина индикатора пропорциональна занятости рабочего дня (16px = 100%).
+            // Нет данных о графике для этого дня (workMin=0) → полная риска, как раньше.
+            const workMin = workingMinutesByDow[day.day() || 7] ?? 0
+            const ratio = workMin > 0 ? Math.min(1, bookedMin / workMin) : 1
+            const indicatorW = Math.max(4, Math.round(ratio * INDICATOR_MAX_W))
             // Текст: будни/выходные × прошлое/настоящее (как в кабинете клиента).
             const color = isWeekend
               ? isPast
@@ -265,7 +297,7 @@ export default function BookingsPage() {
                       bottom: 8,
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      width: 16,
+                      width: indicatorW,
                       height: 4,
                       borderRadius: 100,
                       background: 'var(--color-on-success-surface-lite)',
