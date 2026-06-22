@@ -115,9 +115,13 @@ export default function BookingDetailPage() {
     })
   }
 
-  // Перенос (изменение даты/времени) — флоу CreateBookingPage с rescheduleId.
+  // Перенос (изменение даты, затем времени) — флоу CreateBookingPage с rescheduleId.
   const handleReschedule = () =>
     navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id } })
+
+  // Изменить только время — сразу шаг времени, дата записи сохраняется.
+  const handleEditTime = () =>
+    navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id, editTime: true, date: booking.date } })
 
   return (
     <div style={{ minHeight: '100dvh' }}>
@@ -184,8 +188,8 @@ export default function BookingDetailPage() {
           {canAct && <EditIcon />}
         </button>
 
-        {/* Время — тап открывает перенос (только для активной записи). */}
-        <button type="button" onClick={handleReschedule} disabled={!canAct} aria-label="Изменить время" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
+        {/* Время — тап открывает выбор времени, дата прежняя (только для активной записи). */}
+        <button type="button" onClick={handleEditTime} disabled={!canAct} aria-label="Изменить время" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{booking.time}</div>
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{booking.remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>

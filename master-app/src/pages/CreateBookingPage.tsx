@@ -97,12 +97,15 @@ export default function CreateBookingPage() {
 
   // Вход во флоу через navigation state:
   //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
+  //  • { rescheduleId, serviceId, editTime, date } — изменить только время (сразу шаг времени, дата прежняя),
   //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги),
   //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага категории).
-  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client } | null
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client; editTime?: boolean; date?: string } | null
 
   const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'success'>(
-    rescheduleInit?.rescheduleId ? 'date' : rescheduleInit?.categoryId ? 'service' : 'category',
+    rescheduleInit?.rescheduleId
+      ? (rescheduleInit?.editTime ? 'time' : 'date')
+      : rescheduleInit?.categoryId ? 'service' : 'category',
   )
   const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
@@ -115,7 +118,7 @@ export default function CreateBookingPage() {
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(rescheduleInit?.date ?? '')
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
@@ -128,6 +131,8 @@ export default function CreateBookingPage() {
   const [error, setError] = useState<string | null>(null)
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
   const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
+  // true — вход «изменить только время»: стартуем на шаге времени, back минует шаг даты.
+  const [timeOnly, setTimeOnly] = useState(!!rescheduleInit?.editTime)
   const [pendingReschedule, setPendingReschedule] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
 
@@ -371,8 +376,17 @@ export default function CreateBookingPage() {
   const handleReschedule = () => {
     if (!createdBooking) return
     setRescheduleId(createdBooking.id)
+    setTimeOnly(false)
     setTime('')
     setStep('date')
+  }
+
+  // Изменить только время: дата прежняя, сразу шаг времени (минуя выбор даты).
+  const handleEditTime = () => {
+    if (!createdBooking) return
+    setRescheduleId(createdBooking.id)
+    setTimeOnly(true)
+    setStep('time')
   }
 
   const handleCancelBooking = async () => {
@@ -607,7 +621,10 @@ export default function CreateBookingPage() {
     const visibleSlots = slots.filter((s) => !takenTimes.has(s))
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-        <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => setStep('date')} />
+        <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => {
+          if (timeOnly) { if (createdBooking) setStep('success'); else navigate(-1) }
+          else setStep('date')
+        }} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button type="button" onClick={() => setStep('date')} style={{ ...listItemStyle, gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -963,8 +980,8 @@ export default function CreateBookingPage() {
             <EditIcon />
           </button>
 
-          {/* Время — тап открывает перенос. */}
-          <button type="button" onClick={handleReschedule} aria-label="Изменить время" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          {/* Время — тап открывает выбор времени (дата прежняя). */}
+          <button type="button" onClick={handleEditTime} aria-label="Изменить время" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{time}</div>
               <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
