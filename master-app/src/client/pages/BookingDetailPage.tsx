@@ -194,6 +194,8 @@ export default function BookingDetailPage() {
   const formattedDate = dayjs(date).format('D MMMM, dd')
   const badge = PAYMENT_BADGE[paymentStatus]
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
+  // Запись в прошлом: время окончания (начало + длительность) уже прошло.
+  const isPast = dayjs(`${date}T${time}`).add(service.duration, 'minute').isBefore(dayjs())
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
@@ -221,14 +223,16 @@ export default function BookingDetailPage() {
               ...text.callout1, color: 'var(--color-on-surface)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              Вы записаны!
+              {isPast ? 'Прошлая запись' : 'Вы записаны!'}
             </div>
-            <div style={{
-              ...text.caption2, color: 'var(--color-on-surface-secondary)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              Не опаздывайте
-            </div>
+            {!isPast && (
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Не опаздывайте
+              </div>
+            )}
           </div>
         </div>
 
@@ -453,15 +457,17 @@ export default function BookingDetailPage() {
       </div>
 
       {/* ── Footer chips (Figma 8534:15134). bottom-fixed, padding 8/12/48.
-            Группа из 3 чипов equal-width, gap=4. Скрываем для COMPLETED/CANCELLED. */}
-      {canAct && (
+            Скрываем для COMPLETED/CANCELLED. Для прошедшей записи — без «Перенести»/
+            «Отменить»; остаётся только «Чат», и весь футер прячем, если чата нет. */}
+      {canAct && (!isPast || !!master.maxProfileLink) && (
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '8px 12px 48px',
         background: 'var(--color-background)',
       }}>
         <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-          {/* Chip: Перенести */}
+          {/* Chip: Перенести — недоступно для прошедшей записи. */}
+          {!isPast && (
           <button
             onClick={handleReschedule}
             style={{
@@ -479,6 +485,7 @@ export default function BookingDetailPage() {
               Перенести
             </span>
           </button>
+          )}
 
           {/* Chip: Чат — доступен только если мастер оставил ссылку на профиль. */}
           <button
@@ -501,7 +508,8 @@ export default function BookingDetailPage() {
             </span>
           </button>
 
-          {/* Chip: Отменить */}
+          {/* Chip: Отменить — недоступно для прошедшей записи. */}
+          {!isPast && (
           <button
             onClick={handleCancel}
             disabled={cancelling}
@@ -521,6 +529,7 @@ export default function BookingDetailPage() {
               Отменить
             </span>
           </button>
+          )}
         </div>
       </div>
       )}
