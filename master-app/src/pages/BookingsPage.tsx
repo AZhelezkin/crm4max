@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -9,6 +9,11 @@ import { text } from '@/styles/typography'
 dayjs.locale('ru')
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
+
+const MONTH_NAMES = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+]
 
 function formatRub(kop: number): string {
   return (kop / 100).toLocaleString('ru-RU') + ' ₽'
@@ -35,6 +40,19 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
+
+  // Month-picker меню (как в кабинете клиента, MyBookingsPage): тап по пилюле
+  // «Месяц Год» → список месяцев текущего года. Закрытие по клику вне.
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false)
+  const monthMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!monthMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!monthMenuRef.current?.contains(e.target as Node)) setMonthMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [monthMenuOpen])
 
   useEffect(() => {
     bookingsApi.list().then(setBookings).catch(() => {})
@@ -114,9 +132,67 @@ export default function BookingsPage() {
       <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* controls: месяц + стрелки */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 4px 12px 8px', borderRadius: 100 }}>
-            <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
-            <ArrowDownIcon />
+          <div ref={monthMenuRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setMonthMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={monthMenuOpen}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '12px 4px 12px 8px', borderRadius: 100,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{capitalize(currentMonth.format('MMMM YYYY'))}</span>
+              <span style={{
+                display: 'inline-flex',
+                transform: monthMenuOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.15s ease',
+              }}>
+                <ArrowDownIcon />
+              </span>
+            </button>
+
+            {/* Month menu (как в клиентском MyBookingsPage, Figma 8671:38152). */}
+            {monthMenuOpen && (
+              <div role="menu" style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)', left: 0,
+                width: 210,
+                background: 'var(--color-surface)',
+                borderRadius: 16,
+                padding: '12px 20px',
+                boxShadow: '0 4px 4px -1px rgba(12,12,13,0.05), 0 16px 32px -1px rgba(12,12,13,0.1)',
+                display: 'flex', flexDirection: 'column',
+                zIndex: 20,
+              }}>
+                {MONTH_NAMES.map((name, idx) => {
+                  const isCurrent = idx === currentMonth.month()
+                  return (
+                    <Fragment key={name}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => { setCurrentMonth((m) => m.month(idx)); setMonthMenuOpen(false) }}
+                        style={{
+                          width: '100%', padding: '6px 0',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          textAlign: 'left',
+                          ...text.body2,
+                          color: isCurrent ? 'var(--color-active-element)' : 'var(--color-on-surface)',
+                        }}
+                      >
+                        {name}
+                      </button>
+                      {idx < MONTH_NAMES.length - 1 && (
+                        <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <button type="button" aria-label="Предыдущий месяц" onClick={() => setCurrentMonth((m) => m.subtract(1, 'month'))} style={iconBtnStyle}>
