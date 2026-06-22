@@ -104,12 +104,9 @@ export default function BookingDetailPage() {
   }
 
   const handleAddToCalendar = () => {
-    const start = dayjs(`${booking.date}T${booking.time}`)
-    const end = start.add(booking.service.duration, 'minute')
-    const fmt = (d: dayjs.Dayjs) => d.format('YYYYMMDDTHHmmss')
-    const url =
-      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(booking.service.name)}` +
-      `&dates=${fmt(start)}/${fmt(end)}${addressText ? `&location=${encodeURIComponent(addressText)}` : ''}`
+    // .ics с сервера: iOS Safari предложит «Добавить в Календарь», Android — выбрать
+    // календарь, Google Calendar тоже импортирует .ics. См. backend bookings.routes.
+    const url = `${import.meta.env.VITE_API_URL ?? ''}/api/bookings/${booking.id}/calendar.ics`
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
   }

@@ -386,14 +386,10 @@ export default function CreateBookingPage() {
 
   // Google-календарь: TEMPLATE-ссылка (openLink). Если нужен другой провайдер/ICS — поменяем.
   const handleAddToCalendar = () => {
-    if (!selectedService) return
-    const start = dayjs(`${date}T${time}`)
-    const end = start.add(selectedService.duration, 'minute')
-    const fmt = (d: dayjs.Dayjs) => d.format('YYYYMMDDTHHmmss')
-    const loc = homeVisit ? address.trim() : master?.location ?? ''
-    const url =
-      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedService.name)}` +
-      `&dates=${fmt(start)}/${fmt(end)}${loc ? `&location=${encodeURIComponent(loc)}` : ''}`
+    if (!createdBooking) return
+    // .ics с сервера: iOS Safari предложит «Добавить в Календарь», Android — выбрать
+    // календарь, Google Calendar тоже импортирует .ics. См. backend bookings.routes.
+    const url = `${import.meta.env.VITE_API_URL ?? ''}/api/bookings/${createdBooking.id}/calendar.ics`
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
   }
