@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
+import { reviewsApi } from '@client/api/reviews.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Category, Master, Service } from '@client/types'
 import { UNCATEGORIZED_CATEGORY_ID } from '@/types'
@@ -121,6 +122,15 @@ export default function MasterCardPage() {
   const lbStripRef = useRef<HTMLDivElement>(null)
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
+  // Отзыв: последняя завершённая запись этого мастера без отзыва → промо-блок + форма.
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null)
+  const [reviewDismissed, setReviewDismissed] = useState(false)
+  const [reviewSheetOpen, setReviewSheetOpen] = useState(false)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewText, setReviewText] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewToast, setReviewToast] = useState(false)
+
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId)
       .then((m) => { setMaster(m); setMasterProfileLink(m.maxProfileLink) })
@@ -137,6 +147,17 @@ export default function MasterCardPage() {
         .filter((b) => dayjs(`${b.date} ${b.time}`).isAfter(now))
         .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
       setUpcomingBookings(forMaster)
+    }).catch(() => {})
+  }, [masterId])
+
+  // Последняя завершённая запись этого мастера без отзыва — для промо-блока «Оцените услуги».
+  useEffect(() => {
+    if (!masterId) return
+    bookingsApi.list({ status: 'COMPLETED' }).then((bookings) => {
+      const latest = bookings
+        .filter((b) => b.master.id === masterId && !b.review)
+        .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))[0]
+      setReviewBooking(latest ?? null)
     }).catch(() => {})
   }, [masterId])
 
@@ -237,6 +258,38 @@ export default function MasterCardPage() {
     const text = `Запишитесь к мастеру ${master.name} в Max:\n${link}`
     try { window.WebApp?.shareContent?.({ text }) } catch { /* ignore */ }
   }
+
+  // Подпись «{услуга}, {когда}» для промо-блока/формы отзыва.
+  const reviewSubtitle = reviewBooking
+    ? `${reviewBooking.service.name}, ${reviewBooking.date === dayjs().format('YYYY-MM-DD') ? 'сегодня' : dayjs(reviewBooking.date).format('D MMMM')}`
+    : ''
+
+  const openReviewSheet = () => {
+    setReviewRating(0)
+    setReviewText('')
+    setReviewSheetOpen(true)
+  }
+
+  const submitReview = async () => {
+    if (!reviewBooking || reviewRating === 0 || reviewSubmitting) return
+    setReviewSubmitting(true)
+    try {
+      await reviewsApi.create({ bookingId: reviewBooking.id, rating: reviewRating, text: reviewText.trim() || undefined })
+      setReviewSheetOpen(false)
+      setReviewDismissed(true)
+      setReviewBooking(null)
+      setReviewToast(true)
+      setTimeout(() => setReviewToast(false), 2500)
+      // Обновляем карточку — рейтинг и список отзывов пересчитаны на бэкенде.
+      mastersApi.getById(masterId).then(setMaster).catch(() => {})
+    } catch {
+      /* ignore */
+    } finally {
+      setReviewSubmitting(false)
+    }
+  }
+
+  const showReviewPromo = !!reviewBooking && !reviewDismissed
 
   /* ── Рендер ─────────────────────────────────────────────────────────────── */
 
@@ -478,6 +531,50 @@ export default function MasterCardPage() {
           </div>
         )
       })()}
+
+      {/* ── Промо «Оцените услуги мастера» (Figma 9844:68568) — последняя завершённая
+            запись без отзыва. Фиолетовый градиент, заголовок + услуга/дата + кнопка + крестик. */}
+      {showReviewPromo && (
+        <div style={{ padding: '0 16px', marginBottom: 24 }}>
+          <div style={{
+            position: 'relative',
+            display: 'flex', flexDirection: 'column', gap: 24,
+            padding: 20, borderRadius: 20,
+            background: 'linear-gradient(214.51deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 230 }}>
+              <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>Оцените услуги мастера</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{reviewSubtitle}</div>
+            </div>
+            <button
+              type="button"
+              onClick={openReviewSheet}
+              style={{
+                height: 44, borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: 'var(--color-primary-surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                ...text.callout1, color: 'var(--color-on-primary-surface)',
+              }}
+            >
+              Оставить отзыв
+            </button>
+            <button
+              type="button"
+              aria-label="Закрыть"
+              onClick={() => setReviewDismissed(true)}
+              style={{
+                position: 'absolute', top: 12, right: 12, width: 28, height: 28,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 3l8 8M11 3l-8 8" stroke="var(--color-on-surface)" strokeWidth="1.75" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── 4 действия. Макет: 4 карточки 91.75×69, gap 4, rx 18, fill=surfaceTransparent.
             Иконка 24×24 (stroke=primarySurface) + label text.action (primarySurface).
@@ -897,6 +994,108 @@ export default function MasterCardPage() {
           </div>
         )
       })()}
+
+      {/* ── Bottom-sheet формы отзыва (Figma 9844:67759) ───────────────────── */}
+      {reviewSheetOpen && (
+        <div
+          onClick={() => setReviewSheetOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative', width: '100%', boxSizing: 'border-box',
+              background: 'var(--color-background)',
+              borderTopLeftRadius: 24, borderTopRightRadius: 24,
+              padding: '24px 16px calc(40px + env(safe-area-inset-bottom))',
+              display: 'flex', flexDirection: 'column', gap: 32, alignItems: 'center',
+            }}
+          >
+            <button
+              type="button" aria-label="Закрыть" onClick={() => setReviewSheetOpen(false)}
+              style={{ position: 'absolute', top: 12, right: 12, width: 28, height: 28, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="var(--color-on-surface)" strokeWidth="1.75" strokeLinecap="round"/></svg>
+            </button>
+
+            {/* Заголовок + услуга/дата + звёзды */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', textAlign: 'center' }}>
+                <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>Оцените услуги мастера</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{reviewSubtitle}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: 267, maxWidth: '100%' }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n} type="button" aria-label={`Оценка ${n}`} onClick={() => setReviewRating(n)}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+                  >
+                    <svg width="40" height="40" viewBox="0 0 24 24"
+                      fill={n <= reviewRating ? 'var(--color-warning-surface-accented)' : 'none'}
+                      stroke={n <= reviewRating ? 'none' : 'var(--color-on-surface-secondary)'} strokeWidth="1.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Поле «Расскажите о своём опыте». Лимит 200, счётчик за 10 символов до лимита. */}
+            <div style={{ width: '100%', boxSizing: 'border-box', borderRadius: 20, background: 'var(--color-surface)', border: '2px solid var(--color-primary-surface)', padding: '16px 12px 8px' }}>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', padding: '0 8px' }}>Расскажите о своём опыте</div>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value.slice(0, 200))}
+                maxLength={200}
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box', resize: 'none',
+                  background: 'none', border: 'none', outline: 'none',
+                  padding: '2px 8px 0',
+                  ...text.callout1, color: 'var(--color-on-surface)', fontFamily: 'inherit',
+                }}
+              />
+              {reviewText.length >= 190 && (
+                <div style={{ textAlign: 'right', padding: '0 8px', fontSize: 13, lineHeight: '16px', letterSpacing: 0.13, color: 'var(--color-service-text)' }}>
+                  {reviewText.length} / 200
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { void submitReview() }}
+              disabled={reviewRating === 0 || reviewSubmitting}
+              style={{
+                width: '100%', height: 60, borderRadius: 20, border: 'none',
+                cursor: reviewRating === 0 || reviewSubmitting ? 'default' : 'pointer',
+                background: reviewRating === 0 ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+                color: reviewRating === 0 ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
+                ...text.callout1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {reviewSubmitting ? 'Отправляем…' : 'Оставить отзыв'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Тост «Отзыв отправлен» (Figma 9844:69095) — mint-градиент сверху. */}
+      {reviewToast && (
+        <div style={{
+          position: 'fixed', top: 'calc(12px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 2000, width: 'calc(100% - 32px)', maxWidth: 340, boxSizing: 'border-box',
+          display: 'flex', alignItems: 'center', gap: 8, padding: '15px 16px', borderRadius: 16,
+          background: 'linear-gradient(195.23deg, var(--color-grad-mint-100) 5.83%, var(--color-grad-mint-0) 90.48%)',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="var(--color-on-surface)" strokeWidth="1.5"/>
+            <path d="m7.75 12 2.83 2.83 5.67-5.66" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>Отзыв отправлен</span>
+        </div>
+      )}
     </div>
   )
 }

@@ -90,6 +90,8 @@ export interface Booking {
   }
   client: { id: string; name: string; photo: string | null }
   service: Service
+  /** Признак оставленного отзыва (для гейта блока «Оцените услуги»). */
+  review?: { id: string } | null
 }
 
 export interface Review {
