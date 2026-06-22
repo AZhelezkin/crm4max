@@ -430,7 +430,10 @@ export default function MasterCardPage() {
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        ...text.callout1, color: 'var(--color-on-primary-surface)',
+                        // on-surface (не on-primary-surface): фиолетовый градиент карточки
+                        // в светлой теме бледный, а #FFF был нечитаем. on-surface = белый
+                        // в тёмной (как было) и тёмный в светлой.
+                        ...text.callout1, color: 'var(--color-on-surface)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
                         {dayjs(b.date).format('D MMMM')} в {b.time}
@@ -445,7 +448,7 @@ export default function MasterCardPage() {
                     </div>
                     {/* vuesax/linear/arrow-right 16×16 */}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M8.91 19.92L15.43 13.4c.77-.77.77-2.03 0-2.8L8.91 4.08" stroke="var(--color-on-primary-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8.91 19.92L15.43 13.4c.77-.77.77-2.03 0-2.8L8.91 4.08" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                 ))}
