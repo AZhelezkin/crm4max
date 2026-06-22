@@ -54,17 +54,23 @@ export default function ProfilePage() {
     const dy = e.touches[0].clientY - lbTouch.current.startY
     lbTouch.current.moved = true
     if (!lbTouch.current.dir) {
-      if (Math.abs(dx) > Math.abs(dy) + 5) lbTouch.current.dir = 'h'
-      else lbTouch.current.dir = 'v'
+      // Не фиксируем направление, пока жест не превысил порог: шум первого
+      // touchmove (2–3px) иначе лочит 'v', и листание перестаёт срабатывать.
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      lbTouch.current.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
     }
     if (lbTouch.current.dir === 'h' && lbStripRef.current)
       lbStripRef.current.style.transform = `translateX(calc(-100vw + ${dx}px))`
   }
   function onLbEnd(e: React.TouchEvent) {
     e.stopPropagation()
-    const { startX, dir } = lbTouch.current
+    const { startX, startY, dir } = lbTouch.current
     const dx = e.changedTouches[0].clientX - startX
-    if (dir !== 'h') return
+    const dy = e.changedTouches[0].clientY - startY
+    // Быстрый флик может не дать ни одного touchmove (dir === null) — тогда
+    // определяем направление по финальному смещению, иначе листание «теряется».
+    const horiz = dir === 'h' || (dir === null && Math.abs(dx) > Math.abs(dy))
+    if (!horiz) return
     const W = window.innerWidth
     const goNext = dx < -60 && lightboxIndex! < workPhotos.length - 1
     const goPrev = dx > 60 && lightboxIndex! > 0
@@ -441,7 +447,9 @@ export default function ProfilePage() {
                   border: 'none', cursor: 'pointer', padding: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
-                  touchAction: 'manipulation',
+                  // none (не manipulation): WebView иначе перехватывает чуть
+                  // сдвинутый тап как пан → pointercancel, и закрытие «теряется».
+                  touchAction: 'none',
                 }}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
