@@ -194,6 +194,7 @@ export default function BookingDetailPage() {
   const formattedDate = dayjs(date).format('D MMMM, dd')
   const badge = PAYMENT_BADGE[paymentStatus]
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
+  const isCancelled = booking.status === 'CANCELLED'
   // Запись в прошлом: время окончания (начало + длительность) уже прошло.
   const isPast = dayjs(`${date}T${time}`).add(service.duration, 'minute').isBefore(dayjs())
 
@@ -223,16 +224,23 @@ export default function BookingDetailPage() {
               ...text.callout1, color: 'var(--color-on-surface)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {isPast ? 'Прошлая запись' : 'Вы записаны!'}
+              {isCancelled ? 'Отменено' : isPast ? 'Прошлая запись' : 'Вы записаны!'}
             </div>
-            {!isPast && (
+            {isCancelled ? (
+              <div style={{
+                ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                Запись не актуальна
+              </div>
+            ) : !isPast ? (
               <div style={{
                 ...text.caption2, color: 'var(--color-on-surface-secondary)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 Не опаздывайте
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
