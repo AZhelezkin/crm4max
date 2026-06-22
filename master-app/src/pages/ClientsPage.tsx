@@ -374,6 +374,16 @@ function ClientForm({
   phone: string; onPhone: (v: string) => void
   canSave: boolean; onBack: () => void; onSubmit: () => void
 }) {
+  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const handlePhone = (v: string) => { setPhoneError(null); onPhone(v) }
+  const handleSubmit = () => {
+    // Телефон необязателен, но если начат ввод — должен быть полным (11 цифр).
+    if (phone && phone.replace(/\D/g, '').length !== 11) {
+      setPhoneError('Введите номер полностью: +7 (XXX) XXX-XX-XX')
+      return
+    }
+    onSubmit()
+  }
   return (
     <>
       <div style={toolbarStyle}>
@@ -389,12 +399,17 @@ function ClientForm({
       <div style={{ padding: '12px 16px calc(48px + env(safe-area-inset-bottom))' }}>
         <FloatingField label="Имя и фамилия" value={name} onChange={onName} valueBold autoFocus />
         <div style={{ marginTop: 16 }}>
-          <FloatingField label="Номер телефона" value={phone} onChange={onPhone} valueBold type="tel" inputMode="tel" />
+          <FloatingField label="Номер телефона" value={phone} onChange={handlePhone} valueBold type="tel" inputMode="tel" />
+          {phoneError && (
+            <div style={{ ...text.footnote, color: 'var(--color-error-surface-accented)', padding: '4px 8px 0' }}>
+              {phoneError}
+            </div>
+          )}
         </div>
         <button
           type="button"
           disabled={!canSave}
-          onClick={onSubmit}
+          onClick={handleSubmit}
           style={{
             width: '100%', height: 60, marginTop: 32, borderRadius: 20, border: 'none', padding: 18,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
