@@ -2,10 +2,11 @@ import { text } from '@/styles/typography'
 import { useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 
-// Экран «Настройки профиля» (Figma 8831:28627). Точка входа — шестерёнка на ProfilePage.
-// Кликабельны только строки секции «Общее»: Мои данные → /about (имя/описание, шаг 2),
+// Экран «Настройки профиля» (Figma 8945:64458). Точка входа — шестерёнка на ProfilePage.
+// Кликабельны только строки секции «Получение платежей»: Мои данные → /about (шаг 2),
 // График работы → /schedule (шаг 3), Мои услуги → /services (каталог, шаг 4).
-// Всё про банковские карты / комиссию / подписку — свёрстано, но некликабельно.
+// «Оплата от клиентов» — предложение «Привязать карту» (свёрстано, некликабельно;
+// сам функционал добавления карты добавится позднее). «Оплата подписки» — тоже верстка.
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -39,8 +40,8 @@ export default function SettingsPage() {
         padding: '16px 16px calc(40px + env(safe-area-inset-bottom))',
         display: 'flex', flexDirection: 'column', gap: 32,
       }}>
-        {/* ── Общее ── */}
-        <Section label="Общее">
+        {/* ── Получение платежей ── */}
+        <Section label="Получение платежей">
           <SettingRow
             icon={<UserSquareIcon />}
             title="Мои данные"
@@ -64,18 +65,13 @@ export default function SettingsPage() {
           />
         </Section>
 
-        {/* ── Оплата от клиентов (некликабельно) ── */}
+        {/* ── Оплата от клиентов: предложение привязать карту (Figma 8945:29664).
+              Без иконки слева; функционал добавления карты — позднее, пока некликабельно. ── */}
         <Section label="Оплата от клиентов">
           <SettingRow
-            icon={<CardIcon />}
-            title="Банковская карта"
-            subtitle="** 0000"
-            trailing={<EditIcon />}
-          />
-          <SettingRow
-            title="Компенсация комиссии"
-            subtitle="Комиссия 3% будет автоматически добавлена к стоимости"
-            trailing={<ToggleOff />}
+            title="Привязать карту"
+            subtitle="Чтобы клиенты могли оплачивать на неё ваши услуги"
+            trailing={<ChevronRightIcon />}
           />
         </Section>
 
@@ -149,19 +145,6 @@ function SettingRow({ icon, title, subtitle, trailing, onClick }: {
   return onClick
     ? <button type="button" onClick={onClick} style={{ ...style, border: 'none', cursor: 'pointer' }}>{inner}</button>
     : <div style={style}>{inner}</div>
-}
-
-// Тумблер в положении «выкл» (некликабельный): трек 60×36 + белый кружок 28 слева.
-function ToggleOff() {
-  return (
-    <div style={{
-      width: 60, height: 36, borderRadius: 20, flexShrink: 0,
-      background: 'var(--color-interactive-element-muted)',
-      display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 4,
-    }}>
-      <div style={{ width: 28, height: 28, borderRadius: 14, background: 'var(--color-on-primary-surface)' }} />
-    </div>
-  )
 }
 
 // ─── Иконки (vuesax/linear, 24×24, stroke=currentColor) ──────────────────────────
