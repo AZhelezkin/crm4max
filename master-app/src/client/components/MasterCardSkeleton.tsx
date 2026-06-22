@@ -14,7 +14,7 @@ export default function MasterCardSkeleton() {
       {/* ── HERO (paddingTop: 16, paddingBottom: 24) ───────────────────────── */}
       <div style={{ position: 'relative', paddingTop: 16, paddingBottom: 24 }}>
 
-        {/* Avatar 104×104 с 2px overshoot-ring, как в реальной странице. */}
+        {/* Avatar 104×104 (без кольца, как на реальной странице). */}
         <Skeleton
           width={104}
           height={104}

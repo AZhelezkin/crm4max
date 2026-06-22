@@ -273,57 +273,17 @@ export default function MasterCardPage() {
           </div>
         )}
 
-        {/* Аватар + декоративное кольцо. Аватар 104×104 (rect 153.5,140), кольцо — 3 stroke-арки
-            из SVG: gray (top-right) + 2× mint→green gradient. Контейнер 108×108 (по 2px overshoot). */}
+        {/* Аватар 104×104 (без декоративного кольца). */}
         <div style={{
           position: 'relative', zIndex: 1,
-          width: 108, height: 108, margin: '0 auto',
+          width: 104, height: 104, margin: '0 auto',
+          borderRadius: 52, overflow: 'hidden', background: 'var(--color-surface)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg
-            width="108" height="108"
-            viewBox="151 138 108 108"
-            fill="none"
-            aria-hidden="true"
-            style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-          >
-            <defs>
-              <linearGradient id="masterRingGradBottom" x1="183.053" y1="222.351" x2="187.834" y2="253.309" gradientUnits="userSpaceOnUse">
-                <stop stopColor="var(--color-grad-green-vibrance-0)"/>
-                <stop offset="1" stopColor="var(--color-grad-green-vibrance-100)"/>
-              </linearGradient>
-              <linearGradient id="masterRingGradTopLeft" x1="165.911" y1="138.15" x2="217.52" y2="195.274" gradientUnits="userSpaceOnUse">
-                <stop stopColor="var(--color-grad-green-vibrance-0)"/>
-                <stop offset="1" stopColor="var(--color-grad-green-vibrance-100)"/>
-              </linearGradient>
-            </defs>
-            {/* Gray arc (top-right): «пустая» часть кольца, stroke=onSurfaceMuted */}
-            <path
-              d="M209.419 138.143C218.204 138.782 226.7 141.562 234.164 146.238C241.629 150.914 247.837 157.346 252.246 164.972C256.655 172.598 259.131 181.186 259.459 189.989C259.787 198.791 257.957 207.54 254.128 215.473"
-              stroke="var(--color-on-surface-muted)" strokeLinecap="round"
-            />
-            {/* Bottom arc (gradient mint→green) */}
-            <path
-              d="M250.155 222.354C245.203 229.639 238.545 235.603 230.76 239.724C222.975 243.846 214.3 246.001 205.492 246C196.683 246 188.008 243.845 180.224 239.723C172.439 235.601 165.781 229.637 160.83 222.352"
-              stroke="url(#masterRingGradBottom)" strokeWidth="2" strokeLinecap="round"
-            />
-            {/* Top-left arc (gradient mint→green) */}
-            <path
-              d="M156.905 215.561C153.062 207.635 151.216 198.889 151.528 190.086C151.84 181.283 154.302 172.69 158.697 165.056C163.092 157.422 169.288 150.98 176.745 146.29C184.201 141.6 192.691 138.806 201.476 138.15"
-              stroke="url(#masterRingGradTopLeft)" strokeWidth="2" strokeLinecap="round"
-            />
-          </svg>
-
-          <div style={{
-            position: 'absolute', top: 2, left: 2,
-            width: 104, height: 104, borderRadius: 52,
-            overflow: 'hidden', background: 'var(--color-surface)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {master.photo
-              ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ fontSize: 44, color: 'var(--color-on-surface-secondary)' }}>👤</span>
-            }
-          </div>
+          {master.photo
+            ? <img src={master.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 44, color: 'var(--color-on-surface-secondary)' }}>👤</span>
+          }
         </div>
 
         {/* Name + description блок: gap 12 между text-стопкой и тэгом homeVisit.
