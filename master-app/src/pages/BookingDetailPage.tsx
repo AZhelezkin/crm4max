@@ -152,8 +152,8 @@ export default function BookingDetailPage() {
           <UserSquareIcon />
         </div>
 
-        {/* Адрес */}
-        {addressText && (
+        {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
+        {booking.clientAddress && (
           <button type="button" onClick={handleOpenAddress} aria-label="Открыть на карте" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...text.callout1, color: 'var(--color-on-surface)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'break-word' }}>{addressText}</div>

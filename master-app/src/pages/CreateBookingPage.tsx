@@ -942,12 +942,12 @@ export default function CreateBookingPage() {
             </div>
           )}
 
-          {/* Адрес */}
-          {addressText && (
+          {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
+          {homeVisit && addressText && (
             <div style={{ ...listItemStyle, cursor: 'default' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ ...text.callout1, color: 'var(--color-on-surface)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'break-word' }}>{addressText}</div>
-                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{homeVisit ? 'Адрес выезда' : 'Адрес мастера'}</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Адрес выезда</div>
               </div>
               <LocationIcon />
             </div>
