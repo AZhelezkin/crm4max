@@ -22,6 +22,24 @@ function formatPhone(phone: string | null): string {
   return phone
 }
 
+// Прогрессивная маска ввода «+7 (XXX) XXX-XX-XX» (как в AboutMePage/OnboardingPage).
+// prev нужен, чтобы корректно стирать цифру при backspace по разделителю.
+function maskPhoneInput(raw: string, prev: string): string {
+  let digits = raw.replace(/\D/g, '')
+  if (digits.startsWith('8')) digits = '7' + digits.slice(1)
+  digits = digits.slice(0, 11)
+  const prevDigits = prev.replace(/\D/g, '')
+  if (digits === prevDigits && raw.length < prev.length) digits = prevDigits.slice(0, -1)
+  if (!digits) return ''
+  const n = digits.startsWith('7') ? digits : '7' + digits
+  let result = '+7'
+  if (n.length > 1) result += ' (' + n.slice(1, 4)
+  if (n.length >= 4) result += ') ' + n.slice(4, 7)
+  if (n.length >= 7) result += '-' + n.slice(7, 9)
+  if (n.length >= 9) result += '-' + n.slice(9, 11)
+  return result
+}
+
 // Инициалы: первые буквы первых двух слов имени.
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -69,12 +87,15 @@ export default function ClientsPage() {
     )
   }, [clients, query])
 
+  // Ввод телефона через маску «+7 (XXX) XXX-XX-XX».
+  const onFPhone = (v: string) => setFPhone((prev) => maskPhoneInput(v, prev))
+
   // ─── Навигация ─────────────────────────────────────────────────────────────
   const openAdd = () => { setFName(''); setFPhone(''); setView('add') }
   const openDetail = (c: Client) => { setSelected(c); setView('detail') }
   const openEdit = () => {
     if (!selected) return
-    setFName(selected.name); setFPhone(selected.phone ?? '')
+    setFName(selected.name); setFPhone(selected.phone ? maskPhoneInput(selected.phone, '') : '')
     setView('edit')
   }
 
@@ -138,7 +159,7 @@ export default function ClientsPage() {
           title="Новый клиент"
           submitLabel="Добавить"
           name={fName} onName={setFName}
-          phone={fPhone} onPhone={setFPhone}
+          phone={fPhone} onPhone={onFPhone}
           canSave={!!fName.trim() && !saving}
           onBack={() => setView('list')}
           onSubmit={submitAdd}
@@ -150,7 +171,7 @@ export default function ClientsPage() {
           title="Данные клиента"
           submitLabel="Сохранить изменения"
           name={fName} onName={setFName}
-          phone={fPhone} onPhone={setFPhone}
+          phone={fPhone} onPhone={onFPhone}
           canSave={!!fName.trim() && !saving}
           onBack={() => setView('detail')}
           onSubmit={submitEdit}
