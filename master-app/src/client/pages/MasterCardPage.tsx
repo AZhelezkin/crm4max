@@ -249,6 +249,15 @@ export default function MasterCardPage() {
     </>
   )
 
+  // «Поделиться контактом» — расшарить ссылку на этого мастера (клиент-бот,
+  // ?start=<masterId> — тот же формат, что в ShareLinkPage у мастера).
+  const handleShareContact = () => {
+    const clientBotName = (import.meta.env.VITE_CLIENT_BOT_NAME as string | undefined) || 'id9706002253_1_bot'
+    const link = `https://max.ru/${clientBotName}?start=${masterId}`
+    const text = `Запишитесь к мастеру ${master.name} в Max:\n${link}`
+    try { window.WebApp?.shareContent?.({ text }) } catch { /* ignore */ }
+  }
+
   /* ── Рендер ─────────────────────────────────────────────────────────────── */
 
   return (
@@ -550,15 +559,15 @@ export default function MasterCardPage() {
               }}
             >
               {([
-                { label: 'Поделиться контактом', Icon: IcoShare, destructive: false },
-                { label: 'В избранное',          Icon: IcoBookmark, destructive: false },
-                { label: 'Правила отмены',       Icon: IcoDocument, destructive: false },
-                { label: 'Очистить историю',     Icon: IcoTrash, destructive: false },
-                { label: 'Заблокировать',        Icon: IcoBlock, destructive: true },
+                { label: 'Поделиться контактом', Icon: IcoShare, destructive: false, onSelect: handleShareContact },
+                { label: 'В избранное',          Icon: IcoBookmark, destructive: false, onSelect: () => {} },
+                { label: 'Правила отмены',       Icon: IcoDocument, destructive: false, onSelect: () => {} },
+                { label: 'Очистить историю',     Icon: IcoTrash, destructive: false, onSelect: () => {} },
+                { label: 'Заблокировать',        Icon: IcoBlock, destructive: true, onSelect: () => {} },
               ] as const).map((item, idx, arr) => (
                 <div key={item.label}>
                   <button
-                    onClick={() => setMenuOpen(false)}
+                    onClick={() => { item.onSelect(); setMenuOpen(false) }}
                     style={{
                       width: '100%', padding: '6px 0', display: 'flex', alignItems: 'center', gap: 8,
                       background: 'none', border: 'none', cursor: 'pointer',
