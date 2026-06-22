@@ -67,16 +67,6 @@ function IcoShare({ destructive }: MenuIconProps) {
   )
 }
 
-function IcoBookmark({ destructive }: MenuIconProps) {
-  // vuesax/linear/bookmark-2
-  const c = menuIconColor(destructive)
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M14.585 2.583H5.41c-1.45 0-2.625 1.183-2.625 2.625v11.45c0 1.225.875 1.742 1.95 1.15l4.642-2.583c.354-.2.929-.2 1.275 0l4.641 2.583c1.075.6 1.95.084 1.95-1.15V5.208c.009-1.442-1.166-2.625-2.658-2.625Z" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
 function IcoDocument({ destructive }: MenuIconProps) {
   // vuesax/linear/document-text
   const c = menuIconColor(destructive)
@@ -84,16 +74,6 @@ function IcoDocument({ destructive }: MenuIconProps) {
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <path d="M18.333 8.333v4.167c0 4.166-1.666 5.833-5.833 5.833H7.5c-4.167 0-5.833-1.667-5.833-5.833V7.5c0-4.167 1.666-5.833 5.833-5.833h4.167" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M18.333 8.333H15c-2.5 0-3.333-.833-3.333-3.333V1.667l6.666 6.666ZM6.667 10.833H10.833M6.667 14.167H9.167" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-function IcoTrash({ destructive }: MenuIconProps) {
-  // vuesax/linear/trash
-  const c = menuIconColor(destructive)
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M17.5 4.983c-2.775-.275-5.567-.416-8.35-.416-1.65 0-3.3.083-4.95.25l-1.7.166M8.084 4.142l.183-1.092c.133-.792.233-1.383 1.642-1.383h2.183c1.408 0 1.516.625 1.641 1.391l.184 1.084M16.146 7.617l-.541 8.391c-.092 1.309-.167 2.325-2.492 2.325H6.888c-2.325 0-2.4-1.016-2.492-2.325l-.541-8.391M8.108 13.75H11.883M7.5 10.417H12.5" stroke={c} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
@@ -560,9 +540,7 @@ export default function MasterCardPage() {
             >
               {([
                 { label: 'Поделиться контактом', Icon: IcoShare, destructive: false, onSelect: handleShareContact },
-                { label: 'В избранное',          Icon: IcoBookmark, destructive: false, onSelect: () => {} },
                 { label: 'Правила отмены',       Icon: IcoDocument, destructive: false, onSelect: () => {} },
-                { label: 'Очистить историю',     Icon: IcoTrash, destructive: false, onSelect: () => {} },
                 { label: 'Заблокировать',        Icon: IcoBlock, destructive: true, onSelect: () => {} },
               ] as const).map((item, idx, arr) => (
                 <div key={item.label}>
