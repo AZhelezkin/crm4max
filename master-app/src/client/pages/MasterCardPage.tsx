@@ -120,7 +120,7 @@ const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фо
 export default function MasterCardPage() {
   const [params] = useSearchParams()
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const { setMasterId, setService, setDateTime, masterId: storeMasterId } = useBookingStore()
+  const { setMasterId, setService, setDateTime, setMasterProfileLink, masterId: storeMasterId } = useBookingStore()
   const masterId = (UUID_REGEX.test(startParam) ? startParam : null)
     ?? params.get('masterId')
     ?? storeMasterId
@@ -142,8 +142,10 @@ export default function MasterCardPage() {
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
   useEffect(() => {
-    if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
-  }, [masterId])
+    if (masterId) mastersApi.getById(masterId)
+      .then((m) => { setMaster(m); setMasterProfileLink(m.maxProfileLink) })
+      .catch(() => {})
+  }, [masterId, setMasterProfileLink])
 
   useEffect(() => {
     if (!masterId) return
@@ -500,8 +502,8 @@ export default function MasterCardPage() {
                 window.WebApp?.openLink(`tel:${master.phone.replace(/\D/g, '').replace(/^7/, '+7')}`)
             }, disabled: !master.phone },
             { label: 'Чат',    Icon: IcoChat, action: () => {
-              window.WebApp?.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
-            } },
+              if (master.maxProfileLink) window.WebApp?.openMaxLink(master.maxProfileLink)
+            }, disabled: !master.maxProfileLink },
             { label: 'Ещё',    Icon: IcoMore, action: () => setMenuOpen(true) },
           ] as const).map((btn) => {
             const dis = 'disabled' in btn ? btn.disabled : false

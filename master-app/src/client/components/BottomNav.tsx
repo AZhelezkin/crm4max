@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { startSupport } from '@client/api/support.api'
+import { useBookingStore } from '@client/store/booking.store'
 
 function IconCatalog({ active }: { active: boolean }) {
   const c = active ? 'var(--color-primary-surface)' : 'var(--color-on-surface-secondary)'
@@ -52,6 +53,9 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [supportLoading, setSupportLoading] = useState(false)
+  // «Сообщения» доступны только если мастер оставил ссылку на профиль в MAX.
+  const masterProfileLink = useBookingStore((s) => s.masterProfileLink)
+  const navItems = NAV_ITEMS.filter((i) => i.key !== 'messages' || !!masterProfileLink)
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/'
@@ -95,7 +99,7 @@ export default function BottomNav() {
       zIndex: 50,
       paddingBottom: 19,
     }}>
-      {NAV_ITEMS.map(({ key, label, path, Icon }) => {
+      {navItems.map(({ key, label, path, Icon }) => {
         const active = isActive(path)
         return (
           <button key={key} onClick={() => navigate(path)} style={buttonStyle}>

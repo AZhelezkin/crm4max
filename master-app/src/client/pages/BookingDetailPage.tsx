@@ -105,6 +105,7 @@ export default function BookingDetailPage() {
   const location = useLocation()
   const params = useParams<{ id: string }>()
   const setMasterId = useBookingStore((s) => s.setMasterId)
+  const setMasterProfileLink = useBookingStore((s) => s.setMasterProfileLink)
   const setService = useBookingStore((s) => s.setService)
   const setDateTime = useBookingStore((s) => s.setDateTime)
   const resetStore = useBookingStore((s) => s.reset)
@@ -123,8 +124,9 @@ export default function BookingDetailPage() {
     bookingsApi.getById(bookingId).then((b) => {
       setBooking(b)
       setMasterId(b.master.id)  // сохраняем masterId чтобы HomeRoute и MyBookingsPage работали после дип-линка
+      setMasterProfileLink(b.master.maxProfileLink)  // для гейта раздела «Сообщения»/чата
     }).catch(() => {})
-  }, [bookingId])
+  }, [bookingId, setMasterId, setMasterProfileLink])
 
   const handleClose = () => {
     if (isPostBooking) {
@@ -148,11 +150,10 @@ export default function BookingDetailPage() {
   }
 
   const handleChat = () => {
-    if (window.WebApp?.openMaxLink) {
-      window.WebApp.openMaxLink('https://max.ru/u/f9LHodD0cOIigfttbzyjUqKELI60m9aczxqqW1rkNwoQQg8IKRZa3afRH24')
-    } else {
-      navigate('/messages')
-    }
+    const link = booking?.master.maxProfileLink
+    if (!link) return
+    if (window.WebApp?.openMaxLink) window.WebApp.openMaxLink(link)
+    else navigate('/messages')
   }
 
   const handleCancel = async () => {
@@ -479,17 +480,19 @@ export default function BookingDetailPage() {
             </span>
           </button>
 
-          {/* Chip: Чат */}
+          {/* Chip: Чат — доступен только если мастер оставил ссылку на профиль. */}
           <button
             onClick={handleChat}
+            disabled={!master.maxProfileLink}
             style={{
               flex: 1, minWidth: 0,
               background: 'var(--color-surface-transparent)',
               borderRadius: 18,
               padding: '12px 8px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-              border: 'none', cursor: 'pointer',
+              border: 'none', cursor: master.maxProfileLink ? 'pointer' : 'default',
               color: 'var(--color-active-element)',
+              opacity: master.maxProfileLink ? 1 : 0.4,
             }}
           >
             <IcoMessageText />

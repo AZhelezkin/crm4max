@@ -9,6 +9,8 @@ export interface Master {
   lng: number | null
   rating: number
   homeVisit: boolean
+  /** Ссылка на профиль мастера в MAX. Пусто → раздел «Сообщения»/чат недоступен. */
+  maxProfileLink: string | null
   schedule: Schedule | null
   categories: Category[]
   reviews: Review[]
@@ -84,6 +86,7 @@ export interface Booking {
     rating: number
     lat: number | null
     lng: number | null
+    maxProfileLink: string | null
   }
   client: { id: string; name: string; photo: string | null }
   service: Service
