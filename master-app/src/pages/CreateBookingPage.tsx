@@ -954,23 +954,23 @@ export default function CreateBookingPage() {
             </div>
           )}
 
-          {/* Дата */}
-          <div style={{ ...listItemStyle, cursor: 'default' }}>
+          {/* Дата — тап открывает перенос. */}
+          <button type="button" onClick={handleReschedule} aria-label="Изменить дату" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
               <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
             </div>
             <EditIcon />
-          </div>
+          </button>
 
-          {/* Время */}
-          <div style={{ ...listItemStyle, cursor: 'default' }}>
+          {/* Время — тап открывает перенос. */}
+          <button type="button" onClick={handleReschedule} aria-label="Изменить время" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{time}</div>
               <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
             </div>
             <EditIcon />
-          </div>
+          </button>
         </div>
 
         {/* Футер: «Добавить в календарь» + Перенести / Чат / Отменить — в конце контента, не прибит к низу */}

@@ -115,6 +115,10 @@ export default function BookingDetailPage() {
     })
   }
 
+  // Перенос (изменение даты/времени) — флоу CreateBookingPage с rescheduleId.
+  const handleReschedule = () =>
+    navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id } })
+
   return (
     <div style={{ minHeight: '100dvh' }}>
       {/* Шапка: назад + «Запись» */}
@@ -171,23 +175,23 @@ export default function BookingDetailPage() {
           </div>
         </div>
 
-        {/* Дата */}
-        <div style={listItemStyle}>
+        {/* Дата — тап открывает перенос (только для активной записи). */}
+        <button type="button" onClick={handleReschedule} disabled={!canAct} aria-label="Изменить дату" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(booking.date).format('D MMMM, dd')}</div>
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
           </div>
-          <EditIcon />
-        </div>
+          {canAct && <EditIcon />}
+        </button>
 
-        {/* Время */}
-        <div style={listItemStyle}>
+        {/* Время — тап открывает перенос (только для активной записи). */}
+        <button type="button" onClick={handleReschedule} disabled={!canAct} aria-label="Изменить время" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{booking.time}</div>
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{booking.remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
           </div>
-          <EditIcon />
-        </div>
+          {canAct && <EditIcon />}
+        </button>
 
         {!canAct && (
           <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
@@ -209,7 +213,7 @@ export default function BookingDetailPage() {
             <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
           </button>
           <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-            <button type="button" onClick={() => navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id } })} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+            <button type="button" onClick={handleReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
               <RepeatIcon />
               <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
             </button>
