@@ -150,7 +150,7 @@ export default function ClientsPage() {
             onChange={setQuery}
             onBack={() => { setQuery(''); setView('list') }}
           />
-          <ClientList clients={filtered} onPick={openDetail} loaded />
+          <ClientList clients={filtered} onPick={openDetail} loaded query={query.trim()} />
         </>
       )}
 
@@ -311,7 +311,22 @@ function SearchHeader({ value, onChange, onBack }: { value: string; onChange: (v
 
 // ─── Список / карточка списка ────────────────────────────────────────────────────
 
-function ClientList({ clients, onPick, loaded }: { clients: Client[]; onPick: (c: Client) => void; loaded: boolean }) {
+// Подсветка совпадения в поиске (как в ServiceSelectPage): найденная подстрока —
+// цветом primary-surface. Пустой query → текст без подсветки.
+function Highlight({ text: t, query }: { text: string; query: string }) {
+  if (!query) return <>{t}</>
+  const idx = t.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return <>{t}</>
+  return (
+    <>
+      {t.slice(0, idx)}
+      <span style={{ color: 'var(--color-primary-surface)' }}>{t.slice(idx, idx + query.length)}</span>
+      {t.slice(idx + query.length)}
+    </>
+  )
+}
+
+function ClientList({ clients, onPick, loaded, query = '' }: { clients: Client[]; onPick: (c: Client) => void; loaded: boolean; query?: string }) {
   if (!loaded) return null
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -329,11 +344,11 @@ function ClientList({ clients, onPick, loaded }: { clients: Client[]; onPick: (c
           <ClientAvatar name={c.name} photo={c.photo} size={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {c.name}
+              <Highlight text={c.name} query={query} />
             </div>
             {c.phone && (
               <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatPhone(c.phone)}
+                <Highlight text={formatPhone(c.phone)} query={query} />
               </div>
             )}
           </div>
