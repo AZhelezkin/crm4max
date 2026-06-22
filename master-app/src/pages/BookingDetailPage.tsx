@@ -7,6 +7,7 @@ import type { Booking } from '@/types'
 import { discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { openAddToCalendar } from '@/lib/calendar'
 
 dayjs.locale('ru')
 
@@ -104,11 +105,14 @@ export default function BookingDetailPage() {
   }
 
   const handleAddToCalendar = () => {
-    // .ics с сервера: iOS Safari предложит «Добавить в Календарь», Android — выбрать
-    // календарь, Google Calendar тоже импортирует .ics. См. backend bookings.routes.
-    const url = `${import.meta.env.VITE_API_URL ?? ''}/api/bookings/${booking.id}/calendar.ics`
-    if (window.WebApp?.openLink) window.WebApp.openLink(url)
-    else window.open(url, '_blank')
+    openAddToCalendar({
+      bookingId: booking.id,
+      title: booking.service.name,
+      date: booking.date,
+      time: booking.time,
+      durationMin: booking.service.duration,
+      location: addressText,
+    })
   }
 
   return (

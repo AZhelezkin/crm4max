@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Category, Client, Schedule, Service } from '@/types'
 import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
+import { openAddToCalendar } from '@/lib/calendar'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -386,12 +387,15 @@ export default function CreateBookingPage() {
 
   // Google-календарь: TEMPLATE-ссылка (openLink). Если нужен другой провайдер/ICS — поменяем.
   const handleAddToCalendar = () => {
-    if (!createdBooking) return
-    // .ics с сервера: iOS Safari предложит «Добавить в Календарь», Android — выбрать
-    // календарь, Google Calendar тоже импортирует .ics. См. backend bookings.routes.
-    const url = `${import.meta.env.VITE_API_URL ?? ''}/api/bookings/${createdBooking.id}/calendar.ics`
-    if (window.WebApp?.openLink) window.WebApp.openLink(url)
-    else window.open(url, '_blank')
+    if (!createdBooking || !selectedService) return
+    openAddToCalendar({
+      bookingId: createdBooking.id,
+      title: selectedService.name,
+      date,
+      time,
+      durationMin: selectedService.duration,
+      location: homeVisit ? address.trim() : master?.location ?? '',
+    })
   }
 
   // ─── Шаг 1: выбор категории (макет 8746-41312) ──────────────────────────────
