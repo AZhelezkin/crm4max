@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
+import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { UNCATEGORIZED_CATEGORY_ID, type Category, type Review } from '@/types'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 
@@ -33,6 +34,22 @@ export default function ProfilePage() {
       .then((r) => { setReviews(r); setReviewsLoaded(true) })
       .catch(() => setReviewsLoaded(true))
   }, [master?.id, reviewsLoaded])
+
+  // Подписка: баннер «Не смогли оплатить» в статусе GRACE. payUrl префетчим (openLink
+  // требует синхронного user-gesture), открываем по тапу «Оплатить».
+  const [subState, setSubState] = useState<SubscriptionState | null>(null)
+  const [payUrl, setPayUrl] = useState<string | null>(null)
+  useEffect(() => { subscriptionApi.getMe().then(setSubState).catch(() => {}) }, [])
+  useEffect(() => {
+    if (subState?.status === 'GRACE' && !payUrl) {
+      subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
+    }
+  }, [subState, payUrl])
+  const handlePaySubscription = () => {
+    if (!payUrl) return
+    if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
+    else window.open(payUrl, '_blank')
+  }
 
   // Каждое фото несёт ссылку на свою услугу — нужно для подписи в лайтбоксе
   // (как в клиентском MasterCardPage).
@@ -224,6 +241,38 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
+      {subState?.status === 'GRACE' && (
+        <div style={{ padding: '0 16px', marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={handlePaySubscription}
+            style={{
+              width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+              display: 'flex', gap: 8, alignItems: 'flex-start',
+              padding: '15px 16px', borderRadius: 16,
+              background: 'linear-gradient(212.47deg, var(--color-grad-peach-100) 5.83%, var(--color-grad-peach-0) 90.48%)',
+            }}
+          >
+            <span style={{ padding: 2, flexShrink: 0, display: 'inline-flex' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M2 9h20" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 16h3M11 16h4" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6.44 3.5h11.11C21.11 3.5 22 4.39 22 7.92v8.16c0 3.53-.89 4.42-4.44 4.42H6.44C2.89 20.5 2 19.61 2 16.08V7.92C2 4.39 2.89 3.5 6.44 3.5Z" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>
+                Не смогли оплатить подписку с вашей карты. Пополните карту и повторите попытку
+              </span>
+              <span style={{ ...text.body2, fontWeight: 700, color: 'var(--color-on-surface)' }}>
+                Оплатить
+              </span>
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Табы (Услуги / Фото / Отзывы). По Figma:
           container gap=32, padding 0 30; tab gap=4 между label и counter, py=7.
