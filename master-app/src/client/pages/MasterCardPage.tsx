@@ -250,6 +250,21 @@ export default function MasterCardPage() {
     </>
   )
 
+  // Мастер заблокирован (не оплатил подписку) — вместо карточки показываем заглушку.
+  if (master.blocked) return (
+    <>
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px 95px', textAlign: 'center', gap: 12 }}>
+        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>
+          Личный кабинет недоступен
+        </div>
+        <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>
+          У мастера больше нет личного кабинета. Попробуйте связаться с ним другим способом.
+        </div>
+      </div>
+      <BottomNav />
+    </>
+  )
+
   // «Поделиться контактом» — расшарить ссылку на этого мастера (клиент-бот,
   // ?start=<masterId> — тот же формат, что в ShareLinkPage у мастера).
   const handleShareContact = () => {

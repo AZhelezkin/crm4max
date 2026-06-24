@@ -22,6 +22,8 @@ import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 import MapTestPage from '@/pages/MapTestPage'
+import BlockedSubscriptionPage from '@/pages/BlockedSubscriptionPage'
+import { subscriptionApi } from '@/api/subscription.api'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -135,10 +137,21 @@ function MasterIndexRoute() {
 
 function MasterApp() {
   const { init, isLoading, master } = useAuthStore()
+  // Подписка заблокирована (не оплачена после grace) → весь кабинет закрыт
+  // экраном «Оформить подписку». Проверяем только у онбордингованного мастера —
+  // новый идёт через триал, у него статус TRIALING.
+  const [subBlocked, setSubBlocked] = useState(false)
 
   useEffect(() => {
     init()
   }, [init])
+
+  useEffect(() => {
+    if (!master?.isOnboarded) return
+    subscriptionApi.getMe()
+      .then((s) => setSubBlocked(s?.status === 'BLOCKED'))
+      .catch(() => {})
+  }, [master?.isOnboarded])
 
   if (isLoading) {
     return (
@@ -157,6 +170,11 @@ function MasterApp() {
   // Как только имя сохранено (шаг 0 онбординга), возвращаемся сразу на /onboarding.
   const masterAlreadyStarted = Boolean(master?.name && master.name.trim().length > 0)
   const firstStopForNewMaster = masterAlreadyStarted ? '/onboarding' : '/welcome'
+
+  // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера).
+  if (!needsOnboarding && subBlocked) {
+    return <BlockedSubscriptionPage />
+  }
 
   return (
     <BrowserRouter>

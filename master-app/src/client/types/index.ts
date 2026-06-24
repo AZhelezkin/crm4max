@@ -11,6 +11,8 @@ export interface Master {
   homeVisit: boolean
   /** Ссылка на профиль мастера в MAX. Пусто → раздел «Сообщения»/чат недоступен. */
   maxProfileLink: string | null
+  /** Подписка мастера заблокирована (не оплачена) → показываем клиенту заглушку. */
+  blocked?: boolean
   schedule: Schedule | null
   categories: Category[]
   reviews: Review[]
