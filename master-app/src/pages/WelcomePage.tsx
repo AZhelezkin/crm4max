@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
+import { subscriptionApi } from '@/api/subscription.api'
 
 import illustrationAi from '@/assets/welcome-slider/illustration-ai.png'
 import illustrationCatalog from '@/assets/welcome-slider/illustration-catalog.png'
@@ -50,6 +51,23 @@ export default function WelcomePage() {
   const goPrev = () => setStep((s) => Math.max(s - 1, 0))
   const handleStartProfile = () => navigate('/onboarding', { replace: true })
 
+  // «Попробовать бесплатно 7 дней» → привязка карты на форме T-Bank. URL префетчим
+  // при входе на paywall: openLink требует синхронного user-gesture (await его рвёт),
+  // поэтому по тапу открываем уже готовый URL. Триал стартует на бэке при /trial.
+  const [trialUrl, setTrialUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (step !== 5 || trialUrl) return
+    subscriptionApi.startTrial().then((r) => setTrialUrl(r.paymentURL)).catch(() => {})
+  }, [step, trialUrl])
+
+  const handleTrial = () => {
+    if (trialUrl) {
+      if (window.WebApp?.openLink) window.WebApp.openLink(trialUrl)
+      else window.open(trialUrl, '_blank')
+    }
+    goNext()
+  }
+
   // Горизонтальный swipe для слайдов 0..4 (на paywall/success — без свайпа).
   const handleTouchStart = (e: React.TouchEvent) => {
     if (step >= 5) return
@@ -94,7 +112,7 @@ export default function WelcomePage() {
         <Footer>
           <PaginationDots current={step} total={TOTAL_DOTS} />
           <div style={{ height: 40 }} />
-          <PrimaryButton onClick={goNext}>Попробовать бесплатно 7 дней</PrimaryButton>
+          <PrimaryButton onClick={handleTrial}>Попробовать бесплатно 7 дней</PrimaryButton>
         </Footer>
       </Layout>
     )

@@ -1,0 +1,20 @@
+import { api } from './client'
+
+export interface SubscriptionState {
+  status: 'TRIALING' | 'ACTIVE' | 'GRACE' | 'BLOCKED'
+  trialEndsAt: string | null
+  currentPeriodEnd: string | null
+  graceEndsAt: string | null
+  cardPan: string | null
+  lastChargeError: string | null
+  hasAccess: boolean
+}
+
+export const subscriptionApi = {
+  // «Попробовать бесплатно 7 дней»: привязка карты (без списания) + старт триала.
+  startTrial: () => api.post<{ paymentURL: string }>('/subscription/trial').then((r) => r.data),
+  // Оплата 499 ₽ (баннер/блокировка/«Оформить подписку»).
+  pay: () => api.post<{ paymentURL: string }>('/subscription/pay').then((r) => r.data),
+  // Текущее состояние подписки мастера.
+  getMe: () => api.get<SubscriptionState | null>('/subscription/me').then((r) => r.data),
+}
