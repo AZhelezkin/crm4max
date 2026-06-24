@@ -50,6 +50,9 @@ chmod +x /opt/crm4max/cron-reminders.sh
 # Добавляем в crontab (каждый час в :00)
 (crontab -l 2>/dev/null | grep -v 'cron-reminders'; echo "0 * * * * /opt/crm4max/cron-reminders.sh") | crontab -
 
+# NB: списание подписок (POST /api/subscription/charge-due) запускается не отсюда,
+# а через YC timer trigger → Cloud Function. См. infra/yc-functions/subscription-charge/.
+
 echo ""
 echo "✅ VM готова!"
 echo ""

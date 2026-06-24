@@ -1,0 +1,6 @@
+{
+  "name": "crm4max-subscription-charge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YC timer-triggered function: nightly subscription charge run"
+}
