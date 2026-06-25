@@ -124,6 +124,8 @@ export default function CreateBookingPage() {
   const [remind, setRemind] = useState(true)
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
   const [address, setAddress] = useState('')
+  // Сумма для услуги «Прочее» (isMisc) — рубли, вводится на шаге подтверждения.
+  const [miscPrice, setMiscPrice] = useState('')
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>({})
@@ -291,11 +293,17 @@ export default function CreateBookingPage() {
     setStep('time')
   }
 
-  const canSave = !!selectedClient && (!homeVisit || !!address.trim()) && !saving
+  // Услуга «Прочее» (isMisc): мастер сам вводит сумму на шаге подтверждения.
+  const isMisc = !!selectedService?.isMisc
+  const miscPriceKopecks = Math.round(Number(miscPrice.replace(',', '.')) * 100)
+  const miscPriceValid = !isMisc || (miscPrice.trim() !== '' && Number.isFinite(miscPriceKopecks) && miscPriceKopecks > 0)
+
+  const canSave = !!selectedClient && (!homeVisit || !!address.trim()) && miscPriceValid && !saving
 
   const handleSave = async () => {
     if (!master || !serviceId || !date || !time || !selectedClient) return
     if (homeVisit && !address.trim()) return
+    if (isMisc && !miscPriceValid) return
     setSaving(true)
     setError(null)
     try {
@@ -309,6 +317,8 @@ export default function CreateBookingPage() {
         masterClientId: selectedClient.id,
         remind,
         clientAddress: homeVisit ? address.trim() : undefined,
+        // Для «Прочее» — введённая мастером сумма (копейки).
+        price: isMisc ? miscPriceKopecks : undefined,
       })
       setCreatedBooking(booking)
       setStep('success')
@@ -917,7 +927,8 @@ export default function CreateBookingPage() {
   if (step === 'success') {
     const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
     const addressText = homeVisit ? address.trim() : master?.location ?? ''
-    const succPrice = selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price : 0
+    // Для «Прочее» — введённая сумма (createdBooking.price); иначе цена услуги.
+    const succPrice = createdBooking?.price ?? (selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price : 0)
     return (
       <div style={{ minHeight: '100dvh' }}>
         {/* Шапка: зелёная галочка + «Запись создана!» + «Закрыть» */}
@@ -1094,12 +1105,26 @@ export default function CreateBookingPage() {
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(sDPrice ?? selectedService.price)}</span>
-                {sDPrice !== null && (
-                  <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(selectedService.price)}</span>
-                )}
-              </div>
+              {isMisc ? (
+                /* «Прочее»: мастер вводит сумму вручную (макет 8716-48659). */
+                <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Сумма, ₽</span>
+                  <input
+                    inputMode="numeric"
+                    value={miscPrice}
+                    onChange={(e) => setMiscPrice(e.target.value.replace(/[^\d]/g, ''))}
+                    placeholder="0"
+                    style={{ ...text.callout1, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', padding: 0, width: '100%' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(sDPrice ?? selectedService.price)}</span>
+                  {sDPrice !== null && (
+                    <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(selectedService.price)}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1207,19 +1232,22 @@ function ServiceItem({ service, onClick }: { service: Service; onClick: () => vo
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ ...text.callout1, color: hasDiscount ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)' }}>
-            {formatPrice(dPrice ?? service.price)}
-          </span>
-          {hasDiscount && (
-            <>
-              <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(service.price)}</span>
-              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', boxSizing: 'border-box', borderRadius: 8, background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)', ...text.label2Caps }}>
-                Скидка
-              </span>
-            </>
-          )}
-        </div>
+        {/* «Прочее» (isMisc) — цена не задана, мастер вводит её на шаге подтверждения. */}
+        {!service.isMisc && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ ...text.callout1, color: hasDiscount ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)' }}>
+              {formatPrice(dPrice ?? service.price)}
+            </span>
+            {hasDiscount && (
+              <>
+                <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(service.price)}</span>
+                <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', boxSizing: 'border-box', borderRadius: 8, background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)', ...text.label2Caps }}>
+                  Скидка
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
       <ArrowRightIcon />
     </button>

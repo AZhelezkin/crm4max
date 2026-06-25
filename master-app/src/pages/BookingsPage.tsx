@@ -350,7 +350,7 @@ function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () =>
             {booking.service.name}
           </div>
           <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {formatRub(booking.service.price)}
+            {formatRub(booking.price ?? booking.service.price)}
           </div>
         </div>
       </div>

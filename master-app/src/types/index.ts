@@ -58,6 +58,9 @@ export interface Service {
   sessionsCount: number
   photo: string | null
   isActive: boolean
+  /** Системная услуга «Прочее» (price=0): видна только мастеру, цену вводит вручную
+   *  при создании записи. Скрыта из редактора услуг, доступна в пикере записи. */
+  isMisc?: boolean
   workPhotos: ServicePhoto[]
 }
 
@@ -80,6 +83,8 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
   paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
   notes: string | null
+  /** Индивидуальная сумма записи (копейки) для услуги «Прочее». null → берём service.price. */
+  price: number | null
   /** Адрес выезда мастера (если задан); null — услуга у мастера. */
   clientAddress: string | null
   remind: boolean

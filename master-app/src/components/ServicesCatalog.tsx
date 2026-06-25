@@ -81,7 +81,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const load = () =>
       Promise.all([categoriesApi.list(), servicesApi.list()]).then(([cats, svcs]) => {
         setCategories(cats)
-        setAllServices(svcs)
+        // Системную «Прочее» (isMisc) в редакторе услуг не показываем — она только
+        // для записи на услугу не из каталога (см. CreateBookingPage).
+        setAllServices(svcs.filter((s) => !s.isMisc))
         onCategoryCountChange?.(cats.length)
         setLoaded(true)
       }).catch(() => setLoaded(true))

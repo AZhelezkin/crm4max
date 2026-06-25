@@ -18,6 +18,8 @@ export const bookingsApi = {
     masterClientId?: string
     remind?: boolean
     clientAddress?: string | null
+    /** Индивидуальная сумма (копейки) для услуги «Прочее». */
+    price?: number
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
 
   /** Запись на услугу-абонемент: даты+время на все N приёмов сразу. */

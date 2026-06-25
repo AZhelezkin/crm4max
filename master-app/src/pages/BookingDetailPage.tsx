@@ -77,7 +77,8 @@ export default function BookingDetailPage() {
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
   const paid = booking.paymentStatus === 'PAID'
   const badge = PAYMENT_BADGE[booking.paymentStatus]
-  const price = discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price
+  // Для услуги «Прочее» цена индивидуальная (booking.price, ввёл мастер при записи).
+  const price = booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price
   const addressText = booking.clientAddress || booking.master.location || ''
   const addressSubtitle = booking.clientAddress ? 'Адрес выезда' : 'Адрес мастера'
 
