@@ -108,6 +108,7 @@ export default function BookingDetailPage() {
   const setMasterProfileLink = useBookingStore((s) => s.setMasterProfileLink)
   const setService = useBookingStore((s) => s.setService)
   const setDateTime = useBookingStore((s) => s.setDateTime)
+  const setClientAddress = useBookingStore((s) => s.setClientAddress)
   const resetStore = useBookingStore((s) => s.reset)
 
   // Источник bookingId: либо :id из URL (вход из списка /my-bookings/:id),
@@ -145,6 +146,9 @@ export default function BookingDetailPage() {
       setMasterId(booking.master.id)
       setService(booking.service)
       setDateTime(booking.date, booking.time)
+      // Адрес выезда переносим из записи в store — иначе на шаге подтверждения
+      // поле «Ваш адрес» окажется пустым (в view-режиме store не заполнен).
+      setClientAddress(booking.clientAddress)
     }
     navigate('/book/calendar')
   }

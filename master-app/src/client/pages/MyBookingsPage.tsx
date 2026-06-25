@@ -148,9 +148,11 @@ export default function MyBookingsPage() {
     bookingsApi
       .list()
       .then((all) => {
+        // Отменённые записи не показываем в календаре/списке «Записи».
+        const active = all.filter((b) => b.status !== 'CANCELLED')
         const filtered = currentMasterId
-          ? all.filter((b) => b.master.id === currentMasterId)
-          : all
+          ? active.filter((b) => b.master.id === currentMasterId)
+          : active
         setBookings(filtered)
       })
       .catch(() => {})
