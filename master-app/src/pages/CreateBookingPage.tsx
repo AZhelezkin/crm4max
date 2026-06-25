@@ -269,10 +269,17 @@ export default function CreateBookingPage() {
     }
   }
 
+  // Категория предвыбрана (вход с Главной по тапу категории) → шага «категория»
+  // в этом потоке не было, поэтому «Назад» с услуг уходит на предыдущий экран
+  // (Главную), а не в список категорий.
+  const categoryPreselected = !rescheduleInit?.rescheduleId && !!rescheduleInit?.categoryId
+
   const backFromService = () => {
     if (searchMode) {
       setSearchMode(false)
       setQuery('')
+    } else if (categoryPreselected) {
+      navigate(-1)
     } else {
       setStep('category')
     }
