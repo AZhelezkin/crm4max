@@ -5,8 +5,11 @@ import type { BookingDraft, Service } from '@client/types'
 interface BookingState extends BookingDraft {
   /** Ссылка на профиль текущего мастера в MAX (для гейта раздела «Сообщения»). */
   masterProfileLink: string | null
+  /** Если задан — флоу не создаёт новую запись, а переносит существующую (date/time). */
+  rescheduleId: string | null
   setMasterId: (id: string) => void
   setMasterProfileLink: (link: string | null) => void
+  setRescheduleId: (id: string | null) => void
   setService: (service: Service, categoryName?: string | null) => void
   setDateTime: (date: string, time: string) => void
   /** Установить/заменить слот курса по индексу сеанса (0..N-1). */
@@ -23,6 +26,7 @@ export const useBookingStore = create<BookingState>()(
     (set) => ({
       masterId: '',
       masterProfileLink: null,
+      rescheduleId: null,
       service: null,
       categoryName: null,
       date: '',
@@ -33,7 +37,10 @@ export const useBookingStore = create<BookingState>()(
 
       setMasterId: (masterId) => set({ masterId }),
       setMasterProfileLink: (masterProfileLink) => set({ masterProfileLink }),
-      setService: (service, categoryName = null) => set({ service, categoryName }),
+      setRescheduleId: (rescheduleId) => set({ rescheduleId }),
+      // Выбор услуги = старт новой записи → сбрасываем reschedule-режим (persisted store
+      // мог сохранить rescheduleId от прерванного переноса). Перенос ставит id ПОСЛЕ.
+      setService: (service, categoryName = null) => set({ service, categoryName, rescheduleId: null }),
       setDateTime: (date, time) => set({ date, time }),
       setSlot: (index, date, time) => set((s) => {
         const slots = [...s.slots]
@@ -44,7 +51,7 @@ export const useBookingStore = create<BookingState>()(
       clearSlots: () => set({ slots: [] }),
       setRemind: (remind) => set({ remind }),
       setClientAddress: (clientAddress) => set({ clientAddress }),
-      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, clientAddress: null })),
+      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, rescheduleId: null, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, clientAddress: null })),
     }),
     {
       name: 'booking-draft',

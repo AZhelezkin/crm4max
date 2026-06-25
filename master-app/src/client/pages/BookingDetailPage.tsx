@@ -109,6 +109,7 @@ export default function BookingDetailPage() {
   const setService = useBookingStore((s) => s.setService)
   const setDateTime = useBookingStore((s) => s.setDateTime)
   const setClientAddress = useBookingStore((s) => s.setClientAddress)
+  const setRescheduleId = useBookingStore((s) => s.setRescheduleId)
   const resetStore = useBookingStore((s) => s.reset)
 
   // Источник bookingId: либо :id из URL (вход из списка /my-bookings/:id),
@@ -144,11 +145,13 @@ export default function BookingDetailPage() {
     // подгружаем их из текущей записи.
     if (!isPostBooking && booking) {
       setMasterId(booking.master.id)
-      setService(booking.service)
+      setService(booking.service)            // сбрасывает rescheduleId — ставим его ниже
       setDateTime(booking.date, booking.time)
       // Адрес выезда переносим из записи в store — иначе на шаге подтверждения
       // поле «Ваш адрес» окажется пустым (в view-режиме store не заполнен).
       setClientAddress(booking.clientAddress)
+      // Режим переноса: ConfirmPage обновит эту запись (date/time), а не создаст новую.
+      setRescheduleId(booking.id)
     }
     navigate('/book/calendar')
   }

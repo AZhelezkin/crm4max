@@ -97,7 +97,7 @@ function IcoCalendarEdit() {
 
 export default function ConfirmPage() {
   const navigate = useNavigate()
-  const { masterId, service, categoryName, date, time, remind, clientAddress, setClientAddress, reset } = useBookingStore()
+  const { masterId, service, categoryName, date, time, remind, clientAddress, setClientAddress, reset, rescheduleId } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -116,11 +116,18 @@ export default function ConfirmPage() {
     if (!service) return
     setLoading(true)
     try {
-      const booking = await bookingsApi.create({
-        masterId, serviceId: service.id, date, time, remind,
-        clientAddress: master?.homeVisit ? clientAddress : null,
-      })
-      navigate('/book/success', { state: { bookingId: booking.id } })
+      if (rescheduleId) {
+        // Перенос существующей записи: меняем только дату/время (адрес/услуга не трогаются).
+        await bookingsApi.reschedule(rescheduleId, { date, time })
+        reset()
+        navigate('/my-bookings')
+      } else {
+        const booking = await bookingsApi.create({
+          masterId, serviceId: service.id, date, time, remind,
+          clientAddress: master?.homeVisit ? clientAddress : null,
+        })
+        navigate('/book/success', { state: { bookingId: booking.id } })
+      }
     } finally {
       setLoading(false)
     }
@@ -426,7 +433,9 @@ export default function ConfirmPage() {
         >
           <IcoCalendarEdit />
           <span style={{ ...text.callout1, color: 'var(--color-on-primary-surface)' }}>
-            {loading ? 'Записываем...' : 'Записаться'}
+            {loading
+              ? (rescheduleId ? 'Переносим...' : 'Записываем...')
+              : (rescheduleId ? 'Перенести' : 'Записаться')}
           </span>
         </button>
       </div>
