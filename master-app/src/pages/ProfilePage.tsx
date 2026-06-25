@@ -6,6 +6,7 @@ import { mastersApi } from '@/api/masters.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { UNCATEGORIZED_CATEGORY_ID, type Category, type Review } from '@/types'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
+import CategoryAvatar from '@/components/CategoryAvatar'
 
 type Tab = 'services' | 'photos' | 'reviews'
 
@@ -647,20 +648,7 @@ function ServicesList({
               cursor: 'pointer',
             }}
           >
-            {isUncat ? (
-              <UncategorizedAvatar />
-            ) : (
-              <div style={{
-                width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-                overflow: 'hidden', background: 'var(--color-surface)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {cat.photo
-                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
-                }
-              </div>
-            )}
+            <CategoryAvatar photo={cat.photo} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -731,21 +719,6 @@ function EmptyState({ label, action }: { label: string; action?: { label: string
 
 // Аватар категории «Услуги без категории» (макет 8905:49213): 44 circle с фиолетовым
 // градиентом (те же токены, что у GradientAvatarButton) + белая папка 20px по центру.
-function UncategorizedAvatar() {
-  return (
-    <div style={{
-      width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-      background: 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      {/* vuesax/linear/folder 20×20, белая */}
-      <svg width="20" height="20" viewBox="46 214 24 24" fill="none">
-        <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="#FFFFFF" strokeWidth="1.75" strokeMiterlimit="10" />
-      </svg>
-    </div>
-  )
-}
-
 function ProfileShareIcon() {
   // vuesax-style share/upload, 24×24, stroke=onSurfaceSoften (контраст с background-pill).
   const c = 'var(--color-on-surface-soften)'

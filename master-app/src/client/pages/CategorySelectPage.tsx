@@ -5,6 +5,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { text } from '@/styles/typography'
 import CategoryListSkeleton from '@client/components/CategoryListSkeleton'
+import CategoryAvatar from '@/components/CategoryAvatar'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -111,17 +112,8 @@ export default function CategorySelectPage() {
                 cursor: 'pointer', border: 'none', textAlign: 'left',
               }}
             >
-              {/* Аватар категории 44×44 ø */}
-              <div style={{
-                width: 44, height: 44, borderRadius: 22, flexShrink: 0,
-                overflow: 'hidden', background: 'var(--color-surface)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {cat.photo
-                  ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ ...text.titleSmall, color: 'var(--color-on-surface-secondary)' }}>✂️</span>
-                }
-              </div>
+              {/* Аватар категории 44×44: фото или дефолт — фиолетовая папка. */}
+              <CategoryAvatar photo={cat.photo} />
 
               {/* Title + опц. бейдж + description */}
               <div style={{ flex: 1, minWidth: 0 }}>
