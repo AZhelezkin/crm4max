@@ -1,6 +1,7 @@
 import { text } from '@/styles/typography'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { categoriesApi, servicesApi } from '@/api/services.api'
+import { useAuthStore } from '@/store/auth.store'
 import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice, UNCATEGORIZED_CATEGORY_ID } from '@/types'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
@@ -87,6 +88,11 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
     useEffect(() => { load() }, [])
 
+    // Перезагрузка после мутаций: локальный список + master в auth-сторе
+    // (ProfilePage читает master.categories из стора — без этого новые
+    // категории/услуги не видны на главной до перезапуска мини-аппа).
+    const reload = () => load().then(() => useAuthStore.getState().refreshMaster())
+
     // Услуги без категории — показываем в пустом состоянии (категорий ещё нет).
     const uncategorizedServices = allServices.filter((s) => !s.categoryId)
 
@@ -141,13 +147,13 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       if (editCatId) await categoriesApi.update(editCatId, data)
       else await categoriesApi.create(data)
       setShowCatForm(false)
-      load()
+      reload()
     }
 
     const handleDeleteCategory = async (id: string) => {
       await categoriesApi.remove(id)
       if (id === selectedCatId) changeSubStep('categories')
-      load()
+      reload()
     }
 
     // Удаление из формы редактирования категории.
@@ -158,7 +164,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       if (activeServiceTab === editCatId) setActiveServiceTab('all')
       await categoriesApi.remove(editCatId)
       setShowCatForm(false)
-      load()
+      reload()
     }
 
     // ─── Услуга ───────────────────────────────────────────────────────────────
@@ -223,12 +229,12 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         }
       }
       setShowSvcForm(false)
-      load()
+      reload()
     }
 
     const handleDeleteService = async (id: string) => {
       await servicesApi.remove(id)
-      load()
+      reload()
     }
 
     const selectedCat = categories.find((c) => c.id === selectedCatId) ?? null

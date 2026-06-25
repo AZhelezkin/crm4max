@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean
   init: () => Promise<void>
   setMaster: (master: Master) => void
+  refreshMaster: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -46,4 +47,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setMaster: (master) => set({ master }),
+
+  // Перечитать профиль мастера с сервера (категории/услуги/фото и т.п.) и положить
+  // в стор. Нужно после правок в ServicesCatalog — иначе ProfilePage, который
+  // читает master.categories из стора, показывает старое до перезапуска мини-аппа.
+  refreshMaster: async () => {
+    try {
+      const master = await mastersApi.getMe()
+      set({ master })
+    } catch { /* оставляем текущего master */ }
+  },
 }))
