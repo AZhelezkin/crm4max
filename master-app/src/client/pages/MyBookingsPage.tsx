@@ -214,6 +214,8 @@ export default function MyBookingsPage() {
   }, [filteredBookings, selectedDate, searchMode])
 
   const priceLabel = (b: Booking) => {
+    // «Прочее»: индивидуальная сумма от мастера (b.price). Иначе — цена услуги со скидкой.
+    if (b.price != null) return formatPrice(b.price)
     const svc = b.service
     const base = svc.price
     const discounted = svc.discountPercent ? Math.round(base * (1 - svc.discountPercent / 100)) : base

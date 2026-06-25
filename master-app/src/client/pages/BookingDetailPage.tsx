@@ -190,7 +190,8 @@ export default function BookingDetailPage() {
 
   const { master, service, date, time, clientAddress, paymentStatus } = booking
   const remind = booking.remind ?? true
-  const price = discountedPrice(service.price, service.discountPercent) ?? service.price
+  // Для услуги «Прочее» сумму задаёт мастер при записи (booking.price).
+  const price = booking.price ?? discountedPrice(service.price, service.discountPercent) ?? service.price
   const formattedDate = dayjs(date).format('D MMMM, dd')
   const badge = PAYMENT_BADGE[paymentStatus]
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'

@@ -75,6 +75,8 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
   paymentStatus: 'UNPAID' | 'DEPOSIT_PAID' | 'PAID'
   notes: string | null
+  /** Индивидуальная сумма записи (копейки) для услуги «Прочее». null → service.price. */
+  price: number | null
   /** Напоминание за 1 час (Booking.remind в БД). */
   remind?: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
