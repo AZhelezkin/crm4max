@@ -27,13 +27,36 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
     }
   }, [open, value])
 
+  // iOS: при открытии клавиатуры ужимается только visual viewport, а layout
+  // viewport (по которому fixed-оверлей растянут на весь экран и центрируется
+  // пин на top:50%) — нет. Из-за этого центральный пин уезжает под клавиатуру.
+  // Привязываем оверлей к visualViewport, чтобы карта/пин жили строго в видимой
+  // зоне над клавиатурой и пин оставался по центру видимого участка карты.
+  const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null)
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!open || !vv) { setViewport(null); return }
+    const update = () => setViewport({ top: vv.offsetTop, height: vv.height })
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [open])
+
   if (!open) return null
 
   return createPortal(
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        left: 0,
+        right: 0,
+        top: viewport ? viewport.top : 0,
+        height: viewport ? viewport.height : '100%',
         background: 'var(--color-background)',
         zIndex: 200,
         display: 'flex',
