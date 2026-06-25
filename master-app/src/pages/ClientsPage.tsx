@@ -5,6 +5,7 @@ import { text } from '@/styles/typography'
 import { clientsApi } from '@/api/clients.api'
 import type { Client } from '@/types'
 import { FloatingField } from '@/components/onboardingShared'
+import { scrollPageTop } from '@/lib/scroll'
 
 // Вкладка «Клиенты» кабинета мастера (макеты 8951-33973 / 35261 / 34677 / 37129 / 37277 / 8952-34672 / 8949-65614).
 // Все экраны живут внутри одного роута /clients (нижний таб-бар из MainLayout виден всегда),
@@ -72,7 +73,7 @@ export default function ClientsPage() {
 
   // Под-экраны (список/детали/форма) живут на одном роуте /clients — сбрасываем
   // прокрутку при переключении, иначе экран открывается «промотанным».
-  useEffect(() => { window.scrollTo(0, 0) }, [view])
+  useEffect(() => { scrollPageTop() }, [view])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

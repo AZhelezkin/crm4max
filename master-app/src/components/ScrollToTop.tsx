@@ -1,5 +1,6 @@
 import { useLayoutEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { scrollPageTop } from '@/lib/scroll'
 
 // Сброс прокрутки окна наверх при смене роута. React Router v6 (Hash/BrowserRouter,
 // не data-роутер) позицию прокрутки не восстанавливает, из-за чего длинные страницы
@@ -9,7 +10,7 @@ import { useLocation } from 'react-router-dom'
 export default function ScrollToTop() {
   const { pathname } = useLocation()
   useLayoutEffect(() => {
-    window.scrollTo(0, 0)
+    scrollPageTop()
   }, [pathname])
   return null
 }

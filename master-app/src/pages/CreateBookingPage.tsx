@@ -11,6 +11,7 @@ import type { Booking, Category, Client, Schedule, Service } from '@/types'
 import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
+import { scrollPageTop } from '@/lib/scroll'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -183,7 +184,7 @@ export default function CreateBookingPage() {
 
   // Шаги флоу (категория/услуга/дата/время/подтверждение) — один роут /bookings/new.
   // Сбрасываем прокрутку при смене шага, иначе следующий шаг открывается «промотанным».
-  useEffect(() => { window.scrollTo(0, 0) }, [step])
+  useEffect(() => { scrollPageTop() }, [step])
 
   // Абонемент «По неделям»: сетка времён по ближайшему рабочему дню (как шаблон).
   useEffect(() => {

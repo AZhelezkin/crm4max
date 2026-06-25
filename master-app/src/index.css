@@ -211,11 +211,12 @@ textarea::placeholder {
    игнорируя body { background }. Фиксим — задаём фон на корне. */
 html {
   background: var(--color-background);
-  /* Гасим rubber-band overscroll (iOS 16+/Chromium). Приложение скроллит сам
-     документ (window.scrollTo), и при оттягивании пальцем вся страница
-     «плавает» — скруглённая карта #root>div отрывается и показывает фон.
-     overscroll-behavior:none убирает вертикальный bounce и горизонтальный
-     scroll-chaining; ничего не ломает у обычного внутреннего скролла. */
+  /* Убираем скролл с вьюпорта: overflow:hidden на корне «отдаёт» прокрутку
+     <body> (см. ниже). Тогда у самого вьюпорта тянуть нечего — пропадает
+     overscroll-«плавание», которое на Android не добивал overscroll-behavior
+     на скроллящемся вьюпорте. */
+  height: 100%;
+  overflow: hidden;
   overscroll-behavior: none;
 }
 
@@ -225,7 +226,14 @@ body {
   color: var(--color-on-surface);
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
-  min-height: 100dvh;
+  /* <body> — реальный скролл-контейнер вместо вьюпорта. overscroll-behavior:none
+     здесь действует надёжно (обычный контейнер, а не вьюпорт). NB: после этого
+     прокрутку наверх надо сбрасывать через document.body, а не window.scrollTo —
+     см. ScrollToTop / scrollPageTop(). */
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
 }
 
