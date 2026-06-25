@@ -38,7 +38,7 @@ function ToolbarButton({ onClick, ariaLabel, children }: {
   )
 }
 
-/* ── Кнопка «Записаться» (vuesax/linear/calendar-edit 24×24) ───────────────── */
+/* ── Кнопка «Выбрать дату» (vuesax/linear/calendar-edit 24×24) ───────────────── */
 
 function IcoCalendarEdit() {
   return (
@@ -249,7 +249,7 @@ export default function ServiceDetailPage() {
         )}
       </div>
 
-      {/* ── Footer button «Записаться». bottom-fixed: pt-8 pb-48 px-12.
+      {/* ── Footer button «Выбрать дату» (ведёт на выбор даты/курса). bottom-fixed: pt-8 pb-48 px-12.
             Кнопка h=60, rx=20, bg=primarySurface, gap=8 (icon + text). */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -272,7 +272,7 @@ export default function ServiceDetailPage() {
         >
           <IcoCalendarEdit />
           <span style={{ ...text.callout1, color: 'var(--color-on-primary-surface)' }}>
-            Записаться
+            Выбрать дату
           </span>
         </button>
       </div>
