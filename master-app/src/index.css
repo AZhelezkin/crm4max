@@ -211,6 +211,12 @@ textarea::placeholder {
    игнорируя body { background }. Фиксим — задаём фон на корне. */
 html {
   background: var(--color-background);
+  /* Гасим rubber-band overscroll (iOS 16+/Chromium). Приложение скроллит сам
+     документ (window.scrollTo), и при оттягивании пальцем вся страница
+     «плавает» — скруглённая карта #root>div отрывается и показывает фон.
+     overscroll-behavior:none убирает вертикальный bounce и горизонтальный
+     scroll-chaining; ничего не ломает у обычного внутреннего скролла. */
+  overscroll-behavior: none;
 }
 
 body {
@@ -220,6 +226,7 @@ body {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
+  overscroll-behavior: none;
 }
 
 /*
