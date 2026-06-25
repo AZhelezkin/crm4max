@@ -10,8 +10,14 @@ import ProfileSkeleton from '@/components/ProfileSkeleton'
 type Tab = 'services' | 'photos' | 'reviews'
 
 export default function ProfilePage() {
-  const { master } = useAuthStore()
+  const { master, refreshMaster } = useAuthStore()
   const navigate = useNavigate()
+
+  // Подтягиваем свежий профиль при каждом заходе на главную: категории/услуги/фото
+  // могли поменяться в /services и т.п. Стор уже содержит master — показываем его
+  // сразу, refreshMaster обновляет на месте (без скелетона), и новые данные видны
+  // сразу после возврата, без перезапуска мини-аппа.
+  useEffect(() => { void refreshMaster() }, [refreshMaster])
   const [activeTab, setActiveTab] = useState<Tab>('services')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [lightboxMenuOpen, setLightboxMenuOpen] = useState(false)
