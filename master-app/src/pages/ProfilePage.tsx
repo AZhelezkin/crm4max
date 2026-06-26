@@ -71,6 +71,7 @@ export default function ProfilePage() {
         .sort((a, b) => a.time.localeCompare(b.time)),
     [bookings, today],
   )
+  const isTodayNonWorking = !!master?.schedule && !master.schedule.workingDays.includes(todayDay.day() || 7)
 
   // Подписка: баннер «Не смогли оплатить» в статусе GRACE. payUrl префетчим (openLink
   // требует синхронного user-gesture), открываем по тапу «Оплатить».
@@ -282,6 +283,7 @@ export default function ProfilePage() {
       <HomeSchedulePreview
         date={todayDay}
         bookings={todayBookings}
+        isDayOff={isTodayNonWorking}
         onOpenSchedule={() => navigate('/bookings')}
         onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
       />
@@ -642,9 +644,10 @@ export default function ProfilePage() {
   )
 }
 
-function HomeSchedulePreview({ date, bookings, onOpenSchedule, onAddBooking }: {
+function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBooking }: {
   date: dayjs.Dayjs
   bookings: Booking[]
+  isDayOff: boolean
   onOpenSchedule: () => void
   onAddBooking: () => void
 }) {
@@ -660,16 +663,23 @@ function HomeSchedulePreview({ date, bookings, onOpenSchedule, onAddBooking }: {
           <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--color-success-surface-accented)', flexShrink: 0 }} />
           <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capitalize(date.format('dddd'))}</span>
         </button>
-        <button
-          type="button"
-          aria-label="Создать запись на сегодня"
-          onClick={onAddBooking}
-          style={{ width: 68, height: 68, borderRadius: 34, border: 'none', flexShrink: 0, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-        >
-          <ScheduleAddIcon />
-        </button>
+        {isDayOff ? <div style={{ width: 44, height: 44, flexShrink: 0 }} /> : (
+          <button
+            type="button"
+            aria-label="Создать запись на сегодня"
+            onClick={onAddBooking}
+            style={{ width: 44, height: 44, borderRadius: 22, border: 'none', flexShrink: 0, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+          >
+            <ScheduleAddIcon />
+          </button>
+        )}
       </div>
       <div style={{ height: 1, background: 'var(--color-divider-low)' }} />
+      {(isDayOff || bookings.length === 0) && (
+        <div style={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.body2, color: 'var(--color-on-surface-muted)' }}>
+          {isDayOff ? 'Выходной' : 'Нет записей на сегодня'}
+        </div>
+      )}
       {bookings.map((booking) => {
         const endDateTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute')
         const endTime = endDateTime.format('HH:mm')
