@@ -11,8 +11,7 @@ dayjs.locale('ru')
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 
-// Максимальная длина индикатора занятости под датой (px) = 100% рабочего дня.
-const INDICATOR_MAX_W = 16
+const INDICATOR_SIDE_PADDING = 3
 
 const toMin = (t: string) => {
   const [h, m] = t.split(':').map(Number)
@@ -252,7 +251,7 @@ export default function BookingsPage() {
             const isWeekend = (day.day() || 7) >= 6
             const bookedMin = bookedMinutesByDate.get(val) ?? 0
             const hasAppts = bookedMin > 0
-            // Длина индикатора пропорциональна занятости рабочего дня (16px = 100%).
+            // Длина индикатора пропорциональна занятости рабочего дня.
             // Нет данных о графике для этого дня (workMin=0) → полная риска, как раньше.
             const workMin = workingMinutesByDow[day.day() || 7] ?? 0
             // Нерабочий день мастера (день недели не входит в график) → серая подложка
@@ -260,7 +259,7 @@ export default function BookingsPage() {
             // были бы серыми до прихода schedule.
             const isNonWorking = !!schedule && !schedule.workingDays.includes(day.day() || 7)
             const ratio = workMin > 0 ? Math.min(1, bookedMin / workMin) : 1
-            const indicatorW = Math.max(4, Math.round(ratio * INDICATOR_MAX_W))
+            const indicatorWPercent = Math.max(0, Math.round(ratio * 100))
             // Текст: будни/выходные × прошлое/настоящее (как в кабинете клиента).
             const color = isWeekend
               ? isPast
@@ -298,14 +297,25 @@ export default function BookingsPage() {
                     style={{
                       position: 'absolute',
                       bottom: 8,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: indicatorW,
+                      left: INDICATOR_SIDE_PADDING,
+                      right: INDICATOR_SIDE_PADDING,
                       height: 4,
                       borderRadius: 100,
-                      background: 'var(--color-on-success-surface-lite)',
+                      overflow: 'hidden',
                     }}
-                  />
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        width: `${indicatorWPercent}%`,
+                        minWidth: 4,
+                        maxWidth: '100%',
+                        height: '100%',
+                        borderRadius: 100,
+                        background: 'var(--color-on-success-surface-lite)',
+                      }}
+                    />
+                  </span>
                 )}
               </button>
             )
