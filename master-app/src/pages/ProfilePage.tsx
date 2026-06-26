@@ -1,14 +1,27 @@
 import { text } from '@/styles/typography'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
+import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
-import { UNCATEGORIZED_CATEGORY_ID, type Category, type Review } from '@/types'
+import { discountedPrice, UNCATEGORIZED_CATEGORY_ID, type Booking, type Category, type Review } from '@/types'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import CategoryAvatar from '@/components/CategoryAvatar'
 
+dayjs.locale('ru')
+
 type Tab = 'services' | 'photos' | 'reviews'
+
+function formatRub(kop: number): string {
+  return (kop / 100).toLocaleString('ru-RU') + ' ₽'
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 export default function ProfilePage() {
   const { master, refreshMaster } = useAuthStore()
@@ -34,6 +47,9 @@ export default function ProfilePage() {
 
   const [reviews, setReviews]         = useState<Review[]>([])
   const [reviewsLoaded, setReviewsLoaded] = useState(false)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const today = dayjs().format('YYYY-MM-DD')
+  const todayDay = dayjs(today)
 
   useEffect(() => {
     if (reviewsLoaded || !master?.id) return
@@ -41,6 +57,20 @@ export default function ProfilePage() {
       .then((r) => { setReviews(r); setReviewsLoaded(true) })
       .catch(() => setReviewsLoaded(true))
   }, [master?.id, reviewsLoaded])
+
+  useEffect(() => {
+    bookingsApi.list({ from: today, to: today })
+      .then(setBookings)
+      .catch(() => {})
+  }, [today])
+
+  const todayBookings = useMemo(
+    () =>
+      bookings
+        .filter((b) => b.date === today && b.status !== 'CANCELLED')
+        .sort((a, b) => a.time.localeCompare(b.time)),
+    [bookings, today],
+  )
 
   // Подписка: баннер «Не смогли оплатить» в статусе GRACE. payUrl префетчим (openLink
   // требует синхронного user-gesture), открываем по тапу «Оплатить».
@@ -248,6 +278,13 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      <HomeSchedulePreview
+        date={todayDay}
+        bookings={todayBookings}
+        onOpenSchedule={() => navigate('/bookings')}
+        onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
+      />
 
       {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
       {subState?.status === 'GRACE' && (
@@ -605,6 +642,66 @@ export default function ProfilePage() {
   )
 }
 
+function HomeSchedulePreview({ date, bookings, onOpenSchedule, onAddBooking }: {
+  date: dayjs.Dayjs
+  bookings: Booking[]
+  onOpenSchedule: () => void
+  onAddBooking: () => void
+}) {
+  return (
+    <section style={{ padding: '0 32px 32px' }}>
+      <div style={{ height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <button
+          type="button"
+          onClick={onOpenSchedule}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}
+        >
+          <span style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>{date.format('D MMMM')}</span>
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--color-success-surface-accented)', flexShrink: 0 }} />
+          <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capitalize(date.format('dddd'))}</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Создать запись на сегодня"
+          onClick={onAddBooking}
+          style={{ width: 68, height: 68, borderRadius: 34, border: 'none', flexShrink: 0, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+        >
+          <ScheduleAddIcon />
+        </button>
+      </div>
+      <div style={{ height: 1, background: 'var(--color-divider-low)' }} />
+      {bookings.map((booking) => {
+        const endDateTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute')
+        const endTime = endDateTime.format('HH:mm')
+        const price = booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price
+        const isPast = endDateTime.isBefore(dayjs())
+        const primaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface)'
+        const secondaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface-secondary)'
+        const statusColor = isPast ? 'var(--color-pattern-element)' : 'var(--color-success-surface-accented)'
+        return (
+          <div key={booking.id} style={{ height: 60, borderBottom: '1px solid var(--color-divider-low)', display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: 4, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0 }}>
+              <div style={{ width: 3, height: 40, borderRadius: 2, background: statusColor }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0, paddingLeft: 24, paddingRight: 12, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ ...text.callout1, color: primaryColor, textDecoration: isPast ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {booking.service.name}
+              </div>
+              <div style={{ ...text.body2, color: secondaryColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {formatRub(price)}
+              </div>
+            </div>
+            <div style={{ width: 68, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+              <div style={{ ...text.callout1, color: primaryColor }}>{booking.time}</div>
+              <div style={{ ...text.body2, color: secondaryColor }}>{endTime}</div>
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
+}
+
 // ─── Helper-стиль для floating toolbar-кнопок ─────────────────────────────────
 
 // Иконка-кнопка внутри пилюли действий тулбара (без своего фона, padding 6 вокруг icon 24).
@@ -719,6 +816,14 @@ function EmptyState({ label, action }: { label: string; action?: { label: string
 
 // Аватар категории «Услуги без категории» (макет 8905:49213): 44 circle с фиолетовым
 // градиентом (те же токены, что у GradientAvatarButton) + белая папка 20px по центру.
+function ScheduleAddIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <path d="M8 16H24M16 8V24" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function ProfileShareIcon() {
   // vuesax-style share/upload, 24×24, stroke=onSurfaceSoften (контраст с background-pill).
   const c = 'var(--color-on-surface-soften)'
