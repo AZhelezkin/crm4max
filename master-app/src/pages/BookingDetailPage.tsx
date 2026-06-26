@@ -210,7 +210,7 @@ export default function BookingDetailPage() {
         <div style={{ padding: '16px 12px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!paid && (
             <button type="button" disabled={busy} onClick={() => { void handleConfirmPayment() }} style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', cursor: busy ? 'default' : 'pointer', ...text.callout1, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
-              Подтвердить оплату
+              Отметить как оплачено
             </button>
           )}
           <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
