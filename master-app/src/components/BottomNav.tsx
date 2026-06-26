@@ -1,5 +1,7 @@
-﻿import { useLocation, useNavigate } from 'react-router-dom'
+﻿import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
+import { startSupport } from '@/api/support.api'
 
 const ACTIVE = 'var(--color-primary-surface)'
 const INACTIVE = 'var(--color-on-surface-secondary)'
@@ -45,6 +47,17 @@ function NavIcon({ path, color }: { path: string; color: string }) {
   )
 }
 
+// Иконка поддержки (как в клиентском BottomNav, vuesax/bold support).
+function SupportIcon({ color }: { color: string }) {
+  return (
+    <div style={{ display: 'inline-flex' }}>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path fill={color} d="M14 2.333c-5.798 0-10.5 4.702-10.5 10.5v6.417c0 1.93 1.57 3.5 3.5 3.5h1.167c.644 0 1.166-.523 1.166-1.167v-5.833c0-.644-.522-1.167-1.166-1.167H5.833v-1.75c0-4.51 3.657-8.166 8.167-8.166s8.167 3.656 8.167 8.166v1.75h-2.334c-.644 0-1.166.523-1.166 1.167v5.833c0 .644.522 1.167 1.166 1.167h2.334v.583c0 1.61-1.307 2.917-2.917 2.917H15.75a1.75 1.75 0 0 0-1.75 1.75v.583c0 .322-.261.584-.583.584H11.083a.583.583 0 0 1-.583-.584v-1.166c0-.322.261-.584.583-.584h2.334c.644 0 1.166-.522 1.166-1.166s-.522-1.167-1.166-1.167h-2.334a2.917 2.917 0 0 0-2.916 2.917v1.166a2.917 2.917 0 0 0 2.916 2.917h2.334a2.917 2.917 0 0 0 2.916-2.917v-.583c4.832 0 5.25-3.92 5.25-5.25v-7c0-5.798-4.702-10.5-10.5-10.5Z" />
+      </svg>
+    </div>
+  )
+}
+
 const TABS = [
   { path: '/', label: 'Профиль' },
   { path: '/bookings', label: 'Расписание' },
@@ -55,10 +68,29 @@ const TABS = [
 export default function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [supportLoading, setSupportLoading] = useState(false)
 
   const activeTab = TABS.find((t) =>
     t.path === '/' ? location.pathname === '/' : location.pathname.startsWith(t.path)
   )?.path ?? '/'
+
+  // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как у клиента).
+  const handleSupport = async () => {
+    if (supportLoading) return
+    setSupportLoading(true)
+    try {
+      const { botUrl } = await startSupport()
+      const wa = window.WebApp
+      if (wa?.openMaxLink) wa.openMaxLink(botUrl)
+      else if (wa?.openLink) wa.openLink(botUrl)
+      else window.open(botUrl, '_blank')
+    } catch (err) {
+      console.error('startSupport failed', err)
+      alert('Не удалось открыть поддержку. Попробуйте позже.')
+    } finally {
+      setSupportLoading(false)
+    }
+  }
 
   return (
     <nav style={{
@@ -89,6 +121,24 @@ export default function BottomNav() {
           </button>
         )
       })}
+      <button
+        key="support"
+        onClick={handleSupport}
+        disabled={supportLoading}
+        style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 3, background: 'none', border: 'none',
+          cursor: 'pointer', padding: '6px 0',
+          WebkitTapHighlightColor: 'transparent',
+          opacity: supportLoading ? 0.5 : 1,
+        }}
+      >
+        <SupportIcon color={INACTIVE} />
+        <span style={{ ...text.captionSmall, color: INACTIVE }}>
+          Поддержка
+        </span>
+      </button>
     </nav>
   )
 }
