@@ -76,12 +76,14 @@ export default function AboutMePage() {
     try {
       const updated = await mastersApi.updateProfile({
         name,
-        phone: phone || undefined,
+        // null при очистке — иначе телефон/фото не обнулятся при сохранении.
+        // photoUrl инициализирован из master.photo, так что не сотрёт существующее.
+        phone: phone || null,
         description,
         location,
         homeVisit,
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-        ...(photoUrl ? { photo: photoUrl } : {}),
+        photo: photoUrl,
       })
       setMaster({ ...master!, ...updated })
       navigate(-1)

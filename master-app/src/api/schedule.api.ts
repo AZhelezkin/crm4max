@@ -9,8 +9,8 @@ export const scheduleApi = {
     workingDays: number[]
     startTime: string
     endTime: string
-    breakStart?: string
-    breakEnd?: string
+    breakStart?: string | null
+    breakEnd?: string | null
     bufferMinutes: number
   }) => api.put<Schedule>('/schedule/me', data).then((r) => r.data),
 }

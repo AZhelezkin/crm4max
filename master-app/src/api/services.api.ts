@@ -5,10 +5,10 @@ export const categoriesApi = {
   list: () =>
     api.get<Category[]>('/services/categories').then((r) => r.data),
 
-  create: (data: { name: string; description?: string; photo?: string }) =>
+  create: (data: { name: string; description?: string | null; photo?: string | null }) =>
     api.post<Category>('/services/categories', data).then((r) => r.data),
 
-  update: (id: string, data: { name?: string; description?: string; photo?: string }) =>
+  update: (id: string, data: { name?: string; description?: string | null; photo?: string | null }) =>
     api.put<Category>(`/services/categories/${id}`, data).then((r) => r.data),
 
   remove: (id: string) =>
@@ -20,25 +20,25 @@ export const servicesApi = {
     api.get<Service[]>('/services').then((r) => r.data),
 
   create: (data: {
-    categoryId?: string
+    categoryId?: string | null
     name: string
-    description?: string
+    description?: string | null
     duration: number
     price: number
     discountPercent?: number | null
     sessionsCount?: number
-    photo?: string
+    photo?: string | null
   }) => api.post<Service>('/services', data).then((r) => r.data),
 
   update: (id: string, data: {
-    categoryId?: string
+    categoryId?: string | null
     name?: string
-    description?: string
+    description?: string | null
     duration?: number
     price?: number
     discountPercent?: number | null
     sessionsCount?: number
-    photo?: string
+    photo?: string | null
     isActive?: boolean
   }) => api.put<Service>(`/services/${id}`, data).then((r) => r.data),
 

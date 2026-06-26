@@ -51,8 +51,9 @@ export default function SchedulePage() {
         startTime,
         endTime,
         bufferMinutes: buffer,
-        breakStart: hasBreak ? breakStart : undefined,
-        breakEnd: hasBreak ? breakEnd : undefined,
+        // null при выключенном перерыве — иначе старый перерыв не удалится из БД.
+        breakStart: hasBreak ? breakStart : null,
+        breakEnd: hasBreak ? breakEnd : null,
       })
       navigate(-1)
     } finally {

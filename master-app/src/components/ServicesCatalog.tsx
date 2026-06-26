@@ -145,7 +145,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
     const saveCatForm = async () => {
       if (!catName.trim()) return
-      const data = { name: catName.trim(), description: catDesc || undefined, photo: catPhotoUrl || undefined }
+      // null (а не undefined) при очистке — иначе Prisma не обнуляет поле при редактировании.
+      const data = { name: catName.trim(), description: catDesc || null, photo: catPhotoUrl || null }
       if (editCatId) await categoriesApi.update(editCatId, data)
       else await categoriesApi.create(data)
       setShowCatForm(false)
@@ -204,15 +205,15 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       const firstPhotoUrl = getFirstUploadedWorkPhotoUrl(svcWorkPhotos)
       const data = {
         name: svcName.trim(),
-        description: svcDesc || undefined,
+        description: svcDesc || null,
         price: Math.round(Number(svcPrice) * 100) || 0,
         duration: Number(svcDuration) || 30,
-        categoryId: svcCategoryId || undefined,
+        categoryId: svcCategoryId || null,
         // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД
         // (Prisma игнорирует undefined и оставляет прежнее значение).
         discountPercent: svcDiscountEnabled ? svcDiscountPercent : null,
         sessionsCount: svcIsPackage ? svcSessionsCount : 1,
-        photo: firstPhotoUrl || undefined,
+        photo: firstPhotoUrl || null,
       }
       if (editService) {
         await servicesApi.update(editService.id, data)
