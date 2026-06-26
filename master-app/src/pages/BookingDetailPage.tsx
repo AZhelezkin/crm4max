@@ -124,12 +124,22 @@ export default function BookingDetailPage() {
   const handleEditTime = () =>
     navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id, editTime: true, date: booking.date } })
 
+  // «Назад»: внутри приложения (зашли из списка «Записи») — обычный возврат.
+  // Если карточка открыта первым экраном сессии — мастер пришёл по deep-link из
+  // бота (MasterIndexRoute сделал replace, история пуста) → ведём на главную.
+  // idx ведёт сам React Router в window.history.state; 0 = первая запись сессии.
+  const handleBack = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+    if (idx > 0) navigate(-1)
+    else navigate('/')
+  }
+
   return (
     <div style={{ minHeight: '100dvh' }}>
       {/* Шапка: назад + «Запись» */}
       <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
-          <button type="button" aria-label="Назад" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface)' }}>
+          <button type="button" aria-label="Назад" onClick={handleBack} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface)' }}>
             <ArrowLeftIcon />
           </button>
         </div>
