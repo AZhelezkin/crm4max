@@ -65,7 +65,7 @@ export default function PaymentsPage() {
   const months = useMemo<MonthSummary[]>(() => {
     const map = new Map<string, number>()
     for (const p of payments) {
-      if (p.status === 'UNPAID') continue
+      // Итог месяца — по всем заказам независимо от статуса оплаты.
       const key = dayjs(p.createdAt).format('YYYY-MM')
       map.set(key, (map.get(key) || 0) + p.amount)
     }
@@ -105,12 +105,10 @@ export default function PaymentsPage() {
         }
         map.set(dateKey, entry)
       }
-      if (p.status === 'UNPAID') {
-        entry.hasUnpaid = true
-      } else {
-        entry.total += p.amount
-        entry.paymentCount += 1
-      }
+      // Итог дня — по всем заказам; неоплаченные тоже считаем, флаг для индикатора.
+      entry.total += p.amount
+      entry.paymentCount += 1
+      if (p.status === 'UNPAID') entry.hasUnpaid = true
     }
     return Array.from(map.values()).sort((a, b) => a.day - b.day)
   }, [payments, selectedMonth])
