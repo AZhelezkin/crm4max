@@ -30,14 +30,17 @@ import { subscriptionApi } from '@/api/subscription.api'
 //   <UUID>  → клиент, запись к конкретному мастеру — быстрый путь
 //   ""      → авто-определение: бэкенд проверяет max_user_id по БД
 //
-// Браузерный фолбэк: ?masterId=<UUID> в URL открывает клиентский режим
-// для этого мастера (используется для шаринга ссылок вне Max).
+// Браузерный фолбэк: start_param можно передать прямо в URL —
+//   ?startapp=<value> (универсально: cmasters, mmode, UUID, …) — для прямого
+//             веб-адреса/нативной web-app кнопки в Max;
+//   ?masterId=<UUID> — старый алиас для шаринга ссылки на мастера.
+// В Max start_param приходит из initDataUnsafe и имеет приоритет.
 function resolveStartParam(): string {
   const fromMax = window.WebApp?.initDataUnsafe?.start_param
   if (fromMax) return fromMax
   if (typeof window !== 'undefined') {
-    const masterId = new URLSearchParams(window.location.search).get('masterId')
-    if (masterId) return masterId
+    const q = new URLSearchParams(window.location.search)
+    return q.get('startapp') || q.get('masterId') || ''
   }
   return ''
 }
