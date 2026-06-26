@@ -1,6 +1,26 @@
 import { text } from '@/styles/typography'
 import { useNavigate } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
+
+// DD.MM.YYYY из ISO-строки.
+function formatDate(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`
+}
+
+// Заголовок/подзаголовок строки «Оплата подписки» по статусу подписки.
+function subscriptionRow(sub: SubscriptionState | null): { title: string; subtitle: string } {
+  if (!sub) return { title: 'Подписка', subtitle: '—' }
+  switch (sub.status) {
+    case 'TRIALING': return { title: 'Пробный период', subtitle: sub.trialEndsAt ? `до ${formatDate(sub.trialEndsAt)}` : 'активен' }
+    case 'ACTIVE':   return { title: 'Подписка активна', subtitle: sub.currentPeriodEnd ? `до ${formatDate(sub.currentPeriodEnd)}` : '' }
+    case 'GRACE':    return { title: 'Оплата не прошла', subtitle: 'Продлите подписку' }
+    case 'BLOCKED':  return { title: 'Подписка заблокирована', subtitle: 'Оформите подписку' }
+  }
+}
 
 // Экран «Настройки профиля» (Figma 8945:64458). Точка входа — шестерёнка на ProfilePage.
 // Кликабельны только строки секции «Получение платежей»: Мои данные → /about (шаг 2),
@@ -10,6 +30,10 @@ import type { ReactNode } from 'react'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+
+  const [subState, setSubState] = useState<SubscriptionState | null>(null)
+  useEffect(() => { subscriptionApi.getMe().then(setSubState).catch(() => {}) }, [])
+  const subRow = subscriptionRow(subState)
 
   return (
     <div style={{ minHeight: '100dvh' }}>
@@ -68,13 +92,13 @@ export default function SettingsPage() {
         {/* «Оплата от клиентов» (привязка карты для приёма оплат от клиентов) скрыта
             до появления функционала — см. историю, вернуть из Figma 8945:29664. */}
 
-        {/* ── Оплата подписки (некликабельно) ── */}
+        {/* ── Оплата подписки (некликабельно) — реальный статус подписки. ── */}
         <Section label="Оплата подписки">
           <SettingRow
             icon={<CardIcon />}
-            title="Банковская карта"
-            subtitle="** 0000"
-            trailing={<EditIcon />}
+            title={subRow.title}
+            subtitle={subRow.subtitle}
+            trailing={null}
           />
         </Section>
 

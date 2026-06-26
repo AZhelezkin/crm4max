@@ -23,6 +23,19 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Дней до конца триала (округление вверх, не меньше 0).
+function trialDaysLeft(iso: string | null): number {
+  if (!iso) return 0
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
+}
+// «1 день» / «2 дня» / «5 дней».
+function pluralDays(n: number): string {
+  const m10 = n % 10, m100 = n % 100
+  if (m10 === 1 && m100 !== 11) return `${n} день`
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return `${n} дня`
+  return `${n} дней`
+}
+
 export default function ProfilePage() {
   const { master, refreshMaster } = useAuthStore()
   const navigate = useNavigate()
@@ -288,6 +301,37 @@ export default function ProfilePage() {
           onOpenBooking={(bookingId) => navigate(`/bookings/${bookingId}`)}
         />
       </div>
+
+      {/* Баннер «Пробный период» (TRIALING) — информационный, mint-градиент, без CTA.
+          Существующие мастера попадают на триал при входе (getOrCreate на бэке),
+          показываем сколько осталось. По аналогии с GRACE-баннером ниже. */}
+      {subState?.status === 'TRIALING' && (
+        <div style={{ padding: '0 16px', marginBottom: 16 }}>
+          <div style={{
+            display: 'flex', gap: 8, alignItems: 'flex-start',
+            padding: '15px 16px', borderRadius: 16,
+            background: 'linear-gradient(212.47deg, var(--color-grad-mint-100) 5.83%, var(--color-grad-mint-0) 90.48%)',
+          }}>
+            <span style={{ padding: 2, flexShrink: 0, display: 'inline-flex' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M2 9h20" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 16h3M11 16h4" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6.44 3.5h11.11C21.11 3.5 22 4.39 22 7.92v8.16c0 3.53-.89 4.42-4.44 4.42H6.44C2.89 20.5 2 19.61 2 16.08V7.92C2 4.39 2.89 3.5 6.44 3.5Z" stroke="var(--color-on-surface)" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ ...text.body2, fontWeight: 700, color: 'var(--color-on-surface)' }}>
+                Пробный период
+              </span>
+              <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>
+                {trialDaysLeft(subState.trialEndsAt) > 0
+                  ? `Осталось ${pluralDays(trialDaysLeft(subState.trialEndsAt))}`
+                  : 'Последний день'}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
       {subState?.status === 'GRACE' && (
