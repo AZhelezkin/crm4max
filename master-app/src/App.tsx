@@ -60,6 +60,8 @@ export function getMasterBookingDeepLinkId(): string | null {
 function resolveInitialMode(): 'master' | 'client' | null {
   if (startParam === 'mmode') return 'master'
   if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
+  // Список последних мастеров (открывается из клиент-бота).
+  if (startParam === 'cmasters') return 'client'
   if (UUID_RE.test(startParam)) return 'client'
   if (CLIENT_BOOKING_DEEPLINK_RE.test(startParam)) return 'client'
   return null

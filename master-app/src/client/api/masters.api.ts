@@ -10,9 +10,21 @@ export interface ClientSlot {
   masterTime: string
 }
 
+/** Карточка мастера в списке последних (страница выбора из бота). */
+export interface RecentMaster {
+  id: string
+  name: string
+  photo: string | null
+  description: string | null
+}
+
 export const mastersApi = {
   getById: (id: string) =>
     api.get<Master>(`/masters/${id}`).then((r) => r.data),
+
+  // Последние мастера клиента (по его записям) — для RecentMastersPage.
+  getRecentMasters: () =>
+    api.get<RecentMaster[]>('/masters/recent').then((r) => r.data),
 
   // tz=пояс клиента → бэкенд возвращает слоты в его поясе (объекты ClientSlot),
   // date трактуется как дата в поясе клиента.

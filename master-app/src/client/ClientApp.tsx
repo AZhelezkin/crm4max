@@ -18,6 +18,7 @@ import BookingDetailPage from '@client/pages/BookingDetailPage'
 import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import QRScanPage        from '@client/pages/QRScanPage'
+import RecentMastersPage from '@client/pages/RecentMastersPage'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -29,6 +30,9 @@ const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`,
 // может вернуться на «/» через нав-таб (иначе HomeRoute бесконечно
 // редиректил бы обратно на BookingDetailPage).
 let clientDeepLinkConsumed = false
+// Однократный редирект на список последних мастеров (startapp=cmasters из бота).
+// После consume тап по мастеру уходит на «/» → карточка мастера (не зациклится).
+let clientMastersRedirectConsumed = false
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе fallback: storeMasterId (сохраняется при просмотре любой записи)
@@ -51,6 +55,12 @@ function HomeRoute() {
       // но BookingDetailPage сам сохранит masterId при загрузке записи
       return <Navigate to={`/my-bookings/${bookingMatch[2]}`} replace />
     }
+  }
+
+  // Открыт из бота со списком мастеров (startapp=cmasters) → страница выбора.
+  if (!clientMastersRedirectConsumed && startParam === 'cmasters') {
+    clientMastersRedirectConsumed = true
+    return <Navigate to="/masters" replace />
   }
 
   // Если startParam — deep-link на запись (<masterId>-<bookingId>), достаём masterId из него
@@ -85,6 +95,7 @@ export default function ClientApp() {
       <ScrollToTop />
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
+        <Route path="/masters"         element={<RecentMastersPage />} />
         <Route path="/book/categories" element={<CategorySelectPage />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/service"    element={<ServiceDetailPage />} />
