@@ -7,6 +7,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
+import { toClientLocal, toMasterLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 
@@ -157,7 +158,7 @@ export default function PackageBookingPage() {
     let d = dayjs().add(1, 'day')
     for (let i = 0; i < 14 && !wd.includes(d.day() || 7); i++) d = d.add(1, 'day')
     mastersApi.getSlots(masterId, d.format('YYYY-MM-DD'), service.id)
-      .then(setWeekTimeOptions)
+      .then((sl) => setWeekTimeOptions(sl.map((s) => s.time)))  // client-local времена шаблонного дня
       .catch(() => setWeekTimeOptions([]))
   }, [mode, master, service, masterId, schedule])
 
@@ -175,8 +176,12 @@ export default function PackageBookingPage() {
 
   if (!service) return null
 
+  // «По дням»: слоты приходят из CalendarPage уже в master-времени.
+  // «По неделям»: генерим в client-времени (weeksSlots) → переводим в master для записи.
   const daysFilled = slots.filter((s) => s && s.date && s.time)
-  const finalSlots = mode === 'days' ? daysFilled : weeksSlots
+  const finalSlots = mode === 'days'
+    ? daysFilled
+    : weeksSlots.map((s) => toMasterLocal(s.date, s.time, master?.timezone))
   const addressReady = !master?.homeVisit || !!clientAddress?.trim()
   const canSubmit = !loading && finalSlots.length === N && addressReady
 
@@ -208,8 +213,9 @@ export default function PackageBookingPage() {
       navigate('/book/success', { state: { bookingId: pkg.bookings[0]?.id } })
     } catch (e) {
       const slot = (e as { response?: { data?: { slot?: { date: string; time: string } } } })?.response?.data?.slot
-      setError(slot
-        ? `Слот ${dayjs(slot.date).format('D MMMM')} ${slot.time} уже занят — выберите другой`
+      const ds = slot ? toClientLocal(slot.date, slot.time, master?.timezone) : null
+      setError(ds
+        ? `Слот ${dayjs(ds.date).format('D MMMM')} ${ds.time} уже занят — выберите другой`
         : 'Не удалось записаться, попробуйте ещё раз')
     } finally {
       setLoading(false)
@@ -321,6 +327,8 @@ export default function PackageBookingPage() {
           {mode === 'days' && Array.from({ length: N }).map((_, i) => {
             const slot = slots[i]
             const filled = !!(slot && slot.date && slot.time)
+            // slot хранится в master-времени → показываем клиенту в его поясе.
+            const disp = filled ? toClientLocal(slot.date, slot.time, master?.timezone) : null
             return (
               <button
                 key={i}
@@ -330,9 +338,9 @@ export default function PackageBookingPage() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ ...text.callout1, color: 'var(--color-on-surface)', ...ellipsis }}>
-                    {filled ? dayjs(slot.date).format('D MMMM, dd') : 'Выбрать дату и время'}
+                    {disp ? dayjs(disp.date).format('D MMMM, dd') : 'Выбрать дату и время'}
                   </div>
-                  {filled && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{slot.time}</div>}
+                  {disp && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{disp.time}</div>}
                 </div>
                 <IcoChevronRight />
               </button>

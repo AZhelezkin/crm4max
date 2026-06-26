@@ -11,6 +11,8 @@ export interface Master {
   homeVisit: boolean
   /** Ссылка на профиль мастера в MAX. Пусто → раздел «Сообщения»/чат недоступен. */
   maxProfileLink: string | null
+  /** IANA-пояс мастера — для перевода времени слотов/записей в пояс клиента. */
+  timezone: string | null
   /** Подписка мастера заблокирована (не оплачена) → показываем клиенту заглушку. */
   blocked?: boolean
   schedule: Schedule | null
@@ -91,6 +93,7 @@ export interface Booking {
     lat: number | null
     lng: number | null
     maxProfileLink: string | null
+    timezone: string | null
   }
   client: { id: string; name: string; photo: string | null }
   service: Service

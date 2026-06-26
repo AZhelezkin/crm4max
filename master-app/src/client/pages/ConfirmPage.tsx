@@ -7,6 +7,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
+import { toClientLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
@@ -149,7 +150,9 @@ export default function ConfirmPage() {
   if (!service) return null
 
   const price = discountedPrice(service.price, service.discountPercent) ?? service.price
-  const formattedDate = dayjs(date).format('D MMMM, dd')
+  // В store дата/время — в поясе мастера (каноника). Показываем клиенту в его поясе.
+  const local = toClientLocal(date, time, master?.timezone)
+  const formattedDate = dayjs(local.date).format('D MMMM, dd')
 
   // Если мастер выезжает к клиенту — нужен непустой адрес перед submit.
   const submitDisabled = loading || (master?.homeVisit === true && !clientAddress?.trim())
@@ -398,7 +401,7 @@ export default function ConfirmPage() {
               ...text.callout1, color: 'var(--color-on-surface)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {time}
+              {local.time}
             </div>
             <div style={{
               ...text.caption2, color: 'var(--color-on-surface-secondary)',

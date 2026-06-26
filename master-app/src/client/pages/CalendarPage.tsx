@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { mastersApi } from '@client/api/masters.api'
+import { mastersApi, type ClientSlot } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Schedule } from '@client/types'
 import ToggleSwitch from '@/components/ToggleSwitch'
@@ -81,7 +81,7 @@ export default function CalendarPage() {
   const [step, setStep] = useState<'date' | 'time'>('date')
   const [schedule, setSchedule] = useState<Schedule | null>(null)
   const [selectedDate, setSelectedDate] = useState(date || today.format('YYYY-MM-DD'))
-  const [slots, setSlots] = useState<string[]>([])
+  const [slots, setSlots] = useState<ClientSlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>({})
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
@@ -127,30 +127,30 @@ export default function CalendarPage() {
   const handleSelectDate = (d: dayjs.Dayjs) => {
     const val = d.format('YYYY-MM-DD')
     setSelectedDate(val)
-    setDateTime(val, '')
     setStep('time')
   }
 
-  const handleSelectTime = (t: string) => {
+  // Слот несёт client-local time (для UI) + master-дату/время (каноника для записи).
+  // В store кладём master-дату/время, чтобы запись ушла в правильный слот мастера.
+  const handleSelectTime = (s: ClientSlot) => {
     if (isSession) {
       // Абонемент: записываем слот выбранного приёма и возвращаемся к списку приёмов.
-      setSlot(sessionIndex, selectedDate, t)
+      setSlot(sessionIndex, s.masterDate, s.masterTime)
       navigate(-1)
     } else {
-      setDateTime(selectedDate, t)
+      setDateTime(s.masterDate, s.masterTime)
       navigate('/book/confirm')
     }
   }
 
-  const selectedTime = time && date === selectedDate ? time : ''
   const selectedDayjs = dayjs(selectedDate)
   const months = [0, 1, 2].map((offset) => today.startOf('month').add(offset, 'month'))
 
-  // В режиме абонемента убираем слоты, уже выбранные для других приёмов в этот день.
-  const takenTimes = isSession
-    ? new Set(pkgSlots.filter((s, i) => i !== sessionIndex && s && s.date === selectedDate).map((s) => s.time))
+  // В режиме абонемента убираем слоты, уже выбранные для других приёмов (по master-ключу).
+  const takenKeys = isSession
+    ? new Set(pkgSlots.filter((p, i) => i !== sessionIndex && p).map((p) => `${p.date} ${p.time}`))
     : new Set<string>()
-  const visibleSlots = slots.filter((s) => !takenTimes.has(s))
+  const visibleSlots = slots.filter((s) => !takenKeys.has(`${s.masterDate} ${s.masterTime}`))
 
   const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
   const headerSubtitle = isSession
@@ -256,7 +256,10 @@ export default function CalendarPage() {
                   const isToday = day.isSame(today)
                   const isSelected = val === selectedDate
                   const working = isWorkingDay(day, schedule)
-                  const disabled = isPast || !working
+                  // disabled: прошлое или (не рабочий день И нет слотов). availability в
+                  // поясе клиента — при разнице поясов день мастера может «перетечь» на
+                  // соседнюю клиентскую дату, тогда availability===true разблокирует её.
+                  const disabled = isPast || (availability[val] !== true && !working)
                   const isWeekend = (day.day() || 7) >= 6 // Сб, Вс
 
                   // Cell bg per Figma:
@@ -392,10 +395,10 @@ export default function CalendarPage() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                 {visibleSlots.map((s) => {
-                  const isSel = selectedTime === s
+                  const isSel = s.masterDate === date && s.masterTime === time
                   return (
                     <button
-                      key={s}
+                      key={`${s.masterDate} ${s.masterTime}`}
                       onClick={() => handleSelectTime(s)}
                       style={{
                         height: 69, padding: '12px 0', borderRadius: 18,
@@ -410,7 +413,7 @@ export default function CalendarPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}
                     >
-                      {s}
+                      {s.time}
                     </button>
                   )
                 })}

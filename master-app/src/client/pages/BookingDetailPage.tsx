@@ -6,6 +6,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
+import { toClientLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
@@ -199,12 +200,14 @@ export default function BookingDetailPage() {
   const remind = booking.remind ?? true
   // Для услуги «Прочее» сумму задаёт мастер при записи (booking.price).
   const price = booking.price ?? discountedPrice(service.price, service.discountPercent) ?? service.price
-  const formattedDate = dayjs(date).format('D MMMM, dd')
+  // Дата/время записи — в поясе мастера; показываем клиенту в его поясе.
+  const local = toClientLocal(date, time, master.timezone)
+  const formattedDate = dayjs(local.date).format('D MMMM, dd')
   const badge = PAYMENT_BADGE[paymentStatus]
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
   const isCancelled = booking.status === 'CANCELLED'
-  // Запись в прошлом: время окончания (начало + длительность) уже прошло.
-  const isPast = dayjs(`${date}T${time}`).add(service.duration, 'minute').isBefore(dayjs())
+  // Запись в прошлом: время окончания (начало + длительность) уже прошло (в поясе клиента).
+  const isPast = dayjs(`${local.date}T${local.time}`).add(service.duration, 'minute').isBefore(dayjs())
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
@@ -458,7 +461,7 @@ export default function BookingDetailPage() {
               ...text.callout1, color: 'var(--color-on-surface)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {time}
+              {local.time}
             </div>
             <div style={{
               ...text.caption2, color: 'var(--color-on-surface-secondary)',

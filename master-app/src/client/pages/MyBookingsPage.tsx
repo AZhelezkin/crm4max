@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
 import type { Booking } from '@client/types'
 import { formatPrice } from '@client/types'
+import { toClientLocal } from '@client/lib/timezone'
 import BottomNav from '@client/components/BottomNav'
 import MyBookingsListSkeleton from '@client/components/MyBookingsListSkeleton'
 import { startParam } from '@/App'
@@ -149,7 +150,14 @@ export default function MyBookingsPage() {
       .list()
       .then((all) => {
         // Отменённые записи не показываем в календаре/списке «Записи».
-        const active = all.filter((b) => b.status !== 'CANCELLED')
+        // Дату/время переводим в пояс клиента (запись хранится в поясе мастера),
+        // чтобы группировка по датам, сортировка и показ были в его времени.
+        const active = all
+          .filter((b) => b.status !== 'CANCELLED')
+          .map((b) => {
+            const local = toClientLocal(b.date, b.time, b.master.timezone)
+            return { ...b, date: local.date, time: local.time }
+          })
         const filtered = currentMasterId
           ? active.filter((b) => b.master.id === currentMasterId)
           : active
