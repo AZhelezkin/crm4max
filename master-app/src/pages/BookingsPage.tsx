@@ -352,25 +352,30 @@ export default function BookingsPage() {
 
 // Строка записи: зелёная риска статуса (2×44), услуга + цена слева, время (начало/конец) справа.
 function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () => void }) {
-  const endTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute').format('HH:mm')
+  const endDateTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute')
+  const endTime = endDateTime.format('HH:mm')
+  const isPast = endDateTime.isBefore(dayjs())
+  const primaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface)'
+  const secondaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface-secondary)'
+  const statusColor = isPast ? 'var(--color-pattern-element)' : 'var(--color-on-success-surface-lite)'
   return (
     <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', width: '100%', cursor: 'pointer' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-start' }}>
         <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-          <div style={{ width: 2, height: 44, borderRadius: 1, background: 'var(--color-on-success-surface-lite)' }} />
+          <div style={{ width: 2, height: 44, borderRadius: 1, background: statusColor }} />
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 8, paddingTop: 8, paddingBottom: 8 }}>
-          <div style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ ...text.callout1, color: primaryColor, textDecoration: isPast ? 'line-through' : 'none', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {booking.service.name}
           </div>
-          <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ ...text.caption1, color: secondaryColor, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {formatRub(booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price)}
           </div>
         </div>
       </div>
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
-        <div style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{booking.time}</div>
-        <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{endTime}</div>
+        <div style={{ ...text.body2, color: primaryColor }}>{booking.time}</div>
+        <div style={{ ...text.caption1, color: secondaryColor }}>{endTime}</div>
       </div>
     </div>
   )
