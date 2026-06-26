@@ -248,7 +248,6 @@ export default function BookingsPage() {
             if (!day) return <div key={`e${i}`} style={{ minHeight: 56 }} />
             const val = day.format('YYYY-MM-DD')
             const isPast = val < today
-            const isToday = val === today
             const isSelected = val === selectedDate
             const isWeekend = (day.day() || 7) >= 6
             const bookedMin = bookedMinutesByDate.get(val) ?? 0
@@ -287,7 +286,7 @@ export default function BookingsPage() {
                   gap: 8,
                   ...text.callout1,
                   color,
-                  background: (isToday || isNonWorking) ? 'var(--color-pattern-element)' : 'transparent',
+                  background: isNonWorking ? 'var(--color-pattern-element)' : 'transparent',
                   border: isSelected ? '1.5px solid var(--color-interactive-element-accented)' : '1.5px solid transparent',
                   cursor: 'pointer',
                   position: 'relative',
