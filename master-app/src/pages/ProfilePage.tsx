@@ -152,6 +152,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: '100dvh', overflowX: 'hidden' }}>
+      <div style={{ background: 'var(--gradient-hero-background)' }}>
 
       {/* ── Floating toolbar над hero (Figma toolbarTop, 8717:50168) — стиль обновлённых
             экранов: слева рейтинг, справа пилюля действий [Поделиться][Настройки]
@@ -287,6 +288,7 @@ export default function ProfilePage() {
           onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
           onOpenBooking={(bookingId) => navigate(`/bookings/${bookingId}`)}
         />
+      </div>
       </div>
 
       {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
