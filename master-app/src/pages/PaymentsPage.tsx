@@ -65,8 +65,10 @@ export default function PaymentsPage() {
   const months = useMemo<MonthSummary[]>(() => {
     const map = new Map<string, number>()
     for (const p of payments) {
-      // Итог месяца — по всем заказам независимо от статуса оплаты.
-      const key = dayjs(p.createdAt).format('YYYY-MM')
+      // Итог месяца — по дате приёма (booking.date), как в «Записях»; по всем
+      // заказам независимо от статуса оплаты.
+      const date = p.booking?.date ?? dayjs(p.createdAt).format('YYYY-MM-DD')
+      const key = date.slice(0, 7)
       map.set(key, (map.get(key) || 0) + p.amount)
     }
     return Array.from(map.entries())
@@ -90,9 +92,9 @@ export default function PaymentsPage() {
     if (!selectedMonth) return []
     const map = new Map<string, DayEntry>()
     for (const p of payments) {
-      const d = dayjs(p.createdAt)
-      if (d.format('YYYY-MM') !== selectedMonth) continue
-      const dateKey = d.format('YYYY-MM-DD')
+      const dateKey = p.booking?.date ?? dayjs(p.createdAt).format('YYYY-MM-DD')
+      if (dateKey.slice(0, 7) !== selectedMonth) continue
+      const d = dayjs(dateKey)
       let entry = map.get(dateKey)
       if (!entry) {
         entry = {

@@ -39,7 +39,8 @@ export default function PaymentsDayPage() {
   const dayPayments = useMemo(() => {
     if (!date) return []
     return payments
-      .filter((p) => dayjs(p.createdAt).format('YYYY-MM-DD') === date)
+      // День — по дате приёма (booking.date), как группирует экран «Доход» и «Записи».
+      .filter((p) => (p.booking?.date ?? dayjs(p.createdAt).format('YYYY-MM-DD')) === date)
       .sort((a, b) => {
         const ta = a.booking?.time ?? ''
         const tb = b.booking?.time ?? ''

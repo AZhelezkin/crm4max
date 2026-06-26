@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
 import { scheduleApi } from '@/api/schedule.api'
-import type { Booking, Schedule } from '@/types'
+import { discountedPrice, type Booking, type Schedule } from '@/types'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
@@ -353,7 +353,7 @@ function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () =>
             {booking.service.name}
           </div>
           <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {formatRub(booking.price ?? booking.service.price)}
+            {formatRub(booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price)}
           </div>
         </div>
       </div>
