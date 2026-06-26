@@ -189,7 +189,7 @@ export default function ProfilePage() {
 
       {/* HERO: декор (gradient + circles + blur) — глобальный, через --gradient-hero-background
           на #root > div. Здесь только layout: padding 0/24 (top сдвинут toolbar'ом). */}
-      <div style={{ position: 'relative', paddingBottom: 24 }}>
+      <div style={{ position: 'relative', marginTop: -56, paddingTop: 56, paddingBottom: 24, background: 'var(--gradient-hero-background)' }}>
 
         {/* (Рейтинг переехал в тулбар слева.) */}
 
