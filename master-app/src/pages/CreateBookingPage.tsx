@@ -13,6 +13,7 @@ import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
 import ToggleSwitch from '@/components/ToggleSwitch'
+import { FloatingField } from '@/components/onboardingShared'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
 
@@ -87,6 +88,22 @@ function formatPhone(phone: string | null): string {
   return phone
 }
 
+function maskPhoneInput(raw: string, prev: string): string {
+  let digits = raw.replace(/\D/g, '')
+  if (digits.startsWith('8')) digits = '7' + digits.slice(1)
+  digits = digits.slice(0, 11)
+  const prevDigits = prev.replace(/\D/g, '')
+  if (digits === prevDigits && raw.length < prev.length) digits = prevDigits.slice(0, -1)
+  if (!digits) return ''
+  const n = digits.startsWith('7') ? digits : '7' + digits
+  let result = '+7'
+  if (n.length > 1) result += ' (' + n.slice(1, 4)
+  if (n.length >= 4) result += ') ' + n.slice(4, 7)
+  if (n.length >= 7) result += '-' + n.slice(7, 9)
+  if (n.length >= 9) result += '-' + n.slice(9, 11)
+  return result
+}
+
 // Флоу создания записи мастером (макеты 8746-41312/41313/41318/41317, 8792-51136):
 // category → service → date → time → confirm (клиент/адрес/итог) → запись.
 export default function CreateBookingPage() {
@@ -104,7 +121,7 @@ export default function CreateBookingPage() {
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client; editTime?: boolean; date?: string } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'success'>(
+  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success'>(
     rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
       : rescheduleInit?.categoryId ? 'service' : 'category',
@@ -116,6 +133,11 @@ export default function CreateBookingPage() {
   const [clientSearchMode, setClientSearchMode] = useState(false)
   const [clientQuery, setClientQuery] = useState('')
   const clientSearchInputRef = useRef<HTMLInputElement>(null)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [newClientPhoneError, setNewClientPhoneError] = useState<string | null>(null)
+  const [newClientError, setNewClientError] = useState<string | null>(null)
+  const [newClientSaving, setNewClientSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(rescheduleInit?.categoryId ?? null)
   const [searchMode, setSearchMode] = useState(false)
@@ -305,6 +327,45 @@ export default function CreateBookingPage() {
     setClientQuery('')
     setClientSearchMode(false)
     setStep(isPackageService ? 'package' : 'confirm')
+  }
+
+  const openClientAdd = () => {
+    setClientQuery('')
+    setClientSearchMode(false)
+    setNewClientName('')
+    setNewClientPhone('')
+    setNewClientPhoneError(null)
+    setNewClientError(null)
+    setStep('clientAdd')
+  }
+
+  const handleNewClientPhone = (value: string) => {
+    setNewClientPhoneError(null)
+    setNewClientError(null)
+    setNewClientPhone((prev) => maskPhoneInput(value, prev))
+  }
+
+  const submitNewClient = async () => {
+    if (!newClientName.trim() || newClientSaving) return
+    if (newClientPhone && newClientPhone.replace(/\D/g, '').length !== 11) {
+      setNewClientPhoneError('Введите номер полностью: +7 (XXX) XXX-XX-XX')
+      return
+    }
+    setNewClientSaving(true)
+    setNewClientError(null)
+    try {
+      const created = await clientsApi.create({ name: newClientName.trim(), phone: newClientPhone.trim() || null })
+      setClients((prev) => [created, ...prev.filter((c) => c.id !== created.id)])
+      setNewClientName('')
+      setNewClientPhone('')
+      setNewClientPhoneError(null)
+      setNewClientError(null)
+      pickClient(created)
+    } catch {
+      setNewClientError('Не удалось добавить клиента. Попробуйте ещё раз.')
+    } finally {
+      setNewClientSaving(false)
+    }
   }
 
   // Категория предвыбрана (вход с Главной по тапу категории) → шага «категория»
@@ -964,22 +1025,32 @@ export default function CreateBookingPage() {
                 </button>
               )}
             </div>
+            <PillButton onClick={openClientAdd} ariaLabel="Добавить клиента">
+              <AddIcon />
+            </PillButton>
           </div>
         ) : (
           <Toolbar
             title="Выберите клиента"
             onBack={() => setStep(isPackageService ? 'package' : 'confirm')}
-            trailing={clients.length > 0 ? (
-              <PillButton onClick={openClientSearch} ariaLabel="Поиск">
-                <SearchIcon />
-              </PillButton>
-            ) : undefined}
+            trailing={(
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
+                <ToolbarIconButton onClick={openClientAdd} ariaLabel="Добавить клиента">
+                  <AddIcon />
+                </ToolbarIconButton>
+                {clients.length > 0 && (
+                  <ToolbarIconButton onClick={openClientSearch} ariaLabel="Поиск">
+                    <SearchIcon />
+                  </ToolbarIconButton>
+                )}
+              </div>
+            )}
           />
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
           {clientsLoaded && clients.length === 0 && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
-              Нет клиентов. Добавьте на вкладке «Клиенты».
+              Нет клиентов. Добавьте нового клиента кнопкой «+».
             </div>
           )}
           {noSearchResults && (
@@ -1004,6 +1075,47 @@ export default function CreateBookingPage() {
               </div>
             </button>
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'clientAdd') {
+    const canAddClient = !!newClientName.trim() && !newClientSaving
+
+    return (
+      <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
+        <Toolbar title="Новый клиент" onBack={() => setStep('client')} />
+        <div style={{ padding: '12px 16px calc(48px + env(safe-area-inset-bottom))' }}>
+          <FloatingField label="Имя и фамилия" value={newClientName} onChange={setNewClientName} valueBold autoFocus />
+          <div style={{ marginTop: 16 }}>
+            <FloatingField label="Номер телефона" value={newClientPhone} onChange={handleNewClientPhone} valueBold type="tel" inputMode="tel" />
+            {newClientPhoneError && (
+              <div style={{ ...text.footnote, color: 'var(--color-error-surface-accented)', padding: '4px 8px 0' }}>
+                {newClientPhoneError}
+              </div>
+            )}
+          </div>
+          {newClientError && (
+            <div style={{ ...text.footnote, color: 'var(--color-error-surface-accented)', padding: '12px 8px 0' }}>
+              {newClientError}
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={!canAddClient}
+            onClick={() => { void submitNewClient() }}
+            style={{
+              width: '100%', height: 60, marginTop: 32, borderRadius: 20, border: 'none', padding: 18,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              ...text.callout1,
+              cursor: canAddClient ? 'pointer' : 'default',
+              background: canAddClient ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
+              color: canAddClient ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
+            }}
+          >
+            {newClientSaving ? 'Добавляем…' : 'Добавить'}
+          </button>
         </div>
       </div>
     )
@@ -1382,6 +1494,14 @@ function PillButton({ onClick, ariaLabel, children }: { onClick: () => void; ari
   )
 }
 
+function ToolbarIconButton({ onClick, ariaLabel, children }: { onClick: () => void; ariaLabel: string; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={ariaLabel} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface)' }}>
+      {children}
+    </button>
+  )
+}
+
 function CategoryAvatar({ photo, uncategorized }: { photo: string | null; uncategorized: boolean }) {
   return (
     <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden', background: photo ? 'var(--color-surface)' : uncategorized ? VIOLET_GRADIENT : 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1419,6 +1539,14 @@ function ArrowLeftIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M9.57 5.93L3.5 12L9.57 18.07" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M20.5 12H3.67" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AddIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M6 12H18M12 6V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
