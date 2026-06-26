@@ -113,6 +113,9 @@ export default function CreateBookingPage() {
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [clientsLoaded, setClientsLoaded] = useState(false)
+  const [clientSearchMode, setClientSearchMode] = useState(false)
+  const [clientQuery, setClientQuery] = useState('')
+  const clientSearchInputRef = useRef<HTMLInputElement>(null)
   const [loaded, setLoaded] = useState(false)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(rescheduleInit?.categoryId ?? null)
   const [searchMode, setSearchMode] = useState(false)
@@ -185,6 +188,10 @@ export default function CreateBookingPage() {
     if (searchMode) searchInputRef.current?.focus()
   }, [searchMode])
 
+  useEffect(() => {
+    if (clientSearchMode) clientSearchInputRef.current?.focus()
+  }, [clientSearchMode])
+
   // Шаги флоу (категория/услуга/дата/время/подтверждение) — один роут /bookings/new.
   // Сбрасываем прокрутку при смене шага, иначе следующий шаг открывается «промотанным».
   useEffect(() => { scrollPageTop() }, [step])
@@ -241,6 +248,17 @@ export default function CreateBookingPage() {
       .filter((sec) => sec.services.length)
   }, [baseSections, q])
 
+  const filteredClients = useMemo(() => {
+    const clientQ = clientQuery.trim().toLowerCase()
+    if (!clientQ) return clients
+    const clientQDigits = clientQ.replace(/\D/g, '')
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(clientQ) ||
+        (clientQDigits.length > 0 && (c.phone ?? '').replace(/\D/g, '').includes(clientQDigits)),
+    )
+  }, [clients, clientQuery])
+
   const selectedService = useMemo(() => allServices.find((s) => s.id === serviceId) ?? null, [allServices, serviceId])
   const isPackageService = (selectedService?.sessionsCount ?? 1) > 1
 
@@ -270,6 +288,23 @@ export default function CreateBookingPage() {
     } else {
       setStep(fixedDateFromSchedule ? 'time' : 'date')
     }
+  }
+
+  const openClientSearch = () => {
+    setClientQuery('')
+    setClientSearchMode(true)
+  }
+
+  const closeClientSearch = () => {
+    setClientQuery('')
+    setClientSearchMode(false)
+  }
+
+  const pickClient = (client: Client) => {
+    setSelectedClient(client)
+    setClientQuery('')
+    setClientSearchMode(false)
+    setStep(isPackageService ? 'package' : 'confirm')
   }
 
   // Категория предвыбрана (вход с Главной по тапу категории) → шага «категория»
@@ -905,20 +940,58 @@ export default function CreateBookingPage() {
 
   // ─── Шаг 6: выбор клиента (адресная книга) ──────────────────────────────────
   if (step === 'client') {
+    const visibleClients = clientSearchMode ? filteredClients : clients
+    const noSearchResults = clientsLoaded && clientSearchMode && clients.length > 0 && visibleClients.length === 0
+
     return (
       <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
-        <Toolbar title="Выберите клиента" onBack={() => setStep(isPackageService ? 'package' : 'confirm')} />
+        {clientSearchMode ? (
+          <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
+            <PillButton onClick={closeClientSearch} ariaLabel="Назад">
+              <ArrowLeftIcon />
+            </PillButton>
+            <div style={{ flex: 1, minWidth: 0, height: 44, background: 'var(--color-background)', borderRadius: 22, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px' }}>
+              <input
+                ref={clientSearchInputRef}
+                value={clientQuery}
+                onChange={(e) => setClientQuery(e.target.value)}
+                placeholder="Поиск"
+                style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: 'var(--color-on-surface)', fontFamily: 'inherit', ...text.body2, padding: 0 }}
+              />
+              {clientQuery && (
+                <button type="button" aria-label="Очистить" onClick={() => { setClientQuery(''); clientSearchInputRef.current?.focus() }} style={{ width: 20, height: 20, flexShrink: 0, padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface-secondary)' }}>
+                  <ClearIcon />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Toolbar
+            title="Выберите клиента"
+            onBack={() => setStep(isPackageService ? 'package' : 'confirm')}
+            trailing={clients.length > 0 ? (
+              <PillButton onClick={openClientSearch} ariaLabel="Поиск">
+                <SearchIcon />
+              </PillButton>
+            ) : undefined}
+          />
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
           {clientsLoaded && clients.length === 0 && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
               Нет клиентов. Добавьте на вкладке «Клиенты».
             </div>
           )}
-          {clients.map((c) => (
+          {noSearchResults && (
+            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
+              Ничего не найдено
+            </div>
+          )}
+          {visibleClients.map((c) => (
             <button
               key={c.id}
               type="button"
-              onClick={() => { setSelectedClient(c); setStep(isPackageService ? 'package' : 'confirm') }}
+              onClick={() => pickClient(c)}
               style={listItemStyle}
             >
               <ClientAvatar name={c.name} photo={c.photo} />

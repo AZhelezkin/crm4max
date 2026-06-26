@@ -7,3 +7,6 @@ Thumbs.db
 
 # Backend хранится only на сервере, не в GitHub
 backend/
+
+# Local OpenSpec planning artifacts
+openspec/
