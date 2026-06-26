@@ -102,6 +102,7 @@ export default function CreateBookingPage() {
   //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги),
   //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага категории).
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client; editTime?: boolean; date?: string } | null
+  const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
   const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'success'>(
     rescheduleInit?.rescheduleId
@@ -259,7 +260,7 @@ export default function CreateBookingPage() {
 
   const pickService = (s: Service) => {
     setServiceId(s.id)
-    setDate('')
+    if (!fixedDateFromSchedule) setDate('')
     setTime('')
     if (s.sessionsCount > 1) {
       // Услуга-абонемент → экран выбора слотов на все приёмы (По дням / По неделям).
@@ -267,7 +268,7 @@ export default function CreateBookingPage() {
       setWeekdays([]); setWeekTime('')
       setStep('package')
     } else {
-      setStep('date')
+      setStep(fixedDateFromSchedule ? 'time' : 'date')
     }
   }
 
@@ -641,18 +642,30 @@ export default function CreateBookingPage() {
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => {
           if (timeOnly) { if (createdBooking) setStep('success'); else navigate(-1) }
+          else if (fixedDateFromSchedule && packageSessionIndex === null) setStep('service')
           else setStep('date')
         }} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button type="button" onClick={() => setStep('date')} style={{ ...listItemStyle, gap: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {selectedDayjs.format('D MMMM, dd')}
+          {fixedDateFromSchedule && packageSessionIndex === null ? (
+            <div style={{ ...listItemStyle, gap: 12, cursor: 'default' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {selectedDayjs.format('D MMMM, dd')}
+                </div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата из расписания</div>
               </div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
             </div>
-            <EditIcon />
-          </button>
+          ) : (
+            <button type="button" onClick={() => setStep('date')} style={{ ...listItemStyle, gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {selectedDayjs.format('D MMMM, dd')}
+                </div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
+              </div>
+              <EditIcon />
+            </button>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
             <div style={{ padding: '24px 8px 8px' }}>
@@ -1130,13 +1143,22 @@ export default function CreateBookingPage() {
         )}
 
         {/* Дата */}
-        <button type="button" onClick={() => setStep('date')} style={listItemStyle}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
-            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
+        {fixedDateFromSchedule ? (
+          <div style={{ ...listItemStyle, cursor: 'default' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата из расписания</div>
+            </div>
           </div>
-          <EditIcon />
-        </button>
+        ) : (
+          <button type="button" onClick={() => setStep('date')} style={listItemStyle}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
+            </div>
+            <EditIcon />
+          </button>
+        )}
 
         {/* Время */}
         <button type="button" onClick={() => setStep('time')} style={listItemStyle}>

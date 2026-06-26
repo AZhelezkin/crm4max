@@ -137,7 +137,7 @@ export default function BookingsPage() {
           <button
             type="button"
             aria-label="Создать запись"
-            onClick={() => navigate('/bookings/new')}
+            onClick={() => navigate('/bookings/new', { state: { date: selectedDate } })}
             style={{
               background: 'none',
               border: 'none',
