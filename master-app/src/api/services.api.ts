@@ -25,7 +25,7 @@ export const servicesApi = {
     description?: string
     duration: number
     price: number
-    discountPercent?: number
+    discountPercent?: number | null
     sessionsCount?: number
     photo?: string
   }) => api.post<Service>('/services', data).then((r) => r.data),
@@ -36,7 +36,7 @@ export const servicesApi = {
     description?: string
     duration?: number
     price?: number
-    discountPercent?: number
+    discountPercent?: number | null
     sessionsCount?: number
     photo?: string
     isActive?: boolean

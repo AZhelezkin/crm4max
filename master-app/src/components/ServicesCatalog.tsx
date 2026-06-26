@@ -208,7 +208,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         price: Math.round(Number(svcPrice) * 100) || 0,
         duration: Number(svcDuration) || 30,
         categoryId: svcCategoryId || undefined,
-        discountPercent: svcDiscountEnabled ? svcDiscountPercent : undefined,
+        // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД
+        // (Prisma игнорирует undefined и оставляет прежнее значение).
+        discountPercent: svcDiscountEnabled ? svcDiscountPercent : null,
         sessionsCount: svcIsPackage ? svcSessionsCount : 1,
         photo: firstPhotoUrl || undefined,
       }
