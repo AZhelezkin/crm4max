@@ -278,15 +278,16 @@ export default function ProfilePage() {
             </span>
           )}
         </div>
-      </div>
 
-      <HomeSchedulePreview
-        date={todayDay}
-        bookings={todayBookings}
-        isDayOff={isTodayNonWorking}
-        onOpenSchedule={() => navigate('/bookings')}
-        onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
-      />
+        <HomeSchedulePreview
+          date={todayDay}
+          bookings={todayBookings}
+          isDayOff={isTodayNonWorking}
+          onOpenSchedule={() => navigate('/bookings')}
+          onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
+          onOpenBooking={(bookingId) => navigate(`/bookings/${bookingId}`)}
+        />
+      </div>
 
       {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
       {subState?.status === 'GRACE' && (
@@ -644,12 +645,13 @@ export default function ProfilePage() {
   )
 }
 
-function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBooking }: {
+function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBooking, onOpenBooking }: {
   date: dayjs.Dayjs
   bookings: Booking[]
   isDayOff: boolean
   onOpenSchedule: () => void
   onAddBooking: () => void
+  onOpenBooking: (bookingId: string) => void
 }) {
   return (
     <section style={{ padding: '0 32px 32px' }}>
@@ -663,16 +665,14 @@ function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBo
           <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--color-success-surface-accented)', flexShrink: 0 }} />
           <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capitalize(date.format('dddd'))}</span>
         </button>
-        {isDayOff ? <div style={{ width: 44, height: 44, flexShrink: 0 }} /> : (
-          <button
-            type="button"
-            aria-label="Создать запись на сегодня"
-            onClick={onAddBooking}
-            style={{ width: 44, height: 44, borderRadius: 22, border: 'none', flexShrink: 0, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-          >
-            <ScheduleAddIcon />
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label="Создать запись на сегодня"
+          onClick={onAddBooking}
+          style={{ width: 44, height: 44, borderRadius: 22, border: 'none', flexShrink: 0, background: '#007AFE', color: 'var(--color-on-primary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+        >
+          <ScheduleAddIcon />
+        </button>
       </div>
       <div style={{ height: 1, background: 'var(--color-divider-low)' }} />
       {(isDayOff || bookings.length === 0) && (
@@ -689,7 +689,7 @@ function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBo
         const secondaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface-secondary)'
         const statusColor = isPast ? 'var(--color-pattern-element)' : 'var(--color-success-surface-accented)'
         return (
-          <div key={booking.id} style={{ height: 60, borderBottom: '1px solid var(--color-divider-low)', display: 'flex', alignItems: 'center' }}>
+          <button key={booking.id} type="button" onClick={() => onOpenBooking(booking.id)} style={{ width: '100%', height: 60, border: 'none', borderBottom: '1px solid var(--color-divider-low)', padding: 0, background: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer', textAlign: 'left' }}>
             <div style={{ width: 4, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0 }}>
               <div style={{ width: 3, height: 40, borderRadius: 2, background: statusColor }} />
             </div>
@@ -705,7 +705,7 @@ function HomeSchedulePreview({ date, bookings, isDayOff, onOpenSchedule, onAddBo
               <div style={{ ...text.callout1, color: primaryColor }}>{booking.time}</div>
               <div style={{ ...text.body2, color: secondaryColor }}>{endTime}</div>
             </div>
-          </div>
+          </button>
         )
       })}
     </section>
