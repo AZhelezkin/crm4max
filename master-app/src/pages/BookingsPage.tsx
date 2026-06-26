@@ -309,6 +309,7 @@ export default function BookingsPage() {
                         display: 'block',
                         width: `${indicatorWPercent}%`,
                         minWidth: 4,
+                        margin: '0 auto',
                         maxWidth: '100%',
                         height: '100%',
                         borderRadius: 100,
