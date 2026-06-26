@@ -256,6 +256,10 @@ export default function BookingsPage() {
             // Длина индикатора пропорциональна занятости рабочего дня (16px = 100%).
             // Нет данных о графике для этого дня (workMin=0) → полная риска, как раньше.
             const workMin = workingMinutesByDow[day.day() || 7] ?? 0
+            // Нерабочий день мастера (день недели не входит в график) → серая подложка
+            // (макет 8718-55269). Считаем только при загруженном графике, иначе все дни
+            // были бы серыми до прихода schedule.
+            const isNonWorking = !!schedule && !schedule.workingDays.includes(day.day() || 7)
             const ratio = workMin > 0 ? Math.min(1, bookedMin / workMin) : 1
             const indicatorW = Math.max(4, Math.round(ratio * INDICATOR_MAX_W))
             // Текст: будни/выходные × прошлое/настоящее (как в кабинете клиента).
@@ -283,7 +287,7 @@ export default function BookingsPage() {
                   gap: 8,
                   ...text.callout1,
                   color,
-                  background: isToday ? 'var(--color-pattern-element)' : 'transparent',
+                  background: (isToday || isNonWorking) ? 'var(--color-pattern-element)' : 'transparent',
                   border: isSelected ? '1.5px solid var(--color-interactive-element-accented)' : '1.5px solid transparent',
                   cursor: 'pointer',
                   position: 'relative',
