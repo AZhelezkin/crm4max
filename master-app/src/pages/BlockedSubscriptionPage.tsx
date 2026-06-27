@@ -2,13 +2,37 @@ import { useEffect, useState } from 'react'
 import { text } from '@/styles/typography'
 import { subscriptionApi } from '@/api/subscription.api'
 
+// Человекочитаемая причина неуспешной оплаты. Бэкенд кладёт в lastChargeError
+// Details/Message от T-Bank (обычно уже по-русски) — показываем как есть; для
+// статус-кодов без текста даём перевод.
+function describeError(code: string | null): string | null {
+  if (!code) return null
+  const map: Record<string, string> = {
+    REJECTED: 'Платёж отклонён банком',
+    AUTH_FAIL: 'Не пройдена 3-D Secure аутентификация',
+    DEADLINE_EXPIRED: 'Истекло время оплаты',
+  }
+  return map[code] ?? code
+}
+
 // Экран заблокированного кабинета (подписка не оплачена после grace). «Оформить
 // подписку» → оплата 499 ₽ (без триала). payUrl префетчим — openLink требует
 // синхронного user-gesture. После оплаты вебхук переведёт подписку в ACTIVE.
 export default function BlockedSubscriptionPage() {
   const [payUrl, setPayUrl] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
+    // Перезапрашиваем при возврате в приложение (visibilitychange): после неудачной
+    // оплаты нужен и свежий payUrl (прошлый order одноразовый), и причина ошибки.
+    const load = () => {
+      subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
+      subscriptionApi.getMe().then((s) => setError(describeError(s?.lastChargeError ?? null))).catch(() => {})
+    }
+    load()
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   const handlePay = () => {
@@ -29,6 +53,15 @@ export default function BlockedSubscriptionPage() {
       <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)', maxWidth: 320 }}>
         Подписка не оплачена. Оформите подписку, чтобы вернуться в личный кабинет.
       </div>
+      {error && (
+        <div style={{
+          ...text.body, color: 'var(--color-on-error-surface-lite)',
+          background: 'var(--color-error-surface-lite)', borderRadius: 12,
+          padding: '10px 14px', maxWidth: 360,
+        }}>
+          Не удалось оплатить: {error}
+        </div>
+      )}
       <button
         type="button"
         onClick={handlePay}
