@@ -24,6 +24,8 @@ import ShareLinkPage from '@/pages/ShareLinkPage'
 import MapTestPage from '@/pages/MapTestPage'
 import BlockedSubscriptionPage from '@/pages/BlockedSubscriptionPage'
 import { subscriptionApi } from '@/api/subscription.api'
+import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
+import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -45,6 +47,7 @@ function resolveStartParam(): string {
   return ''
 }
 export const startParam = resolveStartParam()
+const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -111,6 +114,7 @@ export default function App() {
   }, [mode])
 
   if (isMapTestHash()) return <MapTestPage />
+  if (destinationSelectorToken) return <DestinationSelectorPage token={destinationSelectorToken} />
 
   if (mode === null) {
     return (
