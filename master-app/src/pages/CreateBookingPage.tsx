@@ -16,6 +16,7 @@ import ToggleSwitch from '@/components/ToggleSwitch'
 import { FloatingField } from '@/components/onboardingShared'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 
 dayjs.locale('ru')
 
@@ -1360,31 +1361,9 @@ export default function CreateBookingPage() {
       </div>
 
       {/* Кнопка «Записать» */}
-      <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
-        <button
-          type="button"
-          disabled={!canSave}
-          onClick={() => { void handleSave() }}
-          style={{
-            width: '100%',
-            height: 60,
-            borderRadius: 20,
-            border: 'none',
-            padding: 18,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            ...text.callout1,
-            cursor: canSave ? 'pointer' : 'default',
-            background: canSave ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
-            color: canSave ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
-          }}
-        >
-          <CalendarEditIcon />
-          {saving ? 'Записываем…' : 'Записать'}
-        </button>
-      </div>
+      <BookingFlowBottomButton disabled={!canSave} onClick={() => { void handleSave() }} icon={<CalendarEditIcon />}>
+        {saving ? 'Записываем…' : 'Записать'}
+      </BookingFlowBottomButton>
     </div>
   )
 }
@@ -1470,28 +1449,11 @@ function DiscountBadge() {
 }
 
 function Toolbar({ title, subtitle, onBack, trailing }: { title: string; subtitle?: string; onBack: () => void; trailing?: React.ReactNode }) {
-  return (
-    <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
-      <PillButton onClick={onBack} ariaLabel="Назад">
-        <ArrowLeftIcon />
-      </PillButton>
-      <div style={{ position: 'absolute', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
-        <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
-        {subtitle && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{subtitle}</div>}
-      </div>
-      {trailing ?? <div style={{ width: 44 }} />}
-    </div>
-  )
+  return <BookingFlowToolbar title={title} subtitle={subtitle} onBack={onBack} trailing={trailing} backIcon={<ArrowLeftIcon />} />
 }
 
 function PillButton({ onClick, ariaLabel, children }: { onClick: () => void; ariaLabel: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
-      <button type="button" onClick={onClick} aria-label={ariaLabel} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface)' }}>
-        {children}
-      </button>
-    </div>
-  )
+  return <BookingFlowPillButton onClick={onClick} ariaLabel={ariaLabel}>{children}</BookingFlowPillButton>
 }
 
 function ToolbarIconButton({ onClick, ariaLabel, children }: { onClick: () => void; ariaLabel: string; children: React.ReactNode }) {
