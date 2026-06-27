@@ -152,7 +152,6 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: '100dvh', overflowX: 'hidden' }}>
-      <div style={{ background: 'var(--gradient-hero-background)' }}>
 
       {/* ── Floating toolbar над hero (Figma toolbarTop, 8717:50168) — стиль обновлённых
             экранов: слева рейтинг, справа пилюля действий [Поделиться][Настройки]
@@ -190,7 +189,7 @@ export default function ProfilePage() {
 
       {/* HERO: декор (gradient + circles + blur) — глобальный, через --gradient-hero-background
           на #root > div. Здесь только layout: padding 0/24 (top сдвинут toolbar'ом). */}
-      <div style={{ position: 'relative', paddingBottom: 24, background: 'var(--gradient-hero-background)' }}>
+      <div style={{ position: 'relative', marginTop: -56, paddingTop: 56, paddingBottom: 24, background: 'var(--gradient-hero-background)' }}>
 
         {/* (Рейтинг переехал в тулбар слева.) */}
 
@@ -288,7 +287,6 @@ export default function ProfilePage() {
           onAddBooking={() => navigate('/bookings/new', { state: { date: today } })}
           onOpenBooking={(bookingId) => navigate(`/bookings/${bookingId}`)}
         />
-      </div>
       </div>
 
       {/* Баннер «Не смогли оплатить подписку» (GRACE) — peach-градиент (Figma 8943-31215). */}
