@@ -153,9 +153,23 @@ function MasterApp() {
 
   useEffect(() => {
     if (!master?.isOnboarded) return
-    subscriptionApi.getMe()
-      .then((s) => setSubBlocked(s?.status === 'BLOCKED'))
-      .catch(() => {})
+    // Проверяем статус подписки при старте И при каждом возврате в приложение
+    // (visibilitychange/focus). После оплаты во внешнем браузере T-Bank мастер
+    // возвращается в тот же инстанс мини-аппа — без перепроверки экран «Доступ
+    // приостановлен» завис бы, хотя подписка уже ACTIVE.
+    const check = () => {
+      subscriptionApi.getMe()
+        .then((s) => setSubBlocked(s?.status === 'BLOCKED'))
+        .catch(() => {})
+    }
+    check()
+    const onVisible = () => { if (document.visibilityState === 'visible') check() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', check)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', check)
+    }
   }, [master?.isOnboarded])
 
   if (isLoading) {
