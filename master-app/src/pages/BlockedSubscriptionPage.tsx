@@ -3,16 +3,22 @@ import { text } from '@/styles/typography'
 import { subscriptionApi } from '@/api/subscription.api'
 
 // Человекочитаемая причина неуспешной оплаты. Бэкенд кладёт в lastChargeError
-// Details/Message от T-Bank (обычно уже по-русски) — показываем как есть; для
-// статус-кодов без текста даём перевод.
-function describeError(code: string | null): string | null {
-  if (!code) return null
+// текст T-Bank (Details/Message, обычно уже по-русски) — показываем как есть.
+// Если пришёл голый код/статус — переводим; неизвестный код НЕ показываем
+// числом, даём общий понятный текст (чтобы мастер не видел «1051»).
+function describeError(raw: string | null): string | null {
+  if (!raw) return null
+  const v = raw.trim()
+  // Уже человекочитаемый русский текст от T-Bank — показываем как есть.
+  if (/[а-яА-Я]/.test(v)) return v
   const map: Record<string, string> = {
     REJECTED: 'Платёж отклонён банком',
     AUTH_FAIL: 'Не пройдена 3-D Secure аутентификация',
     DEADLINE_EXPIRED: 'Истекло время оплаты',
+    '101': 'Не пройдена 3-D Secure аутентификация',
+    '1051': 'Недостаточно средств на карте',
   }
-  return map[code] ?? code
+  return map[v] ?? 'Платёж отклонён банком. Попробуйте другую карту или повторите позже'
 }
 
 // Экран заблокированного кабинета (подписка не оплачена после grace). «Оформить
