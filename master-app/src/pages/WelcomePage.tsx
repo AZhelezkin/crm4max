@@ -3,278 +3,308 @@ import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { subscriptionApi } from '@/api/subscription.api'
 
-import illustrationAi from '@/assets/welcome-slider/illustration-ai.png'
-import illustrationCatalog from '@/assets/welcome-slider/illustration-catalog.png'
-import illustrationCalendar from '@/assets/welcome-slider/illustration-calendar.png'
-import illustrationBell from '@/assets/welcome-slider/illustration-bell.png'
-import illustrationAnalytics from '@/assets/welcome-slider/illustration-analytics.png'
+// ─── Ассеты слайдера (Figma 10084-40089): глоу-подложки (SVG) + мокапы (PNG 2x) ──
+import profileGlow from '@/assets/welcome-v2/profile-glow.svg'
+import profilePhoneLeft from '@/assets/welcome-v2/profile-phone-left.png'
+import profilePhoneRight from '@/assets/welcome-v2/profile-phone-right.png'
+import calendGlow from '@/assets/welcome-v2/calend-glow.svg'
+import calendCard from '@/assets/welcome-v2/calend-card.png'
+import moneyGlow from '@/assets/welcome-v2/money-glow.svg'
+import moneyCards from '@/assets/welcome-v2/money-cards.png'
+import notifyGlow from '@/assets/welcome-v2/notify-glow.svg'
+import notifyShot from '@/assets/welcome-v2/notify-shot.png'
+import agentGlow from '@/assets/welcome-v2/agent-glow.svg'
+import agentArt from '@/assets/welcome-v2/agent-art.png'
+import trialShield from '@/assets/welcome-v2/trial-shield.png'
 import illustrationCheck from '@/assets/welcome-slider/illustration-check.png'
 
-// ─── Данные ───────────────────────────────────────────────────────────────────
-
-const SLIDES = [
-  { illustration: illustrationAi,        title: 'AI-ассистент',                       subtitle: 'Поможет в управлении бизнесом' },
-  { illustration: illustrationCatalog,   title: 'Каталог услуг и цены',               subtitle: 'Расскажите клиентам о ваших услугах' },
-  { illustration: illustrationCalendar,  title: 'Календарь записей и график работы',  subtitle: 'Больше вы ни о чём не забудете' },
-  { illustration: illustrationBell,      title: 'Уведомления',                        subtitle: 'Пришлём за 1 час до записи' },
-  { illustration: illustrationAnalytics, title: 'Аналитика дохода',                   subtitle: 'Планируйте свой заработок' },
-] as const
-
-const FEATURES = [
-  { Icon: BubbleIcon,       title: 'AI-ассистент',         subtitle: 'Поможет в управлении бизнесом' },
-  { Icon: NoteIcon,         title: 'Каталог услуг и цены', subtitle: 'Расскажите клиентам о ваших услугах' },
-  { Icon: CalendarIcon,     title: 'Календарь записей',    subtitle: 'Больше вы ни о чём не забудете' },
-  { Icon: NotificationIcon, title: 'Уведомления',          subtitle: 'Пришлём за 1 час до записи' },
-  { Icon: TrendUpIcon,      title: 'Аналитика дохода',     subtitle: 'Планируйте свой заработок' },
-] as const
-
-// Слайды (0..4) + paywall (5) = 6 точек прогресса; success (6) — без точек.
-const TOTAL_DOTS = 6
-
-// ─── Локальные типографические переопределения ────────────────────────────────
-// Figma «H3» 22/26/700 ls -0.66 — экранный заголовок (нет в общих токенах).
-const slideTitleStyle: CSSProperties = { fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66 }
-// Figma «Caption 1» 15/20/400 ls -0.15 — подзаголовок.
-const slideSubtitleStyle: CSSProperties = { ...text.body, letterSpacing: -0.15 }
-// Figma «H1» 32/40/800 ls -1.28 — цена на paywall.
+// ─── Типографика (Figma) ───────────────────────────────────────────────────────
+// «H4» 20/24/700 ls -0.4 — заголовок слайда.
+const slideTitleStyle: CSSProperties = { fontSize: 20, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.4 }
+// «Caption 1» 15/20/400 ls -0.15 — подзаголовки, описания.
+const captionStyle: CSSProperties = { ...text.body, letterSpacing: -0.15 }
+// «H1» 32/40/800 ls -1.28 — цена.
 const priceStyle: CSSProperties = { fontSize: 32, lineHeight: '40px', fontWeight: 800, letterSpacing: -1.28 }
+
+// ─── Слайды (Figma 10084-40089) ────────────────────────────────────────────────
+// Каждый слой-картинка воспроизводит структуру Figma: контейнер (left/top/w/h,
+// при offsetX — центрирование translateX) → поворот (rot/flipY) → бокс (iw/ih) →
+// img с отрицательным inset (bleed тени/свечения за границы бокса).
+
+interface Layer {
+  src: string
+  top: number
+  w: number
+  h: number
+  left?: number
+  offsetX?: number      // задан → центрирование по X со смещением
+  rot?: number
+  flipY?: boolean
+  iw: number
+  ih: number
+  inset: [number, number, number, number] // top right bottom left, в % (отрицательные = bleed)
+}
+
+interface SlideDef {
+  key: string
+  title: string
+  subtitle: string
+  layers: Layer[]        // порядок: глоу (сзади) → мокапы (спереди)
+}
+
+const SLIDES: SlideDef[] = [
+  {
+    key: 'profile',
+    title: 'Личная страница',
+    subtitle: 'Клиенты смогут записываться самостоятельно',
+    layers: [
+      { src: profileGlow, offsetX: -9.57, top: 11, w: 337.925, h: 192.325, rot: 180, flipY: true, iw: 337.925, ih: 192.325, inset: [-14.56, -8.29, -14.56, -8.29] },
+      { src: profilePhoneLeft, left: 36.84, top: -0.5, w: 176.425, h: 246.168, rot: -16.04, iw: 119.825, ih: 221.687, inset: [-1.16, -3.95, -2.94, -3.7] },
+      { src: profilePhoneRight, left: 147, top: -4, w: 155.486, h: 253.477, rot: 5.09, iw: 134.5, ih: 242.5, inset: [-6.43, -14.63, -9.82, -14.33] },
+    ],
+  },
+  {
+    key: 'calend',
+    title: 'Календарь записей',
+    subtitle: 'Все записи в одном месте',
+    layers: [
+      { src: calendGlow, offsetX: 0.04, top: 56.5, w: 357.082, h: 175.826, iw: 357.082, ih: 175.826, inset: [-15.92, -7.84, -15.92, -7.84] },
+      { src: calendCard, offsetX: -7.77, top: 0, w: 238, h: 236, iw: 238, ih: 236, inset: [-4.24, -12.61, -12.71, -4.2] },
+    ],
+  },
+  {
+    key: 'money',
+    title: 'Доходы',
+    subtitle: 'Покажем, сколько вы заработали',
+    layers: [
+      { src: moneyGlow, offsetX: -3, top: 82.78, w: 347.863, h: 115.938, rot: 180, flipY: true, iw: 347.863, ih: 115.938, inset: [-24.15, -8.05, -24.15, -8.05] },
+      { src: moneyCards, left: 44, top: 18, w: 270, h: 210, iw: 270, ih: 210, inset: [-7.14, -3.7, -11.9, -11.11] },
+    ],
+  },
+  {
+    key: 'notify',
+    title: 'Уведомления',
+    subtitle: 'ИИ-ассистент отправит уведомления о записях и изменениях прямо в Max',
+    layers: [
+      { src: notifyGlow, offsetX: -10.26, top: -39.1, w: 390.992, h: 309.904, rot: 148.72, flipY: true, iw: 375.949, ih: 134.218, inset: [-20.86, -7.45, -20.86, -7.45] },
+      { src: notifyShot, left: 27, top: 49, w: 307, h: 162, iw: 307, ih: 162, inset: [-6.17, -6.51, -18.52, -6.51] },
+    ],
+  },
+  {
+    key: 'agent',
+    title: 'ИИ-ассистент',
+    subtitle: 'Записывает клиентов и помогает управлять расписанием',
+    layers: [
+      { src: agentGlow, offsetX: 0.7, top: 9.89, w: 374.078, h: 207.008, rot: 167.62, flipY: true, iw: 353.496, ih: 134.335, inset: [-20.84, -7.92, -20.84, -7.92] },
+      { src: agentArt, left: 42, top: 0, w: 279, h: 240, iw: 279, ih: 240, inset: [-6.67, -10.75, -10, -3.58] },
+    ],
+  },
+]
+
+// Ширина слайда/слайдера (Figma Component1 = 357). Внутренние left/top слоёв —
+// в этой системе координат.
+const SLIDE_W = 357
+const SLIDE_H = 381
 
 // ─── Компонент ────────────────────────────────────────────────────────────────
 
 export default function WelcomePage() {
   const navigate = useNavigate()
-  // 0..4 — слайды с иллюстрациями, 5 — paywall, 6 — success после «оплаты».
-  const [step, setStep] = useState(0)
-  const touchStartX = useRef<number | null>(null)
+  // 'main' — экран активации (sloto + слайдер + paywall); 'success' — после «оплаты».
+  const [mode, setMode] = useState<'main' | 'success'>('main')
 
-  const goNext = () => setStep((s) => Math.min(s + 1, 6))
-  const goPrev = () => setStep((s) => Math.max(s - 1, 0))
   const handleStartProfile = () => navigate('/onboarding', { replace: true })
 
   // «Попробовать бесплатно 7 дней» → привязка карты на форме T-Bank. URL префетчим
-  // при входе на paywall: openLink требует синхронного user-gesture (await его рвёт),
-  // поэтому по тапу открываем уже готовый URL. Триал стартует на бэке при /trial.
+  // при входе: openLink требует синхронного user-gesture (await его рвёт), поэтому
+  // по тапу открываем уже готовый URL. Триал стартует на бэке при /trial.
   const [trialUrl, setTrialUrl] = useState<string | null>(null)
   useEffect(() => {
-    if (step !== 5 || trialUrl) return
+    if (mode !== 'main' || trialUrl) return
     subscriptionApi.startTrial().then((r) => setTrialUrl(r.paymentURL)).catch(() => {})
-  }, [step, trialUrl])
+  }, [mode, trialUrl])
 
   const handleTrial = () => {
     if (trialUrl) {
       if (window.WebApp?.openLink) window.WebApp.openLink(trialUrl)
       else window.open(trialUrl, '_blank')
     }
-    goNext()
+    setMode('success')
   }
 
-  // Горизонтальный swipe для слайдов 0..4 (на paywall/success — без свайпа).
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (step >= 5) return
-    touchStartX.current = e.touches[0].clientX
-  }
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current == null) return
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    if (Math.abs(dx) > 50) {
-      if (dx < 0) goNext()
-      else goPrev()
-    }
-    touchStartX.current = null
-  }
-
-  // ── Шаг 6: «Подписка оплачена» ──
-  if (step === 6) {
+  // ── «Подписка оплачена» (функционал после привязки карты — оставлен как был) ──
+  if (mode === 'success') {
     return (
-      <Layout>
+      <FlatLayout>
         <div style={{ flex: 1 }} />
-        <CenteredContent>
-          <IllustrationCard illustration={illustrationCheck} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
+          <img src={illustrationCheck} alt="" style={{ width: 300, height: 300, display: 'block' }} />
           <TextBlock title="Подписка оплачена" subtitle={'Расскажите другим о своих услугах\nи начните бизнес'} />
-        </CenteredContent>
+        </div>
         <div style={{ flex: 1 }} />
-        <Footer>
+        <div style={{ padding: '0 16px', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
           <PrimaryButton onClick={handleStartProfile}>Заполнить профиль</PrimaryButton>
-        </Footer>
-      </Layout>
+        </div>
+      </FlatLayout>
     )
   }
 
-  // ── Шаг 5: paywall ──
-  if (step === 5) {
-    return (
-      <Layout onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <Paywall />
-        {/* Spacer: всё свободное пространство уходит между списком фич и dots —
-            именно так в Figma макете блоки header+list лежат плотно сверху,
-            а точки/кнопка прижаты к низу. */}
-        <div style={{ flex: 1 }} />
-        <Footer>
-          <PaginationDots current={step} total={TOTAL_DOTS} />
-          <div style={{ height: 40 }} />
-          <PrimaryButton onClick={handleTrial}>Попробовать бесплатно 7 дней</PrimaryButton>
-        </Footer>
-      </Layout>
-    )
-  }
-
-  // ── Шаги 0..4: слайды в track (translateX + transition, без overscroll) ──
-  return (
-    <Layout onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      <SlideTrack currentIndex={step}>
-        {SLIDES.map((slide) => (
-          <Slide key={slide.title}>
-            <CenteredContent>
-              <IllustrationCard illustration={slide.illustration} />
-              <TextBlock title={slide.title} subtitle={slide.subtitle} />
-            </CenteredContent>
-          </Slide>
-        ))}
-      </SlideTrack>
-      <Footer>
-        <PaginationDots current={step} total={TOTAL_DOTS} />
-        <div style={{ height: 40 }} />
-        <SecondaryButton onClick={goNext}>Дальше</SecondaryButton>
-      </Footer>
-    </Layout>
-  )
-}
-
-// ─── Layout-обёртки ───────────────────────────────────────────────────────────
-
-interface LayoutProps {
-  children: ReactNode
-  onTouchStart?: (e: React.TouchEvent) => void
-  onTouchEnd?: (e: React.TouchEvent) => void
-}
-function Layout({ children, onTouchStart, onTouchEnd }: LayoutProps) {
-  // На time-of-mount ставим body-класс, отключающий глобальный hero-фон
-  // (макеты welcome-слайдера однотонные, без градиента/скругления/декора).
-  useEffect(() => {
-    document.body.classList.add('no-hero-bg')
-    return () => { document.body.classList.remove('no-hero-bg') }
-  }, [])
-
+  // ── Экран активации ──
   return (
     <div
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
       style={{
         minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
         color: 'var(--color-on-surface)',
-        // touch-action: pan-y — браузер обрабатывает только вертикальный скролл,
-        // горизонтальные жесты остаются нам (никакой «резинки» от back-swipe).
-        touchAction: 'pan-y',
-        overscrollBehaviorX: 'contain',
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-// ─── Слайд-трек (horizontal translateX, плавная анимация смены шага) ──────────
-//
-// Архитектура: viewport (overflow hidden, width = 100% родителя) → track flex,
-// translateX(-N * 100%). Каждый Slide имеет `flex: 0 0 100%`, то есть ровно
-// 100% от viewport (= точный пиксельный размер), не зависит от количества
-// слайдов и не страдает от дробного деления процентов (раньше при 20% × 5
-// получался субпиксельный остаток и был виден соседний слайд).
-
-function SlideTrack({ currentIndex, children }: {
-  currentIndex: number
-  children: ReactNode
-}) {
-  return (
-    <div style={{ flex: 1, overflow: 'hidden' }}>
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          height: '100%',
-          transform: `translate3d(-${currentIndex * 100}%, 0, 0)`,
-          transition: 'transform 0.32s ease',
-          willChange: 'transform',
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function Slide({ children }: { children: ReactNode }) {
-  return (
-    <div
-      style={{
-        flex: '0 0 100%',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 16px',
+        // sloto: Figma top 162 → под Max-тулбаром 38px (162 - 124).
+        paddingTop: 38,
+        paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+        overflowX: 'hidden',
       }}
     >
-      {children}
-    </div>
-  )
-}
-
-function CenteredContent({ children }: { children: ReactNode }) {
-  // Figma: 8px gap между иллюстрацией и текстом.
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
-      {children}
-    </div>
-  )
-}
-
-function Footer({ children }: { children: ReactNode }) {
-  // Figma: кнопка top 744, page bottom 844 → ниже кнопки 40px + safe-area.
-  return (
-    <div style={{ padding: '0 16px', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
-      {children}
-    </div>
-  )
-}
-
-// ─── Карточка с иллюстрацией ──────────────────────────────────────────────────
-
-function IllustrationCard({ illustration }: { illustration: string }) {
-  // PNG-карточки уже композированы (овал + 3D-сцена с точными размерами и
-  // offset'ом из Figma) скриптом master-app/tmp-composite-slides.cjs.
-  return (
-    <img
-      src={illustration}
-      alt=""
-      style={{ width: 300, height: 300, display: 'block' }}
-    />
-  )
-}
-
-// ─── Текст под иллюстрацией ───────────────────────────────────────────────────
-
-function TextBlock({ title, subtitle }: { title: string; subtitle: string }) {
-  // Figma: 280×58, gap 12, центрирование.
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', width: 280 }}>
-      <div style={{ ...slideTitleStyle, color: 'var(--color-on-surface)', textAlign: 'center', width: '100%' }}>
-        {title}
+      {/* sloto-лого 116×24 */}
+      <div style={{ width: 116, height: 24, color: 'var(--color-on-surface)' }}>
+        <SlotoMark />
       </div>
-      <div style={{ ...slideSubtitleStyle, color: 'var(--color-on-surface-secondary)', textAlign: 'center', width: '100%', whiteSpace: 'pre-line' }}>
-        {subtitle}
+
+      {/* Подзаголовок (Figma top 202 → gap 16 от лого; w 298) */}
+      <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', textAlign: 'center', width: 298, marginTop: 16 }}>
+        Ваш кабинет уже готов. Осталось активировать его
+      </div>
+
+      {/* Слайдер (Figma Component1, top 266 → gap 24) */}
+      <div style={{ marginTop: 24 }}>
+        <Slider />
+      </div>
+
+      {/* Цена 499 ₽/мес. (Figma top 664 → gap 17 от слайдера) */}
+      <div style={{ ...priceStyle, color: 'var(--color-on-surface)', textAlign: 'center', marginTop: 17 }}>
+        499 ₽/мес.
+      </div>
+
+      {/* Кнопка (Figma top 728 → gap 24) */}
+      <div style={{ width: '100%', maxWidth: 393, padding: '0 16px', marginTop: 24, boxSizing: 'border-box' }}>
+        <PrimaryButton onClick={handleTrial}>Попробовать бесплатно 7 дней</PrimaryButton>
+      </div>
+
+      {/* Блок «Никаких списаний» (Figma top 825 → gap 37; shield 153×107, gap 12) */}
+      <div style={{ width: '100%', maxWidth: 393, padding: '0 16px', marginTop: 37, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <img src={trialShield} alt="" style={{ width: 153, height: 107, display: 'block', objectFit: 'contain' }} />
+        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', textAlign: 'center' }}>
+          Никаких списаний<br />во время пробного периода
+        </div>
+        <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', textAlign: 'center' }}>
+          Оплата начнётся только после окончания 7 дней, если ты решишь продолжить пользоваться сервисом
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── Точки-индикатор ──────────────────────────────────────────────────────────
+// ─── Слайдер: авто-прокрутка + свайп по 5 слайдам, общие точки ─────────────────
+
+function Slider() {
+  const [index, setIndex] = useState(0)
+  const touch = useRef<{ x: number; y: number } | null>(null)
+
+  // Авто-прокрутка каждые 3.5с (зациклено). paused — на время касания.
+  const paused = useRef(false)
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!paused.current) setIndex((i) => (i + 1) % SLIDES.length)
+    }, 3500)
+    return () => clearInterval(t)
+  }, [])
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    paused.current = true
+    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    paused.current = false
+    if (!touch.current) return
+    const dx = e.changedTouches[0].clientX - touch.current.x
+    const dy = e.changedTouches[0].clientY - touch.current.y
+    touch.current = null
+    // Горизонтальный жест (не вертикальный скролл) с порогом.
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      setIndex((i) => (i + (dx < 0 ? 1 : SLIDES.length - 1)) % SLIDES.length)
+    }
+  }
+
+  return (
+    <div
+      style={{ position: 'relative', width: SLIDE_W, height: SLIDE_H }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Вьюпорт с горизонтальным треком */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <div
+          style={{
+            display: 'flex',
+            width: '100%',
+            height: '100%',
+            transform: `translate3d(-${index * 100}%, 0, 0)`,
+            transition: 'transform 0.4s ease',
+            willChange: 'transform',
+          }}
+        >
+          {SLIDES.map((slide) => (
+            <div key={slide.key} style={{ flex: '0 0 100%', position: 'relative', height: '100%' }}>
+              {slide.layers.map((l, i) => <LayerImg key={i} {...l} />)}
+              {/* Текст: Figma top 260, w 325, gap 2, центр */}
+              <div style={{ position: 'absolute', top: 260, left: '50%', transform: 'translateX(-50%)', width: 325, display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
+                <div style={{ ...slideTitleStyle, color: 'var(--color-on-surface)', width: '100%' }}>{slide.title}</div>
+                <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', width: '100%' }}>{slide.subtitle}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Общие точки (Figma top 349) */}
+      <div style={{ position: 'absolute', top: 349, left: '50%', transform: 'translateX(-50%)' }}>
+        <PaginationDots current={index} total={SLIDES.length} />
+      </div>
+    </div>
+  )
+}
+
+// Слой-картинка: контейнер → поворот → бокс → img с bleed-inset (см. Figma).
+function LayerImg({ src, top, w, h, left, offsetX, rot = 0, flipY, iw, ih, inset }: Layer) {
+  const [it, ir, ib, il] = inset
+  const centered = offsetX !== undefined
+  const transform = `${flipY ? 'scaleY(-1) ' : ''}${rot ? `rotate(${rot}deg)` : ''}`.trim()
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top,
+        width: w,
+        height: h,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...(centered ? { left: '50%', transform: `translateX(calc(-50% + ${offsetX}px))` } : { left }),
+      }}
+    >
+      <div style={{ transform: transform || undefined, flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: iw, height: ih }}>
+          <div style={{ position: 'absolute', top: `${it}%`, right: `${ir}%`, bottom: `${ib}%`, left: `${il}%` }}>
+            <img src={src} alt="" style={{ display: 'block', width: '100%', height: '100%', maxWidth: 'none' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Точки-индикатор (Figma 72×8, активная крупнее) ───────────────────────────
 
 function PaginationDots({ current, total }: { current: number; total: number }) {
-  // Figma: 72×8 — 6 точек, активная крупнее. Активный цвет — onSurface, неактивный — onSurfaceMuted.
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 8 }}>
       {Array.from({ length: total }).map((_, i) => {
@@ -297,30 +327,53 @@ function PaginationDots({ current, total }: { current: number; total: number }) 
   )
 }
 
-// ─── Кнопки ───────────────────────────────────────────────────────────────────
+// ─── Текст под иллюстрацией (success) ─────────────────────────────────────────
 
-interface BtnProps { children: ReactNode; onClick: () => void }
-
-const buttonBaseStyle: CSSProperties = {
-  width: '100%',
-  height: 60,
-  borderRadius: 20,
-  border: 'none',
-  padding: 18,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  ...text.callout1,
+function TextBlock({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', width: 280 }}>
+      <div style={{ fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66, color: 'var(--color-on-surface)', textAlign: 'center', width: '100%' }}>
+        {title}
+      </div>
+      <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', textAlign: 'center', width: '100%', whiteSpace: 'pre-line' }}>
+        {subtitle}
+      </div>
+    </div>
+  )
 }
 
-function PrimaryButton({ children, onClick }: BtnProps) {
+// ─── Плоский layout (success) — без глобального hero-градиента ─────────────────
+
+function FlatLayout({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    document.body.classList.add('no-hero-bg')
+    return () => { document.body.classList.remove('no-hero-bg') }
+  }, [])
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', color: 'var(--color-on-surface)' }}>
+      {children}
+    </div>
+  )
+}
+
+// ─── Кнопка ───────────────────────────────────────────────────────────────────
+
+function PrimaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        ...buttonBaseStyle,
+        width: '100%',
+        height: 60,
+        borderRadius: 20,
+        border: 'none',
+        padding: 18,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        ...text.callout1,
         background: 'var(--color-primary-surface)',
         color: 'var(--color-on-primary-surface)',
       }}
@@ -330,167 +383,7 @@ function PrimaryButton({ children, onClick }: BtnProps) {
   )
 }
 
-function SecondaryButton({ children, onClick }: BtnProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        ...buttonBaseStyle,
-        background: 'var(--color-secondary-surface)',
-        color: 'var(--color-interactive-element-accented)',
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-// ─── Paywall (шаг 5) ──────────────────────────────────────────────────────────
-
-function Paywall() {
-  // Figma 8884:58227: блок left:24 right:24 top:72 gap:48. Top=72 — это «16px
-  // от низа Max-toolbar». В Max WebApp нет env(safe-area-inset-top), он либо 0,
-  // либо равен высоте OS-нотча (на Android доходит до 50-80px и съедает экран
-  // дважды — раз вертикальные safe-areas уже учтены клиентом). Фиксированные
-  // 16px ровнее ложатся на оба окружения.
-  //
-  // Высота не растягивается — паттерн «контент-плотный-сверху + spacer + footer»
-  // распределяет пустое пространство ниже List (как в Figma, где между списком
-  // и точками виден большой воздух, а сами header+list лежат плотно).
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 48,
-        paddingTop: 16,
-        paddingLeft: 24,
-        paddingRight: 24,
-        width: '100%',
-      }}
-    >
-      <PaywallHeader />
-      <FeatureList />
-    </div>
-  )
-}
-
-function PaywallHeader() {
-  // Figma: sloto-mark 116×24, gap 16, описание, цена 32/40/800.
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: 298 }}>
-      <div
-        aria-label="sloto"
-        style={{ width: 116, height: 24, color: 'var(--color-on-surface)' }}
-      >
-        <SlotoMark />
-      </div>
-      <div
-        style={{
-          ...slideSubtitleStyle,
-          color: 'var(--color-on-surface-secondary)',
-          textAlign: 'center',
-          width: '100%',
-        }}
-      >
-        Получите доступ к платформе, расскажите о своих услугах и увеличьте клиентскую базу
-      </div>
-      <div
-        style={{
-          ...priceStyle,
-          color: 'var(--color-on-surface)',
-          textAlign: 'center',
-          width: '100%',
-        }}
-      >
-        499 RUB/мес.
-      </div>
-    </div>
-  )
-}
-
-function FeatureList() {
-  // Figma: gap 20 между строками; в строке gap 12 (иконка 24×24 — текст).
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
-      {FEATURES.map(({ Icon, title, subtitle }) => (
-        <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-          <div style={{ width: 24, height: 24, flexShrink: 0, color: 'var(--color-on-surface)' }}>
-            <Icon />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
-            <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
-            <div style={{ ...slideSubtitleStyle, color: 'var(--color-on-surface-secondary)' }}>{subtitle}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Иконки (vuesax/linear, viewBox 24×24, stroke: currentColor) ──────────────
-
-function BubbleIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15.59 12.26C18.4232 12.26 20.72 9.96323 20.72 7.13C20.72 4.29678 18.4232 2 15.59 2C12.7568 2 10.46 4.29678 10.46 7.13C10.46 9.96323 12.7568 12.26 15.59 12.26Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
-      <path d="M6.35999 19.44C8.06102 19.44 9.44 18.061 9.44 16.36C9.44 14.659 8.06102 13.28 6.35999 13.28C4.65895 13.28 3.28 14.659 3.28 16.36C3.28 18.061 4.65895 19.44 6.35999 19.44Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
-      <path d="M16.62 22C18.0338 22 19.18 20.8539 19.18 19.44C19.18 18.0262 18.0338 16.88 16.62 16.88C15.2061 16.88 14.06 18.0262 14.06 19.44C14.06 20.8539 15.2061 22 16.62 22Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
-    </svg>
-  )
-}
-
-function NoteIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21.66 10.44L20.68 14.62C19.84 18.23 18.18 19.69 15.06 19.39C14.56 19.35 14.02 19.26 13.44 19.12L11.76 18.72C7.59 17.73 6.3 15.67 7.28 11.49L8.26 7.3C8.46 6.45 8.7 5.71 9 5.1C10.17 2.68 12.16 2.03 15.5 2.82L17.17 3.21C21.36 4.19 22.64 6.26 21.66 10.44Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.06 19.39C14.44 19.81 13.66 20.16 12.71 20.47L11.13 20.99C7.16 22.27 5.07 21.2 3.78 17.23L2.5 13.28C1.22 9.31 2.28 7.21 6.25 5.93L7.83 5.41C8.24 5.28 8.63 5.17 9 5.1C8.7 5.71 8.46 6.45 8.26 7.3L7.28 11.49C6.3 15.67 7.59 17.73 11.76 18.72L13.44 19.12C14.02 19.26 14.56 19.35 15.06 19.39Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12.64 8.53L17.49 9.76" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M11.66 12.4L14.56 13.14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 2V5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 2V5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3.5 9.09H20.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.6947 13.7H15.7037" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.6947 16.7H15.7037" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M11.9955 13.7H12.0045" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M11.9955 16.7H12.0045" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.29431 13.7H8.30329" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.29431 16.7H8.30329" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function NotificationIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12.02 2.91C8.71 2.91 6.02 5.6 6.02 8.91V11.8C6.02 12.41 5.76 13.34 5.45 13.86L4.3 15.77C3.59 16.95 4.08 18.26 5.38 18.7C9.69 20.14 14.34 20.14 18.65 18.7C19.86 18.3 20.39 16.87 19.73 15.77L18.58 13.86C18.28 13.34 18.02 12.41 18.02 11.8V8.91C18.02 5.61 15.32 2.91 12.02 2.91Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" />
-      <path d="M13.87 3.2C13.56 3.11 13.24 3.04 12.91 3C11.95 2.88 11.03 2.95 10.17 3.2C10.46 2.46 11.18 1.94 12.02 1.94C12.86 1.94 13.58 2.46 13.87 3.2Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.02 19.06C15.02 20.71 13.67 22.06 12.02 22.06C11.2 22.06 10.44 21.72 9.9 21.18C9.36 20.64 9.02 19.88 9.02 19.06" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
-    </svg>
-  )
-}
-
-function TrendUpIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16.5 9.5L12.3 13.7L10.7 11.3L7.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14.5 9.5H16.5V11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-// ─── Логотип sloto (Figma «Group 62», 116×24, fill: currentColor + бренд-точка) ──
+// ─── Логотип sloto (Figma «Group 62», 116×24) ─────────────────────────────────
 
 function SlotoMark() {
   return (
