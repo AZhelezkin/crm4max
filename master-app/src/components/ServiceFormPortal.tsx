@@ -45,6 +45,8 @@ interface Props {
   onSave: () => void
   /** Удаление услуги (только в режиме редактирования) — двойной тап. */
   onDelete?: () => void
+  /** Открыть справочник популярных услуг (тап по «Выбрать из популярных»). */
+  onPickPopular?: () => void
 }
 
 // Варианты длительности приёма (минуты).
@@ -118,7 +120,7 @@ export default function ServiceFormPortal({
   sessionsCount, onSessionsCountChange,
   workPhotos, onWorkPhotosChange,
   categories, categoryId, onCategoryIdChange,
-  onClose, onSave, onDelete,
+  onClose, onSave, onDelete, onPickPopular,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -170,8 +172,23 @@ export default function ServiceFormPortal({
           </button>
         )}
 
-        {/* Группа: Название + Описание (gap 8) */}
+        {/* Группа: Выбор из популярных + Название + Описание (gap 8) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* «Выбрать из популярных» → справочник (только при создании). */}
+          {!isEdit && onPickPopular && (
+            <button
+              type="button"
+              onClick={onPickPopular}
+              style={{
+                borderRadius: 20, border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
+                background: 'var(--color-surface-transparent)',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px',
+              }}
+            >
+              <span style={{ ...text.body2, color: 'var(--color-primary-surface)', flex: 1 }}>Выбрать из популярных</span>
+              <span style={{ color: 'var(--color-primary-surface)', display: 'flex', flexShrink: 0 }}><ChevronRightIcon /></span>
+            </button>
+          )}
           <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
           <FloatingField
             label="Описание"
@@ -180,40 +197,6 @@ export default function ServiceFormPortal({
             multiline minHeight={120} align="top" rows={3} maxLength={200}
           />
         </div>
-
-        {/* Категория (пикер) — лист h76, тап → колесо WheelPicker */}
-        {onCategoryIdChange && (
-          <button
-            type="button"
-            onClick={() => setOpenPicker('category')}
-            style={{
-              height: 76, borderRadius: 20, border: 'none', cursor: 'pointer', textAlign: 'left',
-              background: 'var(--color-surface-transparent)',
-              display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', width: '100%',
-            }}
-          >
-            <div style={{
-              width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
-              color: 'var(--color-interactive-element-secondary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {selectedCat?.photo
-                ? <img src={selectedCat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <FolderIcon />}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...pickerTitleStyle, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {selectedCat?.name ?? 'Услуги без категории'}
-              </div>
-              <div style={pickerSubtitleStyle}>
-                {selectedCat ? 'Категория' : 'Можно выбрать'}
-              </div>
-            </div>
-            <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-              <ChevronRightIcon />
-            </span>
-          </button>
-        )}
 
         {/* Группа: Время приёма */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -387,15 +370,6 @@ export default function ServiceFormPortal({
       </div>
 
       {/* Типовые колёса выбора (вместо нативного <select>). */}
-      {onCategoryIdChange && (
-        <WheelPicker
-          open={openPicker === 'category'}
-          value={categoryId ?? ''}
-          options={[{ value: '', label: 'Услуги без категории' }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))]}
-          onSelect={onCategoryIdChange}
-          onClose={() => setOpenPicker(null)}
-        />
-      )}
       <WheelPicker
         open={openPicker === 'duration'}
         value={duration}

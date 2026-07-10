@@ -1,6 +1,12 @@
 import { api } from './client'
 import type { Category, Service, ServicePhoto } from '@/types'
 
+/** Справочник популярных услуг, сгруппированный по секциям (GET /services/popular). */
+export interface PopularServiceGroup {
+  section: string
+  services: { id: string; name: string }[]
+}
+
 export const categoriesApi = {
   list: () =>
     api.get<Category[]>('/services/categories').then((r) => r.data),
@@ -50,4 +56,8 @@ export const servicesApi = {
 
   removeWorkPhoto: (photoId: string) =>
     api.delete(`/services/photos/${photoId}`),
+
+  // Справочник популярных услуг для пикера при создании.
+  getPopular: () =>
+    api.get<PopularServiceGroup[]>('/services/popular').then((r) => r.data),
 }

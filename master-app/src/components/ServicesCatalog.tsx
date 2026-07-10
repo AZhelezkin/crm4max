@@ -6,6 +6,7 @@ import type { Category, Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice, UNCATEGORIZED_CATEGORY_ID } from '@/types'
 import CategoryFormPortal from '@/components/CategoryFormPortal'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
+import PopularServicesPortal from '@/components/PopularServicesPortal'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
 import { getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
 import {
@@ -51,6 +52,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
     // Форма категории
     const [showCatForm, setShowCatForm] = useState(false)
+    const [showPopular, setShowPopular] = useState(false)
     const [editCatId, setEditCatId] = useState<string | null>(null)
     const [catName, setCatName] = useState('')
     const [catDesc, setCatDesc] = useState('')
@@ -385,6 +387,13 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onClose={() => setShowSvcForm(false)}
           onSave={() => { void saveSvcForm() }}
           onDelete={editService ? () => { void handleDeleteService(editService.id); setShowSvcForm(false) } : undefined}
+          onPickPopular={() => setShowPopular(true)}
+        />
+
+        <PopularServicesPortal
+          visible={showPopular}
+          onClose={() => setShowPopular(false)}
+          onSelect={(popularName) => { setSvcName(popularName); setShowPopular(false) }}
         />
       </div>
     )
