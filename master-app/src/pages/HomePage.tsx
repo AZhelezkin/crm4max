@@ -97,23 +97,19 @@ export default function HomePage() {
             : <span style={{ ...text.label2Caps, color: 'var(--color-on-surface)' }}>{initials(master.name || '?')}</span>}
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/about')}
-          style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column' }}
-        >
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {master.name || 'Новый мастер'}
             </span>
-            <span style={{ width: 24, height: 24, flexShrink: 0, display: 'inline-flex', color: 'var(--color-primary-surface)' }}><Edit2Icon /></span>
+            <EditButton onClick={() => navigate('/about')} />
           </div>
           {master.location && (
             <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
               {master.location}
             </span>
           )}
-        </button>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
           <button type="button" aria-label="Поделиться" onClick={() => navigate('/share')}
@@ -213,10 +209,10 @@ export default function HomePage() {
 
         {/* Статистика: Клиенты + Услуги */}
         <div style={{ display: 'flex', gap: 20 }}>
-          <button type="button" onClick={() => navigate('/clients')} style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Клиенты</span>
-              <span style={{ width: 24, height: 24, display: 'inline-flex', color: 'var(--color-primary-surface)' }}><Edit2Icon /></span>
+              <EditButton onClick={() => navigate('/clients')} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -233,25 +229,25 @@ export default function HomePage() {
                 ходят {goingCount}, не ходят {Math.max(0, clients.length - goingCount)}
               </span>
             </div>
-          </button>
+          </div>
 
-          <button type="button" onClick={() => navigate('/services')} style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги</span>
-              <span style={{ width: 24, height: 24, display: 'inline-flex', color: 'var(--color-primary-surface)' }}><Edit2Icon /></span>
+              <EditButton onClick={() => navigate('/services')} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{servicesCount}</span>
               <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{primaryCategory}</span>
             </div>
-          </button>
+          </div>
         </div>
 
         {/* График работы */}
-        <button type="button" onClick={() => navigate('/schedule')} style={{ ...cardStyle, padding: 12, border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ ...cardStyle, padding: 12, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>График работы</span>
-            <span style={{ width: 24, height: 24, display: 'inline-flex', color: 'var(--color-primary-surface)' }}><Edit2Icon /></span>
+            <EditButton onClick={() => navigate('/schedule')} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
             <div style={{ display: 'flex', gap: 4, width: '100%' }}>
@@ -287,9 +283,19 @@ export default function HomePage() {
               </span>
             )}
           </div>
-        </button>
+        </div>
       </div>
     </div>
+  )
+}
+
+// Кнопка-карандаш: редактирование срабатывает только по её нажатию (не по всей карточке).
+function EditButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label="Редактировать"
+      style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-primary-surface)' }}>
+      <Edit2Icon />
+    </button>
   )
 }
 
