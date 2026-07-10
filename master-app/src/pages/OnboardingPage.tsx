@@ -15,7 +15,6 @@ import { HeroHeader, FloatingField, ArrowLeftIcon, CameraBoldIcon, UploadingOver
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 type Step = 0 | 1 | 2
-type ServicesSubStep = 'home' | 'categories' | 'services'
 
 const DAYS = [
   { v: 1, l: 'ПН' }, { v: 2, l: 'ВТ' }, { v: 3, l: 'СР' },
@@ -65,9 +64,7 @@ export default function OnboardingPage() {
   const [breakEnd, setBreakEnd] = useState('14:00')
 
   // ── Шаг 2: Услуги ──
-  const [servicesSubStep, setServicesSubStep] = useState<ServicesSubStep>('home')
-  const [servicesSelectedCatName, setServicesSelectedCatName] = useState('')
-  const [catCount, setCatCount] = useState(0)
+  const [svcCount, setSvcCount] = useState(0)
   const editorRef = useRef<ServicesCatalogHandle>(null)
 
   // ─── Хелперы ──────────────────────────────────────────────────────────────
@@ -219,7 +216,7 @@ export default function OnboardingPage() {
     || (step === 0 && !name.trim())
     || (step === 1 && workingDays.length === 0)
   const footerLabel = saving ? 'Сохраняем...'
-    : step === 2 ? (catCount === 0 ? 'Пропустить' : 'Готово')
+    : step === 2 ? (svcCount === 0 ? 'Пропустить' : 'Готово')
     : 'Далее'
   const footerNode = (
     <>
@@ -252,16 +249,12 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Заголовок step 2: home → «Услуги»; categories → «Категории услуг»; services → имя категории. */}
+      {/* Заголовок step 2: услуги — плоский список, всегда «Услуги». */}
       {step === 2 && (
         <HeroHeader
-          title={
-            servicesSubStep === 'services' ? (servicesSelectedCatName || 'Услуги')
-              : servicesSubStep === 'categories' ? 'Категории услуг'
-              : 'Услуги'
-          }
+          title="Услуги"
           onBack={() => {
-            // goBack: true — редактор поднялся на уровень выше; false — уже на home → выходим на шаг 1.
+            // goBack: false — плоский список → выходим на шаг 1.
             if (!editorRef.current?.goBack()) setStep(1)
           }}
         />
@@ -304,11 +297,7 @@ export default function OnboardingPage() {
       {step === 2 && (
         <ServicesCatalog
           ref={editorRef}
-          onSubStepChange={(ss, catName) => {
-            setServicesSubStep(ss)
-            if (catName) setServicesSelectedCatName(catName)
-          }}
-          onCategoryCountChange={setCatCount}
+          onServiceCountChange={setSvcCount}
           footer={footerNode}
         />
       )}

@@ -1,10 +1,9 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { categoriesApi, servicesApi } from '@/api/services.api'
+import { forwardRef, useEffect, useImperativeHandle, useState, type ReactNode } from 'react'
+import { servicesApi } from '@/api/services.api'
 import { useAuthStore } from '@/store/auth.store'
-import type { Category, Service } from '@/types'
-import { formatPrice, formatDuration, discountedPrice, UNCATEGORIZED_CATEGORY_ID } from '@/types'
-import CategoryFormPortal from '@/components/CategoryFormPortal'
+import type { Service } from '@/types'
+import { formatPrice, formatDuration, discountedPrice } from '@/types'
 import ServiceFormPortal from '@/components/ServiceFormPortal'
 import PopularServicesPortal from '@/components/PopularServicesPortal'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -19,51 +18,27 @@ import {
   onboardingPriceRowStyle,
 } from '@/components/onboardingStepOne.styles'
 
-// Три экрана: home (верхний блок + услуги) → categories (список категорий) → services (услуги категории).
-export type CatalogSubStep = 'home' | 'categories' | 'services'
-
 export interface ServicesCatalogHandle {
-  subStep: CatalogSubStep
-  selectedCatName: string
-  categoryCount: number
-  /** Назад на уровень выше. true — обработано внутри; false — уже на home (родитель выходит). */
+  /** Назад на уровень выше. Плоский список — уровней нет, всегда false (родитель выходит). */
   goBack: () => boolean
-  /** Открыть список услуг без категории (deep-link с карточки мастера). */
+  /** Совместимость со старым deep-link'ом «услуги без категории» — теперь no-op. */
   openUncategorized: () => void
 }
 
 interface ServicesCatalogProps {
-  onSubStepChange?: (subStep: CatalogSubStep, catName?: string) => void
-  onCategoryCountChange?: (count: number) => void
-  /** Кнопка завершения (онбординг) — рендерится в конце контента home. */
+  onServiceCountChange?: (count: number) => void
+  /** Кнопка завершения (онбординг) — рендерится в конце контента. */
   footer?: ReactNode
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onSubStepChange, onCategoryCountChange, footer }, ref) => {
-    const [categories, setCategories] = useState<Category[]>([])
+  ({ onServiceCountChange, footer }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
-    const [subStep, setSubStep] = useState<CatalogSubStep>('home')
-    const [selectedCatId, setSelectedCatId] = useState<string | null>(null)
-    // Активный таб в секции «Услуги» на home: 'all' или id категории.
-    const [activeServiceTab, setActiveServiceTab] = useState('all')
-    // Данные загружены — чтобы не мигать «Добавить категорию» до прихода категорий.
-    const [loaded, setLoaded] = useState(false)
-
-    // Форма категории
-    const [showCatForm, setShowCatForm] = useState(false)
-    const [showPopular, setShowPopular] = useState(false)
-    const [editCatId, setEditCatId] = useState<string | null>(null)
-    const [catName, setCatName] = useState('')
-    const [catDesc, setCatDesc] = useState('')
-    const [catPhotoPreview, setCatPhotoPreview] = useState<string | null>(null)
-    const [catPhotoUrl, setCatPhotoUrl] = useState<string | null>(null)
-    const [catPhotoUploading, setCatPhotoUploading] = useState(false)
 
     // Форма услуги
     const [showSvcForm, setShowSvcForm] = useState(false)
+    const [showPopular, setShowPopular] = useState(false)
     const [editService, setEditService] = useState<Service | null>(null)
-    const [svcCategoryId, setSvcCategoryId] = useState('')
     const [svcName, setSvcName] = useState('')
     const [svcDesc, setSvcDesc] = useState('')
     const [svcPrice, setSvcPrice] = useState('')
@@ -75,113 +50,36 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [svcSessionsCount, setSvcSessionsCount] = useState(2)
     const [svcWorkPhotos, setSvcWorkPhotos] = useState<LocalWorkPhoto[]>([])
 
-    // Под-экраны (home/categories/services) живут в одном скролл-контейнере —
-    // сбрасываем его прокрутку при переключении, иначе экран открывается «промотанным».
-    const scrollRef = useRef<HTMLDivElement>(null)
-    useEffect(() => { scrollRef.current?.scrollTo(0, 0) }, [subStep])
-
     const load = () =>
-      Promise.all([categoriesApi.list(), servicesApi.list()]).then(([cats, svcs]) => {
-        setCategories(cats)
+      servicesApi.list().then((svcs) => {
         // Системную «Прочее» (isMisc) в редакторе услуг не показываем — она только
         // для записи на услугу не из каталога (см. CreateBookingPage).
-        setAllServices(svcs.filter((s) => !s.isMisc))
-        onCategoryCountChange?.(cats.length)
-        setLoaded(true)
-      }).catch(() => setLoaded(true))
+        const shown = svcs.filter((s) => !s.isMisc)
+        setAllServices(shown)
+        onServiceCountChange?.(shown.length)
+      }).catch(() => {})
 
     useEffect(() => { load() }, [])
 
     // Перезагрузка после мутаций: локальный список + master в auth-сторе
-    // (ProfilePage читает master.categories из стора — без этого новые
-    // категории/услуги не видны на главной до перезапуска мини-аппа).
+    // (ProfilePage читает услуги из стора — без этого новые услуги не видны
+    // на главной до перезапуска мини-аппа).
     const reload = () => load().then(() => useAuthStore.getState().refreshMaster())
 
-    // Услуги без категории — показываем в пустом состоянии (категорий ещё нет).
-    const uncategorizedServices = allServices.filter((s) => !s.categoryId)
-
-    const changeSubStep = (ss: CatalogSubStep, catName?: string) => {
-      setSubStep(ss)
-      onSubStepChange?.(ss, catName)
-    }
-
-    const isUncatStep = selectedCatId === UNCATEGORIZED_CATEGORY_ID
-
     useImperativeHandle(ref, () => ({
-      subStep,
-      selectedCatName: isUncatStep
-        ? 'Услуги без категории'
-        : categories.find((c) => c.id === selectedCatId)?.name ?? '',
-      categoryCount: categories.length,
-      goBack: () => {
-        if (subStep === 'services') {
-          // Услуги без категории открыты deep-link'ом с карточки → выходим назад (на профиль),
-          // а не в список категорий, которого в этом потоке не было.
-          if (isUncatStep) return false
-          changeSubStep('categories'); return true
-        }
-        if (subStep === 'categories') { changeSubStep('home'); return true }
-        return false
-      },
-      openUncategorized: () => {
-        setSelectedCatId(UNCATEGORIZED_CATEGORY_ID)
-        changeSubStep('services', 'Услуги без категории')
-      },
-    }), [subStep, categories, selectedCatId, isUncatStep])
-
-    // ─── Категория ────────────────────────────────────────────────────────────
-
-    const openCatForm = (cat?: Category) => {
-      if (cat) {
-        setEditCatId(cat.id)
-        setCatName(cat.name)
-        setCatDesc(cat.description ?? '')
-        setCatPhotoPreview(cat.photo)
-        setCatPhotoUrl(cat.photo)
-      } else {
-        setEditCatId(null)
-        setCatName(''); setCatDesc(''); setCatPhotoPreview(null); setCatPhotoUrl(null)
-      }
-      setShowCatForm(true)
-    }
-
-    const saveCatForm = async () => {
-      if (!catName.trim()) return
-      // null (а не undefined) при очистке — иначе Prisma не обнуляет поле при редактировании.
-      const data = { name: catName.trim(), description: catDesc || null, photo: catPhotoUrl || null }
-      if (editCatId) await categoriesApi.update(editCatId, data)
-      else await categoriesApi.create(data)
-      setShowCatForm(false)
-      reload()
-    }
-
-    const handleDeleteCategory = async (id: string) => {
-      await categoriesApi.remove(id)
-      if (id === selectedCatId) changeSubStep('categories')
-      reload()
-    }
-
-    // Удаление из формы редактирования категории.
-    const deleteCatForm = async () => {
-      if (!editCatId) return
-      // Если удаляемая категория была активным табом «Услуги» — сбрасываем на «Все»,
-      // иначе таб укажет в никуда и список окажется пустым.
-      if (activeServiceTab === editCatId) setActiveServiceTab('all')
-      await categoriesApi.remove(editCatId)
-      setShowCatForm(false)
-      reload()
-    }
+      goBack: () => false,
+      openUncategorized: () => {},
+    }), [])
 
     // ─── Услуга ───────────────────────────────────────────────────────────────
 
-    const openSvcForm = (service?: Service, defaultCatId?: string) => {
+    const openSvcForm = (service?: Service) => {
       if (service) {
         setEditService(service)
         setSvcName(service.name)
         setSvcDesc(service.description ?? '')
         setSvcPrice(String(service.price / 100))
         setSvcDuration(String(service.duration))
-        setSvcCategoryId(service.categoryId ?? '')
         setSvcDiscountEnabled(!!service.discountPercent)
         setSvcDiscountPercent(service.discountPercent ?? 10)
         setSvcIsPackage(service.sessionsCount > 1)
@@ -194,7 +92,6 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       } else {
         setEditService(null)
         setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('')
-        setSvcCategoryId(defaultCatId ?? '')
         setSvcDiscountEnabled(false); setSvcDiscountPercent(10)
         setSvcIsPackage(false); setSvcSessionsCount(2)
         setSvcWorkPhotos([])
@@ -210,7 +107,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         description: svcDesc || null,
         price: Math.round(Number(svcPrice) * 100) || 0,
         duration: Number(svcDuration) || 30,
-        categoryId: svcCategoryId || null,
+        // Категорий у мастера больше нет — услуги хранятся плоским списком.
+        categoryId: null,
         // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД
         // (Prisma игнорирует undefined и оставляет прежнее значение).
         discountPercent: svcDiscountEnabled ? svcDiscountPercent : null,
@@ -244,121 +142,29 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       reload()
     }
 
-    const selectedCat = categories.find((c) => c.id === selectedCatId) ?? null
-
-    // Табы секции «Услуги»: «Все» + по категории (счётчик = число услуг в ней).
-    const serviceTabs = [
-      { id: 'all', name: 'Все', count: allServices.length },
-      ...categories.map((c) => ({ id: c.id, name: c.name, count: c.services.length })),
-    ]
-    const shownServices = activeServiceTab === 'all'
-      ? allServices
-      : (categories.find((c) => c.id === activeServiceTab)?.services ?? [])
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
-          {/* ── HOME: верхний блок (папка) + блок «УСЛУГИ» ── */}
-          {subStep === 'home' && (
-            <>
-              {/* Верхний блок: нет категорий → CTA «Добавить категорию»; есть → сводка «Категории услуг».
-                  До загрузки — резервируем высоту (72), чтобы не мигать CTA-карточкой и не дёргать секцию ниже. */}
-              {!loaded ? (
-                <div style={{ height: 76, flexShrink: 0 }} />
-              ) : categories.length === 0 ? (
-                <AddCategoryCard onClick={() => openCatForm()} />
-              ) : (
-                <CategoriesSummaryCard
-                  count={categories.length}
-                  onClick={() => changeSubStep('categories')}
-                />
-              )}
+          {/* Плоский список всех услуг: имя + цена + длительность + скидка; тап → форма. */}
+          {allServices.map((s) => (
+            <ServiceCard
+              key={s.id}
+              service={s}
+              onEdit={() => openSvcForm(s)}
+              onDelete={() => { void handleDeleteService(s.id) }}
+            />
+          ))}
 
-              {/* Блок «УСЛУГИ» (макет 8743:42301): заголовок секции + табы-категории + список услуг.
-                  Карточка = имя + категория + chevron; тап → форма (удаление теперь там). */}
-              <div style={{ marginTop: 8 }}>
-                {/* sectionTitle pt16 pb4 px8 */}
-                <div style={{ padding: '16px 8px 4px' }}>
-                  <div style={{ ...text.caption3Caps, color: 'var(--color-on-surface)' }}>Услуги</div>
-                </div>
+          <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
 
-                {/* Табы: «Все» + по категории; gap 32, px 24, горизонтальный скролл. */}
-                <ServiceTabs tabs={serviceTabs} active={activeServiceTab} onChange={setActiveServiceTab} />
-
-                {/* Карточки услуг выбранного таба (tabs→card 16, между карточками 8). */}
-                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {shownServices.map((s) => (
-                    <ServiceListCard
-                      key={s.id}
-                      name={s.name}
-                      categoryName={categories.find((c) => c.id === s.categoryId)?.name ?? 'Услуги без категории'}
-                      onClick={() => openSvcForm(s)}
-                    />
-                  ))}
-                  <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
-                </div>
-              </div>
-
-              {footer && (
-                <div style={{ paddingTop: 16, paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
-                  {footer}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ── CATEGORIES: список категорий (макет profile-category-list) ── */}
-          {subStep === 'categories' && (
-            <>
-              {categories.map((cat) => (
-                <CategoryCard
-                  key={cat.id}
-                  cat={cat}
-                  onClick={() => openCatForm(cat)}
-                />
-              ))}
-              <div style={{ marginTop: 8 }}>
-                <AddRowButton label="Добавить категорию" onClick={() => openCatForm()} />
-              </div>
-            </>
-          )}
-
-          {/* ── Список услуг категории (или услуг без категории при isUncatStep) ── */}
-          {subStep === 'services' && (selectedCat || isUncatStep) && (
-            <>
-              {(selectedCat ? selectedCat.services : uncategorizedServices).map((s) => (
-                <ServiceCard
-                  key={s.id}
-                  service={s}
-                  onEdit={() => openSvcForm(s)}
-                  onDelete={() => { void handleDeleteService(s.id) }}
-                />
-              ))}
-
-              <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined, selectedCat?.id)} />
-            </>
+          {footer && (
+            <div style={{ paddingTop: 16, paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
+              {footer}
+            </div>
           )}
 
         </div>
-
-        <CategoryFormPortal
-          visible={showCatForm}
-          isEdit={!!editCatId}
-          name={catName}
-          onNameChange={setCatName}
-          desc={catDesc}
-          onDescChange={setCatDesc}
-          photoPreview={catPhotoPreview}
-          onPhotoPreview={setCatPhotoPreview}
-          onPhotoUrl={setCatPhotoUrl}
-          photoUploading={catPhotoUploading}
-          onPhotoUploading={setCatPhotoUploading}
-          onClose={() => setShowCatForm(false)}
-          onSave={() => { void saveCatForm() }}
-          onDelete={editCatId ? () => { void deleteCatForm() } : undefined}
-          serviceCount={categories.find((c) => c.id === editCatId)?.services.length ?? 0}
-        />
 
         <ServiceFormPortal
           visible={showSvcForm}
@@ -381,9 +187,6 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
           onSessionsCountChange={setSvcSessionsCount}
           workPhotos={svcWorkPhotos}
           onWorkPhotosChange={setSvcWorkPhotos}
-          categories={categories.map((c) => ({ id: c.id, name: c.name, photo: c.photo }))}
-          categoryId={svcCategoryId}
-          onCategoryIdChange={setSvcCategoryId}
           onClose={() => setShowSvcForm(false)}
           onSave={() => { void saveSvcForm() }}
           onDelete={editService ? () => { void handleDeleteService(editService.id); setShowSvcForm(false) } : undefined}
@@ -403,109 +206,7 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 ServicesCatalog.displayName = 'ServicesCatalog'
 export default ServicesCatalog
 
-// ─── Каталог: карточки и кнопки (макеты profile-services-empty / profile-category-list) ──
-
-// Карточка h76 rx20 на surface-transparent — общая оболочка карточек каталога.
-// flexShrink: 0 — иначе в скролл-контейнере (flex column) карточка сжимается ниже 76
-// при обилии контента (home-экран), а на лёгком экране остаётся 76 → разная высота.
-const catalogCardStyle: CSSProperties = {
-  height: 76,
-  flexShrink: 0,
-  borderRadius: 20,
-  border: 'none',
-  cursor: 'pointer',
-  background: 'var(--color-surface-transparent)',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 20px',
-  width: '100%',
-}
-
-// CTA-карточка «Добавить категорию» (пустое состояние): папка + центр-текст + шеврон.
-function AddCategoryCard({ onClick }: { onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-        <FolderIcon />
-      </span>
-      <span style={{ flex: 1, textAlign: 'center', ...text.callout1, color: 'var(--color-on-surface)' }}>
-        Добавить категорию
-      </span>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-        <ChevronRightIcon />
-      </span>
-    </button>
-  )
-}
-
-// Кол-во категорий со склонением: 1 категория / 2 категории / 5 категорий.
-function catCountLabel(n: number): string {
-  const m10 = n % 10, m100 = n % 100
-  const word = m10 === 1 && m100 !== 11 ? 'категория'
-    : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? 'категории'
-    : 'категорий'
-  return `${n} ${word}`
-}
-
-// Верхний блок-сводка «Категории услуг» (макет listItem.svg): папка x32 + заголовок 16
-// + счётчик 13 + шеврон. Тап → экран списка категорий.
-function CategoriesSummaryCard({ count, onClick }: { count: number; onClick: () => void }) {
-  // h76 (catalogCardStyle) по макету 8743:51031: чип 44 → 16px сверху/снизу, текст 40 центрируется.
-  return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12 }}>
-      {/* Папка в чипе 44×44 (p10 rx12), как в макете 8743:51031 — не голая иконка. */}
-      <div style={{
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--color-interactive-element-secondary)',
-      }}>
-        <FolderIcon />
-      </div>
-      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          Категории услуг
-        </div>
-        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-          {catCountLabel(count)}
-        </div>
-      </div>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-        <ChevronRightIcon />
-      </span>
-    </button>
-  )
-}
-
-// Карточка категории (список): аватар 44 + имя + описание (если есть) + шеврон.
-function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} style={{ ...catalogCardStyle, gap: 12, textAlign: 'left' }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 22, overflow: 'hidden', flexShrink: 0,
-        background: 'var(--color-secondary-surface)',
-        color: 'var(--color-interactive-element-secondary)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {cat.photo
-          ? <img src={cat.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <FolderIcon />}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {cat.name}
-        </div>
-        {cat.description && (
-          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {cat.description}
-          </div>
-        )}
-      </div>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-        <ChevronRightIcon />
-      </span>
-    </button>
-  )
-}
+// ─── Каталог: карточки и кнопки ───────────────────────────────────────────────
 
 // Компактная кнопка-строка «+ Добавить …»: h36 rx12 secondary-surface, «+» + текст.
 function AddRowButton({ label, onClick }: { label: string; onClick: () => void }) {
@@ -526,7 +227,7 @@ function AddRowButton({ label, onClick }: { label: string; onClick: () => void }
   )
 }
 
-// Карточка услуги (список услуг категории + услуги без категории в пустом состоянии).
+// Карточка услуги (плоский список): имя + длительность + цена/скидка + edit/delete.
 function ServiceCard({ service: s, onEdit, onDelete }: {
   service: Service; onEdit: () => void; onDelete: () => void
 }) {
@@ -566,110 +267,7 @@ function ServiceCard({ service: s, onEdit, onDelete }: {
   )
 }
 
-// Табы секции «Услуги» (макет 8743:51857): «Все» + по категории, gap 32, px 24, гориз. скролл.
-// Активный таб — active-element (label/counter-text/underline) + active-surface (counter bg);
-// неактивный — on-surface-secondary + secondary-surface. Лейбл Body2, счётчик Caption2.
-function ServiceTabs({ tabs, active, onChange }: {
-  tabs: { id: string; name: string; count: number }[]
-  active: string
-  onChange: (id: string) => void
-}) {
-  return (
-    <div style={{
-      display: 'flex', gap: 32, overflowX: 'auto',
-      // bleed до краёв экрана (родитель px16) + собственный px24 из макета.
-      marginLeft: -16, marginRight: -16, padding: '0 24px',
-      marginTop: 8, // sectionTitle-bottom(316) → tabs(324) = 8
-      scrollbarWidth: 'none',
-    }}>
-      {tabs.map((t) => {
-        const isActive = t.id === active
-        return (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onChange(t.id)}
-            style={{
-              flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, padding: '7px 0' }}>
-              <span style={{
-                ...text.body2, whiteSpace: 'nowrap',
-                color: isActive ? 'var(--color-active-element)' : 'var(--color-on-surface-secondary)',
-              }}>
-                {t.name}
-              </span>
-              <span style={{
-                minWidth: 24, padding: 3, borderRadius: 20, boxSizing: 'border-box',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                ...text.caption2,
-                background: isActive ? 'var(--color-active-surface)' : 'var(--color-secondary-surface)',
-                color: isActive ? 'var(--color-active-element)' : 'var(--color-on-surface-secondary)',
-              }}>
-                {t.count}
-              </span>
-            </div>
-            <div style={{
-              width: '100%', height: 3, borderRadius: '20px 20px 0 0',
-              background: isActive ? 'var(--color-active-element)' : 'transparent',
-            }} />
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-// Карточка услуги в списке home (макет 8743:51800): имя (callout1) + категория (caption2) + chevron.
-// Тап → форма редактирования (там же удаление). Без инлайн-цены/действий.
-function ServiceListCard({ name, categoryName, onClick }: {
-  name: string; categoryName: string; onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 12, width: '100%', flexShrink: 0,
-        background: 'var(--color-surface-transparent)', border: 'none', cursor: 'pointer',
-        borderRadius: 20, padding: '16px 20px', textAlign: 'left',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {name}
-        </div>
-        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {categoryName}
-        </div>
-      </div>
-      <span style={{ color: 'var(--color-interactive-element-secondary)', display: 'flex', flexShrink: 0 }}>
-        <ChevronRightIcon />
-      </span>
-    </button>
-  )
-}
-
 // ─── Иконки ──────────────────────────────────────────────────────────────────
-
-// Папка — оригинальный path из макета (нормализован viewBox под x48-68/y216-236).
-function FolderIcon() {
-  return (
-    <svg width="24" height="24" viewBox="46 214 24 24" fill="none">
-      <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" />
-    </svg>
-  )
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 function PlusIcon() {
   return (

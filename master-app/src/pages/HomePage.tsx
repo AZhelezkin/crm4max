@@ -77,8 +77,6 @@ export default function HomePage() {
   if (!master) return <ProfileSkeleton />
 
   const servicesCount = master.categories.reduce((acc, c) => acc + c.services.length, 0)
-  const primaryCategory = master.categories.find((c) => c.services.length > 0)?.name
-    ?? master.categories[0]?.name ?? ''
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
   const todaySum = todayBookings.reduce((acc, b) => acc + bookingAmount(b), 0)
 
@@ -238,7 +236,6 @@ export default function HomePage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{servicesCount}</span>
-              <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{primaryCategory}</span>
             </div>
           </div>
         </div>
