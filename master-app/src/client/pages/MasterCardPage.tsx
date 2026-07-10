@@ -7,7 +7,7 @@ import { bookingsApi } from '@client/api/bookings.api'
 import { reviewsApi } from '@client/api/reviews.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking, Master, Service } from '@client/types'
-import { discountedPrice, formatPrice } from '@client/types'
+import { discountedPrice, formatPrice, masterServiceList } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 import { startParam } from '@/App'
@@ -162,8 +162,7 @@ export default function MasterCardPage() {
   }, [masterId])
 
   // Каждое фото несёт ссылку на свою услугу — нужно для подписи в лайтбоксе.
-  const workPhotos = (master?.categories ?? [])
-    .flatMap((c) => c.services)
+  const workPhotos = (master ? masterServiceList(master) : [])
     .flatMap((s) => ((s as any).workPhotos ?? []).map((p: any) => ({ ...p, serviceName: s.name })))
     .sort((a: any, b: any) => a.order - b.order)
 
@@ -179,7 +178,7 @@ export default function MasterCardPage() {
 
   const tabBadge = (t: Tab) => {
     if (!master) return 0
-    if (t === 'services') return master.categories.flatMap((c) => c.services).length
+    if (t === 'services') return masterServiceList(master).length
     if (t === 'photo') return workPhotos.length
     if (t === 'reviews') return master.reviews.length
     return 0
@@ -735,7 +734,7 @@ export default function MasterCardPage() {
       <div style={{ padding: '24px 16px 0' }}>
 
         {tab === 'services' && (
-          <ServicesList services={master.categories.flatMap((c) => c.services)} onServiceClick={(service) => {
+          <ServicesList services={masterServiceList(master)} onServiceClick={(service) => {
             setMasterId(masterId)
             setService(service)
             navigate('/book/service')

@@ -5,7 +5,7 @@ import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
 import { bookingsApi } from '@/api/bookings.api'
 import { clientsApi } from '@/api/clients.api'
-import { discountedPrice, type Booking, type Client } from '@/types'
+import { discountedPrice, masterServiceList, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 
@@ -76,7 +76,7 @@ export default function HomePage() {
 
   if (!master) return <ProfileSkeleton />
 
-  const servicesCount = master.categories.reduce((acc, c) => acc + c.services.length, 0)
+  const servicesCount = masterServiceList(master).length
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
   const todaySum = todayBookings.reduce((acc, b) => acc + bookingAmount(b), 0)
 

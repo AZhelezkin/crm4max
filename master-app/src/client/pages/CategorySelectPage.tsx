@@ -92,10 +92,10 @@ export default function CategorySelectPage() {
       {/* ── Список категорий. Figma: padding 16/8, gap=8, items на surfaceTransparent. */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
         {!master && <CategoryListSkeleton />}
-        {master && master.categories.length === 0 && (
+        {master && (master.categories?.length ?? 0) === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет категорий</div>
         )}
-        {master?.categories.map((cat) => {
+        {master?.categories?.map((cat) => {
           const hasDiscount = cat.services.some((s) => s.discountPercent)
           const preview = cat.services.map((s) => s.name).join(', ')
 

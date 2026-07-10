@@ -14,7 +14,8 @@ export interface Master {
   homeVisit: boolean
   isOnboarded: boolean
   schedule: Schedule | null
-  categories: Category[]
+  categories?: Category[]
+  services?: Service[]
 }
 
 export interface Schedule {
@@ -62,6 +63,12 @@ export interface Service {
    *  при создании записи. Скрыта из редактора услуг, доступна в пикере записи. */
   isMisc?: boolean
   workPhotos: ServicePhoto[]
+}
+
+/** Плоский список услуг мастера: новый бэкенд отдаёт master.services; старый — только
+ *  master.categories с вложенными услугами. Фолбэк делает переход бесшовным. */
+export function masterServiceList(m: { services?: Service[]; categories?: Category[] }): Service[] {
+  return m.services ?? m.categories?.flatMap((c) => c.services) ?? []
 }
 
 /** Клиент в адресной книге мастера (вкладка «Клиенты»). id — строки MasterClient. */

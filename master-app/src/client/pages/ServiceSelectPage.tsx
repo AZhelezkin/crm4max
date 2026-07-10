@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master, Service } from '@client/types'
-import { discountedPrice, formatPrice } from '@client/types'
+import { discountedPrice, formatPrice, masterServiceList } from '@client/types'
 import { text } from '@/styles/typography'
 import ServiceListSkeleton from '@client/components/ServiceListSkeleton'
 
@@ -184,7 +184,7 @@ export default function ServiceSelectPage() {
   /* ── Плоский список всех услуг мастера. Категории убраны; «Прочее» бэкенд
        уже скрывает от клиентов, так что flatMap безопасен. ──────────────── */
   const allServices = useMemo<Service[]>(
-    () => (master ? master.categories.flatMap((c) => c.services) : []),
+    () => (master ? masterServiceList(master) : []),
     [master],
   )
 

@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
-import { discountedPrice, UNCATEGORIZED_CATEGORY_ID, type Booking, type Category, type Review } from '@/types'
+import { discountedPrice, masterServiceList, UNCATEGORIZED_CATEGORY_ID, type Booking, type Category, type Review } from '@/types'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import CategoryAvatar from '@/components/CategoryAvatar'
 
@@ -56,7 +56,7 @@ export default function ProfilePage() {
   const lbStripRef = useRef<HTMLDivElement>(null)
   const lbTouch = useRef({ startX: 0, startY: 0, dir: null as 'h' | 'v' | null, moved: false })
 
-  const totalServices = master?.categories.reduce((acc, c) => acc + c.services.length, 0) ?? 0
+  const totalServices = master ? masterServiceList(master).length : 0
 
   const [reviews, setReviews]         = useState<Review[]>([])
   const [reviewsLoaded, setReviewsLoaded] = useState(false)
@@ -104,8 +104,7 @@ export default function ProfilePage() {
 
   // Каждое фото несёт ссылку на свою услугу — нужно для подписи в лайтбоксе
   // (как в клиентском MasterCardPage).
-  const workPhotos = (master?.categories ?? [])
-    .flatMap((c) => c.services)
+  const workPhotos = (master ? masterServiceList(master) : [])
     .flatMap((s) => ((s as any).workPhotos ?? []).map((p: any) => ({ ...p, serviceName: s.name })))
     .sort((a: any, b: any) => a.order - b.order)
 
@@ -419,9 +418,9 @@ export default function ProfilePage() {
       {/* Контент табов. gap=24 между underline табов и первой карточкой (Figma y 348→372). */}
       <div style={{ padding: '24px 16px 80px' }}>
         {activeTab === 'services' && (
-          master.categories.length
+          (master.categories?.length ?? 0)
             ? <ServicesList
-                categories={master.categories}
+                categories={master.categories ?? []}
                 onCategoryClick={(cat) => navigate('/bookings/new', { state: { categoryId: cat.id } })}
               />
             : <EmptyState
