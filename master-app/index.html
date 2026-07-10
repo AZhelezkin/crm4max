@@ -23,15 +23,18 @@
       href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&display=swap"
     />
     <script>
-      // Применяем тему до рендера React — без вспышки.
-      // Приоритет: localStorage (явный выбор) > prefers-color-scheme (OS) > Dark.
-      try {
-        var stored = localStorage.getItem('crm4max-theme')
-        var t = stored === 'light' || stored === 'dark'
-          ? stored
-          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-        document.documentElement.dataset.theme = t
-      } catch (e) { /* приватный режим / нет localStorage */ }
+      // Тема из системных настроек (prefers-color-scheme). Ставим до рендера React —
+      // без вспышки — и реагируем на смену системной темы на лету. Fallback — Dark.
+      (function () {
+        try {
+          var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)')
+          var apply = function () {
+            document.documentElement.dataset.theme = mq && mq.matches ? 'light' : 'dark'
+          }
+          apply()
+          if (mq && mq.addEventListener) mq.addEventListener('change', apply)
+        } catch (e) { /* нет matchMedia — остаётся Dark через :root */ }
+      })()
     </script>
     <script src="https://st.max.ru/js/max-web-app.js"></script>
   </head>
