@@ -238,7 +238,7 @@ export default function MyBookingsPage() {
   const handleBookNew = () => {
     if (!currentMasterId) return
     setStoreMasterId(currentMasterId)
-    navigate('/book/categories')
+    navigate('/book/services')
   }
 
   const handleEnterSearch = () => {

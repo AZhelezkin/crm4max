@@ -7,7 +7,6 @@ import ScrollToTop from '@/components/ScrollToTop'
 import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 
 import MasterCardPage    from '@client/pages/MasterCardPage'
-import CategorySelectPage from '@client/pages/CategorySelectPage'
 import ServiceSelectPage from '@client/pages/ServiceSelectPage'
 import ServiceDetailPage from '@client/pages/ServiceDetailPage'
 import CalendarPage      from '@client/pages/CalendarPage'
@@ -96,7 +95,8 @@ export default function ClientApp() {
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/masters"         element={<RecentMastersPage />} />
-        <Route path="/book/categories" element={<CategorySelectPage />} />
+        {/* Категории убраны — старый deep-link/back ведём на плоский список услуг. */}
+        <Route path="/book/categories" element={<Navigate to="/book/services" replace />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />
         <Route path="/book/service"    element={<ServiceDetailPage />} />
         <Route path="/book/calendar"   element={<CalendarPage />} />

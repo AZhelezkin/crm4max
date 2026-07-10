@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mastersApi } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Category, Master, Service } from '@client/types'
+import type { Master, Service } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import ServiceListSkeleton from '@client/components/ServiceListSkeleton'
@@ -156,28 +156,11 @@ function ServiceItem({ service, query, onSelect }: {
   )
 }
 
-/* ── Заголовок секции «ВОЛОСЫ» (Figma sectionTitle) ────────────────────────── */
-
-function SectionTitle({ name, query }: { name: string; query?: string }) {
-  return (
-    /* Figma: padding pt-16 pb-4 px-8, full width, text Caption 3 CAPS на onSurface. */
-    <div style={{ width: '100%', padding: '16px 8px 4px' }}>
-      <span style={{
-        ...text.caption3Caps,
-        color: 'var(--color-on-surface)',
-      }}>
-        {query ? <Highlight text={name} query={query} /> : name}
-      </span>
-    </div>
-  )
-}
-
 /* ── Страница ──────────────────────────────────────────────────────────────── */
 
 export default function ServiceSelectPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const categoryId = searchParams.get('categoryId')
   const isSearchMode = searchParams.get('search') === '1'
   const { masterId, setService } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
@@ -193,43 +176,26 @@ export default function ServiceSelectPage() {
     if (isSearchMode && inputRef.current) inputRef.current.focus()
   }, [isSearchMode, master])
 
-  const handleSelect = (service: Service, categoryName: string) => {
-    setService(service, categoryName)
+  const handleSelect = (service: Service) => {
+    setService(service)
     navigate('/book/service')
   }
 
-  /* ── Normal mode: filter by category ──────────────────────────────────── */
-  const categories: Category[] = master
-    ? (categoryId
-        ? master.categories.filter((c) => c.id === categoryId)
-        : master.categories)
-    : []
+  /* ── Плоский список всех услуг мастера. Категории убраны; «Прочее» бэкенд
+       уже скрывает от клиентов, так что flatMap безопасен. ──────────────── */
+  const allServices = useMemo<Service[]>(
+    () => (master ? master.categories.flatMap((c) => c.services) : []),
+    [master],
+  )
 
   /* ── Search mode ──────────────────────────────────────────────────────── */
-  const globalSearch = isSearchMode && !categoryId
   const q = query.trim().toLowerCase()
   const searchResults = useMemo(() => {
-    if (!master || !q) return [] as { category: Category; services: Service[] }[]
-    const searchIn = globalSearch ? master.categories : categories
-    if (globalSearch) {
-      const grouped: { category: Category; services: Service[] }[] = []
-      for (const cat of searchIn) {
-        const matched = cat.services.filter(
-          (s) =>
-            s.name.toLowerCase().includes(q) ||
-            cat.name.toLowerCase().includes(q),
-        )
-        if (matched.length > 0) grouped.push({ category: cat, services: matched })
-      }
-      return grouped
-    }
-    const matched = searchIn.flatMap((cat) =>
-      cat.services
-        .filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q))
-        .map((s) => ({ category: cat, services: [s] })),
+    if (!q) return [] as Service[]
+    return allServices.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q),
     )
-    return matched
-  }, [master, q, globalSearch, categories])
+  }, [allServices, q])
 
   const isSearching = isSearchMode && q.length > 0
 
@@ -294,7 +260,7 @@ export default function ServiceSelectPage() {
               Выберите услугу
             </span>
             <ToolbarButton
-              onClick={() => navigate(`/book/services?search=1${categoryId ? `&categoryId=${categoryId}` : ''}`)}
+              onClick={() => navigate('/book/services?search=1')}
               ariaLabel="Поиск"
             >
               <IcoSearch />
@@ -303,7 +269,7 @@ export default function ServiceSelectPage() {
         )}
       </div>
 
-      {/* ── Список (Figma list: padding 16/8, gap 8) ───────────────────────── */}
+      {/* ── Список (Figma list: padding 16/8, gap 8) — плоский, без категорий ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
         {!master && <ServiceListSkeleton />}
 
@@ -311,27 +277,16 @@ export default function ServiceSelectPage() {
         {isSearching && searchResults.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Ничего не найдено</div>
         )}
-        {isSearching && searchResults.map(({ category: cat, services }) => (
-          <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {globalSearch && <SectionTitle name={cat.name} query={q} />}
-            {services.map((s) => (
-              <ServiceItem key={s.id} service={s} query={q} onSelect={(svc) => handleSelect(svc, cat.name)} />
-            ))}
-          </div>
+        {isSearching && searchResults.map((s) => (
+          <ServiceItem key={s.id} service={s} query={q} onSelect={handleSelect} />
         ))}
 
         {/* Normal mode */}
-        {master && !isSearching && categories.length === 0 && !isSearchMode && (
+        {master && !isSearchMode && allServices.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет услуг</div>
         )}
-        {!isSearchMode && categories.map((cat) => (
-          <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Заголовок секции (Figma: имя категории «ВОЛОСЫ» над списком) — всегда. */}
-            {cat.name && <SectionTitle name={cat.name} />}
-            {cat.services.map((s) => (
-              <ServiceItem key={s.id} service={s} query="" onSelect={(svc) => handleSelect(svc, cat.name)} />
-            ))}
-          </div>
+        {!isSearchMode && allServices.map((s) => (
+          <ServiceItem key={s.id} service={s} query="" onSelect={handleSelect} />
         ))}
       </div>
 

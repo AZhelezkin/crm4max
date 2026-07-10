@@ -6,11 +6,10 @@ import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
 import { reviewsApi } from '@client/api/reviews.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Booking, Category, Master, Service } from '@client/types'
-import { UNCATEGORIZED_CATEGORY_ID } from '@/types'
+import type { Booking, Master, Service } from '@client/types'
+import { discountedPrice, formatPrice } from '@client/types'
 import BottomNav from '@client/components/BottomNav'
 import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
-import CategoryAvatar from '@/components/CategoryAvatar'
 import { startParam } from '@/App'
 import { text } from '@/styles/typography'
 import capybaraBookingImg from '@/assets/capybara-booking.png'
@@ -174,7 +173,7 @@ export default function MasterCardPage() {
       setService(service)
       navigate('/book/calendar')
     } else {
-      navigate('/book/categories')
+      navigate('/book/services')
     }
   }
 
@@ -736,9 +735,10 @@ export default function MasterCardPage() {
       <div style={{ padding: '24px 16px 0' }}>
 
         {tab === 'services' && (
-          <ServicesList categories={master.categories} onCategoryClick={(cat) => {
+          <ServicesList services={master.categories.flatMap((c) => c.services)} onServiceClick={(service) => {
             setMasterId(masterId)
-            navigate(`/book/services?categoryId=${cat.id}`)
+            setService(service)
+            navigate('/book/service')
           }} />
         )}
 
@@ -1117,77 +1117,93 @@ export default function MasterCardPage() {
 }
 
 /* ── ServicesList ──────────────────────────────────────────────────────────── */
+/* Плоский список услуг (категории убраны). Карточка — как в ServiceSelectPage
+   (Figma listItem): title + description, price-row со скидкой, chevron. */
 
-function ServicesList({ categories, onCategoryClick }: { categories: Category[]; onCategoryClick: (cat: Category) => void }) {
+function ServicesList({ services, onServiceClick }: { services: Service[]; onServiceClick: (s: Service) => void }) {
   return (
-    /* Макет: карточки 379×88 (с бейджем) / 379×76 (без), rx=20, fill=surfaceTransparent.
-       Между карточками gap=8. Padding внутри подгоняется под содержимое. */
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {categories.map((cat) => {
-        const isUncat = cat.id === UNCATEGORIZED_CATEGORY_ID
-        const hasDiscount = cat.services.some((s) => s.discountPercent)
-        const preview = cat.services.map((s) => s.name).join(' • ')
+      {services.map((service) => {
+        const dPrice = discountedPrice(service.price, service.discountPercent)
+        const hasDiscount = dPrice !== null
 
         return (
-          <div
-            key={cat.id}
-            onClick={() => onCategoryClick(cat)}
+          <button
+            key={service.id}
+            onClick={() => onServiceClick(service)}
             style={{
+              width: '100%', textAlign: 'left',
               display: 'flex', alignItems: 'center', gap: 12,
               background: 'var(--color-surface-transparent)',
               borderRadius: 20,
               padding: '16px 16px 16px 20px',
-              cursor: 'pointer',
+              border: 'none', cursor: 'pointer',
             }}
           >
-            {/* Аватар категории 44×44: фото или дефолт — фиолетовая папка (как «Услуги без категории»). */}
-            <CategoryAvatar photo={cat.photo} />
+            {/* Колонка контента: title-stack + price-row, gap 16 между ними */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* Название + (опц. бейдж скидки) + описание.
-                Title — Figma «Callout 1» (17/24/700 ls −0.17), gap=6 между title и tag. */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+              {/* Title + description */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  ...text.callout1, color: 'var(--color-on-surface)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {service.name}
+                </div>
+                {service.description && (
+                  <div style={{
+                    ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 2,
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {service.description}
+                  </div>
+                )}
+              </div>
+
+              {/* Price row: actual + (если скидка) crossed-out + бейдж «% СКИДКИ» */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{
+                  ...text.callout1,
+                  color: hasDiscount ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
+                }}>
+                  {formatPrice(dPrice ?? service.price)}
+                </span>
                 {hasDiscount && (
-                  /* Tag: высота 20 (Figma metadata), горизонт. padding 6, текст
-                     центрирован через line-height:20. См. комментарий у homeVisit-тэга. */
                   <span style={{
-                    borderRadius: 4,
+                    ...text.caption2,
+                    color: 'var(--color-on-surface-muted)',
+                    textDecoration: 'line-through',
+                  }}>
+                    {formatPrice(service.price)}
+                  </span>
+                )}
+                {service.discountPercent && (
+                  <span style={{
+                    borderRadius: 6,
                     display: 'inline-block',
-                    flexShrink: 0,
-                    height: 20,
-                    padding: '0 6px',
+                    height: 30,
+                    padding: '0 8px',
                     boxSizing: 'border-box',
                     background: 'var(--color-error-surface-lite)',
                     color: 'var(--color-on-error-surface-lite)',
-                    ...text.label3Caps,
-                    lineHeight: '20px',
+                    ...text.label2Caps,
+                    lineHeight: '30px',
                   }}>
                     % скидки
                   </span>
                 )}
               </div>
-              {/* Description — Figma «Caption 2» (14/16/500). До 2 строк, далее ellipsis.
-                  У синтетической «Услуги без категории» подзаголовка нет (макет 8905:49213). */}
-              {!isUncat && (
-                <div style={{
-                  color: 'var(--color-on-surface-secondary)', ...text.caption2,
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 2,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
-                  {cat.description || preview}
-                </div>
-              )}
             </div>
 
             {/* Chevron → 16×16 (interactiveElementSecondary) */}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
               <path d="M5.5 3L10.5 8L5.5 13" stroke="var(--color-interactive-element-secondary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-          </div>
+          </button>
         )
       })}
     </div>
