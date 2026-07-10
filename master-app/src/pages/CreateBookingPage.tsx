@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { categoriesApi, servicesApi } from '@/api/services.api'
+import { servicesApi } from '@/api/services.api'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
 import { useAuthStore } from '@/store/auth.store'
-import type { Booking, Category, Client, Schedule, Service } from '@/types'
-import { UNCATEGORIZED_CATEGORY_ID, discountedPrice, formatPrice } from '@/types'
+import type { Booking, Client, Schedule, Service } from '@/types'
+import { discountedPrice, formatPrice } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
@@ -39,21 +39,6 @@ function generateWeeklySlots(weekdays: number[], time: string, count: number): {
     d = d.add(1, 'day')
   }
   return res
-}
-
-interface CategoryItem {
-  id: string
-  name: string
-  description: string | null
-  photo: string | null
-  hasDiscount: boolean
-  isUncat: boolean
-}
-
-interface Section {
-  id: string
-  name: string
-  services: Service[]
 }
 
 function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[][] {
@@ -105,8 +90,8 @@ function maskPhoneInput(raw: string, prev: string): string {
   return result
 }
 
-// Флоу создания записи мастером (макеты 8746-41312/41313/41318/41317, 8792-51136):
-// category → service → date → time → confirm (клиент/адрес/итог) → запись.
+// Флоу создания записи мастером (макеты 8746-41313/41318/41317, 8792-51136):
+// service → date → time → confirm (клиент/адрес/итог) → запись.
 export default function CreateBookingPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -117,17 +102,15 @@ export default function CreateBookingPage() {
   // Вход во флоу через navigation state:
   //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
   //  • { rescheduleId, serviceId, editTime, date } — изменить только время (сразу шаг времени, дата прежняя),
-  //  • { categoryId } — с Главной по тапу категории (сразу шаг выбора услуги),
-  //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага категории).
-  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; categoryId?: string; client?: Client; editTime?: boolean; date?: string } | null
+  //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага выбора услуги).
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'category' | 'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success'>(
+  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success'>(
     rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
-      : rescheduleInit?.categoryId ? 'service' : 'category',
+      : 'service',
   )
-  const [categories, setCategories] = useState<Category[]>([])
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [clientsLoaded, setClientsLoaded] = useState(false)
@@ -140,7 +123,6 @@ export default function CreateBookingPage() {
   const [newClientError, setNewClientError] = useState<string | null>(null)
   const [newClientSaving, setNewClientSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(rescheduleInit?.categoryId ?? null)
   const [searchMode, setSearchMode] = useState(false)
   const [query, setQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -175,9 +157,8 @@ export default function CreateBookingPage() {
   const [weekTimeOptions, setWeekTimeOptions] = useState<string[]>([])
 
   useEffect(() => {
-    Promise.all([categoriesApi.list(), servicesApi.list()])
-      .then(([cats, svcs]) => {
-        setCategories(cats)
+    servicesApi.list()
+      .then((svcs) => {
         setAllServices(svcs)
         setLoaded(true)
       })
@@ -215,7 +196,7 @@ export default function CreateBookingPage() {
     if (clientSearchMode) clientSearchInputRef.current?.focus()
   }, [clientSearchMode])
 
-  // Шаги флоу (категория/услуга/дата/время/подтверждение) — один роут /bookings/new.
+  // Шаги флоу (услуга/дата/время/подтверждение) — один роут /bookings/new.
   // Сбрасываем прокрутку при смене шага, иначе следующий шаг открывается «промотанным».
   useEffect(() => { scrollPageTop() }, [step])
 
@@ -230,46 +211,14 @@ export default function CreateBookingPage() {
       .catch(() => setWeekTimeOptions([]))
   }, [step, packageMode, master?.id, serviceId, schedule])
 
-  const items = useMemo<CategoryItem[]>(() => {
-    const uncategorized = allServices.filter((s) => s.categoryId == null)
-    const list: CategoryItem[] = categories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      description: c.description,
-      photo: c.photo,
-      hasDiscount: c.services.some((s) => s.discountPercent),
-      isUncat: false,
-    }))
-    if (uncategorized.length) {
-      list.push({
-        id: UNCATEGORIZED_CATEGORY_ID,
-        name: 'Услуги без категории',
-        description: null,
-        photo: null,
-        hasDiscount: uncategorized.some((s) => s.discountPercent),
-        isUncat: true,
-      })
-    }
-    return list
-  }, [categories, allServices])
-
-  const baseSections = useMemo<Section[]>(() => {
-    const uncat = allServices.filter((s) => s.categoryId == null && s.isActive)
-    const all: Section[] = categories
-      .map((c) => ({ id: c.id, name: c.name, services: c.services.filter((s) => s.isActive) }))
-      .filter((sec) => sec.services.length)
-    if (uncat.length) all.push({ id: UNCATEGORIZED_CATEGORY_ID, name: 'Услуги без категории', services: uncat })
-    if (selectedCategoryId == null) return all
-    return all.filter((sec) => sec.id === selectedCategoryId)
-  }, [categories, allServices, selectedCategoryId])
-
+  // Плоский список услуг мастера (категорий больше нет). Показываем только
+  // активные; «Прочее» (isMisc) остаётся в списке — для записи не из каталога.
   const q = query.trim().toLowerCase()
-  const sections = useMemo<Section[]>(() => {
-    if (!q) return baseSections
-    return baseSections
-      .map((sec) => ({ ...sec, services: sec.services.filter((s) => s.name.toLowerCase().includes(q)) }))
-      .filter((sec) => sec.services.length)
-  }, [baseSections, q])
+  const services = useMemo<Service[]>(() => {
+    const active = allServices.filter((s) => s.isActive)
+    if (!q) return active
+    return active.filter((s) => s.name.toLowerCase().includes(q))
+  }, [allServices, q])
 
   const filteredClients = useMemo(() => {
     const clientQ = clientQuery.trim().toLowerCase()
@@ -284,20 +233,6 @@ export default function CreateBookingPage() {
 
   const selectedService = useMemo(() => allServices.find((s) => s.id === serviceId) ?? null, [allServices, serviceId])
   const isPackageService = (selectedService?.sessionsCount ?? 1) > 1
-
-  const openCategory = (id: string) => {
-    setSelectedCategoryId(id)
-    setSearchMode(false)
-    setQuery('')
-    setStep('service')
-  }
-
-  const openGlobalSearch = () => {
-    setSelectedCategoryId(null)
-    setQuery('')
-    setSearchMode(true)
-    setStep('service')
-  }
 
   const pickService = (s: Service) => {
     setServiceId(s.id)
@@ -369,19 +304,13 @@ export default function CreateBookingPage() {
     }
   }
 
-  // Категория предвыбрана (вход с Главной по тапу категории) → шага «категория»
-  // в этом потоке не было, поэтому «Назад» с услуг уходит на предыдущий экран
-  // (Главную), а не в список категорий.
-  const categoryPreselected = !rescheduleInit?.rescheduleId && !!rescheduleInit?.categoryId
-
   const backFromService = () => {
     if (searchMode) {
       setSearchMode(false)
       setQuery('')
-    } else if (categoryPreselected) {
-      navigate(-1)
     } else {
-      setStep('category')
+      // Выбор услуги — первый шаг флоу, поэтому «Назад» уходит на предыдущий экран.
+      navigate(-1)
     }
   }
 
@@ -528,57 +457,9 @@ export default function CreateBookingPage() {
     })
   }
 
-  // ─── Шаг 1: выбор категории (макет 8746-41312) ──────────────────────────────
-  if (step === 'category') {
-    return (
-      <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
-        <Toolbar
-          title="Выберите категорию"
-          onBack={() => navigate(-1)}
-          trailing={
-            <PillButton onClick={openGlobalSearch} ariaLabel="Поиск">
-              <SearchIcon />
-            </PillButton>
-          }
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
-          {loaded && items.length === 0 && (
-            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
-              Сначала добавьте услуги в профиле
-            </div>
-          )}
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => openCategory(item.id)}
-              style={listItemStyle}
-            >
-              <CategoryAvatar photo={item.photo} uncategorized={item.isUncat} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.name}
-                  </span>
-                  {item.hasDiscount && <DiscountBadge />}
-                </div>
-                {item.description && (
-                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>
-                    {item.description}
-                  </div>
-                )}
-              </div>
-              <ArrowRightIcon />
-            </button>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // ─── Шаг 2: выбор услуги (макет 8746-41313) ─────────────────────────────────
+  // ─── Шаг 1: выбор услуги (макет 8746-41313) ─────────────────────────────────
   if (step === 'service') {
-    const nothing = loaded && sections.length === 0
+    const nothing = loaded && services.length === 0
     return (
       <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
         <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
@@ -615,18 +496,11 @@ export default function CreateBookingPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
           {nothing && (
             <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
-              {searchMode ? 'Ничего не найдено' : 'В этой категории нет услуг'}
+              {searchMode ? 'Ничего не найдено' : 'Сначала добавьте услуги в профиле'}
             </div>
           )}
-          {sections.map((sec) => (
-            <div key={sec.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ padding: '16px 8px 4px' }}>
-                <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface)' }}>{sec.name}</span>
-              </div>
-              {sec.services.map((s) => (
-                <ServiceItem key={s.id} service={s} onClick={() => pickService(s)} />
-              ))}
-            </div>
+          {services.map((s) => (
+            <ServiceItem key={s.id} service={s} onClick={() => pickService(s)} />
           ))}
         </div>
       </div>
@@ -1440,14 +1314,6 @@ function ServiceItem({ service, onClick }: { service: Service; onClick: () => vo
   )
 }
 
-function DiscountBadge() {
-  return (
-    <span style={{ flexShrink: 0, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 4, background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)', ...text.label3Caps, lineHeight: '20px' }}>
-      % скидки
-    </span>
-  )
-}
-
 function Toolbar({ title, subtitle, onBack, trailing }: { title: string; subtitle?: string; onBack: () => void; trailing?: React.ReactNode }) {
   return <BookingFlowToolbar title={title} subtitle={subtitle} onBack={onBack} trailing={trailing} backIcon={<ArrowLeftIcon />} />
 }
@@ -1464,18 +1330,6 @@ function ToolbarIconButton({ onClick, ariaLabel, children }: { onClick: () => vo
   )
 }
 
-function CategoryAvatar({ photo, uncategorized }: { photo: string | null; uncategorized: boolean }) {
-  return (
-    <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden', background: photo ? 'var(--color-surface)' : uncategorized ? VIOLET_GRADIENT : 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {photo ? (
-        <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      ) : (
-        <FolderIcon color={uncategorized ? '#FFFFFF' : 'var(--color-on-surface-secondary)'} />
-      )}
-    </div>
-  )
-}
-
 function ClientAvatar({ name, photo }: { name: string; photo: string | null }) {
   return (
     <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden', background: photo ? 'var(--color-surface)' : VIOLET_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1485,14 +1339,6 @@ function ClientAvatar({ name, photo }: { name: string; photo: string | null }) {
         <span style={{ ...text.label3Caps, color: 'var(--color-on-surface)' }}>{initials(name)}</span>
       )}
     </div>
-  )
-}
-
-function FolderIcon({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M18.3333 9.16667V14.1667C18.3333 17.5 17.5 18.3333 14.1667 18.3333H5.83333C2.5 18.3333 1.66667 17.5 1.66667 14.1667V5.83333C1.66667 2.5 2.5 1.66667 5.83333 1.66667H7.08333C8.33333 1.66667 8.60833 2.03333 9.08333 2.66667L10.3333 4.33333C10.65 4.75 10.8333 5 11.6667 5H14.1667C17.5 5 18.3333 5.83333 18.3333 9.16667Z" stroke={color} strokeWidth="1.5" strokeMiterlimit="10" />
-    </svg>
   )
 }
 
