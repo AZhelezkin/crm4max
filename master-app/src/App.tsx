@@ -6,6 +6,7 @@ import ClientApp from '@client/ClientApp'
 import MainLayout from '@/components/MainLayout'
 import ScrollToTop from '@/components/ScrollToTop'
 import ProfilePage from '@/pages/ProfilePage'
+import HomePage from '@/pages/HomePage'
 import BookingsPage from '@/pages/BookingsPage'
 import ClientsPage from '@/pages/ClientsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
@@ -141,7 +142,7 @@ function MasterIndexRoute() {
     const id = getMasterBookingDeepLinkId()
     if (id) return <Navigate to={`/bookings/${id}`} replace />
   }
-  return <ProfilePage />
+  return <HomePage />
 }
 
 function MasterApp() {
@@ -219,6 +220,9 @@ function MasterApp() {
         <Route element={needsOnboarding ? <Navigate to={firstStopForNewMaster} replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
             <Route index element={<MasterIndexRoute />} />
+            {/* Старая «Главная» (публичный профиль) сохранена временно — куда встроить
+                (Личная страница / Другое) решается отдельно; см. редизайн главной. */}
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />
