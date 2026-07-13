@@ -12,7 +12,6 @@ import ClientsPage from '@/pages/ClientsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 import PaymentsDayPage from '@/pages/PaymentsDayPage'
 
-import OnboardingPage from '@/pages/OnboardingPage'
 import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import SettingsPage from '@/pages/SettingsPage'
@@ -188,12 +187,10 @@ function MasterApp() {
     )
   }
 
-  // Новый мастер, не прошедший онбординг; или мастер не авторизован
+  // Новый мастер, не прошедший онбординг; или мастер не авторизован.
+  // Онбординг сведён к велком-экрану: привязка карты → одобрение → кабинет
+  // (профиль/расписание/услуги/клиент уже заведены пример-данными на бэке).
   const needsOnboarding = !master || !master.isOnboarded
-  // Велком-сплэш — только если мастер ещё не начал заполнять профиль.
-  // Как только имя сохранено (шаг 0 онбординга), возвращаемся сразу на /onboarding.
-  const masterAlreadyStarted = Boolean(master?.name && master.name.trim().length > 0)
-  const firstStopForNewMaster = masterAlreadyStarted ? '/onboarding' : '/welcome'
 
   // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера).
   if (!needsOnboarding && subBlocked) {
@@ -204,20 +201,14 @@ function MasterApp() {
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        {/* Велком-сплэш — только для новых мастеров, до первого клика по «Присоединиться» */}
+        {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}
         <Route
           path="/welcome"
           element={needsOnboarding ? <WelcomePage /> : <Navigate to="/" replace />}
         />
 
-        {/* Онбординг — доступен только до завершения */}
-        <Route
-          path="/onboarding"
-          element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />}
-        />
-
-        {/* Все остальные роуты — только после онбординга */}
-        <Route element={needsOnboarding ? <Navigate to={firstStopForNewMaster} replace /> : <Outlet />}>
+        {/* Все остальные роуты — только после привязки карты (isOnboarded) */}
+        <Route element={needsOnboarding ? <Navigate to="/welcome" replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
             <Route index element={<MasterIndexRoute />} />
             {/* Старая «Главная» (публичный профиль) сохранена временно — куда встроить

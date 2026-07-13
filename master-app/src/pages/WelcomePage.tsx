@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { subscriptionApi } from '@/api/subscription.api'
+import { mastersApi } from '@/api/masters.api'
+import { useAuthStore } from '@/store/auth.store'
 
 // ─── Ассеты слайдера (Figma 10084-40089): глоу-подложки (SVG) + мокапы (PNG 2x) ──
 import profileGlow from '@/assets/welcome-v2/profile-glow.svg'
@@ -110,10 +112,25 @@ const SLIDE_H = 381
 
 export default function WelcomePage() {
   const navigate = useNavigate()
+  const setMaster = useAuthStore((s) => s.setMaster)
   // 'main' — экран активации (sloto + слайдер + paywall); 'success' — после «оплаты».
   const [mode, setMode] = useState<'main' | 'success'>('main')
+  const [finishing, setFinishing] = useState(false)
 
-  const handleStartProfile = () => navigate('/onboarding', { replace: true })
+  // Кабинет уже заполнен пример-данными на бэке — завершаем онбординг и уходим в кабинет
+  // (профиль/расписание/услуги мастер сам не вводит).
+  const handleFinish = async () => {
+    if (finishing) return
+    setFinishing(true)
+    try {
+      await mastersApi.updateProfile({ isOnboarded: true })
+      const master = await mastersApi.getMe()
+      setMaster(master)
+      navigate('/', { replace: true })
+    } catch {
+      setFinishing(false)
+    }
+  }
 
   // «Попробовать бесплатно 7 дней» → привязка карты на форме T-Bank. URL префетчим
   // при входе: openLink требует синхронного user-gesture (await его рвёт), поэтому
@@ -132,18 +149,18 @@ export default function WelcomePage() {
     setMode('success')
   }
 
-  // ── «Подписка оплачена» (функционал после привязки карты — оставлен как был) ──
+  // ── «Подписка оплачена» — одобрение привязки карты; кабинет уже заполнен ──
   if (mode === 'success') {
     return (
       <FlatLayout>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
           <img src={illustrationCheck} alt="" style={{ width: 300, height: 300, display: 'block' }} />
-          <TextBlock title="Подписка оплачена" subtitle={'Расскажите другим о своих услугах\nи начните бизнес'} />
+          <TextBlock title="Подписка оплачена" subtitle={'Кабинет уже готов с примером услуги,\nклиента и расписания'} />
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ padding: '0 16px', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
-          <PrimaryButton onClick={handleStartProfile}>Заполнить профиль</PrimaryButton>
+          <PrimaryButton onClick={() => { void handleFinish() }}>{finishing ? 'Открываем…' : 'Перейти в кабинет'}</PrimaryButton>
         </div>
       </FlatLayout>
     )
