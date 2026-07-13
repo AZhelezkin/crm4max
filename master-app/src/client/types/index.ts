@@ -16,7 +16,6 @@ export interface Master {
   /** Подписка мастера заблокирована (не оплачена) → показываем клиенту заглушку. */
   blocked?: boolean
   schedule: Schedule | null
-  categories?: Category[]
   services?: Service[]
   reviews: Review[]
 }
@@ -28,14 +27,6 @@ export interface Schedule {
   breakStart: string | null
   breakEnd: string | null
   bufferMinutes: number
-}
-
-export interface Category {
-  id: string
-  name: string
-  description: string | null
-  photo: string | null
-  services: Service[]
 }
 
 export interface ServicePhoto {
@@ -58,10 +49,9 @@ export interface Service {
   workPhotos: ServicePhoto[]
 }
 
-/** Плоский список услуг мастера: новый бэкенд отдаёт master.services; старый — только
- *  master.categories с вложенными услугами. Фолбэк делает переход бесшовным. */
-export function masterServiceList(m: { services?: Service[]; categories?: Category[] }): Service[] {
-  return m.services ?? m.categories?.flatMap((c) => c.services) ?? []
+/** Плоский список услуг мастера (backend отдаёт master.services). */
+export function masterServiceList(m: { services?: Service[] }): Service[] {
+  return m.services ?? []
 }
 
 export function discountedPrice(price: number, discountPercent: number | null): number | null {

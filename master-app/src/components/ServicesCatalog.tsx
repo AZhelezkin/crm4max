@@ -107,8 +107,6 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         description: svcDesc || null,
         price: Math.round(Number(svcPrice) * 100) || 0,
         duration: Number(svcDuration) || 30,
-        // Категорий у мастера больше нет — услуги хранятся плоским списком.
-        categoryId: null,
         // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД
         // (Prisma игнорирует undefined и оставляет прежнее значение).
         discountPercent: svcDiscountEnabled ? svcDiscountPercent : null,

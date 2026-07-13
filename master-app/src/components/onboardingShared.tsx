@@ -1,6 +1,6 @@
 // Общие компоненты онбординга/каталога: hero-шапка, поле с плавающим лейблом,
-// аватар-загрузчик и иконки. Используются в OnboardingPage (шаги 0/1/2) и
-// CategoryFormPortal — чтобы не дублировать вёрстку.
+// аватар-загрузчик и иконки. Используются в OnboardingPage (шаги 0/1/2)
+// и каталоге услуг.
 
 import { text } from '@/styles/typography'
 import { useState, type CSSProperties, type ReactNode, type RefObject } from 'react'

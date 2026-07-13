@@ -14,7 +14,6 @@ export interface Master {
   homeVisit: boolean
   isOnboarded: boolean
   schedule: Schedule | null
-  categories?: Category[]
   services?: Service[]
 }
 
@@ -28,18 +27,6 @@ export interface Schedule {
   bufferMinutes: number
 }
 
-export interface Category {
-  id: string
-  name: string
-  description: string | null
-  photo: string | null
-  services: Service[]
-}
-
-/** Синтетическая категория-папка, в которую бэкенд сводит услуги без категории
- *  (Service.categoryId === null). Приходит последней в master.categories. */
-export const UNCATEGORIZED_CATEGORY_ID = 'uncategorized'
-
 export interface ServicePhoto {
   id: string
   url: string
@@ -48,7 +35,6 @@ export interface ServicePhoto {
 
 export interface Service {
   id: string
-  categoryId: string | null
   name: string
   description: string | null
   duration: number
@@ -65,10 +51,9 @@ export interface Service {
   workPhotos: ServicePhoto[]
 }
 
-/** Плоский список услуг мастера: новый бэкенд отдаёт master.services; старый — только
- *  master.categories с вложенными услугами. Фолбэк делает переход бесшовным. */
-export function masterServiceList(m: { services?: Service[]; categories?: Category[] }): Service[] {
-  return m.services ?? m.categories?.flatMap((c) => c.services) ?? []
+/** Плоский список услуг мастера (backend отдаёт master.services). */
+export function masterServiceList(m: { services?: Service[] }): Service[] {
+  return m.services ?? []
 }
 
 /** Клиент в адресной книге мастера (вкладка «Клиенты»). id — строки MasterClient. */

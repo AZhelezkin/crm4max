@@ -48,9 +48,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setMaster: (master) => set({ master }),
 
-  // Перечитать профиль мастера с сервера (категории/услуги/фото и т.п.) и положить
-  // в стор. Нужно после правок в ServicesCatalog — иначе ProfilePage, который
-  // читает master.categories из стора, показывает старое до перезапуска мини-аппа.
+  // Перечитать профиль мастера с сервера (услуги/фото и т.п.) и положить в стор.
+  // Нужно после правок в ServicesCatalog — иначе экраны, читающие master.services
+  // из стора, показывают старое до перезапуска мини-аппа.
   refreshMaster: async () => {
     try {
       const master = await mastersApi.getMe()

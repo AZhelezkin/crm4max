@@ -26,7 +26,6 @@ const DISCOUNT_OPTIONS = [5, 10, 15, 20, 25, 30, 40, 50]
 const ONBOARDING_MISSING_LABELS: Record<string, string> = {
   profile: 'заполнить профиль',
   schedule: 'настроить график',
-  categories: 'добавить хотя бы одну категорию',
   services: 'добавить хотя бы одну услугу',
 }
 

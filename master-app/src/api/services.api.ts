@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Category, Service, ServicePhoto } from '@/types'
+import type { Service, ServicePhoto } from '@/types'
 
 /** Справочник популярных услуг, сгруппированный по секциям (GET /services/popular). */
 export interface PopularServiceGroup {
@@ -7,26 +7,11 @@ export interface PopularServiceGroup {
   services: { id: string; name: string }[]
 }
 
-export const categoriesApi = {
-  list: () =>
-    api.get<Category[]>('/services/categories').then((r) => r.data),
-
-  create: (data: { name: string; description?: string | null; photo?: string | null }) =>
-    api.post<Category>('/services/categories', data).then((r) => r.data),
-
-  update: (id: string, data: { name?: string; description?: string | null; photo?: string | null }) =>
-    api.put<Category>(`/services/categories/${id}`, data).then((r) => r.data),
-
-  remove: (id: string) =>
-    api.delete(`/services/categories/${id}`),
-}
-
 export const servicesApi = {
   list: () =>
     api.get<Service[]>('/services').then((r) => r.data),
 
   create: (data: {
-    categoryId?: string | null
     name: string
     description?: string | null
     duration: number
@@ -37,7 +22,6 @@ export const servicesApi = {
   }) => api.post<Service>('/services', data).then((r) => r.data),
 
   update: (id: string, data: {
-    categoryId?: string | null
     name?: string
     description?: string | null
     duration?: number

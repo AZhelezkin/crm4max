@@ -7,9 +7,8 @@ import { useAuthStore } from '@/store/auth.store'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
-import { discountedPrice, masterServiceList, UNCATEGORIZED_CATEGORY_ID, type Booking, type Category, type Review } from '@/types'
+import { discountedPrice, formatPrice, formatDuration, masterServiceList, type Booking, type Review, type Service } from '@/types'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
-import CategoryAvatar from '@/components/CategoryAvatar'
 
 dayjs.locale('ru')
 
@@ -418,10 +417,10 @@ export default function ProfilePage() {
       {/* Контент табов. gap=24 между underline табов и первой карточкой (Figma y 348→372). */}
       <div style={{ padding: '24px 16px 80px' }}>
         {activeTab === 'services' && (
-          (master.categories?.length ?? 0)
+          masterServiceList(master).length
             ? <ServicesList
-                categories={master.categories ?? []}
-                onCategoryClick={(cat) => navigate('/bookings/new', { state: { categoryId: cat.id } })}
+                services={masterServiceList(master)}
+                onServiceClick={() => navigate('/services')}
               />
             : <EmptyState
                 label="Услуги ещё не добавлены"
@@ -773,23 +772,20 @@ const toolbarIconBtnStyle = {
  * - клик по категории → onCategoryClick(cat). Раскрытия нет — редактор живёт в /services.
  */
 function ServicesList({
-  categories,
-  onCategoryClick,
+  services,
+  onServiceClick,
 }: {
-  categories: Category[]
-  onCategoryClick: (cat: Category) => void
+  services: Service[]
+  onServiceClick: () => void
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {categories.map((cat) => {
-        const isUncat = cat.id === UNCATEGORIZED_CATEGORY_ID
-        const hasDiscount = cat.services.some((s) => s.discountPercent)
-        const preview = cat.services.map((s) => s.name).join(' • ')
-
+      {services.map((s) => {
+        const discounted = discountedPrice(s.price, s.discountPercent)
         return (
           <div
-            key={cat.id}
-            onClick={() => onCategoryClick(cat)}
+            key={s.id}
+            onClick={onServiceClick}
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               background: 'var(--color-surface-transparent)',
@@ -798,12 +794,10 @@ function ServicesList({
               cursor: 'pointer',
             }}
           >
-            <CategoryAvatar photo={cat.photo} />
-
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
-                {hasDiscount && (
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                {!!s.discountPercent && (
                   <span style={{
                     borderRadius: 4,
                     display: 'inline-block',
@@ -820,19 +814,9 @@ function ServicesList({
                   </span>
                 )}
               </div>
-              {/* Подзаголовок — у синтетической категории «Услуги без категории» его нет (макет 8905:49213). */}
-              {!isUncat && (
-                <div style={{
-                  color: 'var(--color-on-surface-secondary)', ...text.caption2,
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 2,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
-                  {cat.description || preview}
-                </div>
-              )}
+              <div style={{ color: 'var(--color-on-surface-secondary)', ...text.caption2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {formatPrice(discounted ?? s.price)} · {formatDuration(s.duration)}
+              </div>
             </div>
 
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
