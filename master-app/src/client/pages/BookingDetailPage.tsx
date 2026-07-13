@@ -5,7 +5,7 @@ import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Booking } from '@client/types'
-import { discountedPrice, formatPrice } from '@client/types'
+import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems } from '@client/types'
 import { toClientLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
@@ -196,10 +196,11 @@ export default function BookingDetailPage() {
     )
   }
 
-  const { master, service, date, time, clientAddress, paymentStatus } = booking
+  const { master, date, time, clientAddress, paymentStatus } = booking
   const remind = booking.remind ?? true
-  // Для услуги «Прочее» сумму задаёт мастер при записи (booking.price).
-  const price = booking.price ?? discountedPrice(service.price, service.discountPercent) ?? service.price
+  // Итог по всем услугам записи (мастер мог добавить несколько; «Прочее» — сумма мастера).
+  const price = bookingTotal(booking)
+  const serviceItems = bookingServiceItems(booking)
   // Дата/время записи — в поясе мастера; показываем клиенту в его поясе.
   const local = toClientLocal(date, time, master.timezone)
   const formattedDate = dayjs(local.date).format('D MMMM, dd')
@@ -207,7 +208,7 @@ export default function BookingDetailPage() {
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
   const isCancelled = booking.status === 'CANCELLED'
   // Запись в прошлом: время окончания (начало + длительность) уже прошло (в поясе клиента).
-  const isPast = dayjs(`${local.date}T${local.time}`).add(service.duration, 'minute').isBefore(dayjs())
+  const isPast = dayjs(`${local.date}T${local.time}`).add(bookingDuration(booking), 'minute').isBefore(dayjs())
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
@@ -391,22 +392,26 @@ export default function BookingDetailPage() {
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <div style={{
-                ...text.callout1, color: 'var(--color-on-surface)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {service.name}
-              </div>
-              {service.description && (
-                <div style={{
-                  ...text.caption2, color: 'var(--color-on-surface-secondary)',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}>
-                  {service.description}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {serviceItems.map((it, i) => (
+                <div key={i}>
+                  <div style={{
+                    ...text.callout1, color: 'var(--color-on-surface)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {it.service.name}
+                  </div>
+                  {it.service.description && (
+                    <div style={{
+                      ...text.caption2, color: 'var(--color-on-surface-secondary)',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {it.service.description}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>

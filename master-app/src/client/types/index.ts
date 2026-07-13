@@ -93,9 +93,47 @@ export interface Booking {
     timezone: string | null
   }
   client: { id: string; name: string; photo: string | null }
+  /** Первичная услуга (= services[0]). Оставлена для обратной совместимости. */
   service: Service
+  /** Все услуги записи (мастер мог добавить несколько). Пусто → одиночная (service). */
+  services?: BookingServiceItem[]
   /** Признак оставленного отзыва (для гейта блока «Оцените услуги»). */
   review?: { id: string } | null
+}
+
+/** Услуга в записи (мультиуслуги; создаёт только мастер, клиент видит для чтения). */
+export interface BookingServiceItem {
+  id: string
+  service: Service
+  price: number | null
+  order: number
+}
+
+/** Услуги записи: мультиуслуги (services) или фолбэк на единственную (service). */
+export function bookingServiceItems(b: Pick<Booking, 'services' | 'service' | 'price'>): { service: Service; price: number | null }[] {
+  if (b.services && b.services.length > 0) return b.services.map((s) => ({ service: s.service, price: s.price }))
+  return [{ service: b.service, price: b.price }]
+}
+
+/** Эффективная цена позиции (копейки): индивидуальная (для «Прочее») или со скидкой. */
+export function bookingItemPrice(item: { service: Service; price: number | null }): number {
+  if (item.price != null) return item.price
+  return discountedPrice(item.service.price, item.service.discountPercent) ?? item.service.price
+}
+
+/** Итог по всем услугам записи (копейки). */
+export function bookingTotal(b: Pick<Booking, 'services' | 'service' | 'price'>): number {
+  return bookingServiceItems(b).reduce((sum, item) => sum + bookingItemPrice(item), 0)
+}
+
+/** Суммарная длительность записи (минуты). */
+export function bookingDuration(b: Pick<Booking, 'services' | 'service'>): number {
+  return bookingServiceItems({ ...b, price: null }).reduce((sum, item) => sum + item.service.duration, 0)
+}
+
+/** Названия услуг записи через запятую (мультиуслуги) или имя единственной услуги. */
+export function bookingServiceNames(b: Pick<Booking, 'services' | 'service'>): string {
+  return bookingServiceItems({ ...b, price: null }).map((item) => item.service.name).join(', ')
 }
 
 export interface Review {

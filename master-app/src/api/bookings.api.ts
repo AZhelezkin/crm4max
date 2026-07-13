@@ -22,6 +22,12 @@ export const bookingsApi = {
     price?: number
     /** Цвет записи (hex) — для расписания. */
     color?: string | null
+    /** Мультиуслуги (только запись мастером): все услуги записи. services[0] = первичная. */
+    services?: { serviceId: string; price?: number | null }[]
+    /** Длина занятого блока (Σ длительностей услуг) — для расписания/слотов клиента. */
+    durationMinutes?: number
+    /** Свободное время мастера: разрешить пересечения (пропустить проверку слотов). */
+    allowOverlap?: boolean
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
 
   /** Запись на услугу-абонемент: даты+время на все N приёмов сразу. */
@@ -38,7 +44,7 @@ export const bookingsApi = {
   confirmPayment: (id: string) =>
     api.post<Booking>(`/bookings/${id}/confirm-payment`).then((r) => r.data),
 
-  reschedule: (id: string, data: { date: string; time: string }) =>
+  reschedule: (id: string, data: { date: string; time: string; allowOverlap?: boolean }) =>
     api.post<Booking>(`/bookings/${id}/reschedule`, data).then((r) => r.data),
 
   cancel: (id: string) =>

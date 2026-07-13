@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
 import type { Booking } from '@client/types'
-import { formatPrice } from '@client/types'
+import { formatPrice, bookingTotal, bookingDuration, bookingServiceNames } from '@client/types'
 import { toClientLocal } from '@client/lib/timezone'
 import BottomNav from '@client/components/BottomNav'
 import MyBookingsListSkeleton from '@client/components/MyBookingsListSkeleton'
@@ -195,7 +195,7 @@ export default function MyBookingsPage() {
     if (!q) return []
     return sortedBookings.filter((b) => {
       // 1) match по названию услуги
-      if (b.service.name.toLowerCase().includes(q)) return true
+      if (bookingServiceNames(b).toLowerCase().includes(q)) return true
       // 2) match по дате — число дня или название месяца ("март", "марта")
       const d = dayjs(b.date)
       const dayNum = d.format('D')               // "12", "22"
@@ -223,17 +223,11 @@ export default function MyBookingsPage() {
     return Array.from(map.entries())
   }, [filteredBookings, selectedDate, searchMode])
 
-  const priceLabel = (b: Booking) => {
-    // «Прочее»: индивидуальная сумма от мастера (b.price). Иначе — цена услуги со скидкой.
-    if (b.price != null) return formatPrice(b.price)
-    const svc = b.service
-    const base = svc.price
-    const discounted = svc.discountPercent ? Math.round(base * (1 - svc.discountPercent / 100)) : base
-    return formatPrice(discounted)
-  }
+  // Итог по всем услугам записи (мультиуслуги; «Прочее» — индивидуальная сумма).
+  const priceLabel = (b: Booking) => formatPrice(bookingTotal(b))
 
   const endTime = (b: Booking) =>
-    dayjs(`${b.date} ${b.time}`).add(b.service.duration, 'minute').format('HH:mm')
+    dayjs(`${b.date} ${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
 
   const handleBookNew = () => {
     if (!currentMasterId) return
@@ -715,7 +709,7 @@ export default function MyBookingsPage() {
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
                             <HighlightedText
-                              value={b.service.name}
+                              value={bookingServiceNames(b)}
                               query={searchMode ? searchQuery.trim() : ''}
                             />
                           </div>

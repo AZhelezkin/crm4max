@@ -5,7 +5,7 @@ import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
 import { bookingsApi } from '@/api/bookings.api'
 import { clientsApi } from '@/api/clients.api'
-import { discountedPrice, masterServiceList, type Booking, type Client } from '@/types'
+import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 
@@ -39,7 +39,7 @@ function pluralRecords(n: number): string {
 }
 
 function bookingAmount(b: Booking): number {
-  return b.price ?? discountedPrice(b.service.price, b.service.discountPercent) ?? b.service.price
+  return bookingTotal(b)
 }
 
 export default function HomePage() {
@@ -163,7 +163,7 @@ export default function HomePage() {
           {todayBookings.length > 0 ? (
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
               {todayBookings.map((b) => {
-                const end = dayjs(`${b.date}T${b.time}`).add(b.service.duration, 'minute').format('HH:mm')
+                const end = dayjs(`${b.date}T${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
                 const confirmed = b.status === 'CONFIRMED' || b.status === 'COMPLETED'
                 return (
                   <button key={b.id} type="button" onClick={() => navigate(`/bookings/${b.id}`)}
@@ -178,7 +178,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                       <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client.name}</span>
-                      <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.service.name}</span>
+                      <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
                     </div>
                     <span style={{ padding: 6, flexShrink: 0, display: 'inline-flex', color: 'var(--color-on-surface-secondary)' }}><MoreIcon /></span>
                   </button>

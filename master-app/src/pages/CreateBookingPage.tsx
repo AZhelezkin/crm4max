@@ -8,7 +8,7 @@ import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Client, Schedule, Service } from '@/types'
-import { discountedPrice, formatPrice, formatDuration } from '@/types'
+import { discountedPrice, formatPrice, formatDuration, bookingDuration, bookingTotal, bookingServiceItems } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
@@ -27,6 +27,31 @@ const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 // Палитра цвета записи (hex) — выбирается мастером, показывается в расписании.
 // Первый — дефолт (зелёный, как в макете 10111-37975).
 const BOOKING_COLORS = ['#1F9432', '#007AFE', '#F0AF2D', '#CE4259', '#8E5BE8', '#00B3A4', '#FF667F', '#6E6F71'] as const
+
+// Шаг сетки свободного времени мастера (минуты).
+const TIME_STEP_MIN = 15
+
+const hhmmToMin = (t: string): number => {
+  const [h, m] = t.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+const minToHhmm = (min: number): string => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+
+// Свободные времена мастера: от начала до конца рабочего дня с шагом TIME_STEP_MIN,
+// исключая обед [breakStart, breakEnd). Мастер ставит любое время в этих рамках.
+function buildDayTimes(schedule: Schedule | null): string[] {
+  if (!schedule) return []
+  const start = hhmmToMin(schedule.startTime)
+  const end = hhmmToMin(schedule.endTime)
+  const bStart = schedule.breakStart ? hhmmToMin(schedule.breakStart) : null
+  const bEnd = schedule.breakEnd ? hhmmToMin(schedule.breakEnd) : null
+  const times: string[] = []
+  for (let m = start; m < end; m += TIME_STEP_MIN) {
+    if (bStart !== null && bEnd !== null && m >= bStart && m < bEnd) continue
+    times.push(minToHhmm(m))
+  }
+  return times
+}
 
 // Дни недели (ISO 1=Пн … 7=Вс) для режима абонемента «По неделям».
 const WEEKDAYS = [
@@ -135,14 +160,18 @@ export default function CreateBookingPage() {
   // подтверждение кнопкой «Выбрать». «Оказывались клиенту» — услуги из прошлых
   // записей выбранного клиента (грузим записи мастера лениво при входе на шаг).
   const [serviceTab, setServiceTab] = useState<'all' | 'client'>('all')
-  const [stagedServiceId, setStagedServiceId] = useState('')
+  // Мультивыбор услуг в пикере (staged) — фиксируется кнопкой «Выбрать».
+  const [stagedIds, setStagedIds] = useState<string[]>([])
   const [masterBookings, setMasterBookings] = useState<Booking[]>([])
   const [masterBookingsLoaded, setMasterBookingsLoaded] = useState(false)
   // Инлайн-редактор услуги (карандаш/«+» на шаге выбора) — правит услугу, не уводя
   // из флоу записи (макет «Редактирование услуги» 10130-51982). null → закрыт.
   const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
 
+  // Первичная услуга (services[0] / услуга абонемента / услуга при переносе).
   const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
+  // Услуги обычной записи (мультиуслуги). Абонемент/перенос — одиночная (serviceId).
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(rescheduleInit?.serviceId ? [rescheduleInit.serviceId] : [])
   const [date, setDate] = useState(rescheduleInit?.date ?? '')
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
@@ -151,13 +180,14 @@ export default function CreateBookingPage() {
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
   const [outbound, setOutbound] = useState(false)
   const [address, setAddress] = useState('')
-  // Сумма для услуги «Прочее» (isMisc) — рубли, вводится на шаге подтверждения.
-  const [miscPrice, setMiscPrice] = useState('')
+  // Суммы для услуг «Прочее» (isMisc) — рубли-строки по serviceId, вводятся в форме-сводке.
+  const [miscPrices, setMiscPrices] = useState<Record<string, string>>({})
+  // Слоты нужны только для сеансов абонемента (обычная запись — свободное время).
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
-  const [availability, setAvailability] = useState<Record<string, boolean>>({})
-  const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Показ предупреждения о пересечении времени (свободный выбор времени мастером).
+  const [overlapWarn, setOverlapWarn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
   const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
@@ -185,18 +215,10 @@ export default function CreateBookingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Слоты грузим только для выбора времени сеанса абонемента (обычная запись и
+  // перенос — свободное время в рамках рабочего дня, без расчёта слотов).
   useEffect(() => {
-    if (!master?.id || !serviceId) return
-    const from = dayjs().format('YYYY-MM-DD')
-    const to = dayjs().startOf('month').add(2, 'month').endOf('month').format('YYYY-MM-DD')
-    setAvailabilityLoaded(false)
-    mastersApi.getAvailability(master.id, from, to, serviceId)
-      .then((a) => { setAvailability(a); setAvailabilityLoaded(true) })
-      .catch(() => setAvailabilityLoaded(true))
-  }, [master?.id, serviceId])
-
-  useEffect(() => {
-    if (master?.id && serviceId && date) {
+    if (master?.id && serviceId && date && packageSessionIndex !== null) {
       setSlotsLoading(true)
       mastersApi.getSlots(master.id, date, serviceId)
         .then(setSlots)
@@ -205,7 +227,7 @@ export default function CreateBookingPage() {
     } else {
       setSlots([])
     }
-  }, [master?.id, serviceId, date])
+  }, [master?.id, serviceId, date, packageSessionIndex])
 
   // «Оказывались клиенту» нужен список прошлых записей мастера — грузим лениво,
   // только когда мастер открыл шаг выбора услуги.
@@ -274,19 +296,37 @@ export default function CreateBookingPage() {
   const selectedService = useMemo(() => allServices.find((s) => s.id === serviceId) ?? null, [allServices, serviceId])
   const isPackageService = (selectedService?.sessionsCount ?? 1) > 1
 
-  const pickService = (s: Service) => {
+  // Услуги обычной записи (мультиуслуги) в порядке выбора.
+  const selectedServices = useMemo(
+    () => selectedServiceIds.map((id) => allServices.find((s) => s.id === id)).filter((s): s is Service => !!s),
+    [selectedServiceIds, allServices],
+  )
+
+  // Услуга-абонемент выбирается эксклюзивно и уводит в отдельный флоу выбора слотов.
+  const pickPackageService = (s: Service) => {
     setServiceId(s.id)
+    setSelectedServiceIds([s.id])
     if (!fixedDateFromSchedule) setDate('')
     setTime('')
-    if (s.sessionsCount > 1) {
-      // Услуга-абонемент → экран выбора слотов на все приёмы (По дням / По неделям).
-      setPackageSlots([]); setPackageMode('days'); setPackageSessionIndex(null)
-      setWeekdays([]); setWeekTime('')
-      setStep('package')
-    } else {
-      // Одиночная услуга — возвращаемся в форму-сводку (дату/время выбираем рядами формы).
-      setStep('confirm')
-    }
+    setPackageSlots([]); setPackageMode('days'); setPackageSessionIndex(null)
+    setWeekdays([]); setWeekTime('')
+    setStep('package')
+  }
+
+  // Обычные услуги: фиксируем мультивыбор и возвращаемся в форму-сводку.
+  const commitServices = () => {
+    setSelectedServiceIds(stagedIds)
+    setServiceId(stagedIds[0] ?? '')
+    setStep('confirm')
+  }
+
+  // Открыть пикер услуг из формы-сводки (текущий набор — предвыбран).
+  const openServicePicker = () => { setStagedIds(selectedServiceIds); setStep('service') }
+
+  // Убрать услугу из записи (и её индивидуальную цену «Прочее»).
+  const removeService = (id: string) => {
+    setSelectedServiceIds((prev) => prev.filter((x) => x !== id))
+    setMiscPrices((prev) => { const next = { ...prev }; delete next[id]; return next })
   }
 
   const openClientSearch = () => {
@@ -362,23 +402,48 @@ export default function CreateBookingPage() {
     setStep(rescheduleId ? 'time' : 'confirm')
   }
 
-  // Услуга «Прочее» (isMisc): мастер сам вводит сумму на шаге подтверждения.
-  const isMisc = !!selectedService?.isMisc
-  const miscPriceKopecks = Math.round(Number(miscPrice.replace(',', '.')) * 100)
-  const miscPriceValid = !isMisc || (miscPrice.trim() !== '' && Number.isFinite(miscPriceKopecks) && miscPriceKopecks > 0)
+  // Услуги «Прочее» (isMisc): мастер вводит сумму по каждой в форме-сводке (miscPrices, руб.).
+  const miscKopecks = (id: string) => Math.round(Number((miscPrices[id] ?? '').replace(',', '.')) * 100)
+  const miscValid = (id: string) => {
+    const k = miscKopecks(id)
+    return (miscPrices[id] ?? '').trim() !== '' && Number.isFinite(k) && k > 0
+  }
+  const allMiscValid = selectedServices.every((s) => !s.isMisc || miscValid(s.id))
 
-  const canSave = !!serviceId && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && miscPriceValid && !saving
+  // Позиции записи + суммарные стоимость и длительность.
+  const itemPrice = (s: Service) => (s.isMisc ? miscKopecks(s.id) : discountedPrice(s.price, s.discountPercent) ?? s.price)
+  const totalKopecks = selectedServices.reduce((sum, s) => sum + (s.isMisc ? (miscValid(s.id) ? miscKopecks(s.id) : 0) : itemPrice(s)), 0)
+  const durationMin = selectedServices.reduce((sum, s) => sum + s.duration, 0)
 
-  const handleSave = async () => {
-    if (!master || !serviceId || !date || !time || !selectedClient) return
+  // Свободное время: предупреждаем о пересечении с существующими записями (но разрешаем).
+  const hasOverlap = useMemo(() => {
+    if (!date || !time || durationMin === 0) return false
+    const start = hhmmToMin(time)
+    const end = start + durationMin
+    return masterBookings.some((b) => {
+      if (b.date !== date || b.status === 'CANCELLED' || (rescheduleId && b.id === rescheduleId)) return false
+      const bStart = hhmmToMin(b.time)
+      const bEnd = bStart + bookingDuration(b)
+      return start < bEnd && bStart < end
+    })
+  }, [date, time, durationMin, masterBookings, rescheduleId])
+
+  const canSave = selectedServiceIds.length > 0 && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && allMiscValid && !saving
+
+  const handleSave = async (force = false) => {
+    if (!master || selectedServiceIds.length === 0 || !date || !time || !selectedClient) return
     if (outbound && !address.trim()) return
-    if (isMisc && !miscPriceValid) return
+    if (!allMiscValid) return
+    // Пересечение — предупреждаем один раз, затем разрешаем (allowOverlap на бэке).
+    if (!force && hasOverlap) { setOverlapWarn(true); return }
+    setOverlapWarn(false)
     setSaving(true)
     setError(null)
     try {
+      const services = selectedServices.map((s) => ({ serviceId: s.id, price: s.isMisc ? miscKopecks(s.id) : undefined }))
       const booking = await bookingsApi.create({
         masterId: master.id,
-        serviceId,
+        serviceId: services[0].serviceId,
         date,
         time,
         // Передаём строку адресной книги — бэкенд резолвит глобального клиента,
@@ -386,9 +451,13 @@ export default function CreateBookingPage() {
         masterClientId: selectedClient.id,
         remind,
         clientAddress: outbound ? address.trim() : undefined,
-        // Для «Прочее» — введённая мастером сумма (копейки).
-        price: isMisc ? miscPriceKopecks : undefined,
+        // Первичная цена (для «Прочее») дублирует services[0].price.
+        price: services[0].price,
         color,
+        services,
+        durationMinutes: durationMin,
+        // Мастер выбирает любое время в рабочем дне — пересечения разрешены.
+        allowOverlap: true,
       })
       setCreatedBooking(booking)
       setStep('success')
@@ -454,7 +523,8 @@ export default function CreateBookingPage() {
     const t = pendingReschedule
     setPendingReschedule(null)
     try {
-      await bookingsApi.reschedule(rescheduleId, { date, time: t })
+      // Свободный перенос мастером — время любое в рабочем дне, пересечения разрешены.
+      await bookingsApi.reschedule(rescheduleId, { date, time: t, allowOverlap: true })
     } catch (e) {
       console.error('[booking] reschedule failed', e)
     }
@@ -564,8 +634,12 @@ export default function CreateBookingPage() {
                 <ServiceSelectRow
                   key={s.id}
                   service={s}
-                  selected={stagedServiceId === s.id}
-                  onSelect={() => setStagedServiceId(s.id)}
+                  selected={stagedIds.includes(s.id)}
+                  // Абонемент выбирается эксклюзивно (уводит в отдельный флоу); обычные — мультивыбор.
+                  onSelect={() => {
+                    if (s.sessionsCount > 1) { pickPackageService(s); return }
+                    setStagedIds((prev) => prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id])
+                  }}
                   onEdit={() => setEditorTarget({ mode: 'edit', service: s })}
                 />
               ))
@@ -573,11 +647,8 @@ export default function CreateBookingPage() {
           </div>
         </div>
 
-        <BookingFlowBottomButton
-          disabled={!stagedServiceId}
-          onClick={() => { const s = allServices.find((x) => x.id === stagedServiceId); if (s) pickService(s) }}
-        >
-          Выбрать
+        <BookingFlowBottomButton disabled={stagedIds.length === 0} onClick={commitServices}>
+          {stagedIds.length > 1 ? `Выбрать (${stagedIds.length})` : 'Выбрать'}
         </BookingFlowBottomButton>
 
         {/* Инлайн-редактор услуги (карандаш/«+») — правит услугу, не уводя из флоу. */}
@@ -611,10 +682,7 @@ export default function CreateBookingPage() {
           }}
         />
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {!availabilityLoaded && (
-            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загружаем…</div>
-          )}
-          {availabilityLoaded && months.map((monthStart) => (
+          {months.map((monthStart) => (
             <div key={monthStart.format('YYYY-MM')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ paddingLeft: 6 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', padding: '14px 4px 14px 8px', borderRadius: 100 }}>
@@ -638,11 +706,9 @@ export default function CreateBookingPage() {
                   const working = isWorkingDay(day, schedule)
                   const disabled = isPast || !working
                   const isWeekend = (day.day() || 7) >= 6
-                  const hasSlots = availability[val]
-                  let bg = 'transparent'
-                  if (isSelected || hasSlots === true) bg = 'var(--color-active-surface)'
-                  else if (hasSlots === false) bg = 'var(--color-secondary-surface-muted)'
-                  const dim = isPast || (!working && hasSlots !== true && !isSelected)
+                  // Слоты больше не считаем: выделяем только выбранный день, остальные по рабочести.
+                  const bg = isSelected ? 'var(--color-active-surface)' : 'transparent'
+                  const dim = isPast || (!working && !isSelected)
                   const color = isWeekend
                     ? dim ? 'var(--color-error-element-muted)' : 'var(--color-error-surface-accented)'
                     : dim ? 'var(--color-interactive-element-muted)' : 'var(--color-interactive-element-accented)'
@@ -684,14 +750,26 @@ export default function CreateBookingPage() {
     )
   }
 
-  // ─── Шаг 4: выбор времени (макет 8746-41317) ────────────────────────────────
+  // ─── Шаг 4: выбор времени ───────────────────────────────────────────────────
   if (step === 'time') {
     const selectedDayjs = dayjs(date)
-    // Абонемент: убираем слоты, занятые другими приёмами в этот же день.
-    const takenTimes = packageSessionIndex !== null
+    const isPackageTime = packageSessionIndex !== null
+    // Абонемент — слоты (по длительности услуги), минус занятые другими приёмами этого дня.
+    const takenTimes = isPackageTime
       ? new Set(packageSlots.filter((s, i) => i !== packageSessionIndex && s && s.date === date).map((s) => s.time))
       : new Set<string>()
     const visibleSlots = slots.filter((s) => !takenTimes.has(s))
+    // Обычная запись/перенос — любое время в рабочем дне (кроме обеда). Занятые — приглушены.
+    const dayTimes = isPackageTime ? [] : buildDayTimes(schedule)
+    const busyTimes = new Set<string>()
+    if (!isPackageTime) {
+      for (const b of masterBookings) {
+        if (b.date !== date || b.status === 'CANCELLED' || (rescheduleId && b.id === rescheduleId)) continue
+        const bStart = hhmmToMin(b.time)
+        const bEnd = bStart + bookingDuration(b)
+        for (const t of dayTimes) { const m = hhmmToMin(t); if (m >= bStart && m < bEnd) busyTimes.add(t) }
+      }
+    }
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => {
@@ -723,39 +801,27 @@ export default function CreateBookingPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
             <div style={{ padding: '24px 8px 8px' }}>
-              <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>ДОСТУПНЫЕ СЛОТЫ</span>
+              <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>{isPackageTime ? 'ДОСТУПНЫЕ СЛОТЫ' : 'ВРЕМЯ'}</span>
             </div>
-            {slotsLoading ? (
-              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загружаем…</div>
-            ) : visibleSlots.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
+            {isPackageTime ? (
+              slotsLoading ? (
+                <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Загружаем…</div>
+              ) : visibleSlots.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {visibleSlots.map((s) => (
+                    <TimeChip key={s} label={s} selected={time === s} onClick={() => onSlotTap(s)} />
+                  ))}
+                </div>
+              )
+            ) : dayTimes.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>В этот день нет рабочих часов</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {visibleSlots.map((s) => {
-                  const isSel = time === s
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => onSlotTap(s)}
-                      style={{
-                        height: 69,
-                        padding: '12px 0',
-                        borderRadius: 18,
-                        background: isSel ? 'var(--color-active-surface)' : 'var(--color-surface-transparent)',
-                        color: isSel ? 'var(--color-interactive-element-accented)' : 'var(--color-on-surface)',
-                        ...text.callout1,
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {s}
-                    </button>
-                  )
-                })}
+                {dayTimes.map((t) => (
+                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} onClick={() => onSlotTap(t)} />
+                ))}
               </div>
             )}
           </div>
@@ -1083,8 +1149,9 @@ export default function CreateBookingPage() {
   if (step === 'success') {
     const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
     const addressText = homeVisit ? address.trim() : master?.location ?? ''
-    // Для «Прочее» — введённая сумма (createdBooking.price); иначе цена услуги.
-    const succPrice = createdBooking?.price ?? (selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) ?? selectedService.price : 0)
+    // Итог по всем услугам записи (мультиуслуги) из созданной записи.
+    const succItems = createdBooking ? bookingServiceItems(createdBooking) : []
+    const succPrice = createdBooking ? bookingTotal(createdBooking) : 0
     return (
       <div style={{ minHeight: '100dvh' }}>
         {/* Шапка: зелёная галочка + «Запись создана!» + «Закрыть» */}
@@ -1128,15 +1195,19 @@ export default function CreateBookingPage() {
             </div>
           )}
 
-          {/* Услуга + статус оплаты */}
-          {selectedService && (
+          {/* Услуги + статус оплаты (мультиуслуги: список + итог) */}
+          {succItems.length > 0 && (
             <div style={{ ...listItemStyle, cursor: 'default' }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedService.name}</div>
-                  {selectedService.description && (
-                    <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{selectedService.description}</div>
-                  )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {succItems.map((it, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.service.name}</div>
+                      {it.service.description && (
+                        <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{it.service.description}</div>
+                      )}
+                    </div>
+                  ))}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(succPrice)}</span>
@@ -1233,7 +1304,6 @@ export default function CreateBookingPage() {
   }
 
   // ─── Шаг 5: подтверждение (макет 10111-37975) ────────────────────────────────
-  const sDPrice = selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) : null
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <Toolbar title="Создание записи" onBack={() => navigate(-1)} />
@@ -1244,9 +1314,27 @@ export default function CreateBookingPage() {
           <FormRow label="Имя" value={selectedClient ? selectedClient.name : 'Выбрать'} prompt={!selectedClient} onClick={() => setStep('client')} last />
         </FormCard>
 
-        {/* Услуги */}
+        {/* Услуги (мультиуслуги): список выбранных + «Добавить услугу». */}
         <FormCard title="Услуги">
-          <FormRow label="Наименование" value={selectedService ? selectedService.name : 'Выбрать'} prompt={!selectedService} onClick={() => { setStagedServiceId(serviceId); setStep('service') }} last />
+          {selectedServices.length === 0 ? (
+            <FormRow label="Наименование" value="Выбрать" prompt onClick={openServicePicker} last />
+          ) : (
+            <>
+              {selectedServices.map((s) => (
+                <ServiceLine
+                  key={s.id}
+                  service={s}
+                  priceLabel={s.isMisc ? undefined : formatPrice(itemPrice(s))}
+                  miscValue={s.isMisc ? (miscPrices[s.id] ?? '') : undefined}
+                  onMiscChange={(v) => setMiscPrices((p) => ({ ...p, [s.id]: v }))}
+                  onRemove={() => removeService(s.id)}
+                />
+              ))}
+              <button type="button" onClick={openServicePicker} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ ...text.body2, color: 'var(--color-primary-surface)' }}>+ Добавить услугу</span>
+              </button>
+            </>
+          )}
         </FormCard>
 
         {/* Дата и время */}
@@ -1264,7 +1352,7 @@ export default function CreateBookingPage() {
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
           <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
-          <FormRow label="Длительность" value={selectedService ? formatDuration(selectedService.duration) : '0 мин'} />
+          <FormRow label="Длительность" value={durationMin > 0 ? formatDuration(durationMin) : '0 мин'} />
           <FormRow label="Напоминание клиенту" value={remind ? 'за 1 час' : 'Нет'} onClick={() => setRemind((v) => !v)} />
           <FormRow
             label="Цвет записи"
@@ -1274,24 +1362,9 @@ export default function CreateBookingPage() {
           />
         </FormCard>
 
-        {/* Стоимость */}
+        {/* Стоимость: итог по всем услугам (индивидуальные цены «Прочее» — в карточке услуг). */}
         <FormCard title="Стоимость">
-          {isMisc ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 16, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-              <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>Стоимость</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input
-                  inputMode="numeric" value={miscPrice} placeholder="0"
-                  onChange={(e) => setMiscPrice(e.target.value.replace(/[^\d]/g, ''))}
-                  style={{ ...text.body2, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', textAlign: 'right', width: 100, padding: 0 }}
-                />
-                <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>₽</span>
-              </div>
-            </div>
-          ) : (
-            <FormRow label="Стоимость" value={selectedService ? formatPrice(sDPrice ?? selectedService.price) : '0 ₽'} noArrow />
-          )}
-          <FormRow label="Скидка" value={selectedService?.discountPercent ? `${selectedService.discountPercent}%` : 'Нет'} last />
+          <FormRow label="Итого" value={formatPrice(totalKopecks)} noArrow last />
         </FormCard>
 
         {error && (
@@ -1303,6 +1376,18 @@ export default function CreateBookingPage() {
       <BookingFlowBottomButton disabled={!canSave} onClick={() => { void handleSave() }} icon={<CalendarEditIcon />}>
         {saving ? 'Записываем…' : 'Записать'}
       </BookingFlowBottomButton>
+
+      {/* Предупреждение о пересечении времени — свободный выбор, но с подтверждением. */}
+      {overlapWarn && (
+        <ConfirmDialog
+          title="Время занято"
+          message="На это время уже есть запись. Записать всё равно?"
+          confirmLabel="Записать"
+          danger={false}
+          onConfirm={() => { void handleSave(true) }}
+          onCancel={() => setOverlapWarn(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1461,7 +1546,7 @@ function ServiceSelectRow({ service: s, selected, onSelect, onEdit }: {
   const subtitle = s.isMisc ? 'Цена по договорённости' : `${formatDuration(s.duration)}, ${formatPrice(price)}`
   return (
     <div onClick={onSelect} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px', cursor: 'pointer' }}>
-      <RadioIcon checked={selected} />
+      <CheckboxIcon checked={selected} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
         <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</span>
@@ -1473,16 +1558,63 @@ function ServiceSelectRow({ service: s, selected, onSelect, onEdit }: {
   )
 }
 
-// Радио выбора услуги (28px): выключено — кольцо; включено — заливка primary + белая галочка.
-function RadioIcon({ checked }: { checked: boolean }) {
+// Строка выбранной услуги в форме-сводке: название + цена (или ввод суммы «Прочее») + удаление.
+function ServiceLine({ service, priceLabel, miscValue, onMiscChange, onRemove }: {
+  service: Service
+  priceLabel?: string
+  miscValue?: string
+  onMiscChange: (v: string) => void
+  onRemove: () => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+      <span style={{ ...text.body2, color: 'var(--color-on-surface)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{service.name}</span>
+      {miscValue !== undefined ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <input inputMode="numeric" value={miscValue} placeholder="0" onChange={(e) => onMiscChange(e.target.value.replace(/[^\d]/g, ''))} style={{ ...text.body2, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', textAlign: 'right', width: 72, padding: 0 }} />
+          <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>₽</span>
+        </div>
+      ) : (
+        <span style={{ ...text.body2, color: 'var(--color-on-surface)', flexShrink: 0 }}>{priceLabel}</span>
+      )}
+      <button type="button" aria-label="Удалить услугу" onClick={onRemove} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface-secondary)', flexShrink: 0 }}>
+        <ClearIcon />
+      </button>
+    </div>
+  )
+}
+
+// Чип времени (шаг «Время»): выбранный — active-surface; занятый — приглушён (но кликабелен).
+function TimeChip({ label, selected, busy, onClick }: { label: string; selected: boolean; busy?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        height: 69, padding: '12px 0', borderRadius: 18,
+        background: selected ? 'var(--color-active-surface)' : 'var(--color-surface-transparent)',
+        color: selected ? 'var(--color-interactive-element-accented)' : 'var(--color-on-surface)',
+        ...text.callout1, border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        opacity: busy && !selected ? 0.4 : 1,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+// Чекбокс выбора услуги (28px, мультивыбор): выключено — скруг-квадрат-кольцо;
+// включено — заливка primary + белая галочка.
+function CheckboxIcon({ checked }: { checked: boolean }) {
   return checked ? (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="14" cy="14" r="13" fill="var(--color-primary-surface)" />
+      <rect x="1" y="1" width="26" height="26" rx="8" fill="var(--color-primary-surface)" />
       <path d="M8.5 14.3L12.2 18L19.5 10.5" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ) : (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="14" cy="14" r="12.75" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
+      <rect x="1.75" y="1.75" width="24.5" height="24.5" rx="7.25" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
     </svg>
   )
 }

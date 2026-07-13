@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
 import { scheduleApi } from '@/api/schedule.api'
-import { discountedPrice, type Booking, type Schedule } from '@/types'
+import { bookingDuration, bookingTotal, bookingServiceNames, type Booking, type Schedule } from '@/types'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
@@ -75,7 +75,7 @@ export default function BookingsPage() {
     const map = new Map<string, number>()
     for (const b of bookings) {
       if (b.status === 'CANCELLED') continue
-      map.set(b.date, (map.get(b.date) ?? 0) + b.service.duration)
+      map.set(b.date, (map.get(b.date) ?? 0) + bookingDuration(b))
     }
     return map
   }, [bookings])
@@ -352,7 +352,7 @@ export default function BookingsPage() {
 
 // Строка записи: зелёная риска статуса (2×44), услуга + цена слева, время (начало/конец) справа.
 function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () => void }) {
-  const endDateTime = dayjs(`${booking.date}T${booking.time}`).add(booking.service.duration, 'minute')
+  const endDateTime = dayjs(`${booking.date}T${booking.time}`).add(bookingDuration(booking), 'minute')
   const endTime = endDateTime.format('HH:mm')
   const isPast = endDateTime.isBefore(dayjs())
   const primaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface)'
@@ -368,10 +368,10 @@ function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () =>
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 8, paddingTop: 8, paddingBottom: 8 }}>
           <div style={{ ...text.callout1, color: primaryColor, textDecoration: isPast ? 'line-through' : 'none', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {booking.service.name}
+            {bookingServiceNames(booking)}
           </div>
           <div style={{ ...text.caption1, color: secondaryColor, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {formatRub(booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price)}
+            {formatRub(bookingTotal(booking))}
           </div>
         </div>
       </div>

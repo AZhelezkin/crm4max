@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
 import type { Booking } from '@/types'
-import { discountedPrice, formatPrice } from '@/types'
+import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems, bookingServiceNames } from '@/types'
 import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { openAddToCalendar } from '@/lib/calendar'
@@ -77,8 +77,9 @@ export default function BookingDetailPage() {
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
   const paid = booking.paymentStatus === 'PAID'
   const badge = PAYMENT_BADGE[booking.paymentStatus]
-  // Для услуги «Прочее» цена индивидуальная (booking.price, ввёл мастер при записи).
-  const price = booking.price ?? discountedPrice(booking.service.price, booking.service.discountPercent) ?? booking.service.price
+  // Итог по всем услугам записи (мультиуслуги; «Прочее» — индивидуальная цена).
+  const price = bookingTotal(booking)
+  const serviceItems = bookingServiceItems(booking)
   const addressText = booking.clientAddress || booking.master.location || ''
   const addressSubtitle = booking.clientAddress ? 'Адрес выезда' : 'Адрес мастера'
 
@@ -108,10 +109,10 @@ export default function BookingDetailPage() {
   const handleAddToCalendar = () => {
     openAddToCalendar({
       bookingId: booking.id,
-      title: booking.service.name,
+      title: bookingServiceNames(booking),
       date: booking.date,
       time: booking.time,
-      durationMin: booking.service.duration,
+      durationMin: bookingDuration(booking),
       location: addressText,
     })
   }
@@ -174,14 +175,18 @@ export default function BookingDetailPage() {
           </button>
         )}
 
-        {/* Услуга + статус оплаты */}
+        {/* Услуги (мультиуслуги: список) + итог и статус оплаты */}
         <div style={listItemStyle}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{booking.service.name}</div>
-              {booking.service.description && (
-                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{booking.service.description}</div>
-              )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {serviceItems.map((it, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.service.name}</div>
+                  {it.service.description && (
+                    <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{it.service.description}</div>
+                  )}
+                </div>
+              ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(price)}</span>
