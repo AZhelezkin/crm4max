@@ -174,8 +174,8 @@ export default function ServiceFormPortal({
 
         {/* Группа: Выбор из популярных + Название + Описание (gap 8) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* «Выбрать из популярных» → справочник (только при создании). */}
-          {!isEdit && onPickPopular && (
+          {/* «Выбрать из популярных» → справочник (и при создании, и при редактировании — макет 10130-51982). */}
+          {onPickPopular && (
             <button
               type="button"
               onClick={onPickPopular}
