@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useState, type ReactNode } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
 import { servicesApi } from '@/api/services.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Service } from '@/types'
@@ -29,11 +29,16 @@ interface ServicesCatalogProps {
   onServiceCountChange?: (count: number) => void
   /** Кнопка завершения (онбординг) — рендерится в конце контента. */
   footer?: ReactNode
+  /** Deep-link из флоу записи: открыть форму создания сразу при монтировании. */
+  openCreateOnMount?: boolean
+  /** Deep-link из флоу записи: открыть редактор конкретной услуги при монтировании. */
+  editServiceIdOnMount?: string
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onServiceCountChange, footer }, ref) => {
+  ({ onServiceCountChange, footer, openCreateOnMount, editServiceIdOnMount }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
+    const initActionRef = useRef(false)
 
     // Форма услуги
     const [showSvcForm, setShowSvcForm] = useState(false)
@@ -98,6 +103,21 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       }
       setShowSvcForm(true)
     }
+
+    // Deep-link из флоу записи: один раз открыть создание/редактор нужной услуги.
+    useEffect(() => {
+      if (initActionRef.current) return
+      if (openCreateOnMount) {
+        initActionRef.current = true
+        openSvcForm(undefined)
+      } else if (editServiceIdOnMount) {
+        const svc = allServices.find((s) => s.id === editServiceIdOnMount)
+        if (svc) {
+          initActionRef.current = true
+          openSvcForm(svc)
+        }
+      }
+    }, [allServices, openCreateOnMount, editServiceIdOnMount])
 
     const saveSvcForm = async () => {
       if (!svcName.trim()) return

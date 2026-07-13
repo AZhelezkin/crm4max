@@ -130,6 +130,13 @@ export default function CreateBookingPage() {
   const [searchMode, setSearchMode] = useState(false)
   const [query, setQuery] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
+  // Шаг выбора услуги (макет 10122-41126): таб-фильтр, staged-выбор (radio),
+  // подтверждение кнопкой «Выбрать». «Оказывались клиенту» — услуги из прошлых
+  // записей выбранного клиента (грузим записи мастера лениво при входе на шаг).
+  const [serviceTab, setServiceTab] = useState<'all' | 'client'>('all')
+  const [stagedServiceId, setStagedServiceId] = useState('')
+  const [masterBookings, setMasterBookings] = useState<Booking[]>([])
+  const [masterBookingsLoaded, setMasterBookingsLoaded] = useState(false)
 
   const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
   const [date, setDate] = useState(rescheduleInit?.date ?? '')
@@ -195,6 +202,15 @@ export default function CreateBookingPage() {
     }
   }, [master?.id, serviceId, date])
 
+  // «Оказывались клиенту» нужен список прошлых записей мастера — грузим лениво,
+  // только когда мастер открыл шаг выбора услуги.
+  useEffect(() => {
+    if (step !== 'service' || masterBookingsLoaded) return
+    bookingsApi.list()
+      .then((b) => { setMasterBookings(b); setMasterBookingsLoaded(true) })
+      .catch(() => setMasterBookingsLoaded(true))
+  }, [step, masterBookingsLoaded])
+
   useEffect(() => {
     if (searchMode) searchInputRef.current?.focus()
   }, [searchMode])
@@ -226,6 +242,18 @@ export default function CreateBookingPage() {
     if (!q) return active
     return active.filter((s) => s.name.toLowerCase().includes(q))
   }, [allServices, q])
+
+  // Услуги, которые уже оказывались выбранному клиенту (по прошлым записям мастера).
+  const pastServiceIds = useMemo(() => {
+    const cid = selectedClient?.clientId
+    if (!cid) return new Set<string>()
+    return new Set(masterBookings.filter((b) => b.client.id === cid).map((b) => b.service.id))
+  }, [masterBookings, selectedClient])
+
+  const shownServices = useMemo(
+    () => (serviceTab === 'client' ? services.filter((s) => pastServiceIds.has(s.id)) : services),
+    [serviceTab, services, pastServiceIds],
+  )
 
   const filteredClients = useMemo(() => {
     const clientQ = clientQuery.trim().toLowerCase()
@@ -467,16 +495,18 @@ export default function CreateBookingPage() {
     })
   }
 
-  // ─── Шаг 1: выбор услуги (макет 8746-41313) ─────────────────────────────────
+  // ─── Шаг 1: выбор услуги (макет 10122-41126) ────────────────────────────────
   if (step === 'service') {
-    const nothing = loaded && services.length === 0
+    const clientTabEmpty = serviceTab === 'client' && !selectedClient
+    const loadingClientTab = serviceTab === 'client' && !clientTabEmpty && !masterBookingsLoaded
+    const nothing = loaded && !clientTabEmpty && !loadingClientTab && shownServices.length === 0
     return (
-      <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
-        <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
-          <PillButton onClick={backFromService} ariaLabel="Назад">
-            <ArrowLeftIcon />
-          </PillButton>
-          {searchMode ? (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        {searchMode ? (
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px' }}>
+            <PillButton onClick={backFromService} ariaLabel="Назад">
+              <ArrowLeftIcon />
+            </PillButton>
             <div style={{ flex: 1, minWidth: 0, height: 44, background: 'var(--color-background)', borderRadius: 22, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px' }}>
               <input
                 ref={searchInputRef}
@@ -491,28 +521,59 @@ export default function CreateBookingPage() {
                 </button>
               )}
             </div>
-          ) : (
-            <>
-              <div style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', ...text.callout1, color: 'var(--color-on-surface)' }}>
-                Выберите услугу
+          </div>
+        ) : (
+          <BookingFlowToolbar
+            title="Выберите услугу"
+            onBack={backFromService}
+            backIcon={<ArrowLeftIcon />}
+            trailing={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
+                <button type="button" aria-label="Добавить услугу" onClick={() => navigate('/services', { state: { openCreate: true } })} style={toolbarIconBtnStyle}><AddIcon /></button>
+                <button type="button" aria-label="Поиск" onClick={() => setSearchMode(true)} style={toolbarIconBtnStyle}><SearchIcon /></button>
               </div>
-              <PillButton onClick={() => setSearchMode(true)} ariaLabel="Поиск">
-                <SearchIcon />
-              </PillButton>
-            </>
-          )}
-        </div>
+            }
+          />
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 16px' }}>
-          {nothing && (
-            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
-              {searchMode ? 'Ничего не найдено' : 'Сначала добавьте услуги в профиле'}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px' }}>
+          {/* Сегмент-контрол «Все услуги / Оказывались клиенту» (в поиске скрыт). */}
+          {!searchMode && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, padding: 4, boxSizing: 'border-box', background: 'var(--color-surface-transparent)', borderRadius: 16, marginBottom: 12 }}>
+              <SegmentTab active={serviceTab === 'all'} onClick={() => setServiceTab('all')}>Все услуги</SegmentTab>
+              <SegmentTab active={serviceTab === 'client'} onClick={() => setServiceTab('client')}>Оказывались клиенту</SegmentTab>
             </div>
           )}
-          {services.map((s) => (
-            <ServiceItem key={s.id} service={s} onClick={() => pickService(s)} />
-          ))}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {clientTabEmpty ? (
+              <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Сначала выберите клиента</div>
+            ) : loadingClientTab ? (
+              <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Загружаем…</div>
+            ) : nothing ? (
+              <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
+                {searchMode ? 'Ничего не найдено' : serviceTab === 'client' ? 'Клиенту ещё не оказывали услуг' : 'Сначала добавьте услуги в профиле'}
+              </div>
+            ) : (
+              shownServices.map((s) => (
+                <ServiceSelectRow
+                  key={s.id}
+                  service={s}
+                  selected={stagedServiceId === s.id}
+                  onSelect={() => setStagedServiceId(s.id)}
+                  onEdit={() => navigate('/services', { state: { editServiceId: s.id } })}
+                />
+              ))
+            )}
+          </div>
         </div>
+
+        <BookingFlowBottomButton
+          disabled={!stagedServiceId}
+          onClick={() => { const s = allServices.find((x) => x.id === stagedServiceId); if (s) pickService(s) }}
+        >
+          Выбрать
+        </BookingFlowBottomButton>
       </div>
     )
   }
@@ -1173,7 +1234,7 @@ export default function CreateBookingPage() {
 
         {/* Услуги */}
         <FormCard title="Услуги">
-          <FormRow label="Наименование" value={selectedService ? selectedService.name : 'Выбрать'} prompt={!selectedService} onClick={() => setStep('service')} last />
+          <FormRow label="Наименование" value={selectedService ? selectedService.name : 'Выбрать'} prompt={!selectedService} onClick={() => { setStagedServiceId(serviceId); setStep('service') }} last />
         </FormCard>
 
         {/* Дата и время */}
@@ -1350,6 +1411,78 @@ function ServiceItem({ service, onClick }: { service: Service; onClick: () => vo
       </div>
       <ArrowRightIcon />
     </button>
+  )
+}
+
+// Кнопка-иконка в тулбаре шага выбора услуги (внутри pill-группы, p6, 24px иконка).
+const toolbarIconBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', padding: 6, cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-on-surface)',
+}
+
+// Таб сегмент-контрола (макет 10122-41126): h36, rounded 12, Callout2.
+// Активный — фон chat-bg-elements + interactive-element-accented; иначе — interactive-element.
+function SegmentTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1, minWidth: 0, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 10, boxSizing: 'border-box',
+        background: active ? 'var(--color-chat-bg-elements)' : 'none',
+        color: active ? 'var(--color-interactive-element-accented)' : 'var(--color-interactive-element)',
+        ...text.callout2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// Строка выбора услуги (макет 10122-41126): radio + название + «длит., цена» + карандаш.
+// Тап по строке — staged-выбор; карандаш (stopPropagation) — переход к редактору услуги.
+function ServiceSelectRow({ service: s, selected, onSelect, onEdit }: {
+  service: Service; selected: boolean; onSelect: () => void; onEdit: () => void
+}) {
+  const price = discountedPrice(s.price, s.discountPercent) ?? s.price
+  const subtitle = s.isMisc ? 'Цена по договорённости' : `${formatDuration(s.duration)}, ${formatPrice(price)}`
+  return (
+    <div onClick={onSelect} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '16px 20px', cursor: 'pointer' }}>
+      <RadioIcon checked={selected} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</span>
+      </div>
+      <button type="button" aria-label="Редактировать услугу" onClick={(e) => { e.stopPropagation(); onEdit() }} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-surface)', flexShrink: 0 }}>
+        <PencilEditIcon />
+      </button>
+    </div>
+  )
+}
+
+// Радио выбора услуги (28px): выключено — кольцо; включено — заливка primary + белая галочка.
+function RadioIcon({ checked }: { checked: boolean }) {
+  return checked ? (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="14" cy="14" r="13" fill="var(--color-primary-surface)" />
+      <path d="M8.5 14.3L12.2 18L19.5 10.5" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ) : (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="14" cy="14" r="12.75" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+// vuesax/linear/edit-2 (16×16), наследует цвет (в строке услуги — primary-surface).
+function PencilEditIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 14.6667H14" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
