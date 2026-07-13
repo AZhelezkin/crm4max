@@ -428,10 +428,10 @@ export default function CreateBookingPage() {
     })
   }, [date, time, durationMin, masterBookings, rescheduleId])
 
-  const canSave = selectedServiceIds.length > 0 && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && allMiscValid && !saving
+  const canSave = selectedServices.length > 0 && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && allMiscValid && !saving
 
   const handleSave = async (force = false) => {
-    if (!master || selectedServiceIds.length === 0 || !date || !time || !selectedClient) return
+    if (!master || selectedServices.length === 0 || !date || !time || !selectedClient) return
     if (outbound && !address.trim()) return
     if (!allMiscValid) return
     // Пересечение — предупреждаем один раз, затем разрешаем (allowOverlap на бэке).
