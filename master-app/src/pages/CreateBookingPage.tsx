@@ -17,6 +17,7 @@ import { FloatingField } from '@/components/onboardingShared'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
+import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
 
 dayjs.locale('ru')
 
@@ -137,6 +138,9 @@ export default function CreateBookingPage() {
   const [stagedServiceId, setStagedServiceId] = useState('')
   const [masterBookings, setMasterBookings] = useState<Booking[]>([])
   const [masterBookingsLoaded, setMasterBookingsLoaded] = useState(false)
+  // Инлайн-редактор услуги (карандаш/«+» на шаге выбора) — правит услугу, не уводя
+  // из флоу записи (макет «Редактирование услуги» 10130-51982). null → закрыт.
+  const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
 
   const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
   const [date, setDate] = useState(rescheduleInit?.date ?? '')
@@ -170,14 +174,15 @@ export default function CreateBookingPage() {
   const [weekTime, setWeekTime] = useState('')
   const [weekTimeOptions, setWeekTimeOptions] = useState<string[]>([])
 
-  useEffect(() => {
+  const reloadServices = () =>
     servicesApi.list()
-      .then((svcs) => {
-        setAllServices(svcs)
-        setLoaded(true)
-      })
+      .then((svcs) => { setAllServices(svcs); setLoaded(true) })
       .catch(() => setLoaded(true))
+
+  useEffect(() => {
+    void reloadServices()
     clientsApi.list().then((c) => { setClients(c); setClientsLoaded(true) }).catch(() => setClientsLoaded(true))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -529,7 +534,7 @@ export default function CreateBookingPage() {
             backIcon={<ArrowLeftIcon />}
             trailing={
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
-                <button type="button" aria-label="Добавить услугу" onClick={() => navigate('/services', { state: { openCreate: true } })} style={toolbarIconBtnStyle}><AddIcon /></button>
+                <button type="button" aria-label="Добавить услугу" onClick={() => setEditorTarget({ mode: 'create' })} style={toolbarIconBtnStyle}><AddIcon /></button>
                 <button type="button" aria-label="Поиск" onClick={() => setSearchMode(true)} style={toolbarIconBtnStyle}><SearchIcon /></button>
               </div>
             }
@@ -561,7 +566,7 @@ export default function CreateBookingPage() {
                   service={s}
                   selected={stagedServiceId === s.id}
                   onSelect={() => setStagedServiceId(s.id)}
-                  onEdit={() => navigate('/services', { state: { editServiceId: s.id } })}
+                  onEdit={() => setEditorTarget({ mode: 'edit', service: s })}
                 />
               ))
             )}
@@ -574,6 +579,13 @@ export default function CreateBookingPage() {
         >
           Выбрать
         </BookingFlowBottomButton>
+
+        {/* Инлайн-редактор услуги (карандаш/«+») — правит услугу, не уводя из флоу. */}
+        <ServiceEditorPortal
+          target={editorTarget}
+          onClose={() => setEditorTarget(null)}
+          onSaved={() => { void reloadServices(); void useAuthStore.getState().refreshMaster() }}
+        />
       </div>
     )
   }

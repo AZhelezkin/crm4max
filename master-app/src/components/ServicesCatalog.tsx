@@ -1,13 +1,10 @@
 import { text } from '@/styles/typography'
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState, type ReactNode } from 'react'
 import { servicesApi } from '@/api/services.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Service } from '@/types'
 import { formatPrice, formatDuration, discountedPrice } from '@/types'
-import ServiceFormPortal from '@/components/ServiceFormPortal'
-import PopularServicesPortal from '@/components/PopularServicesPortal'
-import type { LocalWorkPhoto } from '@/lib/workPhotos'
-import { getFirstUploadedWorkPhotoUrl } from '@/lib/workPhotos'
+import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
 import {
   onboardingDiscountBadgeStyle,
   onboardingListActionButtonStyle,
@@ -29,31 +26,13 @@ interface ServicesCatalogProps {
   onServiceCountChange?: (count: number) => void
   /** Кнопка завершения (онбординг) — рендерится в конце контента. */
   footer?: ReactNode
-  /** Deep-link из флоу записи: открыть форму создания сразу при монтировании. */
-  openCreateOnMount?: boolean
-  /** Deep-link из флоу записи: открыть редактор конкретной услуги при монтировании. */
-  editServiceIdOnMount?: string
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onServiceCountChange, footer, openCreateOnMount, editServiceIdOnMount }, ref) => {
+  ({ onServiceCountChange, footer }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
-    const initActionRef = useRef(false)
-
-    // Форма услуги
-    const [showSvcForm, setShowSvcForm] = useState(false)
-    const [showPopular, setShowPopular] = useState(false)
-    const [editService, setEditService] = useState<Service | null>(null)
-    const [svcName, setSvcName] = useState('')
-    const [svcDesc, setSvcDesc] = useState('')
-    const [svcPrice, setSvcPrice] = useState('')
-    const [svcDuration, setSvcDuration] = useState('')
-    const [svcDiscountEnabled, setSvcDiscountEnabled] = useState(false)
-    const [svcDiscountPercent, setSvcDiscountPercent] = useState(10)
-    // Абонемент: тип записи и число приёмов (2..10). Цена/скидка — за один приём.
-    const [svcIsPackage, setSvcIsPackage] = useState(false)
-    const [svcSessionsCount, setSvcSessionsCount] = useState(2)
-    const [svcWorkPhotos, setSvcWorkPhotos] = useState<LocalWorkPhoto[]>([])
+    // Открытый редактор услуги (создание/правка) — см. ServiceEditorPortal.
+    const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
 
     const load = () =>
       servicesApi.list().then((svcs) => {
@@ -76,85 +55,6 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
       openUncategorized: () => {},
     }), [])
 
-    // ─── Услуга ───────────────────────────────────────────────────────────────
-
-    const openSvcForm = (service?: Service) => {
-      if (service) {
-        setEditService(service)
-        setSvcName(service.name)
-        setSvcDesc(service.description ?? '')
-        setSvcPrice(String(service.price / 100))
-        setSvcDuration(String(service.duration))
-        setSvcDiscountEnabled(!!service.discountPercent)
-        setSvcDiscountPercent(service.discountPercent ?? 10)
-        setSvcIsPackage(service.sessionsCount > 1)
-        setSvcSessionsCount(service.sessionsCount > 1 ? service.sessionsCount : 2)
-        setSvcWorkPhotos(
-          (service.workPhotos ?? []).map((p) => ({
-            id: p.id, url: p.url, previewUrl: p.url, uploading: false,
-          })),
-        )
-      } else {
-        setEditService(null)
-        setSvcName(''); setSvcDesc(''); setSvcPrice(''); setSvcDuration('')
-        setSvcDiscountEnabled(false); setSvcDiscountPercent(10)
-        setSvcIsPackage(false); setSvcSessionsCount(2)
-        setSvcWorkPhotos([])
-      }
-      setShowSvcForm(true)
-    }
-
-    // Deep-link из флоу записи: один раз открыть создание/редактор нужной услуги.
-    useEffect(() => {
-      if (initActionRef.current) return
-      if (openCreateOnMount) {
-        initActionRef.current = true
-        openSvcForm(undefined)
-      } else if (editServiceIdOnMount) {
-        const svc = allServices.find((s) => s.id === editServiceIdOnMount)
-        if (svc) {
-          initActionRef.current = true
-          openSvcForm(svc)
-        }
-      }
-    }, [allServices, openCreateOnMount, editServiceIdOnMount])
-
-    const saveSvcForm = async () => {
-      if (!svcName.trim()) return
-      const firstPhotoUrl = getFirstUploadedWorkPhotoUrl(svcWorkPhotos)
-      const data = {
-        name: svcName.trim(),
-        description: svcDesc || null,
-        price: Math.round(Number(svcPrice) * 100) || 0,
-        duration: Number(svcDuration) || 30,
-        // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД
-        // (Prisma игнорирует undefined и оставляет прежнее значение).
-        discountPercent: svcDiscountEnabled ? svcDiscountPercent : null,
-        sessionsCount: svcIsPackage ? svcSessionsCount : 1,
-        photo: firstPhotoUrl || null,
-      }
-      if (editService) {
-        await servicesApi.update(editService.id, data)
-        const origIds = new Set((editService.workPhotos ?? []).map((p) => p.id))
-        const currentIds = new Set(svcWorkPhotos.map((p) => p.id))
-        for (const id of origIds) {
-          if (!currentIds.has(id)) await servicesApi.removeWorkPhoto(id)
-        }
-        const newPhotos = svcWorkPhotos.filter((p) => !origIds.has(p.id) && p.url)
-        for (let i = 0; i < newPhotos.length; i++) {
-          await servicesApi.addWorkPhoto(editService.id, newPhotos[i].url as string, i)
-        }
-      } else {
-        const created = await servicesApi.create(data)
-        const uploaded = svcWorkPhotos.filter((p) => !p.uploading && p.url)
-        for (let i = 0; i < uploaded.length; i++) {
-          await servicesApi.addWorkPhoto(created.id, uploaded[i].url as string, i)
-        }
-      }
-      setShowSvcForm(false)
-      reload()
-    }
-
     const handleDeleteService = async (id: string) => {
       await servicesApi.remove(id)
       reload()
@@ -169,12 +69,12 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
             <ServiceCard
               key={s.id}
               service={s}
-              onEdit={() => openSvcForm(s)}
+              onEdit={() => setEditorTarget({ mode: 'edit', service: s })}
               onDelete={() => { void handleDeleteService(s.id) }}
             />
           ))}
 
-          <AddRowButton label="Добавить услугу" onClick={() => openSvcForm(undefined)} />
+          <AddRowButton label="Добавить услугу" onClick={() => setEditorTarget({ mode: 'create' })} />
 
           {footer && (
             <div style={{ paddingTop: 16, paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
@@ -184,37 +84,10 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
 
         </div>
 
-        <ServiceFormPortal
-          visible={showSvcForm}
-          isEdit={!!editService}
-          name={svcName}
-          onNameChange={setSvcName}
-          desc={svcDesc}
-          onDescChange={setSvcDesc}
-          duration={svcDuration}
-          onDurationChange={setSvcDuration}
-          price={svcPrice}
-          onPriceChange={setSvcPrice}
-          discountEnabled={svcDiscountEnabled}
-          onDiscountEnabledChange={setSvcDiscountEnabled}
-          discountPercent={svcDiscountPercent}
-          onDiscountPercentChange={setSvcDiscountPercent}
-          isPackage={svcIsPackage}
-          onIsPackageChange={setSvcIsPackage}
-          sessionsCount={svcSessionsCount}
-          onSessionsCountChange={setSvcSessionsCount}
-          workPhotos={svcWorkPhotos}
-          onWorkPhotosChange={setSvcWorkPhotos}
-          onClose={() => setShowSvcForm(false)}
-          onSave={() => { void saveSvcForm() }}
-          onDelete={editService ? () => { void handleDeleteService(editService.id); setShowSvcForm(false) } : undefined}
-          onPickPopular={() => setShowPopular(true)}
-        />
-
-        <PopularServicesPortal
-          visible={showPopular}
-          onClose={() => setShowPopular(false)}
-          onSelect={(popularName) => { setSvcName(popularName); setShowPopular(false) }}
+        <ServiceEditorPortal
+          target={editorTarget}
+          onClose={() => setEditorTarget(null)}
+          onSaved={reload}
         />
       </div>
     )
