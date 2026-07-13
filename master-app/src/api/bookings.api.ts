@@ -20,6 +20,8 @@ export const bookingsApi = {
     clientAddress?: string | null
     /** Индивидуальная сумма (копейки) для услуги «Прочее». */
     price?: number
+    /** Цвет записи (hex) — для расписания. */
+    color?: string | null
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
 
   /** Запись на услугу-абонемент: даты+время на все N приёмов сразу. */

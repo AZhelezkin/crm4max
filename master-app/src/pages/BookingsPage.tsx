@@ -358,11 +358,13 @@ function AppointmentRow({ booking, onClick }: { booking: Booking; onClick: () =>
   const primaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface)'
   const secondaryColor = isPast ? 'var(--color-on-surface-muted)' : 'var(--color-on-surface-secondary)'
   const statusColor = isPast ? 'var(--color-pattern-element)' : 'var(--color-on-success-surface-lite)'
+  // Цвет записи, выбранный мастером, важнее статусного (кроме прошедших — они приглушены).
+  const lineColor = booking.color && !isPast ? booking.color : statusColor
   return (
     <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', width: '100%', cursor: 'pointer' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-start' }}>
         <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-          <div style={{ width: 2, height: 44, borderRadius: 1, background: statusColor }} />
+          <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 8, paddingTop: 8, paddingBottom: 8 }}>
           <div style={{ ...text.callout1, color: primaryColor, textDecoration: isPast ? 'line-through' : 'none', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

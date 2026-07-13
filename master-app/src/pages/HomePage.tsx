@@ -169,7 +169,8 @@ export default function HomePage() {
                   <button key={b.id} type="button" onClick={() => navigate(`/bookings/${b.id}`)}
                     style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
                     <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-                      <div style={{ width: 2, height: 44, borderRadius: 1, background: confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)' }} />
+                      {/* Цвет записи, выбранный мастером, важнее статусного. */}
+                      <div style={{ width: 2, height: 44, borderRadius: 1, background: b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)') }} />
                     </div>
                     <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                       <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>

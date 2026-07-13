@@ -80,6 +80,8 @@ export interface Booking {
   /** Адрес выезда мастера (если задан); null — услуга у мастера. */
   clientAddress: string | null
   remind: boolean
+  /** Цвет записи (hex), выбранный мастером; null — цвет по статусу. */
+  color: string | null
   master: { id: string; name: string; photo: string | null; location: string | null; lat: number | null; lng: number | null }
   client: { id: string; name: string; phone: string | null; photo: string | null }
   service: Service

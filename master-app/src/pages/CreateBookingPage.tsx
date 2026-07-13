@@ -8,7 +8,7 @@ import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Client, Schedule, Service } from '@/types'
-import { discountedPrice, formatPrice } from '@/types'
+import { discountedPrice, formatPrice, formatDuration } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
@@ -22,6 +22,10 @@ dayjs.locale('ru')
 
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+// Палитра цвета записи (hex) — выбирается мастером, показывается в расписании.
+// Первый — дефолт (зелёный, как в макете 10111-37975).
+const BOOKING_COLORS = ['#1F9432', '#007AFE', '#F0AF2D', '#CE4259', '#8E5BE8', '#00B3A4', '#FF667F', '#6E6F71'] as const
 
 // Дни недели (ISO 1=Пн … 7=Вс) для режима абонемента «По неделям».
 const WEEKDAYS = [
@@ -106,10 +110,10 @@ export default function CreateBookingPage() {
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success'>(
+  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success' | 'color'>(
     rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
-      : 'service',
+      : 'confirm',
   )
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -131,7 +135,10 @@ export default function CreateBookingPage() {
   const [date, setDate] = useState(rescheduleInit?.date ?? '')
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
+  const [color, setColor] = useState<string>(BOOKING_COLORS[0])
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
+  // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
+  const [outbound, setOutbound] = useState(false)
   const [address, setAddress] = useState('')
   // Сумма для услуги «Прочее» (isMisc) — рубли, вводится на шаге подтверждения.
   const [miscPrice, setMiscPrice] = useState('')
@@ -244,7 +251,8 @@ export default function CreateBookingPage() {
       setWeekdays([]); setWeekTime('')
       setStep('package')
     } else {
-      setStep(fixedDateFromSchedule ? 'time' : 'date')
+      // Одиночная услуга — возвращаемся в форму-сводку (дату/время выбираем рядами формы).
+      setStep('confirm')
     }
   }
 
@@ -309,15 +317,16 @@ export default function CreateBookingPage() {
       setSearchMode(false)
       setQuery('')
     } else {
-      // Выбор услуги — первый шаг флоу, поэтому «Назад» уходит на предыдущий экран.
-      navigate(-1)
+      // Выбор услуги открывается из формы-сводки — «Назад» возвращает в неё.
+      setStep('confirm')
     }
   }
 
   const handleSelectDate = (d: dayjs.Dayjs) => {
     setDate(d.format('YYYY-MM-DD'))
     setTime('')
-    setStep('time')
+    // Перенос: дальше выбор времени. Создание: возвращаемся в форму (время — отдельный ряд).
+    setStep(rescheduleId ? 'time' : 'confirm')
   }
 
   // Услуга «Прочее» (isMisc): мастер сам вводит сумму на шаге подтверждения.
@@ -325,11 +334,11 @@ export default function CreateBookingPage() {
   const miscPriceKopecks = Math.round(Number(miscPrice.replace(',', '.')) * 100)
   const miscPriceValid = !isMisc || (miscPrice.trim() !== '' && Number.isFinite(miscPriceKopecks) && miscPriceKopecks > 0)
 
-  const canSave = !!selectedClient && (!homeVisit || !!address.trim()) && miscPriceValid && !saving
+  const canSave = !!serviceId && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && miscPriceValid && !saving
 
   const handleSave = async () => {
     if (!master || !serviceId || !date || !time || !selectedClient) return
-    if (homeVisit && !address.trim()) return
+    if (outbound && !address.trim()) return
     if (isMisc && !miscPriceValid) return
     setSaving(true)
     setError(null)
@@ -343,9 +352,10 @@ export default function CreateBookingPage() {
         // в т.ч. для ручного клиента без Max (создаст синтетического, без уведомления).
         masterClientId: selectedClient.id,
         remind,
-        clientAddress: homeVisit ? address.trim() : undefined,
+        clientAddress: outbound ? address.trim() : undefined,
         // Для «Прочее» — введённая мастером сумма (копейки).
         price: isMisc ? miscPriceKopecks : undefined,
+        color,
       })
       setCreatedBooking(booking)
       setStep('success')
@@ -523,7 +533,7 @@ export default function CreateBookingPage() {
               if (createdBooking) setStep('success')
               else navigate(-1)
             } else {
-              setStep('service')
+              setStep('confirm')
             }
           }}
         />
@@ -613,8 +623,8 @@ export default function CreateBookingPage() {
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => {
           if (timeOnly) { if (createdBooking) setStep('success'); else navigate(-1) }
-          else if (fixedDateFromSchedule && packageSessionIndex === null) setStep('service')
-          else setStep('date')
+          else if (packageSessionIndex !== null || rescheduleId) setStep('date')
+          else setStep('confirm')
         }} />
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {fixedDateFromSchedule && packageSessionIndex === null ? (
@@ -1118,116 +1128,98 @@ export default function CreateBookingPage() {
     )
   }
 
-  // ─── Шаг 5: подтверждение (макет 8792-51136) ────────────────────────────────
+  // ─── Выбор цвета записи (из формы-сводки) ────────────────────────────────────
+  if (step === 'color') {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <Toolbar title="Цвет записи" onBack={() => setStep('confirm')} />
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px' }}>
+          <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', padding: 24, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, justifyItems: 'center' }}>
+            {BOOKING_COLORS.map((c) => {
+              const selected = c.toUpperCase() === color.toUpperCase()
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { setColor(c); setStep('confirm') }}
+                  aria-label={c}
+                  style={{ width: 48, height: 48, borderRadius: 24, background: c, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', outline: selected ? '2px solid var(--color-on-surface)' : 'none', outlineOffset: 3 }}
+                >
+                  {selected && (
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 10.5L8.5 14L15 6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Шаг 5: подтверждение (макет 10111-37975) ────────────────────────────────
   const sDPrice = selectedService ? discountedPrice(selectedService.price, selectedService.discountPercent) : null
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar
-        title="Подтверждение"
-        onBack={() => setStep('time')}
-        trailing={
-          <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
-            <button type="button" onClick={() => navigate('/bookings')} style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', ...text.callout1, color: 'var(--color-on-surface)' }}>
-              Закрыть
-            </button>
-          </div>
-        }
-      />
+      <Toolbar title="Создание записи" onBack={() => navigate(-1)} />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Клиент (макет 8748-52035): не выбран → «Выбрать клиента / из списка» без аватара;
-            выбран → аватар + имя + телефон. Справа всегда user-square. */}
-        <button type="button" onClick={() => setStep('client')} style={listItemStyle}>
-          {selectedClient && <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {selectedClient ? selectedClient.name : 'Выбрать клиента'}
-            </div>
-            {selectedClient ? (
-              selectedClient.phone && (
-                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formatPhone(selectedClient.phone)}
-                </div>
-              )
-            ) : (
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>из списка</div>
-            )}
-          </div>
-          <UserSquareIcon size={16} />
-        </button>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px calc(16px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Клиент */}
+        <FormCard title="Клиент">
+          <FormRow label="Имя" value={selectedClient ? selectedClient.name : 'Выбрать'} prompt={!selectedClient} onClick={() => setStep('client')} last />
+        </FormCard>
 
-        {/* Адрес выезда — только для мастера на выезде. Инлайн-поле с саджестами Яндекса (без отдельного экрана). */}
-        {homeVisit && (
-          <AddressSuggestField
-            value={address}
-            onChange={setAddress}
-            label="Адрес выезда"
-            placeholder="Город, улица, дом, квартира…"
+        {/* Услуги */}
+        <FormCard title="Услуги">
+          <FormRow label="Наименование" value={selectedService ? selectedService.name : 'Выбрать'} prompt={!selectedService} onClick={() => setStep('service')} last />
+        </FormCard>
+
+        {/* Дата и время */}
+        <FormCard title="Дата и время">
+          {/* Где: у себя / выезд (переключение доступно, только если мастер работает на выезде). */}
+          <FormRow
+            label="Где"
+            value={outbound ? (address.trim() || 'Выезд к клиенту') : 'Принимаю у себя'}
+            onClick={master?.homeVisit ? () => setOutbound((v) => !v) : undefined}
           />
-        )}
+          {outbound && (
+            <div style={{ padding: '0 16px 12px' }}>
+              <AddressSuggestField value={address} onChange={setAddress} label="Адрес выезда" placeholder="Город, улица, дом, квартира…" />
+            </div>
+          )}
+          <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
+          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
+          <FormRow label="Длительность" value={selectedService ? formatDuration(selectedService.duration) : '0 мин'} />
+          <FormRow label="Напоминание клиенту" value={remind ? 'за 1 час' : 'Нет'} onClick={() => setRemind((v) => !v)} />
+          <FormRow
+            label="Цвет записи"
+            right={<span style={{ width: 24, height: 24, borderRadius: 12, background: color, display: 'inline-block', flexShrink: 0 }} />}
+            onClick={() => setStep('color')}
+            last
+          />
+        </FormCard>
 
-        {/* Услуга */}
-        {selectedService && (
-          <div style={{ ...listItemStyle, cursor: 'default' }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedService.name}</div>
-                {selectedService.description && (
-                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>
-                    {selectedService.description}
-                  </div>
-                )}
+        {/* Стоимость */}
+        <FormCard title="Стоимость">
+          {isMisc ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 16, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+              <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>Стоимость</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  inputMode="numeric" value={miscPrice} placeholder="0"
+                  onChange={(e) => setMiscPrice(e.target.value.replace(/[^\d]/g, ''))}
+                  style={{ ...text.body2, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', textAlign: 'right', width: 100, padding: 0 }}
+                />
+                <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>₽</span>
               </div>
-              {isMisc ? (
-                /* «Прочее»: мастер вводит сумму вручную (макет 8716-48659). */
-                <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Сумма, ₽</span>
-                  <input
-                    inputMode="numeric"
-                    value={miscPrice}
-                    onChange={(e) => setMiscPrice(e.target.value.replace(/[^\d]/g, ''))}
-                    placeholder="0"
-                    style={{ ...text.callout1, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', padding: 0, width: '100%' }}
-                  />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{formatPrice(sDPrice ?? selectedService.price)}</span>
-                  {sDPrice !== null && (
-                    <span style={{ ...text.caption2, color: 'var(--color-on-surface-muted)', textDecoration: 'line-through' }}>{formatPrice(selectedService.price)}</span>
-                  )}
-                </div>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* Дата */}
-        {fixedDateFromSchedule ? (
-          <div style={{ ...listItemStyle, cursor: 'default' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата из расписания</div>
-            </div>
-          </div>
-        ) : (
-          <button type="button" onClick={() => setStep('date')} style={listItemStyle}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(date).format('D MMMM, dd')}</div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
-            </div>
-            <EditIcon />
-          </button>
-        )}
-
-        {/* Время */}
-        <button type="button" onClick={() => setStep('time')} style={listItemStyle}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{time}</div>
-            <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
-          </div>
-          <EditIcon />
-        </button>
+          ) : (
+            <FormRow label="Стоимость" value={selectedService ? formatPrice(sDPrice ?? selectedService.price) : '0 ₽'} noArrow />
+          )}
+          <FormRow label="Скидка" value={selectedService?.discountPercent ? `${selectedService.discountPercent}%` : 'Нет'} last />
+        </FormCard>
 
         {error && (
           <div style={{ ...text.caption1, color: 'var(--color-error-surface-accented)', padding: '0 8px' }}>{error}</div>
@@ -1240,6 +1232,53 @@ export default function CreateBookingPage() {
       </BookingFlowBottomButton>
     </div>
   )
+}
+
+// Карточка-группа формы-сводки (макет 10111-37975 «listItem»): полупрозрачная
+// поверхность, скруг. 20, мягкая тень «Card Soft», заголовок по центру + разделитель.
+function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ width: '100%', background: 'var(--color-surface-transparent)', borderRadius: 20, boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+        <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// Строка карточки: лейбл слева (Body2, onSurfaceSecondary), значение справа
+// (Body2; «Выбрать» → primarySurface, иначе onSurface) + стрелка. В макете стрелка
+// у всех строк, кроме «Стоимости» (noArrow). Последняя строка карточки — без разделителя.
+function FormRow({ label, value, prompt, right, onClick, noArrow, last }: {
+  label: string
+  value?: string
+  prompt?: boolean
+  right?: React.ReactNode
+  onClick?: () => void
+  noArrow?: boolean
+  last?: boolean
+}) {
+  const rowStyle: React.CSSProperties = {
+    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+    padding: 16, background: 'none', border: 'none',
+    borderBottom: last ? 'none' : '1px solid var(--color-secondary-surface-muted)',
+    cursor: onClick ? 'pointer' : 'default', textAlign: 'left',
+  }
+  const inner = (
+    <>
+      <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {right ?? (
+          <span style={{ ...text.body2, color: prompt ? 'var(--color-primary-surface)' : 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>{value}</span>
+        )}
+        {!noArrow && <ArrowRightIcon />}
+      </span>
+    </>
+  )
+  return onClick
+    ? <button type="button" onClick={onClick} style={rowStyle}>{inner}</button>
+    : <div style={rowStyle}>{inner}</div>
 }
 
 const listItemStyle: React.CSSProperties = {
