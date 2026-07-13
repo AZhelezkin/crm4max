@@ -73,12 +73,12 @@ infra/          — docker-compose.prod.yml, deploy.sh, nginx
 | VM IP | `81.26.186.235` (static, reserved as `crm4max-static`) |
 | VM ID | `fv4852jssl97dhckkjkg` |
 | API URL | `https://81-26-186-235.sslip.io` |
-| SSH | `~/.ssh/crm4max_deploy` (user: ubuntu) |
+| SSH | На ВМ включён **OS Login** — старый ключ `~/.ssh/crm4max_deploy` больше не работает. Заходить: `yc compute ssh --id fv4852jssl97dhckkjkg` (нужна роль `compute.osAdminLogin` на папке; внутри — через `sudo docker`). Удалённая команда — хвостом: `yc compute ssh --id … 'cmd'` |
 | Registry | `cr.yandex/crp6mv57ms1a67he7ukv` |
 | S3 | `crm4max-media`, endpoint `https://storage.yandexcloud.net` |
 | Managed PG | `crm4max-pg` (`c9q4otmferkauueju72n`), host `rc1d-mccl9656o7v0rrab.mdb.yandexcloud.net:6432` |
 
-Деплой: `SSH_KEY=~/.ssh/crm4max_deploy VM_HOST=81.26.186.235 YC_REGISTRY_ID=crp6mv57ms1a67he7ukv bash infra/deploy.sh`
+Деплой: основной путь — **GitLab CI** (push в `main` → gitlab-runner на самой ВМ, см. ниже; внешний SSH не нужен). Ручной `infra/deploy.sh` ходил ключом `~/.ssh/crm4max_deploy` и после включения OS Login **не работает** без переделки на OS Login.
 
 CI/CD: `deploy.yml` при пуше в `main` (backend/infra) → тесты → Docker → Yandex Registry → SSH → health check.
 
