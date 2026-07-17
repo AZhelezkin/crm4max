@@ -287,7 +287,7 @@ export default function HomePage() {
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес, где оказывается услуга</span>
-            <EditButton onClick={() => navigate('/about')} />
+            <EditButton onClick={() => navigate('/address')} />
           </div>
           {master.location ? (
             <>
