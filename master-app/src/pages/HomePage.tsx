@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
 import { bookingsApi } from '@/api/bookings.api'
 import { clientsApi } from '@/api/clients.api'
+import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
@@ -48,9 +49,12 @@ export default function HomePage() {
 
   const [clients, setClients] = useState<Client[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  // Статус подписки — строка под именем в шапке (макет 10216-40371).
+  const [sub, setSub] = useState<SubscriptionState | null>(null)
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
     bookingsApi.list().then(setBookings).catch(() => {})
+    subscriptionApi.getMe().then(setSub).catch(() => {})
   }, [])
 
   const today = dayjs().format('YYYY-MM-DD')
@@ -83,7 +87,7 @@ export default function HomePage() {
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95, overflowX: 'hidden' }}>
 
-      {/* ── Шапка: аватар 44 + имя(✎) + адрес, справа шеринг (Figma 10065:50896) ── */}
+      {/* ── Шапка: аватар 44 + имя(✎) + статус подписки, справа шеринг (Figma 10065:50891) ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden',
@@ -102,11 +106,8 @@ export default function HomePage() {
             </span>
             <EditButton onClick={() => navigate('/about')} />
           </div>
-          {master.location && (
-            <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-              {master.location}
-            </span>
-          )}
+          {/* Адрес в шапке больше не показываем (он в виджете адреса) — здесь статус подписки. */}
+          <SubscriptionStatusLine sub={sub} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
@@ -313,6 +314,87 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Дней до даты (округление вверх, не меньше 0) + «1 день / 2 дня / 5 дней».
+function daysLeft(iso: string | null): number {
+  if (!iso) return 0
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
+}
+function pluralDays(n: number): string {
+  const m10 = n % 10, m100 = n % 100
+  if (m10 === 1 && m100 !== 11) return `${n} день`
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return `${n} дня`
+  return `${n} дней`
+}
+
+// Статус подписки под именем (макет 10216-40371): иконка 16 (цвет по статусу) + Caption 2.
+// 🟢 ACTIVE tick / 🔵 TRIALING clock / 🟡 GRACE info / 🔴 BLOCKED warning.
+function SubscriptionStatusLine({ sub }: { sub: SubscriptionState | null }) {
+  if (!sub) return null
+  const view = (() => {
+    switch (sub.status) {
+      case 'ACTIVE':
+        return { icon: <TickCircle16 />, color: 'var(--color-success-surface-accented)', label: 'Подписка активна' }
+      case 'TRIALING': {
+        const d = daysLeft(sub.trialEndsAt)
+        return { icon: <Clock16 />, color: 'var(--color-primary-surface)', label: d > 0 ? `Пробный период. ${pluralDays(d)}` : 'Пробный период' }
+      }
+      case 'GRACE': {
+        const d = daysLeft(sub.graceEndsAt)
+        return { icon: <InfoCircle16 />, color: 'var(--color-warning-surface-accented)', label: d > 0 ? `Оплатите в течении ${pluralDays(d)}` : 'Оплатите подписку' }
+      }
+      case 'BLOCKED':
+        return { icon: <Warning16 />, color: 'var(--color-error-surface-accented)', label: 'Подписка не активна' }
+    }
+  })()
+  if (!view) return null
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+      <span style={{ display: 'inline-flex', flexShrink: 0, color: view.color }}>{view.icon}</span>
+      <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{view.label}</span>
+    </span>
+  )
+}
+
+// ─── Иконки статуса подписки (vuesax/linear, 16×16, stroke: currentColor) ─────
+
+function TickCircle16() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m7.75 12 2.83 2.83 5.67-5.66" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function Clock16() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.71 15.18l-3.1-1.85c-.54-.32-.98-1.09-.98-1.72V7.51" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function InfoCircle16() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 8v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.995 16h.009" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function Warning16() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M12 7.75V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21.08 8.58v6.84c0 1.12-.6 2.16-1.57 2.73l-5.94 3.43c-.97.56-2.17.56-3.15 0l-5.94-3.43a3.15 3.15 0 0 1-1.57-2.73V8.58c0-1.12.6-2.16 1.57-2.73l5.94-3.43c.97-.56 2.17-.56 3.15 0l5.94 3.43c.97.57 1.57 1.6 1.57 2.73Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 16.2h.01" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
