@@ -68,6 +68,7 @@ export default function HomePage() {
   const handlePaySubscription = () => {
     if (!payUrl) return
     localStorage.setItem('sub:payPending', '1')
+    localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
     if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
     else window.open(payUrl, '_blank')
   }

@@ -17,6 +17,7 @@ import AboutMePage from '@/pages/AboutMePage'
 import AddressEditPage from '@/pages/AddressEditPage'
 import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage'
+import SubscriptionFailedPage from '@/pages/SubscriptionFailedPage'
 import SettingsPage from '@/pages/SettingsPage'
 import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
@@ -155,6 +156,9 @@ function MasterApp() {
   // Только что оплатил (флаг sub:payPending выставлен при открытии hosted-формы) и
   // статус стал ACTIVE → экран «Подписка оформлена!» (макет 10256-55423).
   const [paidJustNow, setPaidJustNow] = useState(false)
+  // Оплата не прошла (статус не ACTIVE, появилась новая ошибка списания) →
+  // экран «Оплата не прошла» (макет 10256-55004).
+  const [payFailed, setPayFailed] = useState(false)
 
   useEffect(() => {
     init()
@@ -170,9 +174,18 @@ function MasterApp() {
       subscriptionApi.getMe()
         .then((s) => {
           setSubBlocked(s?.status === 'BLOCKED')
-          if (s?.status === 'ACTIVE' && localStorage.getItem('sub:payPending')) {
-            localStorage.removeItem('sub:payPending')
-            setPaidJustNow(true)
+          if (localStorage.getItem('sub:payPending')) {
+            if (s?.status === 'ACTIVE') {
+              // Успех: подписка оформлена.
+              localStorage.removeItem('sub:payPending')
+              localStorage.removeItem('sub:preErr')
+              setPaidJustNow(true)
+            } else if (s?.lastChargeError && s.lastChargeError !== (localStorage.getItem('sub:preErr') ?? '')) {
+              // Неуспех: не ACTIVE и появилась новая ошибка списания (не старая из GRACE).
+              localStorage.removeItem('sub:payPending')
+              localStorage.removeItem('sub:preErr')
+              setPayFailed(true)
+            }
           }
         })
         .catch(() => {})
@@ -209,6 +222,16 @@ function MasterApp() {
     return (
       <SubscriptionSuccessPage
         onGoProfile={() => { window.location.hash = '#/profile'; setPaidJustNow(false) }}
+      />
+    )
+  }
+
+  // Неуспех оплаты (макет 10256-55004). «Повторить оплату» открывает экран «Подписка».
+  if (!needsOnboarding && payFailed) {
+    return (
+      <SubscriptionFailedPage
+        onRetry={() => { window.location.hash = '#/subscription'; setPayFailed(false) }}
+        onBack={() => setPayFailed(false)}
       />
     )
   }

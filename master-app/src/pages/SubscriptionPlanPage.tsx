@@ -62,8 +62,10 @@ export default function SubscriptionPlanPage() {
   const handleConnect = () => {
     const url = payUrls[period]
     if (!url) return
-    // Флаг «оплата открыта» → при возврате в ACTIVE покажем «Подписка оформлена!».
+    // Флаг «оплата открыта» → при возврате: ACTIVE → «Подписка оформлена!»,
+    // новая ошибка списания → «Оплата не прошла». preErr — чтобы не спутать со старой.
     localStorage.setItem('sub:payPending', '1')
+    localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
     navigate('/', { replace: true })
