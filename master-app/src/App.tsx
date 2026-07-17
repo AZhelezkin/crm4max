@@ -24,7 +24,6 @@ import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 import MapTestPage from '@/pages/MapTestPage'
-import BlockedSubscriptionPage from '@/pages/BlockedSubscriptionPage'
 import { subscriptionApi } from '@/api/subscription.api'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
@@ -194,9 +193,16 @@ function MasterApp() {
   // (профиль/расписание/услуги/клиент уже заведены пример-данными на бэке).
   const needsOnboarding = !master || !master.isOnboarded
 
-  // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера).
+  // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера)
+  // экраном «Подписка» (макет 10256-55751: «пробный период закончился» + выбор периода).
+  // Router нужен для useNavigate внутри страницы; после оплаты re-check по
+  // visibilitychange/focus снимет блокировку и вернёт кабинет.
   if (!needsOnboarding && subBlocked) {
-    return <BlockedSubscriptionPage />
+    return (
+      <BrowserRouter>
+        <SubscriptionPlanPage />
+      </BrowserRouter>
+    )
   }
 
   return (
