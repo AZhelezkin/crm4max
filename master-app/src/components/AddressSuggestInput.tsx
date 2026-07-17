@@ -1,5 +1,6 @@
 import { text } from '@/styles/typography'
 import { useEffect, useRef, useState } from 'react'
+import Skeleton from '@/components/Skeleton'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const GEOCODE_URL = 'https://geocode-maps.yandex.ru/1.x/'
@@ -112,6 +113,8 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   const [inputValue, setInputValue] = useState(() => shortenAddress(value))
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [suggestEnabled, setSuggestEnabled] = useState(false)
+  // Загрузка подсказок: пока true — в выдаче шиммер-строки (макет 10216-63620).
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const [mapFailed, setMapFailed] = useState(false)
 
@@ -221,8 +224,10 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     const text = inputValue.trim()
-    if (!text || !API_KEY || !suggestEnabled) { setSuggestions([]); return }
+    if (!text || !API_KEY || !suggestEnabled) { setSuggestions([]); setSuggestLoading(false); return }
 
+    // Пока печатает/ждём ответ — шиммер (не мигаем «не найдено» до загрузки).
+    setSuggestLoading(true)
     debounceRef.current = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
@@ -238,7 +243,9 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             subtitle: r.subtitle?.text ?? '',
           }))
         )
-      } catch { /* ignore */ }
+      } catch { /* ignore */ } finally {
+        setSuggestLoading(false)
+      }
     }, 300)
   }, [inputValue, suggestEnabled])
 
@@ -380,7 +387,8 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             }}
             placeholder="Найти адрес"
             style={{
-              ...text.body,
+              // Figma «Input 1» 18/24/400.
+              fontSize: 18, lineHeight: '24px', fontWeight: 400, fontFamily: 'inherit',
               flex: 1,
               minWidth: 0,
               border: 'none',
@@ -417,9 +425,10 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
         </div>
       </div>
 
-      {/* Выдача результатов — плавающая карточка (макет 8794:64793): surface, rx20,
-          двойная тень. Обёртка пропускает клики на карту, активна сама карточка. */}
-      {(suggestions.length > 0 || (inputValue.trim() && suggestEnabled)) && (
+      {/* Выдача результатов — плавающая карточка (макеты 10216-63620/63625/63629):
+          surface rx20 + двойная тень, px24/py16; строки py10 gap10 с разделителями.
+          Пока грузим — шиммер-строки; пусто после загрузки — «Адрес не найден». */}
+      {inputValue.trim() && suggestEnabled && (
         <div style={{
           position: 'relative', zIndex: 3,
           padding: '8px 12px 0',
@@ -430,40 +439,58 @@ export default function AddressSuggestInput({ value, onChange, onGeocode, confir
             background: 'var(--color-surface)',
             borderRadius: 20,
             boxShadow: '0 4px 4px -4px rgba(12,12,13,0.05), 0 16px 32px -4px rgba(12,12,13,0.10)',
-            overflow: 'hidden',
+            padding: '16px 24px',
           }}>
-            {suggestions.map((s, i) => (
-              <button
-                key={i}
-                onMouseDown={(e) => { e.preventDefault(); handleSelect(s) }}
-                onClick={() => handleSelect(s)}
-                style={{
-                  width: '100%', background: 'transparent', border: 'none',
-                  padding: '14px 20px', textAlign: 'left', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 12,
-                }}
-              >
-                <LocationIcon />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    ...text.bodyMedium, color: 'var(--color-on-surface)',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>{s.title}</div>
-                  {s.subtitle && (
-                    <div style={{
-                      ...text.footnote, color: 'var(--color-on-surface-secondary)', marginTop: 2,
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>{s.subtitle}</div>
-                  )}
+            {suggestLoading ? (
+              // Шиммер-строки загрузки (макет 10216-63620): иконка 24 rx10 + строка h17 + строка h13 w81.
+              [0, 1, 2].map((i) => (
+                <div key={i}>
+                  {i > 0 && <SuggestDivider />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+                    <Skeleton width={24} height={24} radius={10} />
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Skeleton width="100%" height={17} radius={9} />
+                      <Skeleton width={81} height={13} radius={9} />
+                    </div>
+                  </div>
                 </div>
-              </button>
-            ))}
-            {suggestions.length === 0 && inputValue.trim() && suggestEnabled && (
-              <div style={{
-                padding: '18px 20px', textAlign: 'center',
-                color: 'var(--color-on-surface-secondary)', ...text.action,
-              }}>
-                Ничего не найдено
+              ))
+            ) : suggestions.length > 0 ? (
+              suggestions.map((s, i) => (
+                <div key={i}>
+                  {i > 0 && <SuggestDivider />}
+                  <button
+                    onMouseDown={(e) => { e.preventDefault(); handleSelect(s) }}
+                    onClick={() => handleSelect(s)}
+                    style={{
+                      width: '100%', background: 'transparent', border: 'none',
+                      padding: '10px 0', textAlign: 'left', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      color: 'var(--color-interactive-element-accented)',
+                    }}
+                  >
+                    <LocationIcon />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        ...text.callout1,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>{s.title}</div>
+                      {s.subtitle && (
+                        // Figma «label 1» 13/16/400 ls 0.13 — город/страна под адресом.
+                        <div style={{
+                          fontSize: 13, lineHeight: '16px', fontWeight: 400, letterSpacing: 0.13,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>{s.subtitle}</div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              ))
+            ) : (
+              // «Адрес не найден» (макет 10216-63629): пин-крест + Callout1.
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', color: 'var(--color-interactive-element-accented)' }}>
+                <LocationCrossIcon />
+                <span style={{ ...text.callout1 }}>Адрес не найден</span>
               </div>
             )}
           </div>
@@ -503,12 +530,31 @@ function ClearIcon() {
   )
 }
 
-function LocationIcon() {
-  // Контурный пин (макет 8794:64793, stroke #CECFD1 = on-surface-soften)
+// Разделитель строк выдачи: 8px-полоса с hairline по центру (макет divider).
+function SuggestDivider() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--color-on-surface-soften)' }}>
+    <div style={{ height: 8, display: 'flex', alignItems: 'center' }}>
+      <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+    </div>
+  )
+}
+
+function LocationIcon() {
+  // Контурный пин (наследует цвет строки — interactive-element-accented в выдаче).
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
       <path d="M12 13.43C13.7231 13.43 15.12 12.0331 15.12 10.31C15.12 8.58687 13.7231 7.19 12 7.19C10.2769 7.19 8.88 8.58687 8.88 10.31C8.88 12.0331 10.2769 13.43 12 13.43Z" stroke="currentColor" strokeWidth="2" />
       <path d="M3.62 8.49C5.59 -0.17 18.42 -0.16 20.38 8.5C21.53 13.58 18.37 17.88 15.6 20.54C13.59 22.48 10.41 22.48 8.39 20.54C5.63 17.88 2.47 13.57 3.62 8.49Z" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  )
+}
+
+// vuesax/linear/location-cross — пин с крестиком, «Адрес не найден» (макет 10216-63629).
+function LocationCrossIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M3.62 8.49C5.59 -0.17 18.42 -0.16 20.38 8.5C21.53 13.58 18.37 17.88 15.6 20.54C13.59 22.48 10.41 22.48 8.39 20.54C5.63 17.88 2.47 13.57 3.62 8.49Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M9.5 8L14.5 13M14.5 8L9.5 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
