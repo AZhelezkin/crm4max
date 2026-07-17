@@ -49,6 +49,7 @@ textarea::placeholder {
 
   /* Primary */
   --color-primary-surface:        #409BFE;
+  --color-selected-surface:       #005BBF;
   --color-on-primary-surface:     #FFFFFF;
 
   /* Secondary */
@@ -150,6 +151,7 @@ textarea::placeholder {
   --color-on-surface-muted:       #9E9FA1;
 
   --color-primary-surface:        #007AFE;
+  --color-selected-surface:       #80BCFF;
   --color-on-primary-surface:     #FFFFFF;
 
   --color-secondary-surface:        #D7D8E0;

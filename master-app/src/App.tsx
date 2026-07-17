@@ -15,6 +15,7 @@ import PaymentsDayPage from '@/pages/PaymentsDayPage'
 import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import AddressEditPage from '@/pages/AddressEditPage'
+import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
 import SettingsPage from '@/pages/SettingsPage'
 import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
@@ -225,6 +226,7 @@ function MasterApp() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/address" element={<AddressEditPage />} />
+          <Route path="/subscription" element={<SubscriptionPlanPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/income/:date" element={<PaymentsDayPage />} />

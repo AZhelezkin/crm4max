@@ -113,20 +113,18 @@ const SLIDE_H = 381
 export default function WelcomePage() {
   const navigate = useNavigate()
   const setMaster = useAuthStore((s) => s.setMaster)
-  // 'main' — экран активации (sloto + слайдер + paywall); 'success' — после «оплаты».
-  const [mode, setMode] = useState<'main' | 'success'>('main')
   const [finishing, setFinishing] = useState(false)
 
-  // Кабинет уже заполнен пример-данными на бэке — завершаем онбординг и уходим в кабинет
-  // (профиль/расписание/услуги мастер сам не вводит).
-  const handleFinish = async () => {
+  // Кабинет уже заполнен пример-данными на бэке — после привязки карты завершаем
+  // онбординг и ведём на экран «Подписка» (макет 10256-54945): дни триала + выбор периода.
+  const finishToSubscription = async () => {
     if (finishing) return
     setFinishing(true)
     try {
       await mastersApi.updateProfile({ isOnboarded: true })
       const master = await mastersApi.getMe()
       setMaster(master)
-      navigate('/', { replace: true })
+      navigate('/subscription', { replace: true })
     } catch {
       setFinishing(false)
     }
@@ -137,33 +135,17 @@ export default function WelcomePage() {
   // по тапу открываем уже готовый URL. Триал стартует на бэке при /trial.
   const [trialUrl, setTrialUrl] = useState<string | null>(null)
   useEffect(() => {
-    if (mode !== 'main' || trialUrl) return
+    if (trialUrl) return
     subscriptionApi.startTrial().then((r) => setTrialUrl(r.paymentURL)).catch(() => {})
-  }, [mode, trialUrl])
+  }, [trialUrl])
 
   const handleTrial = () => {
     if (trialUrl) {
       if (window.WebApp?.openLink) window.WebApp.openLink(trialUrl)
       else window.open(trialUrl, '_blank')
     }
-    setMode('success')
-  }
-
-  // ── «Подписка оплачена» — одобрение привязки карты; кабинет уже заполнен ──
-  if (mode === 'success') {
-    return (
-      <FlatLayout>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
-          <img src={illustrationCheck} alt="" style={{ width: 300, height: 300, display: 'block' }} />
-          <TextBlock title="Подписка оплачена" subtitle={'Кабинет уже готов с примером услуги,\nклиента и расписания'} />
-        </div>
-        <div style={{ flex: 1 }} />
-        <div style={{ padding: '0 16px', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
-          <PrimaryButton onClick={() => { void handleFinish() }}>{finishing ? 'Открываем…' : 'Перейти в кабинет'}</PrimaryButton>
-        </div>
-      </FlatLayout>
-    )
+    // Дальше — экран «Подписка» (дни триала + выбор периода), макет 10256-54945.
+    void finishToSubscription()
   }
 
   // ── Экран активации ──

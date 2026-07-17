@@ -5,6 +5,7 @@
   "surface":                  { "$type": "color", "$value": "#262729" },
   "surfaceTransparent":       { "$type": "color", "$value": "rgba(242, 243, 245, 0.10)" },
   "background":               { "$type": "color", "$value": "#17181C" },
+  "selectedSurface":          { "$type": "color", "$value": "#005BBF" },
 
   "onSurface":                { "$type": "color", "$value": "#FFFFFF" },
   "onSurfaceInverted":        { "$type": "color", "$value": "#0E0F11" },

@@ -19,6 +19,8 @@ type SemanticTheme = {
   onSurfaceSecondary: string
   onSurfaceMuted: string
   primarySurface: string
+  /** Обводка выбранной карточки (план подписки и т.п.) */
+  selectedSurface: string
   onPrimarySurface: string
   secondarySurface: string
   secondarySurfaceMuted: string
@@ -80,6 +82,7 @@ export const darkTheme: SemanticTheme = {
 
   // Primary
   primarySurface:        '#409BFE',                       // blue35
+  selectedSurface:       '#005BBF',                       // blue65
   onPrimarySurface:      '#FFFFFF',                       // black00
 
   // Secondary
@@ -158,6 +161,7 @@ export const lightTheme: SemanticTheme = {
   onSurfaceMuted:        '#9E9FA1',
 
   primarySurface:        '#007AFE',
+  selectedSurface:       '#80BCFF',                       // blue20
   onPrimarySurface:      '#FFFFFF',
 
   secondarySurface:      '#D7D8E0',

@@ -22,6 +22,12 @@ export const text = {
   /** 22 / 26 / 700 letterSpacing -0.66px — Figma «H3», заголовок-дата в тулбаре «Расписания». */
   h3:             { fontSize: 22, lineHeight: '26px', fontWeight: 700, letterSpacing: -0.66 },
 
+  /** 20 / 24 / 700 letterSpacing -0.4px — Figma «H4», заголовок секции (экран подписки). */
+  h4:             { fontSize: 20, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.4 },
+
+  /** 19 / 26 / 600 letterSpacing -0.19px — Figma «Body 1», крупный текст-пункт (экран подписки). */
+  body1:          { fontSize: 19, lineHeight: '26px', fontWeight: 600, letterSpacing: -0.19 },
+
   /** 24 / 30 / 700 — заголовок страницы. */
   title:          { fontSize: 24, lineHeight: '30px', fontWeight: 700 },
 
