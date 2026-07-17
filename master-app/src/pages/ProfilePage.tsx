@@ -97,6 +97,7 @@ export default function ProfilePage() {
   }, [subState, payUrl])
   const handlePaySubscription = () => {
     if (!payUrl) return
+    localStorage.setItem('sub:payPending', '1')
     if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
     else window.open(payUrl, '_blank')
   }

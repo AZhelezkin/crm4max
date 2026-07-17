@@ -16,6 +16,7 @@ import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import AddressEditPage from '@/pages/AddressEditPage'
 import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
+import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage'
 import SettingsPage from '@/pages/SettingsPage'
 import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
@@ -151,6 +152,9 @@ function MasterApp() {
   // экраном «Оформить подписку». Проверяем только у онбордингованного мастера —
   // новый идёт через триал, у него статус TRIALING.
   const [subBlocked, setSubBlocked] = useState(false)
+  // Только что оплатил (флаг sub:payPending выставлен при открытии hosted-формы) и
+  // статус стал ACTIVE → экран «Подписка оформлена!» (макет 10256-55423).
+  const [paidJustNow, setPaidJustNow] = useState(false)
 
   useEffect(() => {
     init()
@@ -164,7 +168,13 @@ function MasterApp() {
     // приостановлен» завис бы, хотя подписка уже ACTIVE.
     const check = () => {
       subscriptionApi.getMe()
-        .then((s) => setSubBlocked(s?.status === 'BLOCKED'))
+        .then((s) => {
+          setSubBlocked(s?.status === 'BLOCKED')
+          if (s?.status === 'ACTIVE' && localStorage.getItem('sub:payPending')) {
+            localStorage.removeItem('sub:payPending')
+            setPaidJustNow(true)
+          }
+        })
         .catch(() => {})
     }
     check()
@@ -192,6 +202,16 @@ function MasterApp() {
   // Онбординг сведён к велком-экрану: привязка карты → одобрение → кабинет
   // (профиль/расписание/услуги/клиент уже заведены пример-данными на бэке).
   const needsOnboarding = !master || !master.isOnboarded
+
+  // Успех оплаты (макет 10256-55423) — поверх кабинета, до гейта блокировки.
+  // «Перейти в профиль» ставит hash и закрывает экран → основной роутер откроет профиль.
+  if (!needsOnboarding && paidJustNow) {
+    return (
+      <SubscriptionSuccessPage
+        onGoProfile={() => { window.location.hash = '#/profile'; setPaidJustNow(false) }}
+      />
+    )
+  }
 
   // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера)
   // экраном «Подписка» (макет 10256-55751: «пробный период закончился» + выбор периода).

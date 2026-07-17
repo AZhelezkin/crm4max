@@ -62,6 +62,8 @@ export default function SubscriptionPlanPage() {
   const handleConnect = () => {
     const url = payUrls[period]
     if (!url) return
+    // Флаг «оплата открыта» → при возврате в ACTIVE покажем «Подписка оформлена!».
+    localStorage.setItem('sub:payPending', '1')
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
     navigate('/', { replace: true })
