@@ -19,6 +19,7 @@ export default function AboutMePage() {
   const [phoneError, setPhoneError]   = useState<string | null>(null)
   const [description, setDescription] = useState(master?.description ?? '')
   const [location, setLocation]       = useState(master?.location ?? '')
+  const [locationNote, setLocationNote] = useState(master?.locationNote ?? '')
   const [homeVisit, setHomeVisit]     = useState(master?.homeVisit ?? false)
   const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null)
   const [saving, setSaving]           = useState(false)
@@ -81,6 +82,7 @@ export default function AboutMePage() {
         phone: phone || null,
         description,
         location,
+        locationNote: locationNote || null,
         homeVisit,
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
         photo: photoUrl,
@@ -101,6 +103,7 @@ export default function AboutMePage() {
         phone={phone} phoneError={phoneError} onPhoneChange={handlePhoneChange}
         description={description} setDescription={setDescription}
         location={location}
+        locationNote={locationNote} setLocationNote={setLocationNote}
         homeVisit={homeVisit} setHomeVisit={setHomeVisit}
         photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
         setPhotoUrl={setPhotoUrl}

@@ -708,6 +708,10 @@ export interface Step0Props {
   description: string
   setDescription: (v: string) => void
   location: string
+  /** Заметка к адресу (как пройти/вход). Необязательна — если не передать setLocationNote,
+   *  поле заметки не рендерится (совместимо со старым онбордингом). */
+  locationNote?: string
+  setLocationNote?: (v: string) => void
   homeVisit: boolean
   setHomeVisit: (v: boolean) => void
   photoPreview: string | null
@@ -730,7 +734,7 @@ export function Step0Form(props: Step0Props) {
     name, setName,
     phone, phoneError, onPhoneChange,
     description, setDescription,
-    location,
+    location, locationNote, setLocationNote,
     homeVisit, setHomeVisit,
     photoPreview, photoUploading, photoInputRef, onPhotoChange,
     onAddressClick, onBack, footer,
@@ -913,11 +917,20 @@ export function Step0Form(props: Step0Props) {
             )}
           </div>
 
-          {/* Address widget: сегмент + (опционально) поле адреса */}
+          {/* Address widget: сегмент + (опционально) поле адреса + заметка */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
             <ServiceModeSegment value={homeVisit} onChange={setHomeVisit} />
             {!homeVisit && (
               <AddressButton location={location} onClick={onAddressClick} />
+            )}
+            {!homeVisit && setLocationNote && (
+              <FloatingField
+                multiline
+                label="Как пройти (вход, звонок)"
+                value={locationNote ?? ''}
+                onChange={(v) => setLocationNote(v.slice(0, 300))}
+                maxLength={300}
+              />
             )}
           </div>
         </div>

@@ -282,6 +282,34 @@ export default function HomePage() {
             )}
           </div>
         </div>
+
+        {/* Адрес, где оказывается услуга (макет 10213-39782) */}
+        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
+            <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес, где оказывается услуга</span>
+            <EditButton onClick={() => navigate('/about')} />
+          </div>
+          {master.location ? (
+            <>
+              {/* Адрес: иконка-локация + текст (px12 pt4 pb12, gap10) */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 12px 12px' }}>
+                <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
+                <span style={{ flex: 1, minWidth: 0, ...text.caption1, color: 'var(--color-on-secondary-surface)' }}>{master.location}</span>
+              </div>
+              {master.locationNote && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, borderTop: '1px solid var(--color-secondary-surface-muted)' }}>
+                  <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><MessageTextIcon /></span>
+                  <span style={{ flex: 1, minWidth: 0, ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}>{master.locationNote}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <button type="button" onClick={() => navigate('/about')} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 12px 12px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
+              <span style={{ ...text.caption1, color: 'var(--color-primary-surface)' }}>Добавить адрес</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -324,6 +352,26 @@ function AddCircleIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/location (24×24).
+function LocationIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 13.43a3.12 3.12 0 1 0 0-6.24 3.12 3.12 0 0 0 0 6.24Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 0 1-7.21 0c-2.77-2.66-5.93-6.97-4.77-12.05Z" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+// vuesax/linear/message-text (24×24).
+function MessageTextIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 8h10M7 13h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

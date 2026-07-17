@@ -6,6 +6,8 @@ export interface Master {
   contacts: string | null
   phone: string | null
   location: string | null
+  /** Заметка к адресу (как пройти/вход) — виджет адреса на главной. */
+  locationNote: string | null
   lat: number | null
   lng: number | null
   rating: number

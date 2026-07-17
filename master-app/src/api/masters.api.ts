@@ -8,7 +8,7 @@ export const mastersApi = {
   getReviews: (masterId: string) =>
     api.get<{ reviews: Review[] }>(`/masters/${masterId}`).then((r) => r.data.reviews),
 
-  updateProfile: (data: Partial<Pick<Master, 'name' | 'photo' | 'description' | 'contacts' | 'phone' | 'location' | 'lat' | 'lng' | 'homeVisit' | 'isOnboarded'>>) =>
+  updateProfile: (data: Partial<Pick<Master, 'name' | 'photo' | 'description' | 'contacts' | 'phone' | 'location' | 'locationNote' | 'lat' | 'lng' | 'homeVisit' | 'isOnboarded'>>) =>
     api.put<Master>('/masters/me', data).then((r) => r.data),
 
   updatePayment: (data: { cardNumber?: string; vkPayLinked?: boolean }) =>
