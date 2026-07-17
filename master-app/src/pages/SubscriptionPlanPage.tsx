@@ -40,6 +40,8 @@ export default function SubscriptionPlanPage() {
   const [step, setStep] = useState<'plan' | 'consents'>('plan')
   const [offerAccepted, setOfferAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  // «Подключить» без согласий: подсветить невыбранные чекбоксы ошибкой (макет 10261-56252).
+  const [consentError, setConsentError] = useState(false)
   // paymentURL префетчим по выбранному периоду: openLink требует синхронного
   // user-gesture (await его рвёт), поэтому по тапу открываем уже готовый URL.
   const [payUrls, setPayUrls] = useState<Partial<Record<Period, string>>>({})
@@ -65,9 +67,13 @@ export default function SubscriptionPlanPage() {
     navigate('/', { replace: true })
   }
 
-  // ── Шаг «Согласия» (макет 10261-55965) ──
+  // ── Шаг «Согласия» (макеты 10261-55965 / 10261-56252) ──
   if (step === 'consents') {
-    const canPay = offerAccepted && privacyAccepted && !!payUrls[period]
+    // «Подключить» всегда активна: без согласий подсвечиваем невыбранные чекбоксы ошибкой.
+    const handleConsentConnect = () => {
+      if (!offerAccepted || !privacyAccepted) { setConsentError(true); return }
+      handleConnect()
+    }
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <HeroHeader title="Подписка" onBack={() => setStep('plan')} />
@@ -79,6 +85,7 @@ export default function SubscriptionPlanPage() {
               title="Оферта"
               label={'Я принимаю условия\nПубличной оферты'}
               checked={offerAccepted}
+              error={consentError && !offerAccepted}
               onToggle={() => setOfferAccepted((v) => !v)}
               onRead={() => openDoc(OFFER_URL)}
             />
@@ -86,6 +93,7 @@ export default function SubscriptionPlanPage() {
               title="Персональные данные"
               label="Я даю согласие на обработку персональных данных"
               checked={privacyAccepted}
+              error={consentError && !privacyAccepted}
               onToggle={() => setPrivacyAccepted((v) => !v)}
               onRead={() => openDoc(PRIVACY_URL)}
             />
@@ -95,14 +103,13 @@ export default function SubscriptionPlanPage() {
         <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
           <button
             type="button"
-            disabled={!canPay}
-            onClick={handleConnect}
+            onClick={handleConsentConnect}
             style={{
               width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
               display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
-              cursor: canPay ? 'pointer' : 'default',
-              background: canPay ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
-              color: canPay ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
+              cursor: 'pointer',
+              background: 'var(--color-primary-surface)',
+              color: 'var(--color-on-primary-surface)',
             }}
           >
             Подключить
@@ -242,14 +249,25 @@ function PlanCard({ selected, onSelect, title, children }: {
   )
 }
 
-// Радио 44: выключено — кольцо; включено — синий круг с белой галкой.
-function Radio44({ checked }: { checked: boolean }) {
-  return checked ? (
-    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="22" cy="22" r="16" fill="var(--color-primary-surface)" />
-      <path d="M15.5 22.3L20 26.8L28.5 17.9" stroke="var(--color-on-primary-surface)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ) : (
+// Радио 44: выключено — кольцо; включено — синий круг с белой галкой;
+// error (обязательное согласие не отмечено, макет 10261-56252) — красная подсветка.
+function Radio44({ checked, error }: { checked: boolean; error?: boolean }) {
+  if (checked) {
+    return (
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="22" cy="22" r="16" fill="var(--color-primary-surface)" />
+        <path d="M15.5 22.3L20 26.8L28.5 17.9" stroke="var(--color-on-primary-surface)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (error) {
+    return (
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="22" cy="22" r="15.25" fill="var(--color-error-surface-lite)" stroke="var(--color-error-element-muted)" strokeWidth="1.5" />
+      </svg>
+    )
+  }
+  return (
     <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
       <circle cx="22" cy="22" r="15.25" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
     </svg>
@@ -258,10 +276,12 @@ function Radio44({ checked }: { checked: boolean }) {
 
 // Карточка согласия (макет 10261-55965): заголовок по центру + чекбокс с текстом +
 // центрированная ссылка «Прочитать». surface-transparent rounded-20 Card Soft.
-function ConsentCard({ title, label, checked, onToggle, onRead }: {
+function ConsentCard({ title, label, checked, error, onToggle, onRead }: {
   title: string
   label: string
   checked: boolean
+  /** Подсветка обязательности (макет 10261-56252): тап «Подключить» без согласия. */
+  error?: boolean
   onToggle: () => void
   onRead: () => void
 }) {
@@ -279,7 +299,7 @@ function ConsentCard({ title, label, checked, onToggle, onRead }: {
           borderBottom: '1px solid var(--color-secondary-surface-muted)',
         }}
       >
-        <Radio44 checked={checked} />
+        <Radio44 checked={checked} error={error} />
         <span style={{ ...text.body2, color: 'var(--color-on-surface)', flex: 1, minWidth: 0, whiteSpace: 'pre-wrap' }}>{label}</span>
       </button>
       <button
