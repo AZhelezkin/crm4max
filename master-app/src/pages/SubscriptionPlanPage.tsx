@@ -17,6 +17,16 @@ const DIGIT_GRADIENT = 'linear-gradient(180deg, #62ADFF 0%, #84A2FB 25%, #A697F8
 // «Пробный период закончился» (макет 10256-55751): серый градиент «0» (EDF6FF → D3D7DC → B9B9B9).
 const DIGIT_GRADIENT_EXPIRED = 'linear-gradient(180deg, #EDF6FF 0%, #D3D7DC 50%, #B9B9B9 100%)'
 
+// Документы для шага «Согласия» (макет 10261-55965). TODO: подставить реальные URL.
+const OFFER_URL = ''
+const PRIVACY_URL = ''
+
+function openDoc(url: string) {
+  if (!url) return
+  if (window.WebApp?.openLink) window.WebApp.openLink(url)
+  else window.open(url, '_blank')
+}
+
 function daysLeft(iso: string | null): number {
   if (!iso) return 0
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
@@ -26,6 +36,10 @@ export default function SubscriptionPlanPage() {
   const navigate = useNavigate()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   const [period, setPeriod] = useState<Period>('YEAR')
+  // Шаг «Согласия» (макет 10261-55965) — между выбором периода и оплатой.
+  const [step, setStep] = useState<'plan' | 'consents'>('plan')
+  const [offerAccepted, setOfferAccepted] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
   // paymentURL префетчим по выбранному периоду: openLink требует синхронного
   // user-gesture (await его рвёт), поэтому по тапу открываем уже готовый URL.
   const [payUrls, setPayUrls] = useState<Partial<Record<Period, string>>>({})
@@ -49,6 +63,53 @@ export default function SubscriptionPlanPage() {
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
     navigate('/', { replace: true })
+  }
+
+  // ── Шаг «Согласия» (макет 10261-55965) ──
+  if (step === 'consents') {
+    const canPay = offerAccepted && privacyAccepted && !!payUrls[period]
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <HeroHeader title="Подписка" onBack={() => setStep('plan')} />
+
+        <div style={{ flex: 1, padding: '40px 16px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <span style={{ ...text.h4, color: 'var(--color-on-surface)', textAlign: 'center' }}>Необходимые согласия</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            <ConsentCard
+              title="Оферта"
+              label={'Я принимаю условия\nПубличной оферты'}
+              checked={offerAccepted}
+              onToggle={() => setOfferAccepted((v) => !v)}
+              onRead={() => openDoc(OFFER_URL)}
+            />
+            <ConsentCard
+              title="Персональные данные"
+              label="Я даю согласие на обработку персональных данных"
+              checked={privacyAccepted}
+              onToggle={() => setPrivacyAccepted((v) => !v)}
+              onRead={() => openDoc(PRIVACY_URL)}
+            />
+          </div>
+        </div>
+
+        <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
+          <button
+            type="button"
+            disabled={!canPay}
+            onClick={handleConnect}
+            style={{
+              width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
+              cursor: canPay ? 'pointer' : 'default',
+              background: canPay ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
+              color: canPay ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
+            }}
+          >
+            Подключить
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -112,17 +173,16 @@ export default function SubscriptionPlanPage() {
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
         <button
           type="button"
-          disabled={!payUrls[period]}
-          onClick={handleConnect}
+          onClick={() => setStep('consents')}
           style={{
             width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
             display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
-            cursor: payUrls[period] ? 'pointer' : 'default',
-            background: payUrls[period] ? 'var(--color-primary-surface)' : 'var(--color-secondary-surface-muted)',
-            color: payUrls[period] ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
+            cursor: 'pointer',
+            background: 'var(--color-primary-surface)',
+            color: 'var(--color-on-primary-surface)',
           }}
         >
-          {/* «Далее» — вариант закончившегося триала (макет 10256-55751); действие то же — оплата. */}
+          {/* «Далее» — вариант закончившегося триала (макет 10256-55751); дальше — шаг согласий. */}
           {sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
         </button>
       </div>
@@ -193,6 +253,43 @@ function Radio44({ checked }: { checked: boolean }) {
     <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
       <circle cx="22" cy="22" r="15.25" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
     </svg>
+  )
+}
+
+// Карточка согласия (макет 10261-55965): заголовок по центру + чекбокс с текстом +
+// центрированная ссылка «Прочитать». surface-transparent rounded-20 Card Soft.
+function ConsentCard({ title, label, checked, onToggle, onRead }: {
+  title: string
+  label: string
+  checked: boolean
+  onToggle: () => void
+  onRead: () => void
+}) {
+  return (
+    <div style={{ width: '100%', background: 'var(--color-surface-transparent)', borderRadius: 20, boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+        <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 16, padding: 16, width: '100%',
+          background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+          borderBottom: '1px solid var(--color-secondary-surface-muted)',
+        }}
+      >
+        <Radio44 checked={checked} />
+        <span style={{ ...text.body2, color: 'var(--color-on-surface)', flex: 1, minWidth: 0, whiteSpace: 'pre-wrap' }}>{label}</span>
+      </button>
+      <button
+        type="button"
+        onClick={onRead}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, width: '100%', background: 'none', border: 'none', cursor: 'pointer' }}
+      >
+        <span style={{ ...text.body2, color: 'var(--color-primary-surface)' }}>Прочитать</span>
+      </button>
+    </div>
   )
 }
 
