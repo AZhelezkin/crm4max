@@ -14,6 +14,8 @@ type Period = 'MONTH' | 'YEAR'
 // Градиент цифры (макет: radial 62ADFF → 84A2FB → A697F8 → EB80F0) — линейная
 // аппроксимация для background-clip: text.
 const DIGIT_GRADIENT = 'linear-gradient(180deg, #62ADFF 0%, #84A2FB 25%, #A697F8 50%, #EB80F0 100%)'
+// «Пробный период закончился» (макет 10256-55751): серый градиент «0» (EDF6FF → D3D7DC → B9B9B9).
+const DIGIT_GRADIENT_EXPIRED = 'linear-gradient(180deg, #EDF6FF 0%, #D3D7DC 50%, #B9B9B9 100%)'
 
 function daysLeft(iso: string | null): number {
   if (!iso) return 0
@@ -57,7 +59,7 @@ export default function SubscriptionPlanPage() {
         {/* Плитка дней триала (макеты 10256-55033…55098) */}
         {sub && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-            <DaysTile value={trialDays} />
+            <DaysTile value={trialDays} expired={trialDays <= 0} />
             <span style={{ ...text.body1, color: 'var(--color-on-surface)', width: 167, whiteSpace: 'pre-wrap' }}>
               {trialDays > 0 ? 'дней пробного\nпериода осталось' : 'пробный период закончился'}
             </span>
@@ -120,7 +122,8 @@ export default function SubscriptionPlanPage() {
             color: payUrls[period] ? 'var(--color-on-primary-surface)' : 'var(--color-interactive-element-muted)',
           }}
         >
-          Подключить
+          {/* «Далее» — вариант закончившегося триала (макет 10256-55751); действие то же — оплата. */}
+          {sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
         </button>
       </div>
     </div>
@@ -128,8 +131,8 @@ export default function SubscriptionPlanPage() {
 }
 
 // Плитка-«перекидной календарь» 71×73 (surface, скруг. 16, Card Soft) с боковыми
-// выемками и градиентной цифрой 64/68 ExtraBold.
-function DaysTile({ value }: { value: number }) {
+// выемками и градиентной цифрой 64/68 ExtraBold. expired → серый градиент «0».
+function DaysTile({ value, expired }: { value: number; expired?: boolean }) {
   return (
     <div style={{ position: 'relative', width: 71, height: 73, flexShrink: 0, filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.1))' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'var(--color-surface)', borderRadius: 16 }} />
@@ -139,7 +142,8 @@ function DaysTile({ value }: { value: number }) {
       <div style={{
         position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 64, lineHeight: '68px', fontWeight: 800,
-        backgroundImage: DIGIT_GRADIENT, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+        backgroundImage: expired ? DIGIT_GRADIENT_EXPIRED : DIGIT_GRADIENT,
+        WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
       }}>
         {value}
       </div>
