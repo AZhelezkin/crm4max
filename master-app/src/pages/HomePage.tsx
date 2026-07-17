@@ -304,10 +304,11 @@ export default function HomePage() {
               )}
             </>
           ) : (
-            <button type="button" onClick={() => navigate('/about')} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 12px 12px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+            /* Дефолт (макет 10220-102836): адрес не указан — та же строка, редактирование карандашом. */
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 12px 12px' }}>
               <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
-              <span style={{ ...text.caption1, color: 'var(--color-primary-surface)' }}>Добавить адрес</span>
-            </button>
+              <span style={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}>Не указан</span>
+            </div>
           )}
         </div>
       </div>
