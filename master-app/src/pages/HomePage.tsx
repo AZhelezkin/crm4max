@@ -57,6 +57,25 @@ export default function HomePage() {
     subscriptionApi.getMe().then(setSub).catch(() => {})
   }, [])
 
+  // GRACE — не удалось списать (макет 10265-59019): peach-тост «Оплатить» на главной.
+  // payUrl префетчим (openLink требует синхронного user-gesture), открываем по тапу.
+  const [payUrl, setPayUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (sub?.status === 'GRACE' && !payUrl) {
+      subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
+    }
+  }, [sub, payUrl])
+  const handlePaySubscription = () => {
+    if (!payUrl) return
+    if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
+    else window.open(payUrl, '_blank')
+  }
+  // Дней до отключения (grace) — «через N дней»; фолбэк 7.
+  const graceDays = (() => {
+    if (!sub?.graceEndsAt) return 7
+    return Math.max(1, Math.ceil((new Date(sub.graceEndsAt).getTime() - Date.now()) / 86_400_000))
+  })()
+
   const today = dayjs().format('YYYY-MM-DD')
   const todayD = dayjs(today)
 
@@ -120,6 +139,32 @@ export default function HomePage() {
 
       {/* ── list: карточки, gap 20, px 16 (Figma 10065:50913) ── */}
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* GRACE — «Не удалось оплатить подписку» (макет 10265-59019): peach-тост + «Оплатить». */}
+        {sub?.status === 'GRACE' && (
+          <button
+            type="button"
+            onClick={handlePaySubscription}
+            style={{
+              width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', gap: 8,
+              padding: '15px 16px', borderRadius: 16,
+              background: 'linear-gradient(214.04deg, var(--color-grad-peach-100) 5.83%, var(--color-grad-peach-0) 90.48%)',
+            }}
+          >
+            <span style={{ display: 'flex', gap: 8, alignItems: 'flex-start', width: '100%' }}>
+              <span style={{ padding: 2, flexShrink: 0, display: 'inline-flex' }}>
+                <SlashIcon />
+              </span>
+              <span style={{ ...text.body2, flex: 1, minWidth: 0, color: 'var(--color-on-surface)' }}>
+                Не удалось оплатить подписку. Через {graceDays === 1 ? 'день' : `${graceDays} ${graceDays >= 2 && graceDays <= 4 ? 'дня' : 'дней'}`} доступ к сервису будет отключен.
+              </span>
+            </span>
+            <span style={{ paddingLeft: 32, width: '100%', ...text.callout1, color: 'var(--color-on-surface)' }}>
+              Оплатить
+            </span>
+          </button>
+        )}
 
         {/* Карточка «Сегодня» */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
@@ -394,6 +439,16 @@ function Warning16() {
       <path d="M12 7.75V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M21.08 8.58v6.84c0 1.12-.6 2.16-1.57 2.73l-5.94 3.43c-.97.56-2.17.56-3.15 0l-5.94-3.43a3.15 3.15 0 0 1-1.57-2.73V8.58c0-1.12.6-2.16 1.57-2.73l5.94-3.43c.97-.56 2.17-.56 3.15 0l5.94 3.43c.97.57 1.57 1.6 1.57 2.73Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 16.2h.01" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/slash — прохибит-кружок с диагональю, тост GRACE (макет 10265-59019).
+function SlashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-on-surface)' }}>
+      <path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4.9 4.93l14.14 14.14" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
