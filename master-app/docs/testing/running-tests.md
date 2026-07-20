@@ -55,6 +55,10 @@ npm run test:e2e -- --grep='destination selector'
 
 Reports are generated under `coverage/`, `playwright-report/` and `test-results/`. These paths are ignored locally. CI retains coverage for seven days and uploads Playwright traces/screenshots only after failure; reports must continue to use synthetic fixtures and must not include provider init data, bearer tokens or PII.
 
+## Manual PR workflow
+
+`Mini App quality (manual, non-blocking)` has no automatic trigger. GitHub user `sld0Ant` starts it from Actions on the `master` workflow ref and supplies the number of an open PR. The workflow checks out `refs/pull/<number>/merge`, then runs Node 20 quality and Chromium jobs as diagnostic, non-blocking checks. Pages deployment runs independently on `master` and never waits for this workflow.
+
 ## Validation layers
 
 - `docs/testing/coverage-matrix.md` maps P0/P1 risks to named tests.

@@ -29,7 +29,7 @@
 - `VITE_BASE_PATH=/crm4max/ VITE_API_URL= npm run build`: passed without live API access
 - `npm run test:e2e`: passed, 20/20 MAX-like mobile Chromium scenarios on Node 20; same-origin assets are constrained to `/crm4max/` and HTTP routing fails closed outside reviewed app/API paths
 - Accessibility: four representative axe states have no serious/critical violations; critical actions accept keyboard focus
-- CI: `.github/workflows/quality.yml` runs clean Node 20 install, typecheck, coverage, build and Chromium; Pages deploy consumes only a successful master-push quality run for the same SHA
+- CI: `.github/workflows/quality.yml` runs only by manual dispatch from GitHub user `sld0Ant` for an explicitly selected open PR; typecheck, coverage, build and Chromium results are diagnostic/non-blocking. Pages deploy runs independently on `master` and does not depend on test outcomes.
 - Native MAX: release-blocked as of 2026-07-19, owner `MAX Mini App release owner`; automated browser doubles are not substituted for device evidence
 - Independent read-only review: `PASS` after strengthening Pages-base asset validation and the AST/provider legacy-JavaScript fence; no Critical/Important findings remain
 - `openspec validate establish-miniapp-platform-extraction-test-baseline --strict`: passed

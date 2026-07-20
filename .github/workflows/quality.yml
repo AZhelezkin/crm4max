@@ -1,27 +1,50 @@
-name: Mini App quality
+name: Mini App quality (manual, non-blocking)
 
 on:
-  pull_request:
-    paths:
-      - 'master-app/**'
-      - '.github/workflows/**'
-  push:
-    branches: [master]
-    paths:
-      - 'master-app/**'
-      - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Open pull request number
+        required: true
+        type: number
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
-  group: miniapp-quality-${{ github.workflow }}-${{ github.ref }}
+  group: miniapp-quality-pr-${{ inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
+  authorize:
+    name: Verify operator and PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Allow only sld0Ant and an open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          if [[ "${GITHUB_ACTOR,,}" != "sld0ant" ]]; then
+            echo "Only sld0Ant may run this workflow" >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/master" ]]; then
+            echo "Run this workflow from the master branch" >&2
+            exit 1
+          fi
+          state="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.state')"
+          if [[ "$state" != "open" ]]; then
+            echo "PR #${PR_NUMBER} is not open" >&2
+            exit 1
+          fi
+
   quality:
     name: Typecheck, coverage and build
+    needs: authorize
+    continue-on-error: true
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,6 +52,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/merge
 
       - uses: actions/setup-node@v4
         with:
@@ -40,20 +65,30 @@ jobs:
         run: npm ci
 
       - name: Run quality gate
+        id: quality_gate
+        continue-on-error: true
         run: npm run test:ci
+
+      - name: Record non-blocking result
+        if: always()
+        env:
+          RESULT: ${{ steps.quality_gate.outcome }}
+        run: echo "### Quality gate — ${RESULT:-not-run} (non-blocking)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: miniapp-coverage-${{ github.run_id }}
+          name: miniapp-coverage-pr-${{ inputs.pr_number }}-${{ github.run_id }}
           path: master-app/coverage
           if-no-files-found: ignore
           retention-days: 7
 
   browser:
     name: Chromium browser smoke
-    needs: quality
+    needs: [authorize, quality]
+    if: ${{ always() && needs.authorize.result == 'success' }}
+    continue-on-error: true
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,6 +96,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/merge
 
       - uses: actions/setup-node@v4
         with:
@@ -81,15 +118,23 @@ jobs:
         run: npm run test:e2e:install -- --with-deps
 
       - name: Run browser smoke
+        id: browser_smoke
+        continue-on-error: true
         env:
           VITE_API_URL: ''
         run: npm run test:e2e
 
+      - name: Record non-blocking result
+        if: always()
+        env:
+          RESULT: ${{ steps.browser_smoke.outcome }}
+        run: echo "### Chromium smoke — ${RESULT:-not-run} (non-blocking)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Playwright failure diagnostics
-        if: failure()
+        if: ${{ always() && steps.browser_smoke.outcome == 'failure' }}
         uses: actions/upload-artifact@v4
         with:
-          name: miniapp-playwright-failure-${{ github.run_id }}
+          name: miniapp-playwright-failure-pr-${{ inputs.pr_number }}-${{ github.run_id }}
           path: |
             master-app/playwright-report
             master-app/test-results

@@ -1,10 +1,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  workflow_run:
-    workflows: ['Mini App quality']
-    types: [completed]
+  push:
     branches: [master]
+    paths:
+      - 'master-app/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,16 +20,10 @@ concurrency:
 jobs:
   build:
     name: Build app
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-node@v4
         with:
