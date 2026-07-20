@@ -6,7 +6,6 @@ on:
     paths:
       - 'master-app/**'
       - '.github/workflows/pages.yml'
-
   workflow_dispatch:
 
 permissions:
@@ -29,6 +28,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: master-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: master-app
+        run: npm ci
 
       - name: Build master-app
         working-directory: master-app
@@ -38,7 +43,7 @@ jobs:
           VITE_YANDEX_SUGGEST_KEY: ${{ secrets.VITE_YANDEX_SUGGEST_KEY }}
           VITE_YANDEX_GEOCODE_KEY: ${{ secrets.VITE_YANDEX_GEOCODE_KEY }}
           VITE_YANDEX_JSMAPS_KEY: ${{ secrets.VITE_YANDEX_JSMAPS_KEY }}
-        run: npm install && npm run build
+        run: npm run build
 
       - uses: actions/configure-pages@v5
 
@@ -58,4 +63,3 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-

@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
 import Button from './Button'
 
 describe('Button', () => {
@@ -8,30 +10,34 @@ describe('Button', () => {
     expect(screen.getByText('Сохранить')).toBeInTheDocument()
   })
 
-  it('вызывает onClick при клике', () => {
+  it('вызывает onClick при клике', async () => {
+    const user = userEvent.setup()
     const onClick = vi.fn()
     render(<Button onClick={onClick}>Нажми</Button>)
-    fireEvent.click(screen.getByText('Нажми'))
+
+    await user.click(screen.getByText('Нажми'))
+
     expect(onClick).toHaveBeenCalledOnce()
   })
 
-  it('не вызывает onClick когда disabled', () => {
+  it('не вызывает onClick когда disabled', async () => {
+    const user = userEvent.setup()
     const onClick = vi.fn()
     render(<Button onClick={onClick} disabled>Нажми</Button>)
-    fireEvent.click(screen.getByText('Нажми'))
+
+    await user.click(screen.getByText('Нажми'))
+
     expect(onClick).not.toHaveBeenCalled()
   })
 
   it('применяет стиль primary по умолчанию', () => {
     render(<Button>Текст</Button>)
-    const btn = screen.getByText('Текст')
-    expect(btn).toHaveStyle({ background: 'var(--color-primary-surface)' })
+    expect(screen.getByText('Текст')).toHaveStyle({ background: 'var(--color-primary-surface)' })
   })
 
   it('применяет стиль danger', () => {
     render(<Button variant="danger">Удалить</Button>)
-    const btn = screen.getByText('Удалить')
-    expect(btn).toHaveStyle({ color: 'var(--color-error-surface-accented)' })
+    expect(screen.getByText('Удалить')).toHaveStyle({ color: 'var(--color-error-surface-accented)' })
   })
 
   it('растягивается на всю ширину при fullWidth', () => {
