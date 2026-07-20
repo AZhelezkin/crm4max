@@ -1,0 +1,442 @@
+import dayjs from 'dayjs'
+import { act, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createMasterBooking } from '@/test/fixtures/bookings'
+import { createMasterClient } from '@/test/fixtures/clients'
+import { createMasterProfile } from '@/test/fixtures/masters'
+import { createMasterService } from '@/test/fixtures/services'
+import { renderAtRoute } from '@/test/render'
+import type { Booking, Client } from '@/types'
+
+const api = vi.hoisted(() => ({
+  listServices: vi.fn(),
+  listClients: vi.fn(),
+  createClient: vi.fn(),
+  listBookings: vi.fn(),
+  createBooking: vi.fn(),
+  createPackage: vi.fn(),
+  reschedule: vi.fn(),
+  cancel: vi.fn(),
+  getSlots: vi.fn(),
+  getMaster: vi.fn(),
+  openAddToCalendar: vi.fn(),
+  scrollPageTop: vi.fn(),
+}))
+
+vi.mock('@/api/services.api', () => ({ servicesApi: { list: api.listServices } }))
+vi.mock('@/api/clients.api', () => ({
+  clientsApi: { list: api.listClients, create: api.createClient },
+}))
+vi.mock('@/api/bookings.api', () => ({
+  bookingsApi: {
+    list: api.listBookings,
+    create: api.createBooking,
+    createPackage: api.createPackage,
+    reschedule: api.reschedule,
+    cancel: api.cancel,
+  },
+}))
+vi.mock('@/api/masters.api', () => ({
+  mastersApi: { getSlots: api.getSlots, getMe: api.getMaster },
+}))
+vi.mock('@/lib/calendar', () => ({ openAddToCalendar: api.openAddToCalendar }))
+vi.mock('@/lib/scroll', () => ({ scrollPageTop: api.scrollPageTop }))
+vi.mock('@/components/ServiceEditorPortal', () => ({ default: () => null }))
+vi.mock('@client/components/AddressSuggestField', () => ({
+  default: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string
+    onChange: (value: string) => void
+    placeholder?: string
+  }) => <input aria-label="Адрес выезда" placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />,
+}))
+
+import { useAuthStore } from '@/store/auth.store'
+
+import CreateBookingPage from './CreateBookingPage'
+
+const regularService = createMasterService({
+  id: 'service-regular',
+  name: 'Обычная услуга',
+  duration: 60,
+  price: 250_000,
+  sessionsCount: 1,
+})
+const packageService = createMasterService({
+  id: 'service-package',
+  name: 'Курс процедур',
+  duration: 60,
+  price: 200_000,
+  sessionsCount: 3,
+})
+const existingClient = createMasterClient({
+  id: 'master-client-existing',
+  clientId: 'global-client-existing',
+  name: 'Ирина Клиентова',
+  phone: '+79990000002',
+})
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((next) => {
+    resolve = next
+  })
+  return { promise, resolve }
+}
+
+function setMaster() {
+  const profile = createMasterProfile({
+    homeVisit: false,
+    services: [regularService, packageService],
+  })
+  const master = {
+    ...profile,
+    schedule: {
+      ...profile.schedule!,
+      workingDays: [1, 2, 3, 4, 5, 6, 7],
+      startTime: '09:00',
+      endTime: '12:00',
+      breakStart: null,
+      breakEnd: null,
+    },
+  }
+  useAuthStore.setState({ token: 'master-token', master, isLoading: false })
+  return master
+}
+
+function renderPage(state?: Record<string, unknown>) {
+  return renderAtRoute(<CreateBookingPage />, {
+    entries: [{ pathname: '/bookings/new', state }],
+  })
+}
+
+function formCard(title: string) {
+  const heading = screen.getByText(title)
+  const card = heading.parentElement?.parentElement
+  if (!card) throw new Error(`Form card not found: ${title}`)
+  return within(card)
+}
+
+async function selectExistingClient(view: ReturnType<typeof renderPage>) {
+  await view.user.click(formCard('Клиент').getByRole('button'))
+  await view.user.click(await screen.findByRole('button', { name: /Ирина Клиентова/ }))
+}
+
+async function selectRegularService(view: ReturnType<typeof renderPage>) {
+  await view.user.click(formCard('Услуги').getByRole('button', { name: /Наименование/ }))
+  await view.user.click(await screen.findByText('Обычная услуга'))
+  await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
+}
+
+async function selectDate(view: ReturnType<typeof renderPage>, selected: dayjs.Dayjs) {
+  const monthLabel = screen.getByText(selected.format('MMMM YYYY'))
+  const monthSection = monthLabel.parentElement?.parentElement?.parentElement
+  if (!monthSection) throw new Error('Month section not found')
+  await view.user.click(within(monthSection).getByRole('button', { name: String(selected.date()) }))
+}
+
+async function selectRegularDateAndTime(view: ReturnType<typeof renderPage>, selected: dayjs.Dayjs, time = '10:00') {
+  await view.user.click(formCard('Дата и время').getByRole('button', { name: /Дата/ }))
+  await selectDate(view, selected)
+  await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
+  await view.user.click(screen.getByRole('button', { name: time }))
+}
+
+async function completeRegularDraft(view: ReturnType<typeof renderPage>, selected: dayjs.Dayjs) {
+  await selectExistingClient(view)
+  await selectRegularService(view)
+  await selectRegularDateAndTime(view, selected)
+}
+
+function bookingResult(date: string, client = existingClient): Booking {
+  return createMasterBooking({
+    id: 'booking-created',
+    date,
+    time: '10:00',
+    service: regularService,
+    client: {
+      id: client.clientId ?? client.id,
+      name: client.name,
+      phone: client.phone,
+      photo: client.photo,
+    },
+  })
+}
+
+function nextBookableDate() {
+  return dayjs().add(1, 'day').startOf('day')
+}
+
+function nextWeekdaySlots(isoWeekday: number, count: number, time: string) {
+  const slots: Array<{ date: string; time: string }> = []
+  let date = dayjs().add(1, 'day')
+  while (slots.length < count) {
+    if ((date.day() || 7) === isoWeekday) slots.push({ date: date.format('YYYY-MM-DD'), time })
+    date = date.add(1, 'day')
+  }
+  return slots
+}
+
+describe('master CreateBookingPage', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset())
+    api.listServices.mockResolvedValue([regularService, packageService])
+    api.listClients.mockResolvedValue([existingClient])
+    api.listBookings.mockResolvedValue([])
+    api.createClient.mockResolvedValue(existingClient)
+    api.createBooking.mockResolvedValue(bookingResult(nextBookableDate().format('YYYY-MM-DD')))
+    api.createPackage.mockResolvedValue({ id: 'package-created' })
+    api.reschedule.mockResolvedValue(createMasterBooking())
+    api.cancel.mockResolvedValue(undefined)
+    api.getSlots.mockResolvedValue(['10:00', '11:00'])
+    api.getMaster.mockResolvedValue(createMasterProfile())
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    setMaster()
+  })
+
+  it('проходит все шаги обычной записи, не пишет раньше submit и блокирует duplicate', async () => {
+    const selectedDate = nextBookableDate()
+    const pending = deferred<Booking>()
+    api.createBooking.mockReturnValue(pending.promise)
+    const view = renderPage()
+
+    await completeRegularDraft(view, selectedDate)
+    expect(api.createBooking).not.toHaveBeenCalled()
+    const submit = screen.getByRole('button', { name: 'Записать' })
+    expect(submit).toBeEnabled()
+
+    await view.user.click(submit)
+
+    expect(api.createBooking).toHaveBeenCalledWith({
+      masterId: useAuthStore.getState().master!.id,
+      serviceId: regularService.id,
+      date: selectedDate.format('YYYY-MM-DD'),
+      time: '10:00',
+      masterClientId: existingClient.id,
+      remind: true,
+      clientAddress: undefined,
+      price: undefined,
+      color: '#1F9432',
+      services: [{ serviceId: regularService.id, price: undefined }],
+      durationMinutes: 60,
+      allowOverlap: true,
+    })
+    expect(screen.getByRole('button', { name: 'Записываем…' })).toBeDisabled()
+    await view.user.click(screen.getByRole('button', { name: 'Записываем…' }))
+    expect(api.createBooking).toHaveBeenCalledOnce()
+
+    await act(async () => pending.resolve(bookingResult(selectedDate.format('YYYY-MM-DD'))))
+    expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
+    expect(view.getLocation().pathname).toBe('/bookings/new')
+  })
+
+  it('сохраняет draft и позволяет retry после create failure', async () => {
+    const selectedDate = nextBookableDate()
+    api.createBooking
+      .mockRejectedValueOnce(new Error('create unavailable'))
+      .mockResolvedValueOnce(bookingResult(selectedDate.format('YYYY-MM-DD')))
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    expect(await screen.findByText('Не удалось создать запись. Попробуйте ещё раз.')).toBeInTheDocument()
+    expect(screen.getByText('Обычная услуга')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeEnabled()
+
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+    expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
+    expect(api.createBooking).toHaveBeenCalledTimes(2)
+  })
+
+  it('требует explicit confirmation при overlap и только затем пишет', async () => {
+    const selectedDate = nextBookableDate()
+    api.listBookings.mockResolvedValue([
+      createMasterBooking({
+        id: 'existing-overlap',
+        date: selectedDate.format('YYYY-MM-DD'),
+        time: '10:00',
+        service: regularService,
+      }),
+    ])
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+    await waitFor(() => expect(api.listBookings).toHaveBeenCalledOnce())
+
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    expect(screen.getByText('Время занято')).toBeInTheDocument()
+    expect(api.createBooking).not.toHaveBeenCalled()
+    const dialog = screen.getByText('Время занято').parentElement!
+    await view.user.click(within(dialog).getByRole('button', { name: 'Записать' }))
+
+    await waitFor(() => expect(api.createBooking).toHaveBeenCalledOnce())
+    expect(api.createBooking.mock.calls[0]?.[0]).toHaveProperty('allowOverlap', true)
+  })
+
+  it('создаёт нового клиента отдельно и использует только trusted returned id в final write', async () => {
+    const selectedDate = nextBookableDate()
+    const trustedClient: Client = createMasterClient({
+      id: 'trusted-master-client-id',
+      clientId: null,
+      name: 'Новый Клиент',
+      phone: '+7 (999) 111-22-33',
+      isMaxUser: false,
+    })
+    const clientPending = deferred<Client>()
+    api.createClient.mockReturnValue(clientPending.promise)
+    api.createBooking.mockResolvedValue(bookingResult(selectedDate.format('YYYY-MM-DD'), trustedClient))
+    const view = renderPage({ date: selectedDate.format('YYYY-MM-DD') })
+    await view.user.click(formCard('Клиент').getByRole('button'))
+    await view.user.click(await screen.findByRole('button', { name: 'Добавить клиента' }))
+    const [name, phone] = screen.getAllByRole('textbox')
+    await view.user.type(name, '  Новый Клиент  ')
+    await view.user.type(phone, '89991112233')
+
+    await view.user.click(screen.getByRole('button', { name: 'Добавить' }))
+
+    expect(api.createClient).toHaveBeenCalledWith({
+      name: 'Новый Клиент',
+      phone: '+7 (999) 111-22-33',
+    })
+    expect(api.createBooking).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Добавляем…' })).toBeDisabled()
+    await view.user.click(screen.getByRole('button', { name: 'Добавляем…' }))
+    expect(api.createClient).toHaveBeenCalledOnce()
+
+    await act(async () => clientPending.resolve(trustedClient))
+    expect(await screen.findByText('Новый Клиент')).toBeInTheDocument()
+    expect(api.createBooking).not.toHaveBeenCalled()
+
+    await selectRegularService(view)
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
+    await view.user.click(screen.getByRole('button', { name: '10:00' }))
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    await waitFor(() => expect(api.createBooking).toHaveBeenCalledOnce())
+    expect(api.createBooking.mock.calls[0]?.[0]).toMatchObject({
+      masterClientId: 'trusted-master-client-id',
+      date: selectedDate.format('YYYY-MM-DD'),
+      serviceId: regularService.id,
+    })
+  })
+
+  it('отклоняет incomplete package и сохраняет ordered slots для retry', async () => {
+    const view = renderPage({ client: existingClient })
+    await view.user.click(formCard('Услуги').getByRole('button', { name: /Наименование/ }))
+    await view.user.click(await screen.findByText('Курс процедур'))
+    expect(screen.getByRole('button', { name: /Записать/ })).toBeDisabled()
+    expect(api.createPackage).not.toHaveBeenCalled()
+
+    await view.user.click(screen.getByRole('button', { name: 'По неделям' }))
+    await waitFor(() => expect(api.getSlots).toHaveBeenCalled())
+    await view.user.click(screen.getByRole('button', { name: 'Пн' }))
+    await view.user.click(await screen.findByRole('button', { name: '11:00' }))
+    const expectedSlots = nextWeekdaySlots(1, 3, '11:00')
+    api.createPackage.mockRejectedValueOnce(new Error('package unavailable')).mockResolvedValueOnce({ id: 'package-created' })
+
+    await view.user.click(screen.getByRole('button', { name: /Записать/ }))
+
+    expect(await screen.findByText('Не удалось создать запись. Попробуйте ещё раз.')).toBeInTheDocument()
+    expect(api.createPackage).toHaveBeenCalledWith({
+      masterId: useAuthStore.getState().master!.id,
+      serviceId: packageService.id,
+      slots: expectedSlots,
+      masterClientId: existingClient.id,
+      remind: true,
+      clientAddress: undefined,
+    })
+    expect(screen.getByRole('button', { name: /Записать/ })).toBeEnabled()
+
+    await view.user.click(screen.getByRole('button', { name: /Записать/ }))
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
+    expect(api.createPackage).toHaveBeenCalledTimes(2)
+    expect(api.createBooking).not.toHaveBeenCalled()
+  })
+
+  it('bootstrap reschedule не создаёт booking и пишет только после confirmation', async () => {
+    const selectedDate = nextBookableDate()
+    const view = renderPage({ rescheduleId: 'booking-reschedule', serviceId: regularService.id })
+    expect(await screen.findByText('Новая дата')).toBeInTheDocument()
+
+    await selectDate(view, selectedDate)
+    await view.user.click(screen.getByRole('button', { name: '10:00' }))
+
+    expect(screen.getByText('Перенести запись')).toBeInTheDocument()
+    expect(api.reschedule).not.toHaveBeenCalled()
+    expect(api.createBooking).not.toHaveBeenCalled()
+    const dialog = screen.getByText('Перенести запись').parentElement!
+    await view.user.click(within(dialog).getByRole('button', { name: 'Перенести' }))
+
+    await waitFor(() => expect(api.reschedule).toHaveBeenCalledWith('booking-reschedule', {
+      date: selectedDate.format('YYYY-MM-DD'),
+      time: '10:00',
+      allowOverlap: true,
+    }))
+    expect(api.createBooking).not.toHaveBeenCalled()
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
+  })
+
+  it('bootstrap edit-time сохраняет дату и legacy navigates даже после reschedule failure', async () => {
+    const selectedDate = nextBookableDate().format('YYYY-MM-DD')
+    api.reschedule.mockRejectedValue(new Error('reschedule unavailable'))
+    const view = renderPage({
+      rescheduleId: 'booking-edit-time',
+      serviceId: regularService.id,
+      editTime: true,
+      date: selectedDate,
+    })
+    expect(await screen.findByText('Выберите время')).toBeInTheDocument()
+
+    await view.user.click(screen.getByRole('button', { name: '11:00' }))
+    const dialog = screen.getByText('Перенести запись').parentElement!
+    await view.user.click(within(dialog).getByRole('button', { name: 'Перенести' }))
+
+    await waitFor(() => expect(api.reschedule).toHaveBeenCalledWith('booking-edit-time', {
+      date: selectedDate,
+      time: '11:00',
+      allowOverlap: true,
+    }))
+    expect(api.createBooking).not.toHaveBeenCalled()
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
+  })
+
+  it('cancel-created ждёт confirmation, использует receipt id и завершает route', async () => {
+    const selectedDate = nextBookableDate()
+    const created = bookingResult(selectedDate.format('YYYY-MM-DD'))
+    api.createBooking.mockResolvedValue(created)
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+    expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
+
+    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    expect(api.cancel).not.toHaveBeenCalled()
+    await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
+
+    await waitFor(() => expect(api.cancel).toHaveBeenCalledWith('booking-created'))
+    expect(api.cancel).toHaveBeenCalledOnce()
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
+  })
+
+  it('фиксирует legacy route completion после cancel-created failure без ложного второго call', async () => {
+    const selectedDate = nextBookableDate()
+    api.createBooking.mockResolvedValue(bookingResult(selectedDate.format('YYYY-MM-DD')))
+    api.cancel.mockRejectedValue(new Error('cancel unavailable'))
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+    await screen.findByText('Запись создана!')
+
+    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
+
+    await waitFor(() => expect(api.cancel).toHaveBeenCalledWith('booking-created'))
+    expect(api.cancel).toHaveBeenCalledOnce()
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
+  })
+})

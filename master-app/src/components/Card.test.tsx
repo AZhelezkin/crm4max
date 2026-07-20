@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
 import Card from './Card'
 
 describe('Card', () => {
@@ -8,22 +10,23 @@ describe('Card', () => {
     expect(screen.getByText('Контент')).toBeInTheDocument()
   })
 
-  it('вызывает onClick при клике', () => {
+  it('вызывает onClick при клике', async () => {
+    const user = userEvent.setup()
     const onClick = vi.fn()
     render(<Card onClick={onClick}>Клик</Card>)
-    fireEvent.click(screen.getByText('Клик'))
+
+    await user.click(screen.getByText('Клик'))
+
     expect(onClick).toHaveBeenCalledOnce()
   })
 
   it('не устанавливает cursor: pointer без onClick', () => {
     render(<Card>Без клика</Card>)
-    const card = screen.getByText('Без клика').parentElement
-    expect(card).not.toHaveStyle({ cursor: 'pointer' })
+    expect(screen.getByText('Без клика').parentElement).not.toHaveStyle({ cursor: 'pointer' })
   })
 
   it('устанавливает cursor: pointer с onClick', () => {
     render(<Card onClick={() => {}}>С кликом</Card>)
-    const card = screen.getByText('С кликом')
-    expect(card).toHaveStyle({ cursor: 'pointer' })
+    expect(screen.getByText('С кликом')).toHaveStyle({ cursor: 'pointer' })
   })
 })

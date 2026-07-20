@@ -1,17 +1,39 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
 
-// Мок VK Bridge — недоступен в тестовой среде
-vi.mock('@vkontakte/vk-bridge', () => ({
-  default: {
-    send: vi.fn().mockResolvedValue({}),
-  },
-}))
+import { cleanup } from '@testing-library/react'
+import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 
-// Мок react-router-dom navigate
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(),
-  }
+import { resetBrowserFixture } from './browser-fixture'
+import { server } from './msw/server'
+import {
+  clearTestStorage,
+  installTestStorageGlobals,
+  resetApplicationStores,
+} from './storage'
+import { removeWebApp } from './web-app-fixture'
+
+installTestStorageGlobals()
+
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' })
+})
+
+afterEach(async () => {
+  cleanup()
+  server.resetHandlers()
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+  vi.unstubAllEnvs()
+  installTestStorageGlobals()
+  resetBrowserFixture()
+  removeWebApp()
+  await resetApplicationStores()
+  clearTestStorage()
+  document.body.className = ''
+  document.documentElement.removeAttribute('data-theme')
+  window.history.replaceState(null, '', '/')
+})
+
+afterAll(() => {
+  server.close()
 })
