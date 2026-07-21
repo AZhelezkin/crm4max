@@ -33,6 +33,10 @@ function formatRub(kop: number): string {
   return (kop / 100).toLocaleString('ru-RU') + ' ₽'
 }
 
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 function pluralRecords(n: number): string {
   const m10 = n % 10, m100 = n % 100
   const w = m10 === 1 && m100 !== 11 ? 'запись' : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? 'записи' : 'записей'
@@ -51,6 +55,8 @@ export default function HomePage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   // Статус подписки — строка под именем в шапке (макет 10216-40371).
   const [sub, setSub] = useState<SubscriptionState | null>(null)
+  // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
+  const [selectedDate, setSelectedDate] = useState('')
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
     bookingsApi.list().then(setBookings).catch(() => {})
@@ -81,11 +87,23 @@ export default function HomePage() {
   const today = dayjs().format('YYYY-MM-DD')
   const todayD = dayjs(today)
 
-  const todayBookings = useMemo(
+  // Активный день полоски: выбранный или сегодня.
+  const activeDate = selectedDate || today
+  const activeD = dayjs(activeDate)
+  const isTodayActive = activeDate === today
+  // Записи активного дня (включая отменённые — показываем красной линией).
+  const dayBookings = useMemo(
     () => bookings
-      .filter((b) => b.date === today && b.status !== 'CANCELLED')
+      .filter((b) => b.date === activeDate)
       .sort((a, b) => a.time.localeCompare(b.time)),
-    [bookings, today],
+    [bookings, activeDate],
+  )
+  // Ближайшая будущая неотменённая запись — для пустого дня.
+  const nearestUpcoming = useMemo(
+    () => bookings
+      .filter((b) => b.status !== 'CANCELLED' && b.date > activeDate)
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)))[0] ?? null,
+    [bookings, activeDate],
   )
 
   // «ходят» — клиенты с будущей (>= сегодня) неотменённой записью; «не ходят» — остальные.
@@ -103,7 +121,7 @@ export default function HomePage() {
 
   const servicesCount = masterServiceList(master).length
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
-  const todaySum = todayBookings.reduce((acc, b) => acc + bookingAmount(b), 0)
+  const daySum = dayBookings.filter((b) => b.status !== 'CANCELLED').reduce((acc, b) => acc + bookingAmount(b), 0)
 
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95, overflowX: 'hidden' }}>
@@ -168,13 +186,18 @@ export default function HomePage() {
           </button>
         )}
 
-        {/* Карточка «Сегодня» */}
+        {/* Карточка календаря (макеты 10265-56644 / 10261-56461 / 10265-56802 / 10265-57000) */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
-          {/* Заголовок с датой + иконка календаря → Записи */}
+          {/* Шапка: «к сегодня» (скрыт, если активен сегодня) + дата + открыть календарь */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-            <div style={{ width: 36, flexShrink: 0 }} />
+            <button type="button" aria-label="К сегодняшнему дню" onClick={() => setSelectedDate(today)}
+              style={{ background: 'none', border: 'none', padding: 6, display: 'flex', flexShrink: 0,
+                opacity: isTodayActive ? 0 : 1, pointerEvents: isTodayActive ? 'none' : 'auto',
+                cursor: isTodayActive ? 'default' : 'pointer' }}>
+              <CalendarDayIcon day={todayD.date()} />
+            </button>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
-              Сегодня, {todayD.format('D MMMM')}
+              {isTodayActive ? `Сегодня, ${activeD.format('D MMMM')}` : `${capitalize(activeD.format('dddd'))}, ${activeD.format('D MMMM')}`}
             </div>
             <button type="button" aria-label="Открыть записи" onClick={() => navigate('/bookings')}
               style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-primary-surface)', flexShrink: 0 }}>
@@ -182,43 +205,50 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Недельная полоска */}
+          {/* Недельная полоска — тапабельные дни */}
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
             {WEEK_LETTERS.map((letter, i) => {
               const d = weekStart.add(i, 'day')
-              const isToday = d.format('YYYY-MM-DD') === today
+              const ds = d.format('YYYY-MM-DD')
+              const selected = ds === activeDate
+              const isToday = ds === today
               const weekend = i >= 5
+              // Приоритет цвета: выбранный > сегодня(синий) > выходной(красный) > обычный.
+              const letterColor = selected ? 'var(--color-pattern-element)'
+                : weekend ? 'var(--color-error-element-muted)'
+                : 'var(--color-interactive-element-secondary)'
+              const numColor = selected ? 'var(--color-surface)'
+                : isToday ? 'var(--color-primary-surface)'
+                : weekend ? 'var(--color-error-surface-accented)'
+                : 'var(--color-interactive-element-accented)'
               return (
-                <div key={i} style={{
-                  width: 48, padding: '8px 14px 6px', borderRadius: 12,
+                <button key={i} type="button" onClick={() => setSelectedDate(ds)} style={{
+                  width: 48, padding: '8px 14px 6px', borderRadius: 12, border: 'none', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  background: isToday ? 'var(--color-on-surface)' : 'transparent',
+                  background: selected ? 'var(--color-on-surface)' : 'transparent',
                 }}>
-                  <span style={{ fontSize: 11, lineHeight: '13px', fontWeight: 400, letterSpacing: -0.11,
-                    color: isToday ? 'var(--color-pattern-element)' : weekend ? 'var(--color-error-element-muted)' : 'var(--color-on-surface-muted)' }}>
-                    {letter}
-                  </span>
-                  <span style={{ fontSize: 14, lineHeight: '20px', fontWeight: isToday ? 700 : 400, letterSpacing: -0.14,
-                    color: isToday ? 'var(--color-surface)' : weekend ? 'var(--color-error-surface-accented)' : 'var(--color-interactive-element-accented)' }}>
-                    {d.date()}
-                  </span>
-                </div>
+                  <span style={{ fontSize: 11, lineHeight: '13px', fontWeight: 400, letterSpacing: -0.11, color: letterColor }}>{letter}</span>
+                  <span style={{ fontSize: 14, lineHeight: '20px', fontWeight: selected ? 700 : 400, letterSpacing: -0.14, color: numColor }}>{d.date()}</span>
+                </button>
               )
             })}
           </div>
 
-          {/* Записи на сегодня */}
-          {todayBookings.length > 0 ? (
+          {/* Записи активного дня / пустой день */}
+          {dayBookings.length > 0 ? (
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-              {todayBookings.map((b) => {
+              {dayBookings.map((b) => {
                 const end = dayjs(`${b.date}T${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
+                const cancelled = b.status === 'CANCELLED'
                 const confirmed = b.status === 'CONFIRMED' || b.status === 'COMPLETED'
+                // Отменённая — красная; иначе цвет мастера важнее статусного (зелёный/оранжевый).
+                const lineColor = cancelled ? 'var(--color-error-element-muted)'
+                  : b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)')
                 return (
                   <button key={b.id} type="button" onClick={() => navigate(`/bookings/${b.id}`)}
                     style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
                     <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-                      {/* Цвет записи, выбранный мастером, важнее статусного. */}
-                      <div style={{ width: 2, height: 44, borderRadius: 1, background: b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)') }} />
+                      <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
                     </div>
                     <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                       <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
@@ -234,21 +264,29 @@ export default function HomePage() {
               })}
             </div>
           ) : (
-            <div style={{ padding: '24px 12px', textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-              {master.schedule && !master.schedule.workingDays.includes(todayD.day() || 7) ? 'Выходной' : 'Нет записей на сегодня'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '24px 12px', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+              <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element)' }}><FolderIcon /></span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>В этот день нет записей</span>
+                {nearestUpcoming && (
+                  <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>
+                    Ближайшая запись <span style={{ color: 'var(--color-primary-surface)' }}>{dayjs(nearestUpcoming.date).format('D MMMM')}</span>
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Футер: сводка */}
-          {todayBookings.length > 0 && (
+          {/* Футер: сводка активного дня */}
+          {dayBookings.length > 0 && (
             <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
-              {pluralRecords(todayBookings.length)} на {formatRub(todaySum)}
+              {pluralRecords(dayBookings.length)} на {formatRub(daySum)}
             </div>
           )}
         </div>
 
         {/* Кнопка «Создать запись» */}
-        <button type="button" onClick={() => navigate('/bookings/new', { state: { date: today } })}
+        <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}
           style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
           <span style={{ display: 'inline-flex' }}><AddCircleIcon /></span>
           <span style={text.callout1}>Создать запись</span>
@@ -483,6 +521,29 @@ function CalendarIcon() {
       <path d="M3.5 9.09H20.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M15.7 13.7h.01M11.99 13.7h.01M8.29 13.7h.01M8.29 16.7h.01M11.99 16.7h.01M15.7 16.7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Иконка «к сегодня»: календарь с числом сегодняшнего дня по центру (макет: 12px ExtraBold primary).
+function CalendarDayIcon({ day }: { day: number }) {
+  return (
+    <span style={{ position: 'relative', width: 24, height: 24, display: 'inline-flex', color: 'var(--color-primary-surface)' }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M8 2V5M16 2V5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3.5 9.09H20.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span style={{ position: 'absolute', left: 0, right: 0, top: 10, textAlign: 'center', fontSize: 11, lineHeight: '12px', fontWeight: 800, letterSpacing: -0.55 }}>{day}</span>
+    </span>
+  )
+}
+
+// vuesax/linear/folder-2 — пустой день (36×36).
+function FolderIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <path d="M22 11.4V16c0 4-1 5-5 5H7c-4 0-5-1-5-5V8c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8H17c4 0 5 1 5 4.4Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
