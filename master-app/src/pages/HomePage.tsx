@@ -246,7 +246,7 @@ export default function HomePage() {
                   : b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)')
                 return (
                   <button key={b.id} type="button" onClick={() => navigate(`/bookings/${b.id}`)}
-                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px', textAlign: 'left' }}>
                     <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
                       <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
                     </div>
