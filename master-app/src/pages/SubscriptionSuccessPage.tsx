@@ -3,28 +3,14 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
 import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
+import wordmarkSvg from '@/assets/sub-wordmark.svg'
+import logoTileSvg from '@/assets/sub-logo-tile.svg'
+import confettiGif from '@/assets/sub-confetti.gif'
 
 // «Успех оплаты» (макет 10256-55423): зелёный hero с конфетти + плитка-лого,
 // «Подписка оформлена! / Поздравляем 🎉», карточка с QR клиентской ссылки и
 // кнопками «Поделиться» / «Перейти в профиль». Показывается после того, как
 // оплата подписки перевела мастера в ACTIVE (детект в App.tsx).
-
-// Праздничное конфетти — декоративная иллюстрация (растр в макете); фиксированные
-// координаты и цвета, без Math.random.
-const CONFETTI: Array<{ x: number; y: number; c: string; r?: number; w?: number; h?: number; rot?: number }> = [
-  { x: 12, y: 40, c: '#F0AF2D', w: 6, h: 6, rot: 20 },
-  { x: 34, y: 22, c: '#40C4AA', r: 3 },
-  { x: 58, y: 46, c: '#EB80F0', w: 5, h: 5, rot: 45 },
-  { x: 74, y: 26, c: '#62ADFF', r: 3 },
-  { x: 88, y: 52, c: '#F0AF2D', r: 3 },
-  { x: 20, y: 74, c: '#62ADFF', w: 5, h: 5, rot: 30 },
-  { x: 46, y: 88, c: '#EB80F0', r: 3 },
-  { x: 66, y: 78, c: '#40C4AA', w: 6, h: 6, rot: 15 },
-  { x: 90, y: 84, c: '#F0AF2D', r: 3 },
-  { x: 8, y: 58, c: '#EB80F0', r: 2.5 },
-  { x: 82, y: 40, c: '#40C4AA', r: 2.5 },
-  { x: 52, y: 30, c: '#62ADFF', w: 4, h: 4, rot: 40 },
-]
 
 interface Props {
   onGoProfile: () => void
@@ -55,29 +41,20 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
 
   return (
     <div style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Зелёный hero-градиент сверху, затухает к фону страницы */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 320, pointerEvents: 'none',
-        background: 'linear-gradient(180deg, var(--color-grad-green-vibrance-100) 0%, var(--color-grad-green-vibrance-0) 45%, var(--color-background) 100%)',
-        opacity: 0.9,
-      }} />
-      {/* Конфетти */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300, pointerEvents: 'none' }}>
-        {CONFETTI.map((p, i) => (
-          <span key={i} style={{
-            position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
-            width: p.w ?? (p.r ?? 3) * 2, height: p.h ?? (p.r ?? 3) * 2,
-            background: p.c, borderRadius: p.r ? '50%' : 2,
-            transform: p.rot ? `rotate(${p.rot}deg)` : undefined,
-          }} />
-        ))}
+      {/* Hero-визуал (макет sub-hero-bg): surface→background градиент + два размытых
+          круга (Ellipse16 #29C643, Ellipse17 #DCEEEF, blur 60px) + GIF-конфетти. */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 360, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%)' }} />
+        <div style={{ position: 'absolute', left: '50%', top: -299, width: 454, height: 454, marginLeft: -227, borderRadius: '50%', background: '#29C643', filter: 'blur(60px)' }} />
+        <div style={{ position: 'absolute', left: '50%', top: -158, width: 248, height: 248, marginLeft: -124, borderRadius: '50%', background: '#DCEEEF', filter: 'blur(60px)' }} />
+        <img src={confettiGif} alt="" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 420, display: 'block' }} />
       </div>
 
       {/* Hero-контент */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 28 }}>
-        <Wordmark />
-        <div style={{ height: 40 }} />
-        <LogoTile />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 38 }}>
+        <img src={wordmarkSvg} alt="sloto" style={{ height: 24, display: 'block' }} />
+        <div style={{ height: 66 }} />
+        <img src={logoTileSvg} alt="" style={{ width: 72, display: 'block' }} />
         <div style={{ height: 36 }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка оформлена!</span>
@@ -133,46 +110,6 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
         </div>
       </div>
     </div>
-  )
-}
-
-// Словесный знак «s·l·o·t·o» (макет: серые буквы с точками-разделителями).
-function Wordmark() {
-  return (
-    <span style={{ ...text.h4, fontWeight: 800, color: 'var(--color-interactive-element-secondary)', letterSpacing: 2, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      {['s', 'l', 'o', 't', 'o'].map((ch, i) => (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          {i > 0 && <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--color-interactive-element-secondary)', display: 'inline-block' }} />}
-          {ch}
-        </span>
-      ))}
-    </span>
-  )
-}
-
-// Плитка-лого 71×73 (белая, скруг. 16, боковые выемки как у DaysTile) с зелёной ∞.
-function LogoTile() {
-  return (
-    <div style={{ position: 'relative', width: 71, height: 73, filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.1))' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'var(--color-surface)', borderRadius: 16 }} />
-      <span style={{ position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--color-background)' }} />
-      <span style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--color-background)' }} />
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <InfinityIcon />
-      </div>
-    </div>
-  )
-}
-
-// Лемниската ∞ (лого Sloto), зелёная.
-function InfinityIcon() {
-  return (
-    <svg width="44" height="24" viewBox="0 0 44 24" fill="none">
-      <path
-        d="M12 4C7.6 4 4 7.6 4 12s3.6 8 8 8c4.4 0 6.9-3.6 10-8 3.1-4.4 5.6-8 10-8 4.4 0 8 3.6 8 8s-3.6 8-8 8c-4.4 0-6.9-3.6-10-8"
-        stroke="var(--color-on-success-surface-lite)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
-      />
-    </svg>
   )
 }
 
