@@ -576,7 +576,9 @@ export default function CreateBookingPage() {
     const loadingClientTab = serviceTab === 'client' && !clientTabEmpty && !masterBookingsLoaded
     const nothing = loaded && !clientTabEmpty && !loadingClientTab && shownServices.length === 0
     return (
-      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      // height:100dvh (не minHeight) + minHeight:0 у скролла — кнопка «Выбрать»
+      // прибита к низу экрана, список скроллится над ней (макет 10130-52706).
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {searchMode ? (
           <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px' }}>
             <PillButton onClick={backFromService} ariaLabel="Назад">
@@ -611,7 +613,7 @@ export default function CreateBookingPage() {
           />
         )}
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 32px' }}>
           {/* Сегмент-контрол «Все услуги / Оказывались клиенту» (в поиске скрыт). */}
           {!searchMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, padding: 4, boxSizing: 'border-box', background: 'var(--color-surface-transparent)', borderRadius: 16, marginBottom: 12 }}>
@@ -1604,28 +1606,28 @@ function TimeChip({ label, selected, busy, onClick }: { label: string; selected:
   )
 }
 
-// Чекбокс выбора услуги (28px, мультивыбор): выключено — скруг-квадрат-кольцо;
-// включено — заливка primary + белая галочка.
+// Чекбокс выбора услуги (28px, мультивыбор, макет 10130-52706): круглый —
+// выключено — кольцо; включено — заливка primary + белая галочка.
 function CheckboxIcon({ checked }: { checked: boolean }) {
   return checked ? (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-      <rect x="1" y="1" width="26" height="26" rx="8" fill="var(--color-primary-surface)" />
+      <circle cx="14" cy="14" r="11" fill="var(--color-primary-surface)" />
       <path d="M8.5 14.3L12.2 18L19.5 10.5" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ) : (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-      <rect x="1.75" y="1.75" width="24.5" height="24.5" rx="7.25" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
+      <circle cx="14" cy="14" r="10.5" stroke="var(--color-interactive-element)" strokeWidth="1.5" />
     </svg>
   )
 }
 
-// vuesax/linear/edit-2 (16×16), наследует цвет (в строке услуги — primary-surface).
+// vuesax/linear/edit-2 (макет 10130-52706) — чистый карандаш без нижней черты,
+// как в виджетах главной. Наследует цвет (в строке услуги — primary-surface).
 function PencilEditIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M8.84 2.4L3.36667 8.19333C3.16 8.41333 2.96 8.84667 2.92 9.14667L2.67333 11.3067C2.58667 12.0867 3.14667 12.62 3.92 12.4867L6.06667 12.12C6.36667 12.0667 6.78667 11.8467 6.99333 11.62L12.4667 5.82667C13.4133 4.82667 13.84 3.68667 12.3667 2.29333C10.9 0.913333 9.78667 1.4 8.84 2.4Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7.92667 3.36667C8.21333 5.20667 9.70667 6.61333 11.56 6.8" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M2 14.6667H14" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M13.26 3.6 5.05 12.29c-.31.33-.61.98-.67 1.43l-.37 3.24c-.13 1.17.71 1.97 1.87 1.77l3.22-.55c.45-.08 1.08-.41 1.39-.75l8.21-8.69c1.42-1.5 2.06-3.21-.15-5.3-2.2-2.07-3.87-1.34-5.29.16Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.89 5.05c.43 2.76 2.67 4.87 5.45 5.15" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
