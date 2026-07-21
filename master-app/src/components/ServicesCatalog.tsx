@@ -21,10 +21,12 @@ interface ServicesCatalogProps {
   onServiceCountChange?: (count: number) => void
   /** Кнопка завершения (онбординг) — рендерится в конце контента. */
   footer?: ReactNode
+  /** Скрыть нижнюю кнопку «Добавить услугу» — на «Списке услуг» добавление в шапке (+). */
+  hideAddButton?: boolean
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onServiceCountChange, footer }, ref) => {
+  ({ onServiceCountChange, footer, hideAddButton = false }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
     // Открытый редактор услуги (создание/правка) — см. ServiceEditorPortal.
     const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
@@ -91,7 +93,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
             </div>
           )}
 
-          <AddRowButton label="Добавить услугу" onClick={() => setEditorTarget({ mode: 'create' })} />
+          {!hideAddButton && (
+            <AddRowButton label="Добавить услугу" onClick={() => setEditorTarget({ mode: 'create' })} />
+          )}
 
           {footer && (
             <div style={{ paddingTop: 16, paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>

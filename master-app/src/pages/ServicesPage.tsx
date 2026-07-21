@@ -31,7 +31,7 @@ export default function ServicesPage() {
           </div>
         }
       />
-      <ServicesCatalog ref={editorRef} />
+      <ServicesCatalog ref={editorRef} hideAddButton />
     </div>
   )
 }

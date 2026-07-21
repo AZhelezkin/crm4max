@@ -167,23 +167,28 @@ export function formatDuration(min: number): string {
   return `${min} мин`
 }
 
-/** Человекочитаемая длительность: «30 минут», «1 час», «1.5 часа», «2 часа» (макет «Список услуг»). */
+// Русское склонение по числу: one=1, few=2..4, many=0/5..20 (по последним цифрам).
+function pluralRu(n: number, one: string, few: string, many: string): string {
+  const d10 = n % 10, d100 = n % 100
+  if (d10 === 1 && d100 !== 11) return one
+  if (d10 >= 2 && d10 <= 4 && (d100 < 10 || d100 >= 20)) return few
+  return many
+}
+
+/**
+ * Человекочитаемая длительность (макет «Список услуг»): «30 минут», «1 час»,
+ * «1,5 часа», «2 часа», а для произвольных значений — «1 ч 40 мин».
+ * Дробную половину показываем как «N,5 часа» (запятая, как в РФ); остальные
+ * остатки — компактно «N ч M мин», чтобы не было «1.6666… часа».
+ */
 export function formatDurationHuman(min: number): string {
-  if (min < 60) {
-    const m10 = min % 10, m100 = min % 100
-    const w = m10 === 1 && m100 !== 11 ? 'минута'
-      : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? 'минуты' : 'минут'
-    return `${min} ${w}`
-  }
-  const hours = min / 60
-  if (Number.isInteger(hours)) {
-    const h10 = hours % 10, h100 = hours % 100
-    const w = h10 === 1 && h100 !== 11 ? 'час'
-      : h10 >= 2 && h10 <= 4 && (h100 < 10 || h100 >= 20) ? 'часа' : 'часов'
-    return `${hours} ${w}`
-  }
-  // Дробные часы (1.5, 2.5 …) — всегда «часа», точка как в макете.
-  return `${hours} часа`
+  if (min <= 0) return '0 мин'
+  if (min < 60) return `${min} ${pluralRu(min, 'минута', 'минуты', 'минут')}`
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  if (m === 0) return `${h} ${pluralRu(h, 'час', 'часа', 'часов')}`
+  if (m === 30) return `${h},5 часа`
+  return `${h} ч ${m} мин`
 }
 
 /** Услуги записи: мультиуслуги (services) или фолбэк на единственную (service). */
