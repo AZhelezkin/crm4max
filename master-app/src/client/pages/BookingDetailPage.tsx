@@ -7,6 +7,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import type { Booking } from '@client/types'
 import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems } from '@client/types'
 import { toClientLocal } from '@client/lib/timezone'
+import { openAddToCalendar } from '@/lib/calendar'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
@@ -69,6 +70,18 @@ function IcoStar() {
 }
 
 /* ── Chip icons (vuesax/linear, 24×24, stroke=currentColor) ───────────────── */
+
+// vuesax/linear/calendar (24×24) — «Добавить в календарь».
+function IcoCalendar() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8 2V5M16 2V5" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3.5 9.09H20.5" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15.6947 13.7H15.7037M11.9955 13.7H12.0045M8.29431 13.7H8.30329" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
 
 function IcoRepeat() {
   return (
@@ -210,8 +223,21 @@ export default function BookingDetailPage() {
   // Запись в прошлом: время окончания (начало + длительность) уже прошло (в поясе клиента).
   const isPast = dayjs(`${local.date}T${local.time}`).add(bookingDuration(booking), 'minute').isBefore(dayjs())
 
+  // «Добавить в календарь» — как у мастера (общий openAddToCalendar). Дату/время
+  // берём в поясе клиента (для Google-шаблона на Android/десктопе); iOS — серверный .ics.
+  const handleAddToCalendar = () => {
+    openAddToCalendar({
+      bookingId: booking.id,
+      title: serviceItems.map((i) => i.service.name).join(', '),
+      date: local.date,
+      time: local.time,
+      durationMin: bookingDuration(booking),
+      location: clientAddress || master.location || undefined,
+    })
+  }
+
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 200 /* footer chips */ }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 272 /* footer chips + «Добавить в календарь» */ }}>
 
       {/* ── Toolbar (Figma 8534:15132). h=56, padding 6/12, gap 12, justify-between.
             Без back-кнопки: leading = icon-pill + title+subtitle, trailing = «Закрыть». */}
@@ -488,7 +514,29 @@ export default function BookingDetailPage() {
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '8px 12px 48px',
         background: 'var(--color-background)',
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}>
+        {/* Chip: Добавить в календарь (как у мастера) — для будущих записей. */}
+        {!isPast && (
+          <button
+            onClick={handleAddToCalendar}
+            style={{
+              width: '100%',
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 18,
+              padding: '12px 8px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              border: 'none', cursor: 'pointer',
+              color: 'var(--color-active-element)',
+            }}
+          >
+            <IcoCalendar />
+            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>
+              Добавить в календарь
+            </span>
+          </button>
+        )}
+
         <div style={{ display: 'flex', gap: 4, width: '100%' }}>
           {/* Chip: Перенести — недоступно для прошедшей записи. */}
           {!isPast && (
