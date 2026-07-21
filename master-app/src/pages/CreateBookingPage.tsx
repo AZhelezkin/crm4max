@@ -13,6 +13,7 @@ import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
 import ToggleSwitch from '@/components/ToggleSwitch'
+import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
 import { FloatingField } from '@/components/onboardingShared'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -176,6 +177,10 @@ export default function CreateBookingPage() {
   const [time, setTime] = useState('')
   const [remind, setRemind] = useState(true)
   const [color, setColor] = useState<string>(BOOKING_COLORS[0])
+  // Ручная длительность записи (null → сумма длительностей услуг). Мастер может выбрать
+  // любое значение из колеса (шаг 5 мин, макет 10302-42986). Сбрасывается при смене услуг.
+  const [durationOverride, setDurationOverride] = useState<number | null>(null)
+  const [durationPickerOpen, setDurationPickerOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
   const [outbound, setOutbound] = useState(false)
@@ -413,7 +418,19 @@ export default function CreateBookingPage() {
   // Позиции записи + суммарные стоимость и длительность.
   const itemPrice = (s: Service) => (s.isMisc ? miscKopecks(s.id) : discountedPrice(s.price, s.discountPercent) ?? s.price)
   const totalKopecks = selectedServices.reduce((sum, s) => sum + (s.isMisc ? (miscValid(s.id) ? miscKopecks(s.id) : 0) : itemPrice(s)), 0)
-  const durationMin = selectedServices.reduce((sum, s) => sum + s.duration, 0)
+  // По умолчанию — сумма длительностей услуг; мастер может переопределить (durationOverride).
+  const durationSum = selectedServices.reduce((sum, s) => sum + s.duration, 0)
+  const durationMin = durationOverride ?? durationSum
+  // При смене набора услуг ручная длительность сбрасывается (снова = сумма).
+  const serviceKey = selectedServiceIds.slice().sort().join(',')
+  useEffect(() => { setDurationOverride(null) }, [serviceKey])
+  // Значения колеса: шаг 5 мин (5…480), плюс текущее значение (вдруг сумма не кратна 5).
+  const durationOptions: WheelPickerOption[] = useMemo(() => {
+    const set = new Set<number>()
+    for (let m = 5; m <= 480; m += 5) set.add(m)
+    if (durationMin > 0) set.add(durationMin)
+    return [...set].sort((a, b) => a - b).map((m) => ({ value: String(m), label: formatDuration(m) }))
+  }, [durationMin])
 
   // Свободное время: предупреждаем о пересечении с существующими записями (но разрешаем).
   const hasOverlap = useMemo(() => {
@@ -1354,7 +1371,11 @@ export default function CreateBookingPage() {
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
           <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
-          <FormRow label="Длительность" value={durationMin > 0 ? formatDuration(durationMin) : '0 мин'} />
+          <FormRow
+            label="Длительность"
+            value={durationMin > 0 ? formatDuration(durationMin) : '0 мин'}
+            onClick={selectedServices.length > 0 ? () => setDurationPickerOpen(true) : undefined}
+          />
           <FormRow label="Напоминание клиенту" value={remind ? 'за 1 час' : 'Нет'} onClick={() => setRemind((v) => !v)} />
           <FormRow
             label="Цвет записи"
@@ -1390,6 +1411,15 @@ export default function CreateBookingPage() {
           onCancel={() => setOverlapWarn(false)}
         />
       )}
+
+      {/* Колесо выбора длительности (макет 10302-42986): шаг 5 мин, «Выбрать» фиксирует. */}
+      <WheelPicker
+        open={durationPickerOpen}
+        value={String(durationMin)}
+        options={durationOptions}
+        onSelect={(v) => setDurationOverride(Number(v))}
+        onClose={() => setDurationPickerOpen(false)}
+      />
     </div>
   )
 }
