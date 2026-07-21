@@ -139,6 +139,7 @@ export default function ClientsPage() {
             hasClients={clients.length > 0}
             onAdd={openAdd}
             onSearch={() => { setQuery(''); setView('search') }}
+            onBack={() => navigate(-1)}
           />
           <ClientList clients={clients} onPick={openDetail} loaded={loaded} />
         </>
@@ -230,9 +231,11 @@ function RoundButton({ onClick, label, children }: { onClick: () => void; label:
   )
 }
 
-function ListHeader({ hasClients, onAdd, onSearch }: { hasClients: boolean; onAdd: () => void; onSearch: () => void }) {
+function ListHeader({ hasClients, onAdd, onSearch, onBack }: { hasClients: boolean; onAdd: () => void; onSearch: () => void; onBack: () => void }) {
   return (
-    <div style={{ ...toolbarStyle, justifyContent: 'flex-end' }}>
+    <div style={{ ...toolbarStyle, justifyContent: 'space-between' }}>
+      {/* Назад — на главную мастера (макет 10115-39569) */}
+      <RoundButton onClick={onBack} label="Назад"><ArrowLeftIcon /></RoundButton>
       {/* Заголовок по центру */}
       <div style={{
         position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none',
