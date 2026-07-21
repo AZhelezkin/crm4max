@@ -64,9 +64,13 @@ export default function AddressEditPage() {
           </span>
         </button>
 
-        {/* Комментарий (заметка к адресу: вход, звонок и т.п.) */}
+        {/* Комментарий (заметка к адресу: вход, звонок и т.п.) — макет textField 10304-45837:
+            top-align, авто-рост до 7 строк со скроллом, счётчик у лимита. */}
         <FloatingField
           multiline
+          align="top"
+          autoGrow
+          showCounter
           label="Комментарий"
           value={note}
           onChange={(v) => setNote(v.slice(0, 300))}

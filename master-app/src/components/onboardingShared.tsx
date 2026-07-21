@@ -3,7 +3,7 @@
 // и каталоге услуг.
 
 import { text } from '@/styles/typography'
-import { useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Spinner } from '@maxhub/max-ui'
 
 // ── Hero-шапка: круглый back 44×44 (left 12) + центрированный заголовок ─────────
@@ -102,19 +102,40 @@ export interface FloatingFieldProps {
   align?: 'center' | 'top'
   /** Кол-во видимых строк textarea (multiline). */
   rows?: number
+  /** Авто-рост textarea под контент до maxRows строк, дальше — скролл (макет textField 10304-45837). */
+  autoGrow?: boolean
+  /** Потолок авто-роста в строках (по умолчанию 7 — макет: 8-я строка уходит в скролл). */
+  maxRows?: number
+  /** Счётчик «len/maxLength» у нижнего края — появляется за 10 символов до лимита (макет textField). */
+  showCounter?: boolean
   /** Суффикс справа от значения (например «₽», «%»). При наличии крестик не показывается. */
   suffix?: string
   /** Значение поля жирным (Figma «Callout 1» 17/700) вместо обычного body2 — макеты клиента. */
   valueBold?: boolean
 }
 
+const LINE_H = 24 // body2 lineHeight — шаг авто-роста textarea
+
 export function FloatingField({
   label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, autoFocus, inputRef,
-  minHeight = 72, align = 'center', rows = 1, suffix, valueBold = false,
+  minHeight = 72, align = 'center', rows = 1, autoGrow = false, maxRows = 7, showCounter = false, suffix, valueBold = false,
 }: FloatingFieldProps) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
   const showClear = focused && value.length > 0 && !suffix
+  const counterVisible = showCounter && !!maxLength && maxLength - value.length <= 10
+
+  // Авто-рост textarea: высота под контент, максимум maxRows строк, дальше скролл.
+  const taRef = useRef<HTMLTextAreaElement | null>(null)
+  useLayoutEffect(() => {
+    if (!autoGrow || !multiline) return
+    const el = taRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const max = maxRows * LINE_H
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`
+    el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden'
+  }, [value, autoGrow, multiline, maxRows])
 
   const innerInputStyle: CSSProperties = {
     ...(valueBold ? text.callout1 : text.body2),
@@ -158,16 +179,16 @@ export function FloatingField({
         )}
         {multiline ? (
           <textarea
-            ref={inputRef}
+            ref={(el) => { taRef.current = el; if (inputRef) (inputRef as { current: HTMLTextAreaElement | null }).current = el }}
             value={value}
             placeholder={floated ? '' : label}
             autoFocus={autoFocus}
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            rows={rows}
+            rows={autoGrow ? 1 : rows}
             maxLength={maxLength}
-            style={{ ...innerInputStyle, resize: 'none', overflowY: 'auto' }}
+            style={{ ...innerInputStyle, resize: 'none', overflowY: autoGrow ? 'hidden' : 'auto' }}
           />
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -216,6 +237,15 @@ export function FloatingField({
         >
           <ClearFieldIcon />
         </button>
+      )}
+      {/* Счётчик у нижнего края — за 10 символов до лимита (макет textField 10304-45837). */}
+      {counterVisible && (
+        <span style={{
+          position: 'absolute', right: 20, bottom: 8, ...text.caption,
+          color: 'var(--color-on-surface-secondary)', pointerEvents: 'none',
+        }}>
+          {value.length}/{maxLength}
+        </span>
       )}
     </div>
   )
