@@ -167,6 +167,25 @@ export function formatDuration(min: number): string {
   return `${min} мин`
 }
 
+/** Человекочитаемая длительность: «30 минут», «1 час», «1.5 часа», «2 часа» (макет «Список услуг»). */
+export function formatDurationHuman(min: number): string {
+  if (min < 60) {
+    const m10 = min % 10, m100 = min % 100
+    const w = m10 === 1 && m100 !== 11 ? 'минута'
+      : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? 'минуты' : 'минут'
+    return `${min} ${w}`
+  }
+  const hours = min / 60
+  if (Number.isInteger(hours)) {
+    const h10 = hours % 10, h100 = hours % 100
+    const w = h10 === 1 && h100 !== 11 ? 'час'
+      : h10 >= 2 && h10 <= 4 && (h100 < 10 || h100 >= 20) ? 'часа' : 'часов'
+    return `${hours} ${w}`
+  }
+  // Дробные часы (1.5, 2.5 …) — всегда «часа», точка как в макете.
+  return `${hours} часа`
+}
+
 /** Услуги записи: мультиуслуги (services) или фолбэк на единственную (service). */
 export function bookingServiceItems(b: Pick<Booking, 'services' | 'service' | 'price'>): { service: Service; price: number | null }[] {
   if (b.services && b.services.length > 0) return b.services.map((s) => ({ service: s.service, price: s.price }))

@@ -3,23 +3,18 @@ import { forwardRef, useEffect, useImperativeHandle, useState, type ReactNode } 
 import { servicesApi } from '@/api/services.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Service } from '@/types'
-import { formatPrice, formatDuration, discountedPrice } from '@/types'
+import { formatPrice, formatDurationHuman, discountedPrice } from '@/types'
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
-import {
-  onboardingDiscountBadgeStyle,
-  onboardingListActionButtonStyle,
-  onboardingListButtonStyle,
-  onboardingListCardStyle,
-  onboardingListSubtitleStyle,
-  onboardingListTitleStyle,
-  onboardingPriceRowStyle,
-} from '@/components/onboardingStepOne.styles'
 
 export interface ServicesCatalogHandle {
   /** Назад на уровень выше. Плоский список — уровней нет, всегда false (родитель выходит). */
   goBack: () => boolean
   /** Совместимость со старым deep-link'ом «услуги без категории» — теперь no-op. */
   openUncategorized: () => void
+  /** Открыть редактор создания услуги (кнопка «+» в шапке «Списка услуг»). */
+  openCreate: () => void
+  /** Показать/скрыть строку поиска (иконка «поиск» в шапке). */
+  toggleSearch: () => void
 }
 
 interface ServicesCatalogProps {
@@ -33,6 +28,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const [allServices, setAllServices] = useState<Service[]>([])
     // Открытый редактор услуги (создание/правка) — см. ServiceEditorPortal.
     const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
+    // Поиск по названию (иконка в шапке «Списка услуг»).
+    const [searchOpen, setSearchOpen] = useState(false)
+    const [search, setSearch] = useState('')
 
     const load = () =>
       servicesApi.list().then((svcs) => {
@@ -53,26 +51,45 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     useImperativeHandle(ref, () => ({
       goBack: () => false,
       openUncategorized: () => {},
+      openCreate: () => setEditorTarget({ mode: 'create' }),
+      toggleSearch: () => setSearchOpen((v) => { if (v) setSearch(''); return !v }),
     }), [])
 
-    const handleDeleteService = async (id: string) => {
-      await servicesApi.remove(id)
-      reload()
-    }
+    const q = search.trim().toLowerCase()
+    const shownServices = q ? allServices.filter((s) => s.name.toLowerCase().includes(q)) : allServices
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
-          {/* Плоский список всех услуг: имя + цена + длительность + скидка; тап → форма. */}
-          {allServices.map((s) => (
+          {/* Строка поиска (по иконке в шапке) */}
+          {searchOpen && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-surface-transparent)', borderRadius: 12, padding: '10px 16px' }}>
+              <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}><SearchIcon /></span>
+              <input
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Поиск услуги"
+                style={{ ...text.body2, flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--color-on-surface)', padding: 0 }}
+              />
+            </div>
+          )}
+
+          {/* Плоский список услуг (макет «Список услуг» 10304-43086): имя + длительность/цена + скидка; тап → форма. */}
+          {shownServices.map((s) => (
             <ServiceCard
               key={s.id}
               service={s}
               onEdit={() => setEditorTarget({ mode: 'edit', service: s })}
-              onDelete={() => { void handleDeleteService(s.id) }}
             />
           ))}
+
+          {searchOpen && q && shownServices.length === 0 && (
+            <div style={{ padding: '24px 12px', textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
+              Ничего не найдено
+            </div>
+          )}
 
           <AddRowButton label="Добавить услугу" onClick={() => setEditorTarget({ mode: 'create' })} />
 
@@ -118,42 +135,43 @@ function AddRowButton({ label, onClick }: { label: string; onClick: () => void }
   )
 }
 
-// Карточка услуги (плоский список): имя + длительность + цена/скидка + edit/delete.
-function ServiceCard({ service: s, onEdit, onDelete }: {
-  service: Service; onEdit: () => void; onDelete: () => void
-}) {
+// Карточка услуги (макет 10304-43086): surface-transparent rx20 px20 py16;
+// имя (Callout 1) + строка «длительность, цена [зачёркнутая]»; красный тег «-N%»; стрелка. Тап → редактор.
+function ServiceCard({ service: s, onEdit }: { service: Service; onEdit: () => void }) {
   const dPrice = discountedPrice(s.price, s.discountPercent)
+  const effective = dPrice ?? s.price
   return (
-    <div onClick={onEdit} style={{ ...onboardingListCardStyle, cursor: 'pointer' }}>
-      <div style={onboardingListButtonStyle}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={onboardingListTitleStyle}>{s.name}</div>
-          <div style={onboardingListSubtitleStyle}>{formatDuration(s.duration)}</div>
-          <div style={onboardingPriceRowStyle}>
-            {dPrice !== null ? (
-              <>
-                <span style={{ color: 'var(--color-primary-surface)', ...text.action }}>{formatPrice(dPrice)}</span>
-                <span style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', textDecoration: 'line-through' }}>{formatPrice(s.price)}</span>
-                <span style={onboardingDiscountBadgeStyle}>{s.discountPercent}% СКИДКА</span>
-              </>
-            ) : (
-              <span style={{ ...text.action }}>{formatPrice(s.price)}</span>
-            )}
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }} style={onboardingListActionButtonStyle}>
-            <EditIcon />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete() }}
-            style={{ ...onboardingListActionButtonStyle, color: 'var(--color-on-surface-secondary)', ...text.titleSmall, lineHeight: 1 }}
-          >
-            ×
-          </button>
-        </div>
+    <div
+      onClick={onEdit}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        background: 'var(--color-surface-transparent)', borderRadius: 20,
+        padding: '16px 20px', cursor: 'pointer',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {s.name}
+        </span>
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {formatDurationHuman(s.duration)}, {formatPrice(effective)}
+          {dPrice !== null && (
+            <span style={{ color: 'var(--color-on-surface-muted)', textDecoration: 'line-through', marginLeft: 6 }}>{formatPrice(s.price)}</span>
+          )}
+        </span>
       </div>
+      {dPrice !== null && s.discountPercent && (
+        <span style={{
+          flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          padding: '8px', borderRadius: 8, ...text.label2Caps,
+          background: 'var(--color-error-surface-lite)', color: 'var(--color-on-error-surface-lite)',
+        }}>
+          -{s.discountPercent}%
+        </span>
+      )}
+      <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}>
+        <ArrowRightIcon />
+      </span>
     </div>
   )
 }
@@ -168,13 +186,20 @@ function PlusIcon() {
   )
 }
 
-function EditIcon() {
+// vuesax/linear/arrow-right (16×16).
+function ArrowRightIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-        stroke="var(--color-on-surface-secondary)" strokeWidth="1.8" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M5.94 3.29 10.65 8l-4.71 4.71" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/search-normal (для строки поиска).
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

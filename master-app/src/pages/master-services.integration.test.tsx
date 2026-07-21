@@ -110,7 +110,7 @@ describe('ServicesPage and ServicesCatalog', () => {
 
     expect(await screen.findByText('Стрижка')).toBeInTheDocument()
     expect(screen.getByText('Окрашивание')).toBeInTheDocument()
-    expect(screen.getByText('20% СКИДКА')).toBeInTheDocument()
+    expect(screen.getByText('-20%')).toBeInTheDocument()
     expect(screen.queryByText('Прочее')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Добавить услугу/ })).toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()

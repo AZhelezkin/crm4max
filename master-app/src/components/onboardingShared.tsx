@@ -8,7 +8,7 @@ import { Spinner } from '@maxhub/max-ui'
 
 // ── Hero-шапка: круглый back 44×44 (left 12) + центрированный заголовок ─────────
 // Лежит на hero-градиенте (#root > div). h=56 (back 44 + 6/6). Макет shedule.svg.
-export function HeroHeader({ title, onBack }: { title: ReactNode; onBack: () => void }) {
+export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBack: () => void; trailing?: ReactNode }) {
   return (
     <div style={{
       position: 'relative',
@@ -39,6 +39,12 @@ export function HeroHeader({ title, onBack }: { title: ReactNode; onBack: () => 
       </button>
       {/* Заголовок hero — Callout 1 17/700/-0.17 (Figma maxToolbar title, Nunito Sans Bold). */}
       <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
+      {/* Трейлинг-действия справа (например + и поиск на «Списке услуг»). */}
+      {trailing && (
+        <div style={{ position: 'absolute', right: 12, display: 'flex', alignItems: 'center' }}>
+          {trailing}
+        </div>
+      )}
     </div>
   )
 }
