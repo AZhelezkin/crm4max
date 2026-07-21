@@ -129,6 +129,11 @@ export default function ServiceFormPortal({
   const [openPicker, setOpenPicker] = useState<'category' | 'duration' | 'sessions' | null>(null)
   // Сбрасываем подтверждение удаления при закрытии формы.
   useEffect(() => { if (!visible) setConfirmDelete(false) }, [visible])
+  // Взвели удаление корзиной вверху — подкручиваем к кнопке «Подтвердите удаление» внизу.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (confirmDelete) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [confirmDelete])
 
   if (!visible) return null
 
@@ -147,9 +152,26 @@ export default function ServiceFormPortal({
       zIndex: 200,
       display: 'flex', flexDirection: 'column',
     }}>
-      <HeroHeader title={isEdit ? 'Редактирование услуги' : 'Создание услуги'} onBack={onClose} />
+      <HeroHeader
+        title={isEdit ? 'Редактирование услуги' : 'Создание услуги'}
+        onBack={onClose}
+        trailing={onDelete ? (
+          // Удаление — иконка-корзина в тулбаре (макет 10304-43249). Тап взводит
+          // подтверждение (кнопка «Подтвердите удаление» снизу); повторный тап — отбой.
+          <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: confirmDelete ? 'var(--color-error-surface-lite)' : 'var(--color-background)', borderRadius: 22 }}>
+            <button
+              type="button"
+              aria-label="Удалить услугу"
+              onClick={() => setConfirmDelete((v) => !v)}
+              style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-error-surface-accented)' }}
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        ) : undefined}
+      />
 
-      <div style={{
+      <div ref={scrollRef} style={{
         flex: 1, overflowY: 'auto',
         padding: '8px 16px calc(48px + env(safe-area-inset-bottom))',
       }}>
@@ -351,19 +373,20 @@ export default function ServiceFormPortal({
           Сохранить
         </button>
 
-        {/* Удаление услуги (только редактирование) — двойной тап для подтверждения. */}
-        {onDelete && (
+        {/* Подтверждение удаления — появляется после тапа по корзине в тулбаре.
+            Сам механизм подтверждения оставлен прежним (тап по «Подтвердите удаление»). */}
+        {onDelete && confirmDelete && (
           <button
             type="button"
-            onClick={() => { if (confirmDelete) onDelete(); else setConfirmDelete(true) }}
+            onClick={onDelete}
             style={{
               width: '100%', height: 48, marginTop: 8, border: 'none', borderRadius: 20,
               ...text.callout1, cursor: 'pointer',
-              background: confirmDelete ? 'rgba(209, 50, 50, 0.12)' : 'transparent',
+              background: 'rgba(209, 50, 50, 0.12)',
               color: 'var(--color-error-surface-accented)',
             }}
           >
-            {confirmDelete ? 'Подтвердите удаление' : 'Удалить услугу'}
+            Подтвердите удаление
           </button>
         )}
         </div>
@@ -437,6 +460,18 @@ function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/trash — удаление услуги (тулбар).
+function TrashIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M21 5.98c-3.33-.33-6.68-.5-10.02-.5-1.98 0-3.96.1-5.94.3L3 5.98" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 4.97l.22-1.31C8.88 2.71 9 2 10.69 2h2.62c1.69 0 1.82.75 1.97 1.67l.22 1.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M18.85 9.14l-.65 10.07C18.09 20.78 18 22 15.21 22H8.79C6 22 5.91 20.78 5.8 19.21L5.15 9.14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.33 16.5h3.33M9.5 12.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
