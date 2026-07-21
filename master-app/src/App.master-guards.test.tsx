@@ -38,7 +38,6 @@ async function loadGuardApp({
     return { default: () => <Outlet /> }
   })
   vi.doMock('@/pages/HomePage', () => ({ default: () => <div data-testid="master-home" /> }))
-  vi.doMock('@/pages/ProfilePage', () => ({ default: () => <div data-testid="master-profile" /> }))
   vi.doMock('@/pages/SettingsPage', () => ({ default: () => <div data-testid="master-settings" /> }))
   vi.doMock('@/pages/WelcomePage', () => ({ default: () => <div data-testid="welcome" /> }))
   vi.doMock('@/pages/SubscriptionPlanPage', () => ({
@@ -132,7 +131,7 @@ describe.sequential('App master guards', () => {
     expect(localStorage.getItem('sub:preErr')).toBeNull()
   })
 
-  it('переходит из payment success в профиль', async () => {
+  it('переходит из payment success на главную', async () => {
     const user = userEvent.setup()
     localStorage.setItem('sub:payPending', '1')
     const { App } = await loadGuardApp()
@@ -140,8 +139,8 @@ describe.sequential('App master guards', () => {
     render(<App />)
     await user.click(await screen.findByTestId('subscription-success'))
 
-    expect(await screen.findByTestId('master-profile')).toBeInTheDocument()
-    expect(window.location.hash).toBe('#/profile')
+    expect(await screen.findByTestId('master-home')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/')
   })
 
   it('показывает failure только для новой ошибки оплаты', async () => {

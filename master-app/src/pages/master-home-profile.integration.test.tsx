@@ -31,7 +31,6 @@ vi.mock('@/api/masters.api', () => ({
 import { useAuthStore } from '@/store/auth.store'
 
 import HomePage from './HomePage'
-import ProfilePage from './ProfilePage'
 
 const TODAY = dayjs().format('YYYY-MM-DD')
 
@@ -48,7 +47,7 @@ function primeSuccessfulReads(master = createMasterProfile()) {
   api.getReviews.mockResolvedValue([])
 }
 
-describe('master HomePage and ProfilePage', () => {
+describe('master HomePage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     vi.spyOn(window, 'open').mockImplementation(() => null)
@@ -64,10 +63,6 @@ describe('master HomePage and ProfilePage', () => {
     api.getMaster.mockReturnValue(pending)
     const home = renderAtRoute(<HomePage />)
     expect(home.container.querySelectorAll('.skeleton')).toHaveLength(9)
-    home.unmount()
-
-    const profile = renderAtRoute(<ProfilePage />)
-    expect(profile.container.querySelectorAll('.skeleton')).toHaveLength(9)
   })
 
   it('HomePage показывает authoritative summaries, фильтрует cancelled и сортирует время', async () => {
@@ -180,69 +175,4 @@ describe('master HomePage and ProfilePage', () => {
     expect(localStorage.getItem('sub:preErr')).toBe('insufficient_funds')
   })
 
-  it('ProfilePage показывает профиль, расписание, услуги, фото и отзывы', async () => {
-    const service = createMasterService({
-      name: 'Окрашивание',
-      workPhotos: [{ id: 'photo-1', url: 'https://cdn.test/work.jpg', order: 0 }],
-    })
-    const master = createMasterProfile({ homeVisit: true, services: [service], rating: 4.8 })
-    const booking = createMasterBooking({ id: 'profile-booking', date: TODAY, service })
-    api.getMaster.mockResolvedValue(master)
-    api.listBookings.mockResolvedValue([booking])
-    api.getSubscription.mockResolvedValue(createSubscriptionState({
-      status: 'TRIALING',
-      trialEndsAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
-    }))
-    api.getReviews.mockResolvedValue([{
-      id: 'review-1',
-      rating: 5,
-      text: 'Отличная работа',
-      createdAt: '2026-07-18T10:00:00.000Z',
-      client: { name: 'Ирина', photo: null },
-    }])
-    setMaster(master)
-    const view = renderAtRoute(<ProfilePage />)
-
-    expect((await screen.findAllByText('Окрашивание')).length).toBeGreaterThan(0)
-    expect(screen.getByText('4.8')).toBeInTheDocument()
-    expect(screen.getByText('Доступен выезд на дом')).toBeInTheDocument()
-    expect(screen.getByText('Пробный период')).toBeInTheDocument()
-    await view.user.click(screen.getByRole('button', { name: /Фото/ }))
-    expect(document.body.querySelector('img[src="https://cdn.test/work.jpg"]')).toBeInTheDocument()
-    await view.user.click(screen.getByRole('button', { name: /Отзывы/ }))
-    expect(await screen.findByText('Отличная работа')).toBeInTheDocument()
-  })
-
-  it('ProfilePage показывает empty state после read failures', async () => {
-    const profile = createMasterProfile({ services: [] })
-    const master = { ...profile, schedule: { ...profile.schedule!, workingDays: [1, 2, 3, 4, 5, 6, 7] } }
-    api.getMaster.mockRejectedValue(new Error('refresh unavailable'))
-    api.listBookings.mockRejectedValue(new Error('bookings unavailable'))
-    api.getSubscription.mockRejectedValue(new Error('subscription unavailable'))
-    api.getReviews.mockRejectedValue(new Error('reviews unavailable'))
-    setMaster(master)
-    const view = renderAtRoute(<ProfilePage />)
-
-    expect(await screen.findByText('Услуги ещё не добавлены')).toBeInTheDocument()
-    expect(screen.getByText('Нет записей на сегодня')).toBeInTheDocument()
-    await view.user.click(screen.getByRole('button', { name: /Отзывы/ }))
-    expect(await screen.findByText('Пока нет отзывов')).toBeInTheDocument()
-  })
-
-  it('ProfilePage сохраняет exact date route state и toolbar routes', async () => {
-    const master = createMasterProfile()
-    api.getMaster.mockResolvedValue(master)
-    setMaster(master)
-    const createView = renderAtRoute(<ProfilePage />)
-
-    await createView.user.click(screen.getByRole('button', { name: 'Создать запись на сегодня' }))
-    expect(createView.getLocation().pathname).toBe('/bookings/new')
-    expect(createView.getLocation().state).toEqual({ date: TODAY })
-    createView.unmount()
-
-    setMaster(master)
-    const settingsView = renderAtRoute(<ProfilePage />)
-    await settingsView.user.click(screen.getByRole('button', { name: 'Настройки профиля' }))
-    expect(settingsView.getLocation().pathname).toBe('/settings')
-  })
 })

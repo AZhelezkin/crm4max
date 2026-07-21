@@ -5,7 +5,6 @@ import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
 import ScrollToTop from '@/components/ScrollToTop'
-import ProfilePage from '@/pages/ProfilePage'
 import HomePage from '@/pages/HomePage'
 import BookingsPage from '@/pages/BookingsPage'
 import ClientsPage from '@/pages/ClientsPage'
@@ -217,11 +216,11 @@ function MasterApp() {
   const needsOnboarding = !master || !master.isOnboarded
 
   // Успех оплаты (макет 10256-55423) — поверх кабинета, до гейта блокировки.
-  // «Перейти в профиль» ставит hash и закрывает экран → основной роутер откроет профиль.
+  // «Перейти в профиль» ведёт на главную (новый кабинет мастера).
   if (!needsOnboarding && paidJustNow) {
     return (
       <SubscriptionSuccessPage
-        onGoProfile={() => { window.location.hash = '#/profile'; setPaidJustNow(false) }}
+        onGoProfile={() => { window.location.hash = '#/'; setPaidJustNow(false) }}
       />
     )
   }
@@ -262,9 +261,6 @@ function MasterApp() {
         <Route element={needsOnboarding ? <Navigate to="/welcome" replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
             <Route index element={<MasterIndexRoute />} />
-            {/* Старая «Главная» (публичный профиль) сохранена временно — куда встроить
-                (Личная страница / Другое) решается отдельно; см. редизайн главной. */}
-            <Route path="profile" element={<ProfilePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />

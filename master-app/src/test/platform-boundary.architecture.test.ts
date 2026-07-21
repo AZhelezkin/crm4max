@@ -33,7 +33,6 @@ const WEB_APP_ALLOWLIST = [
   'src/pages/BlockedSubscriptionPage.tsx',
   'src/pages/BookingDetailPage.tsx',
   'src/pages/HomePage.tsx',
-  'src/pages/ProfilePage.tsx',
   'src/pages/SubscriptionPlanPage.tsx',
   'src/pages/WelcomePage.tsx',
   'src/standalone-pages/handoff/destination-selector/DestinationSelectorPage.tsx',
