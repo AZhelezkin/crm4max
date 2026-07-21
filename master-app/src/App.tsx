@@ -24,6 +24,7 @@ import BookingDetailPage from '@/pages/BookingDetailPage'
 import CreateBookingPage from '@/pages/CreateBookingPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
+import OtherPage from '@/pages/OtherPage'
 import MapTestPage from '@/pages/MapTestPage'
 import { subscriptionApi } from '@/api/subscription.api'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
@@ -277,6 +278,7 @@ function MasterApp() {
           <Route path="/income/:date" element={<PaymentsDayPage />} />
           <Route path="/payment-settings" element={<PaymentSettingsPage />} />
           <Route path="/share" element={<ShareLinkPage />} />
+          <Route path="/other" element={<OtherPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

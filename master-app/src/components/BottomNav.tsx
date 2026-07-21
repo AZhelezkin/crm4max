@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { startSupport } from '@/api/support.api'
 
 // Таб-бар по макету 10220-102508 (плавающая пилюля): Главная / Записи / Доход /
-// Поддержка. Активный таб — подсветка-пилюля (secondary-surface-muted) + синий
-// (active-element). «Поддержка» — не роут, а запуск режима поддержки в боте.
+// Другое. Активный таб — подсветка-пилюля (secondary-surface-muted) + синий
+// (active-element). «Другое» → экран /other (согласия/подписка/поддержка и т.д.).
 
 const ACTIVE = 'var(--color-active-element)'
 const INACTIVE = 'var(--color-on-surface-secondary)'
@@ -49,11 +47,13 @@ function WalletIcon({ color }: { color: string }) {
   )
 }
 
-// Поддержка — текущая иконка (vuesax support, filled).
-function SupportIcon({ color }: { color: string }) {
+// vuesax/linear/document — «Другое».
+function DocumentIcon({ color }: { color: string }) {
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ color }}>
-      <path fill="currentColor" d="M14 2.333c-5.798 0-10.5 4.702-10.5 10.5v6.417c0 1.93 1.57 3.5 3.5 3.5h1.167c.644 0 1.166-.523 1.166-1.167v-5.833c0-.644-.522-1.167-1.166-1.167H5.833v-1.75c0-4.51 3.657-8.166 8.167-8.166s8.167 3.656 8.167 8.166v1.75h-2.334c-.644 0-1.166.523-1.166 1.167v5.833c0 .644.522 1.167 1.166 1.167h2.334v.583c0 1.61-1.307 2.917-2.917 2.917H15.75a1.75 1.75 0 0 0-1.75 1.75v.583c0 .322-.261.584-.583.584H11.083a.583.583 0 0 1-.583-.584v-1.166c0-.322.261-.584.583-.584h2.334c.644 0 1.166-.522 1.166-1.166s-.522-1.167-1.166-1.167h-2.334a2.917 2.917 0 0 0-2.916 2.917v1.166a2.917 2.917 0 0 0 2.916 2.917h2.334a2.917 2.917 0 0 0 2.916-2.917v-.583c4.832 0 5.25-3.92 5.25-5.25v-7c0-5.798-4.702-10.5-10.5-10.5Z" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style={{ color }}>
+      <path d="M20.5 10.19h-3c-2.47 0-4.48-2.01-4.48-4.48v-3c0-.4-.32-.71-.72-.71H8.07C4.99 2 2.5 4 2.5 7.57v8.86C2.5 20 4.99 22 8.07 22h7.86C19.01 22 21.5 20 21.5 16.43v-5.52c0-.4-.32-.72-.72-.72Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.32 2.21c-.4-.4-1.1-.12-1.1.44v3.29c0 1.38 1.17 2.52 2.6 2.52.9.01 2.15.01 3.22.01.55 0 .84-.65.46-1.04-1.37-1.38-3.82-3.86-5.18-5.22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 13h5M8 17h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -62,34 +62,16 @@ const TABS = [
   { path: '/', label: 'Главная', Icon: HappyIcon },
   { path: '/bookings', label: 'Записи', Icon: CalendarIcon },
   { path: '/income', label: 'Доход', Icon: WalletIcon },
+  { path: '/other', label: 'Другое', Icon: DocumentIcon },
 ]
 
 export default function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [supportLoading, setSupportLoading] = useState(false)
 
   const activeTab = TABS.find((t) =>
     t.path === '/' ? location.pathname === '/' : location.pathname.startsWith(t.path)
   )?.path ?? '/'
-
-  // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как у клиента).
-  const handleSupport = async () => {
-    if (supportLoading) return
-    setSupportLoading(true)
-    try {
-      const { botUrl } = await startSupport()
-      const wa = window.WebApp
-      if (wa?.openMaxLink) wa.openMaxLink(botUrl)
-      else if (wa?.openLink) wa.openLink(botUrl)
-      else window.open(botUrl, '_blank')
-    } catch (err) {
-      console.error('startSupport failed', err)
-      alert('Не удалось открыть поддержку. Попробуйте позже.')
-    } finally {
-      setSupportLoading(false)
-    }
-  }
 
   const tabStyle: React.CSSProperties = {
     position: 'relative', flex: '1 1 0', minWidth: 0,
@@ -135,12 +117,6 @@ export default function BottomNav() {
             </button>
           )
         })}
-        <button onClick={handleSupport} disabled={supportLoading} style={{ ...tabStyle, opacity: supportLoading ? 0.5 : 1 }}>
-          <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex' }}>
-            <SupportIcon color={INACTIVE} />
-          </span>
-          <span style={{ position: 'relative', zIndex: 1, ...LABEL, color: INACTIVE }}>Поддержка</span>
-        </button>
       </div>
     </nav>
   )
