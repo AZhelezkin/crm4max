@@ -134,6 +134,7 @@ export default function BookingDetailPage() {
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [payingBusy, setPayingBusy] = useState(false)
 
   useEffect(() => {
     if (!bookingId) return
@@ -222,6 +223,17 @@ export default function BookingDetailPage() {
   const isCancelled = booking.status === 'CANCELLED'
   // Запись в прошлом: время окончания (начало + длительность) уже прошло (в поясе клиента).
   const isPast = dayjs(`${local.date}T${local.time}`).add(bookingDuration(booking), 'minute').isBefore(dayjs())
+  // «Отметить как оплачено» (как у мастера) — активная неоплаченная запись, в т.ч. прошедшая.
+  const showPay = canAct && paymentStatus !== 'PAID'
+  // Блок чипов (Перенести/Чат/Отменить + календарь) — прежнее условие футера.
+  const showChips = canAct && (!isPast || !!master.maxProfileLink)
+
+  // «Отметить как оплачено» — клиент помечает свою запись оплаченной (бэкенд проверяет владение).
+  const handleConfirmPayment = async () => {
+    if (payingBusy) return
+    setPayingBusy(true)
+    try { setBooking(await bookingsApi.confirmPayment(booking.id)) } finally { setPayingBusy(false) }
+  }
 
   // «Добавить в календарь» — как у мастера (общий openAddToCalendar). Дату/время
   // берём в поясе клиента (для Google-шаблона на Android/десктопе); iOS — серверный .ics.
@@ -509,13 +521,31 @@ export default function BookingDetailPage() {
       {/* ── Footer chips (Figma 8534:15134). bottom-fixed, padding 8/12/48.
             Скрываем для COMPLETED/CANCELLED. Для прошедшей записи — без «Перенести»/
             «Отменить»; остаётся только «Чат», и весь футер прячем, если чата нет. */}
-      {canAct && (!isPast || !!master.maxProfileLink) && (
+      {(showPay || showChips) && (
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '8px 12px 48px',
         background: 'var(--color-background)',
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
+        {/* «Отметить как оплачено» (как у мастера) — активная неоплаченная запись. */}
+        {showPay && (
+          <button
+            type="button"
+            disabled={payingBusy}
+            onClick={handleConfirmPayment}
+            style={{
+              width: '100%', height: 60, borderRadius: 20, border: 'none',
+              cursor: payingBusy ? 'default' : 'pointer', ...text.callout1,
+              background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
+              opacity: payingBusy ? 0.6 : 1,
+            }}
+          >
+            Отметить как оплачено
+          </button>
+        )}
+
+        {showChips && (<>
         {/* Chip: Добавить в календарь (как у мастера) — для будущих записей. */}
         {!isPast && (
           <button
@@ -603,6 +633,7 @@ export default function BookingDetailPage() {
           </button>
           )}
         </div>
+        </>)}
       </div>
       )}
     </div>
