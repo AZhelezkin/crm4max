@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -516,8 +516,24 @@ function BookingActionMenu({ pos, busy, onClose, onRemind, onEdit, onReschedule,
     { label: 'Перенести', icon: <CalendarEditIcon />, onClick: onReschedule },
     { label: 'Отменить', icon: <CloseCircleIcon />, onClick: onCancel, danger: true },
   ]
+
+  // Меню привязано к координатам иконки, поэтому при скролле/ресайзе его закрываем
+  // (иначе «отрывается» от строки). capture — ловим скролл любого контейнера.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  useEffect(() => {
+    const close = () => onCloseRef.current()
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [])
+
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+    // Оверлей закрывает меню по тапу мимо и по жесту прокрутки (сам он скролл перехватывает).
+    <div onClick={onClose} onWheel={onClose} onTouchMove={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
