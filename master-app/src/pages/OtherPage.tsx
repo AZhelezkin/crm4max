@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
 import { startSupport } from '@/api/support.api'
 
-// Экран «Другое» (макет 10302-42755) — открывается вкладкой «Другое» в навбаре.
+// Экран «Другое» (макеты 10302-42755, 10338-42120) — вкладка навбара: тулбар без
+// кнопки «назад» (leading-слот пуст), снизу виден навбар с активной вкладкой.
 // Пункты-меню; пока рабочая только «Техническая поддержка» (запуск режима поддержки
 // в боте), остальные — заглушки: неактивны (экраны появятся позже).
 export default function OtherPage() {
-  const navigate = useNavigate()
   const [supportLoading, setSupportLoading] = useState(false)
 
   // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как было в навбаре).
@@ -38,8 +37,8 @@ export default function OtherPage() {
   ]
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <HeroHeader title="Другое" onBack={() => navigate(-1)} />
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 95 }}>
+      <HeroHeader title="Другое" />
 
       <div style={{ padding: '8px 16px' }}>
         <div style={{

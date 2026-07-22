@@ -265,6 +265,8 @@ function MasterApp() {
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />
+            {/* «Другое» — полноценная вкладка: навбар виден, кнопки «назад» нет. */}
+            <Route path="other" element={<OtherPage />} />
           </Route>
 
           <Route path="/bookings/new" element={<CreateBookingPage />} />
@@ -278,7 +280,6 @@ function MasterApp() {
           <Route path="/income/:date" element={<PaymentsDayPage />} />
           <Route path="/payment-settings" element={<PaymentSettingsPage />} />
           <Route path="/share" element={<ShareLinkPage />} />
-          <Route path="/other" element={<OtherPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

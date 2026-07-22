@@ -8,7 +8,9 @@ import { Spinner } from '@maxhub/max-ui'
 
 // ── Hero-шапка: круглый back 44×44 (left 12) + центрированный заголовок ─────────
 // Лежит на hero-градиенте (#root > div). h=56 (back 44 + 6/6). Макет shedule.svg.
-export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBack: () => void; trailing?: ReactNode }) {
+// `onBack` опционален: у экранов-вкладок (например «Другое», макет 10338-42120)
+// в leading-слоте тулбара пусто — возврата нет, переключение идёт навбаром.
+export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBack?: () => void; trailing?: ReactNode }) {
   return (
     <div style={{
       position: 'relative',
@@ -19,24 +21,26 @@ export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBa
       padding: '6px 12px',
       flexShrink: 0,
     }}>
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="Назад"
-        style={{
-          position: 'absolute',
-          left: 12,
-          width: 44, height: 44,
-          borderRadius: '50%',
-          background: 'var(--color-background)',
-          color: 'var(--color-on-surface-soften)',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <ArrowLeftIcon />
-      </button>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Назад"
+          style={{
+            position: 'absolute',
+            left: 12,
+            width: 44, height: 44,
+            borderRadius: '50%',
+            background: 'var(--color-background)',
+            color: 'var(--color-on-surface-soften)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <ArrowLeftIcon />
+        </button>
+      )}
       {/* Заголовок hero — Callout 1 17/700/-0.17 (Figma maxToolbar title, Nunito Sans Bold). */}
       <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
       {/* Трейлинг-действия справа (например + и поиск на «Списке услуг»). */}
