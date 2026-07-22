@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { installTopOverscrollGuard } from './topOverscrollGuard'
+import { SENTINEL, installTopOverscrollGuard } from './topOverscrollGuard'
 
 let stop: (() => void) | null = null
 
@@ -9,11 +9,23 @@ afterEach(() => {
   stop = null
   document.body.innerHTML = ''
   setScrollTop(document.body, 0)
+  setScrollSize(document.body, { scrollHeight: 0, clientHeight: 0 })
 })
 
-/** jsdom не считает layout — задаём прокрутку явно. */
+/** jsdom не считает layout — прокрутку держим в обычном read/write свойстве. */
 function setScrollTop(el: HTMLElement, value: number) {
-  Object.defineProperty(el, 'scrollTop', { configurable: true, value })
+  let current = value
+  Object.defineProperty(el, 'scrollTop', {
+    configurable: true,
+    get: () => current,
+    set: (next: number) => { current = next },
+  })
+}
+
+/** Прокручиваемость (нужна кламперу) — тоже задаём явно. */
+function setScrollSize(el: HTMLElement, { scrollHeight, clientHeight }: { scrollHeight: number; clientHeight: number }) {
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, value: scrollHeight })
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: clientHeight })
 }
 
 /** jsdom не умеет TouchEvent — собираем событие с нужными полями вручную. */
@@ -97,5 +109,59 @@ describe('topOverscrollGuard', () => {
     remove()
 
     expect(pullDown(document.body).defaultPrevented).toBe(false)
+  })
+
+  // Вторая линия защиты: жест, который браузер уже начал, отменить нельзя
+  // (touchmove приходит с cancelable:false). Поэтому скроллер не должен
+  // вставать ровно в 0 — иначе «прокрутил вниз → резко наверх» уходит
+  // в оверскролл и закрывает мини-приложение.
+  describe('sentinel: скроллер не встаёт ровно в 0', () => {
+    function makeScrollablePage() {
+      setScrollSize(document.body, { scrollHeight: 2000, clientHeight: 800 })
+      setScrollTop(document.body, 0)
+    }
+
+    it('сдвигает прокручиваемую страницу на 1px при установке', () => {
+      makeScrollablePage()
+      stop = installTopOverscrollGuard()
+
+      expect(document.body.scrollTop).toBe(SENTINEL)
+    })
+
+    it('возвращает на 1px, когда инерция догнала до нуля', () => {
+      makeScrollablePage()
+      stop = installTopOverscrollGuard()
+
+      document.body.scrollTop = 0
+      document.body.dispatchEvent(new Event('scroll', { bubbles: false }))
+
+      expect(document.body.scrollTop).toBe(SENTINEL)
+    })
+
+    it('компенсирует сдвиг распоркой в начале body', () => {
+      makeScrollablePage()
+      stop = installTopOverscrollGuard()
+
+      const spacer = document.body.firstElementChild as HTMLElement
+      expect(spacer.getAttribute('data-overscroll-spacer')).toBe('')
+      expect(spacer.style.height).toBe(`${SENTINEL}px`)
+    })
+
+    it('не трогает короткую страницу — прокручивать нечего', () => {
+      setScrollSize(document.body, { scrollHeight: 600, clientHeight: 800 })
+      setScrollTop(document.body, 0)
+      stop = installTopOverscrollGuard()
+
+      expect(document.body.scrollTop).toBe(0)
+      expect(pullDown(document.body).defaultPrevented).toBe(true)
+    })
+
+    it('убирает распорку и сдвиг после отписки', () => {
+      makeScrollablePage()
+      installTopOverscrollGuard()()
+
+      expect(document.body.querySelector('[data-overscroll-spacer]')).toBeNull()
+      expect(document.body.scrollTop).toBe(0)
+    })
   })
 })
