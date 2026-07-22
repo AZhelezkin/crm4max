@@ -2,6 +2,7 @@
  * Shim для @vkontakte/vk-bridge — проксирует вызовы в MAX WebApp API.
  * Позволяет не переписывать весь код при миграции с VK на Max.
  */
+import { installTopOverscrollGuard } from './topOverscrollGuard'
 
 declare global {
   interface Window {
@@ -23,6 +24,10 @@ declare global {
       enableVerticalSwipes?: () => Promise<{ allowVerticalSwipes: boolean }>
       /** Текущее состояние жеста (в старых клиентах Max может отсутствовать). */
       isVerticalSwipesEnabled?: boolean
+      /** Диагностика клиента: 'android' | 'ios' | 'web' | …, версия моста, модель. */
+      platform?: string | null
+      version?: string | null
+      deviceName?: string | null
     }
   }
 }
@@ -41,28 +46,66 @@ export type VerticalSwipesResult =
   | { ok: false; error: string }
 
 /** Что вообще доступно в текущем окружении — для диагностики на тест-странице. */
-export function verticalSwipesInfo(): { hasWebApp: boolean; hasMethod: boolean; enabled: boolean | undefined } {
+export function verticalSwipesInfo(): {
+  hasWebApp: boolean
+  hasMethod: boolean
+  enabled: boolean | undefined
+  platform: string | null | undefined
+  version: string | null | undefined
+  deviceName: string | null | undefined
+  /** Все ключи объекта WebApp — видно, что реально отдал клиент. */
+  keys: string[]
+} {
   const wa = window.WebApp
+  let keys: string[] = []
+  if (wa) {
+    // Методы моста лежат на прототипе класса, поэтому одного Object.keys мало.
+    const own = Object.keys(wa)
+    const proto = Object.getPrototypeOf(wa) as object | null
+    const inherited = proto ? Object.getOwnPropertyNames(proto) : []
+    keys = [...new Set([...own, ...inherited])].filter((k) => k !== 'constructor').sort()
+  }
   return {
     hasWebApp: !!wa,
     hasMethod: typeof wa?.disableVerticalSwipes === 'function',
     enabled: wa?.isVerticalSwipesEnabled,
+    platform: wa?.platform,
+    version: wa?.version,
+    deviceName: wa?.deviceName,
+    keys,
+  }
+}
+
+/** Ошибку клиента разворачиваем целиком: у Max это объект { code, description }. */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object') {
+    const o = err as Record<string, unknown>
+    const parts = [o.code, o.description, o.error, o.message].filter(Boolean)
+    if (parts.length) return parts.join(' — ')
+  }
+  try {
+    return JSON.stringify(err)
+  } catch {
+    return String(err)
   }
 }
 
 /** Включить/выключить вертикальные свайпы. Ошибку не бросает — возвращает в результате. */
 export async function setVerticalSwipes(allow: boolean): Promise<VerticalSwipesResult> {
   const wa = window.WebApp
-  // Нет метода — старый клиент Max или обычный браузер: молча живём как раньше.
-  if (!wa?.disableVerticalSwipes || !wa?.enableVerticalSwipes) {
-    return { ok: false, error: 'Метод недоступен (нет window.WebApp или старый клиент Max)' }
+  if (!wa) return { ok: false, error: 'window.WebApp отсутствует (открыто вне Max?)' }
+  // Проверяем ровно тот метод, который нужен, — а не пару сразу.
+  const method = allow ? wa.enableVerticalSwipes : wa.disableVerticalSwipes
+  if (typeof method !== 'function') {
+    return { ok: false, error: `${allow ? 'enable' : 'disable'}VerticalSwipes нет в window.WebApp (старая версия моста)` }
   }
   try {
-    const res = allow ? await wa.enableVerticalSwipes() : await wa.disableVerticalSwipes()
+    const res = await method.call(wa)
     return { ok: true, allowVerticalSwipes: res?.allowVerticalSwipes ?? allow }
   } catch (err) {
     // Клиент не ответил/не поддерживает — не фатально, просто остаётся штатный жест.
-    return { ok: false, error: err instanceof Error ? err.message : JSON.stringify(err) }
+    return { ok: false, error: describeError(err) }
   }
 }
 
@@ -72,17 +115,28 @@ export async function setVerticalSwipes(allow: boolean): Promise<VerticalSwipesR
  * Возвращает функцию отписки — для useEffect.
  */
 export function keepVerticalSwipesDisabled(): () => void {
-  void setVerticalSwipes(false)
+  let removeGuard: (() => void) | null = null
+
+  // Если клиент Max метод не поддержал — включаем тач-фолбэк.
+  const request = () => setVerticalSwipes(false).then((res) => {
+    if (!res.ok && !removeGuard) removeGuard = installTopOverscrollGuard()
+    return res
+  })
+
+  void request()
 
   const onVisibilityChange = () => {
     if (document.visibilityState !== 'visible') return
     // Уже заблокировано — повторный запрос к клиенту не нужен.
     if (window.WebApp?.isVerticalSwipesEnabled === false) return
-    void setVerticalSwipes(false)
+    void request()
   }
 
   document.addEventListener('visibilitychange', onVisibilityChange)
-  return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    removeGuard?.()
+  }
 }
 
 const bridge = {

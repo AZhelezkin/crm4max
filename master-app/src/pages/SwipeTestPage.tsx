@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { keepVerticalSwipesDisabled, setVerticalSwipes, verticalSwipesInfo } from '@/lib/bridge'
+import { setVerticalSwipes, verticalSwipesInfo } from '@/lib/bridge'
+import { installTopOverscrollGuard } from '@/lib/topOverscrollGuard'
 import { text } from '@/styles/typography'
 
 /**
@@ -31,10 +32,28 @@ export default function SwipeTestPage() {
     addLog(
       `окружение: WebApp=${info.hasWebApp ? 'есть' : 'нет'}, ` +
       `метод=${info.hasMethod ? 'есть' : 'нет'}, ` +
-      `isVerticalSwipesEnabled=${String(info.enabled)}`,
+      `isVerticalSwipesEnabled=${String(info.enabled)}, ` +
+      `platform=${String(info.platform)}, version=${String(info.version)}`,
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Тач-фолбэк: гасим оверскролл вверху страницы, если клиент не отдаёт жест.
+  const guardStop = useRef<(() => void) | null>(null)
+  const [guardOn, setGuardOn] = useState(false)
+  const toggleGuard = () => {
+    if (guardStop.current) {
+      guardStop.current()
+      guardStop.current = null
+      setGuardOn(false)
+      addLog('тач-фолбэк выключен')
+    } else {
+      guardStop.current = installTopOverscrollGuard()
+      setGuardOn(true)
+      addLog('тач-фолбэк включён (preventDefault на протяжку вниз вверху страницы)')
+    }
+  }
+  useEffect(() => () => guardStop.current?.(), [])
 
   const apply = async (allow: boolean) => {
     const res = await setVerticalSwipes(allow)
@@ -44,14 +63,6 @@ export default function SwipeTestPage() {
     } else {
       addLog(`${allow ? 'enable' : 'disable'} — ошибка: ${res.error}`)
     }
-  }
-
-  // Проверка «боевого» варианта: ровно то, что вызывает App на старте приложения.
-  const applyAppDefault = () => {
-    const stop = keepVerticalSwipesDisabled()
-    addLog('keepVerticalSwipesDisabled() — как в App на старте')
-    // Сразу отписываемся от visibilitychange: на тест-странице слушатель не нужен.
-    setTimeout(stop, 0)
   }
 
   const statusLabel =
@@ -98,6 +109,12 @@ export default function SwipeTestPage() {
         <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)' }}>
           window.WebApp: {info.hasWebApp ? 'есть' : 'нет'} · disableVerticalSwipes: {info.hasMethod ? 'есть' : 'нет'}
         </div>
+        <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)' }}>
+          platform: {String(info.platform)} · version: {String(info.version)} · device: {String(info.deviceName)}
+        </div>
+        <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)', wordBreak: 'break-word' }}>
+          ключи WebApp: {info.keys.length ? info.keys.join(', ') : '—'}
+        </div>
       </div>
 
       <button type="button" onClick={() => void apply(false)} style={btn('var(--color-primary-surface)', 'var(--color-on-primary-surface)')}>
@@ -106,8 +123,13 @@ export default function SwipeTestPage() {
       <button type="button" onClick={() => void apply(true)} style={btn('var(--color-secondary-surface)', 'var(--color-on-surface)')}>
         Разрешить свайпы (как было)
       </button>
-      <button type="button" onClick={applyAppDefault} style={btn('var(--color-secondary-surface)', 'var(--color-on-surface)')}>
-        Применить как в App (keepVerticalSwipesDisabled)
+      {/* Запасной путь, если клиент Max не поддерживает WebAppSetupSwipesBehavior. */}
+      <button
+        type="button"
+        onClick={toggleGuard}
+        style={btn(guardOn ? 'var(--color-success-surface-accented)' : 'var(--color-secondary-surface)', guardOn ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)')}
+      >
+        {guardOn ? 'Выключить тач-фолбэк' : 'Включить тач-фолбэк (без моста)'}
       </button>
 
       <div style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
