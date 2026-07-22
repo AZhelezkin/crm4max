@@ -88,6 +88,9 @@ export interface Booking {
   notes: string | null
   /** Индивидуальная сумма записи (копейки) для услуги «Прочее». null → берём service.price. */
   price: number | null
+  /** Итог записи (копейки), заданный мастером вручную. Может не равняться сумме услуг.
+   *  null → считаем сумму по услугам. */
+  totalPrice: number | null
   /** Адрес выезда мастера (если задан); null — услуга у мастера. */
   clientAddress: string | null
   remind: boolean
@@ -203,8 +206,9 @@ export function bookingItemPrice(item: { service: Service; price: number | null 
   return discountedPrice(item.service.price, item.service.discountPercent) ?? item.service.price
 }
 
-/** Итоговая стоимость записи (копейки) — Σ по всем услугам. */
-export function bookingTotal(b: Pick<Booking, 'services' | 'service' | 'price'>): number {
+/** Итоговая стоимость записи (копейки): ручной итог мастера, иначе Σ по всем услугам. */
+export function bookingTotal(b: Pick<Booking, 'services' | 'service' | 'price'> & { totalPrice?: number | null }): number {
+  if (b.totalPrice != null) return b.totalPrice
   return bookingServiceItems(b).reduce((sum, item) => sum + bookingItemPrice(item), 0)
 }
 

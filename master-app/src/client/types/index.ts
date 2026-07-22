@@ -76,6 +76,8 @@ export interface Booking {
   notes: string | null
   /** Индивидуальная сумма записи (копейки) для услуги «Прочее». null → service.price. */
   price: number | null
+  /** Итог записи, заданный мастером вручную (копейки). null → сумма по услугам. */
+  totalPrice?: number | null
   /** Напоминание за 1 час (Booking.remind в БД). */
   remind?: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
@@ -122,7 +124,8 @@ export function bookingItemPrice(item: { service: Service; price: number | null 
 }
 
 /** Итог по всем услугам записи (копейки). */
-export function bookingTotal(b: Pick<Booking, 'services' | 'service' | 'price'>): number {
+export function bookingTotal(b: Pick<Booking, 'services' | 'service' | 'price'> & { totalPrice?: number | null }): number {
+  if (b.totalPrice != null) return b.totalPrice
   return bookingServiceItems(b).reduce((sum, item) => sum + bookingItemPrice(item), 0)
 }
 

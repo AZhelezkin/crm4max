@@ -181,6 +181,9 @@ export default function CreateBookingPage() {
   // любое значение из колеса (шаг 5 мин, макет 10302-42986). Сбрасывается при смене услуг.
   const [durationOverride, setDurationOverride] = useState<number | null>(null)
   const [durationPickerOpen, setDurationPickerOpen] = useState(false)
+  // Ручной итог записи (строка рублей; пусто = считаем сумму по услугам). Мастер может
+  // задать любую стоимость заказа — она не обязана равняться сумме услуг.
+  const [totalOverride, setTotalOverride] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
   const [outbound, setOutbound] = useState(false)
@@ -417,13 +420,20 @@ export default function CreateBookingPage() {
 
   // Позиции записи + суммарные стоимость и длительность.
   const itemPrice = (s: Service) => (s.isMisc ? miscKopecks(s.id) : discountedPrice(s.price, s.discountPercent) ?? s.price)
-  const totalKopecks = selectedServices.reduce((sum, s) => sum + (s.isMisc ? (miscValid(s.id) ? miscKopecks(s.id) : 0) : itemPrice(s)), 0)
+  const servicesKopecks = selectedServices.reduce((sum, s) => sum + (s.isMisc ? (miscValid(s.id) ? miscKopecks(s.id) : 0) : itemPrice(s)), 0)
+  // Ручной итог мастера важнее суммы услуг; пусто/невалидно → сумма по услугам.
+  const manualTotal = (() => {
+    if (totalOverride === null || totalOverride.trim() === '') return null
+    const k = Math.round(Number(totalOverride.replace(',', '.')) * 100)
+    return Number.isFinite(k) && k >= 0 ? k : null
+  })()
+  const totalKopecks = manualTotal ?? servicesKopecks
   // По умолчанию — сумма длительностей услуг; мастер может переопределить (durationOverride).
   const durationSum = selectedServices.reduce((sum, s) => sum + s.duration, 0)
   const durationMin = durationOverride ?? durationSum
-  // При смене набора услуг ручная длительность сбрасывается (снова = сумма).
+  // При смене набора услуг ручные длительность и итог сбрасываются (снова = по услугам).
   const serviceKey = selectedServiceIds.slice().sort().join(',')
-  useEffect(() => { setDurationOverride(null) }, [serviceKey])
+  useEffect(() => { setDurationOverride(null); setTotalOverride(null) }, [serviceKey])
   // Значения колеса: шаг 5 мин (5…480), плюс текущее значение (вдруг сумма не кратна 5).
   const durationOptions: WheelPickerOption[] = useMemo(() => {
     const set = new Set<number>()
@@ -473,6 +483,8 @@ export default function CreateBookingPage() {
         color,
         services,
         durationMinutes: durationMin,
+        // Ручной итог заказа (если мастер его задал) — иначе бэкенд считает по услугам.
+        totalPrice: manualTotal ?? undefined,
         // Мастер выбирает любое время в рабочем дне — пересечения разрешены.
         allowOverlap: true,
       })
@@ -1387,7 +1399,29 @@ export default function CreateBookingPage() {
 
         {/* Стоимость: итог по всем услугам (индивидуальные цены «Прочее» — в карточке услуг). */}
         <FormCard title="Стоимость">
-          <FormRow label="Итого" value={formatPrice(totalKopecks)} noArrow last />
+          {/* Итог заказа — редактируемый: мастер может задать сумму, отличную от суммы услуг.
+              Пусто → снова считаем по услугам. */}
+          <FormRow
+            label="Итого"
+            noArrow
+            last
+            right={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  inputMode="numeric"
+                  aria-label="Итоговая стоимость"
+                  value={totalOverride ?? String(Math.round(servicesKopecks / 100))}
+                  onChange={(e) => setTotalOverride(e.target.value.replace(/[^\d]/g, ''))}
+                  style={{
+                    ...text.body2, color: 'var(--color-on-surface)', background: 'none',
+                    border: 'none', outline: 'none', textAlign: 'right', width: 96, padding: 0,
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>₽</span>
+              </div>
+            }
+          />
         </FormCard>
 
         {error && (
