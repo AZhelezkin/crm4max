@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
@@ -58,9 +59,10 @@ export default function HomePage() {
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   const [selectedDate, setSelectedDate] = useState('')
-  // Меню действий по кебабу «⋮» в строке записи + короткий тост о результате.
-  const [menuBooking, setMenuBooking] = useState<Booking | null>(null)
+  // Меню действий по кебабу «⋮» (popover у иконки) + подтверждение отмены + тост.
+  const [menu, setMenu] = useState<{ booking: Booking; right: number; top?: number; bottom?: number } | null>(null)
   const [menuBusy, setMenuBusy] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState<Booking | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
@@ -88,22 +90,22 @@ export default function HomePage() {
     } catch {
       showToast('Не удалось отправить напоминание')
     } finally {
-      setMenuBusy(false); setMenuBooking(null)
+      setMenuBusy(false); setMenu(null)
     }
   }
 
-  // «Отметить как оплачено» — тот же эндпоинт, что в карточке записи.
-  const handleMarkPaid = async (b: Booking) => {
+  // «Отменить» — подтверждение диалогом, затем отмена записи.
+  const handleCancelBooking = async (b: Booking) => {
     if (menuBusy) return
     setMenuBusy(true)
     try {
-      const updated = await bookingsApi.confirmPayment(b.id)
+      const updated = await bookingsApi.cancel(b.id)
       setBookings((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
-      showToast('Запись отмечена оплаченной')
+      showToast('Запись отменена')
     } catch {
-      showToast('Не удалось отметить оплату')
+      showToast('Не удалось отменить запись')
     } finally {
-      setMenuBusy(false); setMenuBooking(null)
+      setMenuBusy(false); setConfirmCancel(null)
     }
   }
 
@@ -298,8 +300,20 @@ export default function HomePage() {
                         <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
                       </div>
                     </button>
-                    <button type="button" aria-label="Действия с записью" onClick={() => setMenuBooking(b)}
-                      style={{ padding: 6, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-on-surface-secondary)' }}>
+                    <button
+                      type="button"
+                      aria-label="Действия с записью"
+                      onClick={(e) => {
+                        // Popover привязываем к иконке: справа по её правому краю, снизу —
+                        // если внизу мало места, раскрываем вверх.
+                        const r = e.currentTarget.getBoundingClientRect()
+                        const right = Math.max(8, window.innerWidth - r.right)
+                        setMenu(r.bottom > window.innerHeight - 240
+                          ? { booking: b, right, bottom: window.innerHeight - r.top + 6 }
+                          : { booking: b, right, top: r.bottom + 6 })
+                      }}
+                      style={{ padding: 6, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-on-surface-secondary)' }}
+                    >
                       <MoreIcon />
                     </button>
                   </div>
@@ -442,15 +456,32 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Меню действий по кебабу «⋮» в строке записи. */}
-      {menuBooking && (
-        <BookingActionSheet
-          booking={menuBooking}
+      {/* Меню действий по кебабу «⋮» (макет 10265-79559). */}
+      {menu && (
+        <BookingActionMenu
+          pos={menu}
           busy={menuBusy}
-          onClose={() => setMenuBooking(null)}
-          onRemind={() => { void handleRemind(menuBooking) }}
-          onMarkPaid={() => { void handleMarkPaid(menuBooking) }}
-          onOpen={() => { const id = menuBooking.id; setMenuBooking(null); navigate(`/bookings/${id}`) }}
+          onClose={() => setMenu(null)}
+          onRemind={() => { void handleRemind(menu.booking) }}
+          onEdit={() => { const id = menu.booking.id; setMenu(null); navigate(`/bookings/${id}`) }}
+          onReschedule={() => {
+            const b = menu.booking
+            setMenu(null)
+            navigate('/bookings/new', { state: { rescheduleId: b.id, serviceId: b.service.id } })
+          }}
+          onCancel={() => { const b = menu.booking; setMenu(null); setConfirmCancel(b) }}
+        />
+      )}
+
+      {/* Подтверждение отмены записи. */}
+      {confirmCancel && (
+        <ConfirmDialog
+          title="Отменить запись?"
+          message={`Запись «${confirmCancel.client.name}» будет отменена. Клиент получит уведомление.`}
+          confirmLabel="Отменить запись"
+          cancelLabel="Назад"
+          onConfirm={() => { void handleCancelBooking(confirmCancel) }}
+          onCancel={() => setConfirmCancel(null)}
         />
       )}
 
@@ -468,59 +499,102 @@ export default function HomePage() {
   )
 }
 
-// Bottom-sheet с действиями по записи (кебаб «⋮»). «Напомнить клиенту» шлёт
-// разовую нотификацию в клиент-бот; «Отметить как оплачено» — если ещё не оплачена.
-function BookingActionSheet({ booking, busy, onClose, onRemind, onMarkPaid, onOpen }: {
-  booking: Booking
+// Popover-меню действий по записи (макет 10265-79559): карточка surface rx16,
+// px20 py12, пункты Body 2 с иконкой 20 справа и 8px-разделителями; «Отменить» — красный.
+function BookingActionMenu({ pos, busy, onClose, onRemind, onEdit, onReschedule, onCancel }: {
+  pos: { right: number; top?: number; bottom?: number }
   busy: boolean
   onClose: () => void
   onRemind: () => void
-  onMarkPaid: () => void
-  onOpen: () => void
+  onEdit: () => void
+  onReschedule: () => void
+  onCancel: () => void
 }) {
-  const items: Array<{ label: string; onClick: () => void; danger?: boolean }> = [
-    { label: 'Напомнить клиенту', onClick: onRemind },
-    ...(booking.paymentStatus !== 'PAID' ? [{ label: 'Отметить как оплачено', onClick: onMarkPaid }] : []),
-    { label: 'Открыть запись', onClick: onOpen },
+  const items: Array<{ label: string; icon: ReactNode; onClick: () => void; danger?: boolean }> = [
+    { label: 'Напомнить клиенту', icon: <MessageNotifIcon />, onClick: onRemind },
+    { label: 'Изменить', icon: <Edit2SmallIcon />, onClick: onEdit },
+    { label: 'Перенести', icon: <CalendarEditIcon />, onClick: onReschedule },
+    { label: 'Отменить', icon: <CloseCircleIcon />, onClick: onCancel, danger: true },
   ]
   return createPortal(
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.4)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-      }}
-    >
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--color-background)',
-          borderTopLeftRadius: 16, borderTopRightRadius: 16,
-          padding: '12px 12px calc(24px + env(safe-area-inset-bottom))',
+          position: 'fixed', right: pos.right,
+          ...(pos.top !== undefined ? { top: pos.top } : { bottom: pos.bottom }),
+          minWidth: 220, maxWidth: 'calc(100vw - 32px)',
+          background: 'var(--color-surface)', borderRadius: 16, padding: '12px 20px',
+          boxShadow: '0 16px 16px -4px rgba(12,12,13,0.10), 0 4px 2px -4px rgba(12,12,13,0.05)',
         }}
       >
-        <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, overflow: 'hidden' }}>
-          {items.map((it, i) => (
+        {items.map((it, i) => (
+          <div key={it.label}>
+            {i > 0 && (
+              <div style={{ height: 8, display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+              </div>
+            )}
             <button
-              key={it.label}
               type="button"
               disabled={busy}
               onClick={it.onClick}
               style={{
-                width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                cursor: busy ? 'default' : 'pointer', padding: 16,
-                borderBottom: i < items.length - 1 ? '1px solid var(--color-secondary-surface-muted)' : 'none',
-                opacity: busy ? 0.6 : 1,
-                ...text.body2, color: 'var(--color-on-surface)',
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0',
+                background: 'none', border: 'none', textAlign: 'left',
+                cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1,
+                color: it.danger ? 'var(--color-error-surface-accented)' : 'var(--color-on-surface)',
               }}
             >
-              {it.label}
+              <span style={{ flex: 1, minWidth: 0, ...text.body2 }}>{it.label}</span>
+              <span style={{ flexShrink: 0, display: 'inline-flex' }}>{it.icon}</span>
             </button>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>,
     document.body,
+  )
+}
+
+// vuesax/linear/message-notif (20) — «Напомнить клиенту».
+function MessageNotifIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M17 18.43h-4l-4.45 2.96c-.66.44-1.55-.03-1.55-.83v-2.13c-3 0-5-2-5-5v-6c0-3 2-5 5-5h8c3 0 5 2 5 5v3" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="19" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+// vuesax/linear/edit-2 (20) — «Изменить».
+function Edit2SmallIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M13.26 3.6 5.05 12.29c-.31.33-.61.98-.67 1.43l-.37 3.24c-.13 1.17.71 1.97 1.87 1.77l3.22-.55c.45-.08 1.08-.41 1.39-.75l8.21-8.69c1.42-1.5 2.06-3.21-.15-5.3-2.2-2.07-3.87-1.34-5.29.16Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.89 5.05c.43 2.76 2.67 4.87 5.45 5.15" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/calendar-edit (20) — «Перенести».
+function CalendarEditIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M8 2v3M16 2v3M3.5 9.09h13" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.5 22H8c-3.5 0-5-2-5-5V8.5c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5v3.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M19.21 14.77l-3.67 3.67c-.14.14-.28.42-.31.62l-.2 1.42c-.07.51.28.86.79.79l1.42-.2c.2-.03.49-.17.62-.31l3.67-3.67c.63-.63.93-1.37 0-2.3-.92-.92-1.66-.62-2.32.01Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// vuesax/linear/close-circle (20) — «Отменить».
+function CloseCircleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.17 14.83l5.66-5.66M14.83 14.83L9.17 9.17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
