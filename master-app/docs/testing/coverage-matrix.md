@@ -74,7 +74,6 @@
 | `m-dest-<token>` | `DestinationSelectorPage` standalone override | P0 |
 | `/welcome` | `WelcomePage` | P0 |
 | `/` | `MasterIndexRoute` → `HomePage` | P0 |
-| `/profile` | `ProfilePage` | P1 |
 | `/bookings` | `BookingsPage` | P0 |
 | `/clients` | `ClientsPage` | P0 |
 | `/income` | `PaymentsPage` | P0 |
@@ -89,6 +88,8 @@
 | `/income/:date` | `PaymentsDayPage` | P1 |
 | `/payment-settings` | `PaymentSettingsPage` | P0 |
 | `/share` | `ShareLinkPage` | P0 |
+| `/other` | `OtherPage` (вкладка навбара) | P1 |
+| `/swipe-test` | `SwipeTestPage` — ручная проверка блокировки нативного свайпа Max | P2 |
 | master wildcard | redirect to `/` | P1 |
 
 ### Client
@@ -129,6 +130,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/bookings.api.ts#bookingsApi.createPackage`
 - `src/api/bookings.api.ts#bookingsApi.getById`
 - `src/api/bookings.api.ts#bookingsApi.list`
+- `src/api/bookings.api.ts#bookingsApi.remind`
 - `src/api/bookings.api.ts#bookingsApi.reschedule`
 - `src/api/clients.api.ts#clientsApi.create`
 - `src/api/clients.api.ts#clientsApi.list`
@@ -160,6 +162,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/auth.api.ts#authApi.loginWithMax`
 - `src/client/api/bookings.api.ts#bookingsApi.cancel`
 - `src/client/api/bookings.api.ts#bookingsApi.cancelPackage`
+- `src/client/api/bookings.api.ts#bookingsApi.confirmPayment`
 - `src/client/api/bookings.api.ts#bookingsApi.create`
 - `src/client/api/bookings.api.ts#bookingsApi.createPackage`
 - `src/client/api/bookings.api.ts#bookingsApi.getById`

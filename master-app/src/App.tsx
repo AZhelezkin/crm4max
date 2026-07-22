@@ -84,8 +84,14 @@ function isMapTestHash() {
   return hash.startsWith('#/map-test')
 }
 
+/**
+ * Тест-страница жеста свайпа. Внутри Max адресную строку не открыть, поэтому
+ * два входа: deep link `?startapp=swipetest` (ссылку можно отправить себе в чат)
+ * и пункт «Тест свайпов» на экране «Другое».
+ */
 function isSwipeTestHash() {
   if (typeof window === 'undefined') return false
+  if (startParam === 'swipetest') return true
   const hash = window.location.hash || ''
   return hash.startsWith('#/swipe-test')
 }
@@ -285,6 +291,9 @@ function MasterApp() {
             <Route path="other" element={<OtherPage />} />
           </Route>
 
+          {/* Тест жеста свайпа — вход с экрана «Другое» (пре-роутерная проверка
+              isSwipeTestHash при клиентской навигации уже не срабатывает). */}
+          <Route path="/swipe-test" element={<SwipeTestPage />} />
           <Route path="/bookings/new" element={<CreateBookingPage />} />
           <Route path="/bookings/:id" element={<BookingDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />

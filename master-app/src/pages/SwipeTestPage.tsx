@@ -66,7 +66,23 @@ export default function SwipeTestPage() {
 
   return (
     <div style={{ minHeight: '100dvh', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ ...text.title, color: 'var(--color-on-surface)' }}>Тест свайпов</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* history.back(), а не useNavigate: страница может рендериться до Router
+            (вход по ?startapp=swipetest / #/swipe-test), там хуков роутера нет. */}
+        <button
+          type="button"
+          onClick={() => window.history.back()}
+          aria-label="Назад"
+          style={{
+            width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
+            background: 'var(--color-surface)', color: 'var(--color-on-surface)',
+            cursor: 'pointer', ...text.bodyStrong,
+          }}
+        >
+          ←
+        </button>
+        <div style={{ ...text.title, color: 'var(--color-on-surface)' }}>Тест свайпов</div>
+      </div>
 
       <div style={{
         background: 'var(--color-surface)', borderRadius: 16, padding: 16,

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
 import { startSupport } from '@/api/support.api'
@@ -8,6 +9,7 @@ import { startSupport } from '@/api/support.api'
 // Пункты-меню; пока рабочая только «Техническая поддержка» (запуск режима поддержки
 // в боте), остальные — заглушки: неактивны (экраны появятся позже).
 export default function OtherPage() {
+  const navigate = useNavigate()
   const [supportLoading, setSupportLoading] = useState(false)
 
   // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как было в навбаре).
@@ -34,6 +36,9 @@ export default function OtherPage() {
     { label: 'Способы оплаты' },
     { label: 'Техническая поддержка', onClick: openSupport, loading: supportLoading },
     { label: 'О платформе' },
+    // Временный пункт: проверка блокировки нативного свайпа внутри Max.
+    // В макете его нет — удалить, когда поведение подтвердится.
+    { label: 'Тест свайпов', onClick: () => navigate('/swipe-test') },
   ]
 
   return (
