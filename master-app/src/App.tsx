@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
+import { keepVerticalSwipesDisabled } from '@/lib/bridge'
 import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
@@ -26,6 +27,7 @@ import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 import OtherPage from '@/pages/OtherPage'
 import MapTestPage from '@/pages/MapTestPage'
+import SwipeTestPage from '@/pages/SwipeTestPage'
 import { subscriptionApi } from '@/api/subscription.api'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
@@ -82,8 +84,21 @@ function isMapTestHash() {
   return hash.startsWith('#/map-test')
 }
 
+function isSwipeTestHash() {
+  if (typeof window === 'undefined') return false
+  const hash = window.location.hash || ''
+  return hash.startsWith('#/swipe-test')
+}
+
 export default function App() {
   const [mode, setMode] = useState<'master' | 'client' | null>(resolveInitialMode)
+
+  // Свайп вниз в шторке Max закрывает мини-приложение — гасим нативный жест.
+  // Тест-страница #/swipe-test управляет им вручную, поэтому там не вмешиваемся.
+  useEffect(() => {
+    if (isSwipeTestHash()) return
+    return keepVerticalSwipesDisabled()
+  }, [])
 
   useEffect(() => {
     if (mode !== null) return
@@ -117,6 +132,7 @@ export default function App() {
   }, [mode])
 
   if (isMapTestHash()) return <MapTestPage />
+  if (isSwipeTestHash()) return <SwipeTestPage />
   if (destinationSelectorToken) return <DestinationSelectorPage token={destinationSelectorToken} />
 
   if (mode === null) {
