@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -8,7 +9,7 @@ import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Client, Schedule, Service } from '@/types'
-import { discountedPrice, formatPrice, formatDuration, bookingDuration, bookingTotal, bookingServiceItems } from '@/types'
+import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, bookingDuration, bookingTotal, bookingServiceItems } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
@@ -184,6 +185,10 @@ export default function CreateBookingPage() {
   // Ручной итог записи (строка рублей; пусто = считаем сумму по услугам). Мастер может
   // задать любую стоимость заказа — она не обязана равняться сумме услуг.
   const [totalOverride, setTotalOverride] = useState<string | null>(null)
+  // Правки услуги «для этого заказа» (макет 10138-40554): длительность (мин) и цена
+  // (копейки) конкретной услуги в этой записи. Каталог услуг мастера не меняется.
+  const [serviceOverrides, setServiceOverrides] = useState<Record<string, { duration?: number; price?: number }>>({})
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
   const [outbound, setOutbound] = useState(false)
@@ -416,11 +421,20 @@ export default function CreateBookingPage() {
     const k = miscKopecks(id)
     return (miscPrices[id] ?? '').trim() !== '' && Number.isFinite(k) && k > 0
   }
-  const allMiscValid = selectedServices.every((s) => !s.isMisc || miscValid(s.id))
+  // Цена «Прочее» может быть задана и в экране редактирования услуги (serviceOverrides).
+  const allMiscValid = selectedServices.every(
+    (s) => !s.isMisc || miscValid(s.id) || (serviceOverrides[s.id]?.price ?? 0) > 0,
+  )
 
   // Позиции записи + суммарные стоимость и длительность.
   const itemPrice = (s: Service) => (s.isMisc ? miscKopecks(s.id) : discountedPrice(s.price, s.discountPercent) ?? s.price)
-  const servicesKopecks = selectedServices.reduce((sum, s) => sum + (s.isMisc ? (miscValid(s.id) ? miscKopecks(s.id) : 0) : itemPrice(s)), 0)
+  // Эффективные длительность/цена услуги в этом заказе: правка мастера важнее каталога.
+  const svcDuration = (s: Service) => serviceOverrides[s.id]?.duration ?? s.duration
+  const svcPrice = (s: Service) => serviceOverrides[s.id]?.price ?? itemPrice(s)
+  const servicesKopecks = selectedServices.reduce(
+    (sum, s) => sum + (s.isMisc && !miscValid(s.id) && serviceOverrides[s.id]?.price == null ? 0 : svcPrice(s)),
+    0,
+  )
   // Ручной итог мастера важнее суммы услуг; пусто/невалидно → сумма по услугам.
   const manualTotal = (() => {
     if (totalOverride === null || totalOverride.trim() === '') return null
@@ -429,7 +443,7 @@ export default function CreateBookingPage() {
   })()
   const totalKopecks = manualTotal ?? servicesKopecks
   // По умолчанию — сумма длительностей услуг; мастер может переопределить (durationOverride).
-  const durationSum = selectedServices.reduce((sum, s) => sum + s.duration, 0)
+  const durationSum = selectedServices.reduce((sum, s) => sum + svcDuration(s), 0)
   const durationMin = durationOverride ?? durationSum
   // При смене набора услуг ручные длительность и итог сбрасываются (снова = по услугам).
   const serviceKey = selectedServiceIds.slice().sort().join(',')
@@ -467,7 +481,11 @@ export default function CreateBookingPage() {
     setSaving(true)
     setError(null)
     try {
-      const services = selectedServices.map((s) => ({ serviceId: s.id, price: s.isMisc ? miscKopecks(s.id) : undefined }))
+      // Цена услуги в заказе: правка мастера, иначе ручная сумма «Прочее», иначе цена каталога.
+      const services = selectedServices.map((s) => ({
+        serviceId: s.id,
+        price: serviceOverrides[s.id]?.price ?? (s.isMisc ? miscKopecks(s.id) : undefined),
+      }))
       const booking = await bookingsApi.create({
         masterId: master.id,
         serviceId: services[0].serviceId,
@@ -1351,19 +1369,23 @@ export default function CreateBookingPage() {
             <FormRow label="Наименование" value="Выбрать" prompt onClick={openServicePicker} last />
           ) : (
             <>
-              {selectedServices.map((s) => (
-                <ServiceLine
-                  key={s.id}
-                  service={s}
-                  priceLabel={s.isMisc ? undefined : formatPrice(itemPrice(s))}
-                  miscValue={s.isMisc ? (miscPrices[s.id] ?? '') : undefined}
-                  onMiscChange={(v) => setMiscPrices((p) => ({ ...p, [s.id]: v }))}
-                  onRemove={() => removeService(s.id)}
-                />
-              ))}
-              <button type="button" onClick={openServicePicker} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                <span style={{ ...text.body2, color: 'var(--color-primary-surface)' }}>+ Добавить услугу</span>
-              </button>
+              {/* Строка услуги: имя + «длительность, цена» и стрелка — тап открывает
+                  редактирование услуги для этого заказа (макет 10136-40181). */}
+              {selectedServices.map((s) => {
+                const priceKopecks = svcPrice(s)
+                const priced = !s.isMisc || miscValid(s.id) || serviceOverrides[s.id]?.price != null
+                return (
+                  <OrderServiceRow
+                    key={s.id}
+                    title={s.name}
+                    subtitle={priced
+                      ? `${formatDurationHuman(svcDuration(s))}, ${formatPrice(priceKopecks)}`
+                      : `${formatDurationHuman(svcDuration(s))}, цена по договорённости`}
+                    onClick={() => setEditingServiceId(s.id)}
+                  />
+                )
+              })}
+              <FormRow label="Ещё услуга" value="Выбрать" prompt onClick={openServicePicker} last />
             </>
           )}
         </FormCard>
@@ -1445,6 +1467,23 @@ export default function CreateBookingPage() {
           onCancel={() => setOverlapWarn(false)}
         />
       )}
+
+      {/* Редактирование услуги для этого заказа (макет 10138-40554). */}
+      {editingServiceId && (() => {
+        const s = selectedServices.find((x) => x.id === editingServiceId)
+        if (!s) return null
+        return (
+          <OrderServiceEditPortal
+            service={s}
+            duration={svcDuration(s)}
+            priceKopecks={svcPrice(s)}
+            onDuration={(min) => setServiceOverrides((p) => ({ ...p, [s.id]: { ...p[s.id], duration: min } }))}
+            onPrice={(k) => setServiceOverrides((p) => ({ ...p, [s.id]: { ...p[s.id], price: k } }))}
+            onRemove={() => removeService(s.id)}
+            onClose={() => setEditingServiceId(null)}
+          />
+        )
+      })()}
 
       {/* Колесо выбора длительности (макет 10302-42986): шаг 5 мин, «Выбрать» фиксирует. */}
       <WheelPicker
@@ -1624,29 +1663,147 @@ function ServiceSelectRow({ service: s, selected, onSelect, onEdit }: {
   )
 }
 
-// Строка выбранной услуги в форме-сводке: название + цена (или ввод суммы «Прочее») + удаление.
-function ServiceLine({ service, priceLabel, miscValue, onMiscChange, onRemove }: {
+// Экран «Редактирование услуги» для конкретного заказа (макет 10138-40554):
+// название (только чтение), продолжительность (колесо), стоимость, «Удалить из списка».
+// Правки живут в записи и не меняют услугу в каталоге мастера.
+function OrderServiceEditPortal({ service, duration, priceKopecks, onDuration, onPrice, onRemove, onClose }: {
   service: Service
-  priceLabel?: string
-  miscValue?: string
-  onMiscChange: (v: string) => void
+  duration: number
+  priceKopecks: number
+  onDuration: (min: number) => void
+  onPrice: (kopecks: number) => void
   onRemove: () => void
+  onClose: () => void
 }) {
+  const [wheelOpen, setWheelOpen] = useState(false)
+  const [priceText, setPriceText] = useState(String(Math.round(priceKopecks / 100)))
+
+  const durationOptions: WheelPickerOption[] = useMemo(() => {
+    const set = new Set<number>()
+    for (let m = 5; m <= 480; m += 5) set.add(m)
+    if (duration > 0) set.add(duration)
+    return [...set].sort((a, b) => a - b).map((m) => ({ value: String(m), label: formatDuration(m) }))
+  }, [duration])
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 220,
+      background: 'var(--gradient-hero-background)',
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <BookingFlowToolbar title="Редактирование услуги" onBack={onClose} backIcon={<ArrowLeftIcon />} />
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <OrderEditField label="Название услуги" value={service.name} />
+        <OrderEditField
+          label="Продолжительность"
+          value={formatDurationHuman(duration)}
+          onClick={() => setWheelOpen(true)}
+          trailing={<ArrowRightIcon />}
+        />
+        <OrderEditField
+          label="Стоимость"
+          input={{
+            value: priceText,
+            onChange: (v) => {
+              const digits = v.replace(/[^\d]/g, '')
+              setPriceText(digits)
+              onPrice(Math.round(Number(digits || '0') * 100))
+            },
+          }}
+          trailing={<span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>₽</span>}
+        />
+
+        <button
+          type="button"
+          onClick={() => { onRemove(); onClose() }}
+          style={{
+            width: '100%', height: 60, borderRadius: 20, border: 'none', marginTop: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            ...text.callout1,
+            background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)',
+          }}
+        >
+          Удалить из списка
+        </button>
+      </div>
+
+      <BookingFlowBottomButton onClick={onClose}>Готово</BookingFlowBottomButton>
+
+      <WheelPicker
+        open={wheelOpen}
+        value={String(duration)}
+        options={durationOptions}
+        onSelect={(v) => onDuration(Number(v))}
+        onClose={() => setWheelOpen(false)}
+      />
+    </div>,
+    document.body,
+  )
+}
+
+// Поле экрана редактирования услуги: h72, surface-transparent rx20, лейбл Caption 2
+// сверху и значение Callout 1 снизу; значение — текст, ввод или тап (стрелка).
+function OrderEditField({ label, value, input, trailing, onClick }: {
+  label: string
+  value?: string
+  input?: { value: string; onChange: (v: string) => void }
+  trailing?: React.ReactNode
+  onClick?: () => void
+}) {
+  const inner = (
+    <>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{label}</span>
+        {input ? (
+          <input
+            inputMode="numeric"
+            aria-label={label}
+            value={input.value}
+            onChange={(e) => input.onChange(e.target.value)}
+            style={{
+              ...text.callout1, color: 'var(--color-on-surface)', background: 'none',
+              border: 'none', outline: 'none', padding: 0, width: '100%', fontFamily: 'inherit',
+            }}
+          />
+        ) : (
+          <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+        )}
+      </span>
+      {trailing && <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}>{trailing}</span>}
+    </>
+  )
+  const style: React.CSSProperties = {
+    width: '100%', minHeight: 72, boxSizing: 'border-box',
+    background: 'var(--color-surface-transparent)', borderRadius: 20,
+    padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12,
+    border: 'none', textAlign: 'left', cursor: onClick ? 'pointer' : 'default',
+  }
+  return onClick
+    ? <button type="button" onClick={onClick} style={style}>{inner}</button>
+    : <div style={style}>{inner}</div>
+}
+
+// Строка услуги в заказе (макет 10136-40181): имя (Callout 1) + «длительность, цена»
+// (Caption 2) + стрелка. Тап — редактирование этой услуги для конкретного заказа.
+function OrderServiceRow({ title, subtitle, onClick }: { title: string; subtitle: string; onClick: () => void }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-      <span style={{ ...text.body2, color: 'var(--color-on-surface)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{service.name}</span>
-      {miscValue !== undefined ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <input inputMode="numeric" value={miscValue} placeholder="0" onChange={(e) => onMiscChange(e.target.value.replace(/[^\d]/g, ''))} style={{ ...text.body2, color: 'var(--color-on-surface)', background: 'none', border: 'none', outline: 'none', textAlign: 'right', width: 72, padding: 0 }} />
-          <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>₽</span>
-        </div>
-      ) : (
-        <span style={{ ...text.body2, color: 'var(--color-on-surface)', flexShrink: 0 }}>{priceLabel}</span>
-      )}
-      <button type="button" aria-label="Удалить услугу" onClick={onRemove} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface-secondary)', flexShrink: 0 }}>
-        <ClearIcon />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+        padding: 16, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        borderBottom: '1px solid var(--color-secondary-surface-muted)',
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+        <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</span>
+      </span>
+      <ArrowRightIcon />
+    </button>
   )
 }
 
