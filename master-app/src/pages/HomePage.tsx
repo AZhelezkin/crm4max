@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -435,15 +435,21 @@ export default function HomePage() {
           {master.location ? (
             <>
               {/* Адрес: иконка-локация + текст (px12 pt4 pb12, gap10) */}
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 12px 12px' }}>
-                <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
-                <span style={{ flex: 1, minWidth: 0, ...text.caption1, color: 'var(--color-on-secondary-surface)' }}>{master.location}</span>
-              </div>
+              <IconTextRow
+                icon={<LocationIcon />}
+                text={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}
+                style={{ padding: '4px 12px 12px' }}
+              >
+                {master.location}
+              </IconTextRow>
               {master.locationNote && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, borderTop: '1px solid var(--color-secondary-surface-muted)' }}>
-                  <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><MessageTextIcon /></span>
-                  <span style={{ flex: 1, minWidth: 0, ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}>{master.locationNote}</span>
-                </div>
+                <IconTextRow
+                  icon={<MessageTextIcon />}
+                  text={{ ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}
+                  style={{ padding: 12, borderTop: '1px solid var(--color-secondary-surface-muted)' }}
+                >
+                  {master.locationNote}
+                </IconTextRow>
               )}
             </>
           ) : (
@@ -712,6 +718,44 @@ function EditButton({ onClick }: { onClick: () => void }) {
       style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-primary-surface)' }}>
       <Edit2Icon />
     </button>
+  )
+}
+
+/**
+ * Строка «иконка + текст» в карточке адреса.
+ *
+ * Иконка занимает 32px (24 + padding 6×2), строка текста — 20px (caption1) или
+ * 16px (caption2). При одной строке `flex-start` поднимал бы текст на 6–8px выше
+ * центра иконки, поэтому одну строку центрируем по высоте, а при переносе на две
+ * и более — выравниваем по верху (иначе текстовый блок «съезжал» бы вниз).
+ */
+function IconTextRow({ icon, text: textStyle, style, children }: {
+  icon: ReactNode
+  text: CSSProperties
+  style?: CSSProperties
+  children: ReactNode
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [multiline, setMultiline] = useState(false)
+  const lineHeight = parseFloat(String(textStyle.lineHeight)) || 20
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Порог 1.5 строки: одна строка — ровно lineHeight, две — вдвое больше.
+    const check = () => setMultiline(el.getBoundingClientRect().height > lineHeight * 1.5)
+    check()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [lineHeight, children])
+
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: multiline ? 'flex-start' : 'center', ...style }}>
+      <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>{icon}</span>
+      <span ref={ref} style={{ flex: 1, minWidth: 0, ...textStyle }}>{children}</span>
+    </div>
   )
 }
 
