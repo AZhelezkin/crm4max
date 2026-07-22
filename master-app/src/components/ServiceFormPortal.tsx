@@ -211,7 +211,9 @@ export default function ServiceFormPortal({
               <span style={{ color: 'var(--color-primary-surface)', display: 'flex', flexShrink: 0 }}><ChevronRightIcon /></span>
             </button>
           )}
-          <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus />
+          {/* Автофокус — только при создании услуги; в редактировании он лишний
+              (сразу открывалась клавиатура и экран уезжал вверх). */}
+          <FloatingField label="Название услуги" value={name} onChange={onNameChange} autoFocus={!isEdit} />
           <FloatingField
             label="Описание"
             value={desc}

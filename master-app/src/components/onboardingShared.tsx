@@ -133,6 +133,17 @@ export function FloatingField({
 
   // Авто-рост textarea: высота под контент, максимум maxRows строк, дальше скролл.
   const taRef = useRef<HTMLTextAreaElement | null>(null)
+  const inputElRef = useRef<HTMLInputElement | null>(null)
+
+  // autoFocus ставим программно с preventScroll: нативный атрибут заставляет браузер
+  // проскроллить поле в зону видимости, из-за чего у портальных форм уезжала шапка
+  // с кнопкой «Назад» (экран открывался «поднятым»).
+  useLayoutEffect(() => {
+    if (!autoFocus) return
+    const el: HTMLTextAreaElement | HTMLInputElement | null = multiline ? taRef.current : inputElRef.current
+    el?.focus({ preventScroll: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   useLayoutEffect(() => {
     if (!autoGrow || !multiline) return
     const el = taRef.current
@@ -188,7 +199,6 @@ export function FloatingField({
             ref={(el) => { taRef.current = el; if (inputRef) (inputRef as { current: HTMLTextAreaElement | null }).current = el }}
             value={value}
             placeholder={floated ? '' : label}
-            autoFocus={autoFocus}
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -199,11 +209,11 @@ export function FloatingField({
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
+              ref={inputElRef}
               type={type}
               inputMode={inputMode}
               value={value}
               placeholder={floated ? '' : label}
-              autoFocus={autoFocus}
               onChange={(e) => onChange(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
