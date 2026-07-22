@@ -44,6 +44,10 @@ export const bookingsApi = {
   confirmPayment: (id: string) =>
     api.post<Booking>(`/bookings/${id}/confirm-payment`).then((r) => r.data),
 
+  /** Разовое напоминание клиенту в бот. sent=false — у клиента нет чата Max. */
+  remind: (id: string) =>
+    api.post<{ sent: boolean }>(`/bookings/${id}/remind`).then((r) => r.data),
+
   reschedule: (id: string, data: { date: string; time: string; allowOverlap?: boolean }) =>
     api.post<Booking>(`/bookings/${id}/reschedule`, data).then((r) => r.data),
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -57,6 +58,10 @@ export default function HomePage() {
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   const [selectedDate, setSelectedDate] = useState('')
+  // Меню действий по кебабу «⋮» в строке записи + короткий тост о результате.
+  const [menuBooking, setMenuBooking] = useState<Booking | null>(null)
+  const [menuBusy, setMenuBusy] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
     bookingsApi.list().then(setBookings).catch(() => {})
@@ -71,6 +76,37 @@ export default function HomePage() {
       subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
     }
   }, [sub, payUrl])
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
+
+  // «Напомнить клиенту» — разовая нотификация в клиент-бот (POST /bookings/:id/remind).
+  const handleRemind = async (b: Booking) => {
+    if (menuBusy) return
+    setMenuBusy(true)
+    try {
+      const { sent } = await bookingsApi.remind(b.id)
+      showToast(sent ? 'Напоминание отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
+    } catch {
+      showToast('Не удалось отправить напоминание')
+    } finally {
+      setMenuBusy(false); setMenuBooking(null)
+    }
+  }
+
+  // «Отметить как оплачено» — тот же эндпоинт, что в карточке записи.
+  const handleMarkPaid = async (b: Booking) => {
+    if (menuBusy) return
+    setMenuBusy(true)
+    try {
+      const updated = await bookingsApi.confirmPayment(b.id)
+      setBookings((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+      showToast('Запись отмечена оплаченной')
+    } catch {
+      showToast('Не удалось отметить оплату')
+    } finally {
+      setMenuBusy(false); setMenuBooking(null)
+    }
+  }
+
   const handlePaySubscription = () => {
     if (!payUrl) return
     localStorage.setItem('sub:payPending', '1')
@@ -245,21 +281,28 @@ export default function HomePage() {
                 const lineColor = cancelled ? 'var(--color-error-element-muted)'
                   : b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)')
                 return (
-                  <button key={b.id} type="button" onClick={() => navigate(`/bookings/${b.id}`)}
-                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px', textAlign: 'left' }}>
-                    <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-                      <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
-                    </div>
-                    <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
-                      <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{end}</span>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client.name}</span>
-                      <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
-                    </div>
-                    <span style={{ padding: 6, flexShrink: 0, display: 'inline-flex', color: 'var(--color-on-surface-secondary)' }}><MoreIcon /></span>
-                  </button>
+                  // Строка: кликабельная часть → карточка записи; кебаб «⋮» — отдельная
+                  // кнопка (меню действий), поэтому строка не <button>, а контейнер.
+                  <div key={b.id} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
+                    <button type="button" onClick={() => navigate(`/bookings/${b.id}`)}
+                      style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, textAlign: 'left' }}>
+                      <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
+                        <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
+                      </div>
+                      <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
+                        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{end}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client.name}</span>
+                        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
+                      </div>
+                    </button>
+                    <button type="button" aria-label="Действия с записью" onClick={() => setMenuBooking(b)}
+                      style={{ padding: 6, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-on-surface-secondary)' }}>
+                      <MoreIcon />
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -398,7 +441,86 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      {/* Меню действий по кебабу «⋮» в строке записи. */}
+      {menuBooking && (
+        <BookingActionSheet
+          booking={menuBooking}
+          busy={menuBusy}
+          onClose={() => setMenuBooking(null)}
+          onRemind={() => { void handleRemind(menuBooking) }}
+          onMarkPaid={() => { void handleMarkPaid(menuBooking) }}
+          onOpen={() => { const id = menuBooking.id; setMenuBooking(null); navigate(`/bookings/${id}`) }}
+        />
+      )}
+
+      {/* Тост результата действия. */}
+      {toast && (
+        <div style={{
+          position: 'fixed', left: 16, right: 16, bottom: 'calc(104px + env(safe-area-inset-bottom))', zIndex: 1100,
+          background: 'var(--color-on-surface)', color: 'var(--color-surface)',
+          borderRadius: 16, padding: '12px 16px', textAlign: 'center', ...text.caption1,
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
+  )
+}
+
+// Bottom-sheet с действиями по записи (кебаб «⋮»). «Напомнить клиенту» шлёт
+// разовую нотификацию в клиент-бот; «Отметить как оплачено» — если ещё не оплачена.
+function BookingActionSheet({ booking, busy, onClose, onRemind, onMarkPaid, onOpen }: {
+  booking: Booking
+  busy: boolean
+  onClose: () => void
+  onRemind: () => void
+  onMarkPaid: () => void
+  onOpen: () => void
+}) {
+  const items: Array<{ label: string; onClick: () => void; danger?: boolean }> = [
+    { label: 'Напомнить клиенту', onClick: onRemind },
+    ...(booking.paymentStatus !== 'PAID' ? [{ label: 'Отметить как оплачено', onClick: onMarkPaid }] : []),
+    { label: 'Открыть запись', onClick: onOpen },
+  ]
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--color-background)',
+          borderTopLeftRadius: 16, borderTopRightRadius: 16,
+          padding: '12px 12px calc(24px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, overflow: 'hidden' }}>
+          {items.map((it, i) => (
+            <button
+              key={it.label}
+              type="button"
+              disabled={busy}
+              onClick={it.onClick}
+              style={{
+                width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                cursor: busy ? 'default' : 'pointer', padding: 16,
+                borderBottom: i < items.length - 1 ? '1px solid var(--color-secondary-surface-muted)' : 'none',
+                opacity: busy ? 0.6 : 1,
+                ...text.body2, color: 'var(--color-on-surface)',
+              }}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 
