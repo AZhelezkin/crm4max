@@ -38,12 +38,16 @@ export function installTopOverscrollGuard(): () => void {
     e.preventDefault()
   }
 
-  document.addEventListener('touchstart', onTouchStart, { passive: true })
+  // capture:true — обязательно. React 18 вешает нативные слушатели на #root, и
+  // любой компонент со stopPropagation() на тач-событии (лайтбокс фото в
+  // client/pages/ServiceDetailPage и MasterCardPage) отрезал бы обработчик на
+  // document в фазе всплытия. Перехват идёт до цели, поэтому его не обойти.
+  document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
   // passive:false обязателен — иначе preventDefault игнорируется.
-  document.addEventListener('touchmove', onTouchMove, { passive: false })
+  document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
 
   return () => {
-    document.removeEventListener('touchstart', onTouchStart)
-    document.removeEventListener('touchmove', onTouchMove)
+    document.removeEventListener('touchstart', onTouchStart, { capture: true })
+    document.removeEventListener('touchmove', onTouchMove, { capture: true })
   }
 }
