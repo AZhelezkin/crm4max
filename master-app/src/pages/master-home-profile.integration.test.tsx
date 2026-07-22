@@ -65,6 +65,32 @@ describe('master HomePage', () => {
     expect(home.container.querySelectorAll('.skeleton')).toHaveLength(9)
   })
 
+  it('показывает skeleton записей и статуса подписки, пока ответы не пришли', async () => {
+    const pending = new Promise(() => {})
+    api.listBookings.mockReturnValue(pending)
+    api.getSubscription.mockReturnValue(pending)
+    setMaster(createMasterProfile())
+
+    const home = renderAtRoute(<HomePage />)
+
+    // 3 строки-заглушки записей: линия + 2 строки времени + 2 строки текста + кебаб,
+    // плюс сводка дня; статус подписки — круг-иконка и полоска текста.
+    await waitFor(() => expect(home.container.querySelectorAll('.skeleton').length).toBe(21))
+    expect(screen.queryByText('В этот день нет записей')).not.toBeInTheDocument()
+  })
+
+  it('убирает skeleton записей и подписки после ответа', async () => {
+    api.listBookings.mockResolvedValue([])
+    api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
+    setMaster(createMasterProfile())
+
+    const home = renderAtRoute(<HomePage />)
+
+    expect(await screen.findByText('В этот день нет записей')).toBeInTheDocument()
+    expect(screen.getByText('Подписка активна')).toBeInTheDocument()
+    expect(home.container.querySelectorAll('.skeleton')).toHaveLength(0)
+  })
+
   it('HomePage показывает authoritative summaries, фильтрует cancelled и сортирует время', async () => {
     const services = [
       createMasterService({ id: 'service-1', name: 'Стрижка' }),

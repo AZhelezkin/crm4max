@@ -11,6 +11,7 @@ import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
+import Skeleton from '@/components/Skeleton'
 
 dayjs.locale('ru')
 
@@ -64,10 +65,14 @@ export default function HomePage() {
   const [menuBusy, setMenuBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState<Booking | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  // Пока ответы не пришли — скелетоны вместо списка записей и строки подписки.
+  // Флаг снимается и на ошибке: показываем пустое состояние, а не вечный shimmer.
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [subLoading, setSubLoading] = useState(true)
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
-    bookingsApi.list().then(setBookings).catch(() => {})
-    subscriptionApi.getMe().then(setSub).catch(() => {})
+    bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setBookingsLoading(false))
+    subscriptionApi.getMe().then(setSub).catch(() => {}).finally(() => setSubLoading(false))
   }, [])
 
   // GRACE — не удалось списать (макет 10265-59019): peach-тост «Оплатить» на главной.
@@ -187,7 +192,7 @@ export default function HomePage() {
             <EditButton onClick={() => navigate('/about')} />
           </div>
           {/* Адрес в шапке больше не показываем (он в виджете адреса) — здесь статус подписки. */}
-          <SubscriptionStatusLine sub={sub} />
+          {subLoading ? <SubscriptionStatusSkeleton /> : <SubscriptionStatusLine sub={sub} />}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
@@ -276,7 +281,9 @@ export default function HomePage() {
           </div>
 
           {/* Записи активного дня / пустой день */}
-          {dayBookings.length > 0 ? (
+          {bookingsLoading ? (
+            <DayBookingsSkeleton />
+          ) : dayBookings.length > 0 ? (
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
               {dayBookings.map((b) => {
                 const end = dayjs(`${b.date}T${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
@@ -338,7 +345,12 @@ export default function HomePage() {
           )}
 
           {/* Футер: сводка активного дня */}
-          {dayActive.length > 0 && (
+          {bookingsLoading ? (
+            <div style={{ padding: 12, display: 'flex', justifyContent: 'center' }}>
+              {/* «N записей на N ₽» — Caption 1 (line-height 20) */}
+              <Skeleton width={132} height={16} radius={8} />
+            </div>
+          ) : dayActive.length > 0 && (
             <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
               {pluralRecords(dayActive.length)} на {formatRub(daySum)}
             </div>
@@ -721,6 +733,65 @@ function EditButton({ onClick }: { onClick: () => void }) {
       style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-primary-surface)' }}>
       <Edit2Icon />
     </button>
+  )
+}
+
+/**
+ * Полоска-плейсхолдер на месте текстовой строки: внешняя высота равна
+ * line-height реального текста, поэтому геометрия карточки не «прыгает»
+ * при подмене скелетона на данные.
+ */
+function TextBarSkeleton({ lineHeight, width, height }: { lineHeight: number; width: number; height: number }) {
+  return (
+    <div style={{ height: lineHeight, display: 'flex', alignItems: 'center' }}>
+      <Skeleton width={width} height={height} radius={height / 2} />
+    </div>
+  )
+}
+
+/**
+ * Скелетон списка записей дня. Повторяет геометрию реальной строки:
+ * padding 4/4/4/12 + линия-статус 2×44 в боксе h60 p8 + колонка времени w64 p8
+ * (Body 2 = 24 и Caption 1 = 20) + имя/услуги (Callout 1 = 24 и Caption 1 = 20)
+ * + кебаб 24 в padding 6. Итоговая высота строки: 4 + 60 + 4 = 68 — как у реальной.
+ */
+function DayBookingsSkeleton() {
+  const rows = [
+    { name: 132, service: 92 },
+    { name: 108, service: 116 },
+    { name: 148, service: 78 },
+  ]
+  return (
+    <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+      {rows.map((r, i) => (
+        <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
+          <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
+            <Skeleton width={2} height={44} radius={1} />
+          </div>
+          <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <TextBarSkeleton lineHeight={24} width={38} height={18} />
+            <TextBarSkeleton lineHeight={20} width={30} height={16} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <TextBarSkeleton lineHeight={24} width={r.name} height={18} />
+            <TextBarSkeleton lineHeight={20} width={r.service} height={16} />
+          </div>
+          <div style={{ padding: 6, flexShrink: 0, display: 'inline-flex' }}>
+            <Skeleton width={24} height={24} radius={12} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Скелетон строки статуса подписки: круг 16 (иконка) + полоска под Caption 2 (16). */
+function SubscriptionStatusSkeleton() {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+      <Skeleton width={16} height={16} radius={8} />
+      <TextBarSkeleton lineHeight={16} width={140} height={14} />
+    </span>
   )
 }
 
