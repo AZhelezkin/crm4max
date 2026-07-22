@@ -19,14 +19,18 @@ function mockUserAgent(value: string) {
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(value)
 }
 
+// .ics берётся с API-хоста: фронт живёт на GitHub Pages, бэкенд — на другом
+// origin, поэтому путь строится от VITE_API_URL (пусто → относительный путь).
+const ICS_URL = `${import.meta.env.VITE_API_URL ?? ''}/api/bookings/${BOOKING_ID}/calendar.ics`
+
 describe('calendar platform effect', () => {
-  it('открывает same-origin ICS на iPhone', () => {
+  it('открывает ICS с API-хоста на iPhone', () => {
     mockUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
     const webApp = installWebApp()
 
     openAddToCalendar(booking)
 
-    expect(webApp.openLink).toHaveBeenCalledWith(`/api/bookings/${BOOKING_ID}/calendar.ics`)
+    expect(webApp.openLink).toHaveBeenCalledWith(ICS_URL)
   })
 
   it('распознаёт iPadOS desktop mode', () => {
@@ -36,7 +40,7 @@ describe('calendar platform effect', () => {
 
     openAddToCalendar(booking)
 
-    expect(webApp.openLink).toHaveBeenCalledWith(`/api/bookings/${BOOKING_ID}/calendar.ics`)
+    expect(webApp.openLink).toHaveBeenCalledWith(ICS_URL)
     Reflect.deleteProperty(document, 'ontouchend')
   })
 

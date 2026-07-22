@@ -159,7 +159,10 @@ export default function HomePage() {
 
   const servicesCount = masterServiceList(master).length
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
-  const daySum = dayBookings.filter((b) => b.status !== 'CANCELLED').reduce((acc, b) => acc + bookingAmount(b), 0)
+  // Отменённые показываем в списке (красной линией), но из сводки дня исключаем —
+  // иначе счётчик и сумма считались бы по разным наборам («3 записи на 5 000 ₽»).
+  const dayActive = dayBookings.filter((b) => b.status !== 'CANCELLED')
+  const daySum = dayActive.reduce((acc, b) => acc + bookingAmount(b), 0)
 
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95, overflowX: 'hidden' }}>
@@ -335,9 +338,9 @@ export default function HomePage() {
           )}
 
           {/* Футер: сводка активного дня */}
-          {dayBookings.length > 0 && (
+          {dayActive.length > 0 && (
             <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
-              {pluralRecords(dayBookings.length)} на {formatRub(daySum)}
+              {pluralRecords(dayActive.length)} на {formatRub(daySum)}
             </div>
           )}
         </div>

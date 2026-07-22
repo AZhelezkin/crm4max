@@ -19,6 +19,10 @@ let AddressSuggestInput: ComponentType<InputProps>
 beforeAll(async () => {
   vi.stubEnv('VITE_YANDEX_SUGGEST_KEY', 'suggest-test-key')
   vi.stubEnv('VITE_YANDEX_GEOCODE_KEY', 'geocode-test-key')
+  // Без ключа JS-карт компонент сразу уходит в статический фолбэк. Ставим явно:
+  // иначе результат зависел бы от локального .env (с ключом грузится ymaps3,
+  // который в jsdom не отвечает, и <img alt="Карта"> не появляется).
+  vi.stubEnv('VITE_YANDEX_JSMAPS_KEY', '')
   AddressSuggestInput = (await import('./AddressSuggestInput')).default
 })
 
