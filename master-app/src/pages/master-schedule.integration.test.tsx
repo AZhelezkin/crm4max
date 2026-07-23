@@ -9,8 +9,11 @@ const api = vi.hoisted(() => ({
   get: vi.fn(),
   upsert: vi.fn(),
 }))
+const refreshMaster = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/schedule.api', () => ({ scheduleApi: api }))
+
+import { useAuthStore } from '@/store/auth.store'
 vi.mock('@/pages/OnboardingPage', () => ({
   Step1Form: ({
     workingDays,
@@ -81,8 +84,13 @@ describe('SchedulePage', () => {
   beforeEach(() => {
     api.get.mockReset()
     api.upsert.mockReset()
+    refreshMaster.mockReset()
     api.get.mockResolvedValue(createMasterSchedule())
     api.upsert.mockResolvedValue(createMasterSchedule())
+    refreshMaster.mockResolvedValue(undefined)
+    // Подменяем действие реального стора спаем (мокать модуль нельзя — глобальный
+    // resetApplicationStores зовёт setState на настоящем store).
+    useAuthStore.setState({ refreshMaster })
   })
 
   it('показывает safe defaults пока schedule pending и не пишет до submit', () => {
@@ -145,7 +153,21 @@ describe('SchedulePage', () => {
       breakStart: null,
       breakEnd: null,
     }))
-    expect(view.getLocation().pathname).toBe('/settings')
+    // master.schedule в сторе обновляется (его читает главная), затем возврат.
+    await waitFor(() => expect(refreshMaster).toHaveBeenCalledOnce())
+    await waitFor(() => expect(view.getLocation().pathname).toBe('/settings'))
+  })
+
+  it('обновляет master в сторе после сохранения — до возврата назад', async () => {
+    const view = renderAtRoute(<SchedulePage />)
+    await waitFor(() => expect(screen.getByLabelText('Начало')).toHaveValue('09:00'))
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    await waitFor(() => expect(api.upsert).toHaveBeenCalledOnce())
+    await waitFor(() => expect(refreshMaster).toHaveBeenCalledOnce())
+    // refreshMaster вызван ПОСЛЕ upsert (иначе перечитали бы старое расписание).
+    expect(api.upsert.mock.invocationCallOrder[0]).toBeLessThan(refreshMaster.mock.invocationCallOrder[0])
   })
 
   it('останавливает submit если конец обеда не позже начала', async () => {
