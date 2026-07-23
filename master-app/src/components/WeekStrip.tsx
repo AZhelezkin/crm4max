@@ -14,15 +14,24 @@ const WEEK_LETTERS = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'] as const // Пн
  * а translateX возвращается на -33.3333% — визуально та же неделя на том же месте.
  *
  * Тап по дню вызывает onSelect(ds); свайп по дню не выбирает день (movedRef).
- * baseMonday — понедельник ТЕКУЩЕЙ недели (offset 0). resetToken (изменение
- * значения) возвращает полоску на текущую неделю (кнопка «К сегодняшнему дню»).
+ * baseMonday — понедельник ТЕКУЩЕЙ недели (offset 0). При изменении focusToken
+ * полоска доскролливается к неделе focusDate (кнопка «К сегодняшнему дню» и
+ * ссылка «Ближайшая запись» на пустом дне).
  */
-export default function WeekStrip({ baseMonday, today, activeDate, onSelect, resetToken = 0 }: {
+function weekOffsetOf(baseMonday: dayjs.Dayjs, date: string): number {
+  const target = dayjs(date)
+  const targetMonday = target.subtract((target.day() + 6) % 7, 'day')
+  // Оба — понедельники 00:00, поэтому разница кратна 7; round гасит DST-дрейф.
+  return Math.round(targetMonday.diff(baseMonday, 'day') / 7)
+}
+
+export default function WeekStrip({ baseMonday, today, activeDate, onSelect, focusDate = '', focusToken = 0 }: {
   baseMonday: dayjs.Dayjs
   today: string
   activeDate: string
   onSelect: (ds: string) => void
-  resetToken?: number
+  focusDate?: string
+  focusToken?: number
 }) {
   const [offset, setOffset] = useState(0)
   const [dragX, setDragX] = useState(0)
@@ -36,12 +45,15 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, res
   const widthRef = useRef(0)
   const pending = useRef<null | 'next' | 'prev' | 'cancel'>(null)
 
-  // Кнопка «К сегодняшнему дню» — вернуть полоску на текущую неделю.
+  // Доскролл к неделе focusDate (кнопка «сегодня», ссылка «Ближайшая запись»).
   useEffect(() => {
-    setOffset(0)
+    if (!focusDate) return
+    setOffset(weekOffsetOf(baseMonday, focusDate))
     setDragX(0)
     setAnimating(false)
-  }, [resetToken])
+    // baseMonday — стабильный объект недели; зависимость только от токена.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusToken])
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (animating) return

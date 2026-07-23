@@ -11,7 +11,7 @@ const TODAY = '2026-07-22'         // среда
 function setup(props: Partial<Parameters<typeof WeekStrip>[0]> = {}) {
   const onSelect = vi.fn()
   const view = render(
-    <WeekStrip baseMonday={MONDAY} today={TODAY} activeDate={TODAY} onSelect={onSelect} resetToken={0} {...props} />,
+    <WeekStrip baseMonday={MONDAY} today={TODAY} activeDate={TODAY} onSelect={onSelect} {...props} />,
   )
   const strip = screen.getByTestId('week-strip')
   const track = strip.firstElementChild as HTMLElement
@@ -73,13 +73,25 @@ describe('WeekStrip', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('resetToken возвращает на текущую неделю', () => {
+  it('focusToken на «сегодня» возвращает на текущую неделю', () => {
     const { strip, track, view } = setup()
     swipe(strip, track, -120)
     swipe(strip, track, -120)
     expect(strip).toHaveAttribute('data-visible-week', '2026-08-03')
 
-    view.rerender(<WeekStrip baseMonday={MONDAY} today={TODAY} activeDate={TODAY} onSelect={() => {}} resetToken={1} />)
+    view.rerender(<WeekStrip baseMonday={MONDAY} today={TODAY} activeDate={TODAY} onSelect={() => {}} focusDate={TODAY} focusToken={1} />)
     expect(strip).toHaveAttribute('data-visible-week', '2026-07-20')
+  })
+
+  it('focusToken доскролливает к неделе произвольной даты', () => {
+    // Ближайшая запись через 3 недели — полоска должна показать её неделю.
+    const { strip, view } = setup()
+    expect(strip).toHaveAttribute('data-visible-week', '2026-07-20')
+
+    view.rerender(<WeekStrip baseMonday={MONDAY} today={TODAY} activeDate="2026-08-12" onSelect={() => {}} focusDate="2026-08-12" focusToken={1} />)
+    // 2026-08-12 — среда; понедельник её недели — 2026-08-10.
+    expect(strip).toHaveAttribute('data-visible-week', '2026-08-10')
+    // И этот день подсвечен как активный.
+    expect(screen.getAllByText('12')[0]).toHaveStyle({ fontWeight: '700' })
   })
 })

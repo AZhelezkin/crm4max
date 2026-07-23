@@ -61,8 +61,13 @@ export default function HomePage() {
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   const [selectedDate, setSelectedDate] = useState('')
-  // Bump возвращает WeekStrip на текущую неделю (кнопка «К сегодняшнему дню»).
-  const [weekResetToken, setWeekResetToken] = useState(0)
+  // Доскролл полоски к неделе даты: bump токена при выборе «сегодня»/ближайшей.
+  const [weekFocus, setWeekFocus] = useState({ date: '', token: 0 })
+  // Выбрать день И доскроллить полоску к его неделе (кнопка «сегодня», ссылка «ближайшая»).
+  const focusDay = (ds: string) => {
+    setSelectedDate(ds)
+    setWeekFocus((f) => ({ date: ds, token: f.token + 1 }))
+  }
   // Меню действий по кебабу «⋮» (popover у иконки) + подтверждение отмены + тост.
   const [menu, setMenu] = useState<{ booking: Booking; right: number; top?: number; bottom?: number } | null>(null)
   const [menuBusy, setMenuBusy] = useState(false)
@@ -239,7 +244,7 @@ export default function HomePage() {
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
           {/* Шапка: «к сегодня» (скрыт, если активен сегодня) + дата + открыть календарь */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-            <button type="button" aria-label="К сегодняшнему дню" onClick={() => { setSelectedDate(today); setWeekResetToken((t) => t + 1) }}
+            <button type="button" aria-label="К сегодняшнему дню" onClick={() => focusDay(today)}
               style={{ background: 'none', border: 'none', padding: 6, display: 'flex', flexShrink: 0,
                 opacity: isTodayActive ? 0 : 1, pointerEvents: isTodayActive ? 'none' : 'auto',
                 cursor: isTodayActive ? 'default' : 'pointer' }}>
@@ -260,7 +265,8 @@ export default function HomePage() {
             today={today}
             activeDate={activeDate}
             onSelect={setSelectedDate}
-            resetToken={weekResetToken}
+            focusDate={weekFocus.date}
+            focusToken={weekFocus.token}
           />
 
           {/* Записи активного дня / пустой день */}
@@ -320,7 +326,15 @@ export default function HomePage() {
                 <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>В этот день нет записей</span>
                 {nearestUpcoming && (
                   <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>
-                    Ближайшая запись <span style={{ color: 'var(--color-primary-surface)' }}>{dayjs(nearestUpcoming.date).format('D MMMM')}</span>
+                    Ближайшая запись{' '}
+                    {/* Тап — доскролл полоски к неделе этой даты + выделение дня. */}
+                    <button
+                      type="button"
+                      onClick={() => focusDay(nearestUpcoming.date)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...text.caption1, color: 'var(--color-primary-surface)' }}
+                    >
+                      {dayjs(nearestUpcoming.date).format('D MMMM')}
+                    </button>
                   </span>
                 )}
               </div>

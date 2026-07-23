@@ -182,6 +182,31 @@ describe('master HomePage', () => {
     expect(screen.getByText('Не указан')).toBeInTheDocument()
   })
 
+  it('клик по «Ближайшая запись» выбирает эту дату и показывает её запись', async () => {
+    const nearDate = dayjs().add(10, 'day').format('YYYY-MM-DD')
+    const nearMonday = dayjs(nearDate).subtract((dayjs(nearDate).day() + 6) % 7, 'day').format('YYYY-MM-DD')
+    api.listBookings.mockResolvedValue([
+      createMasterBooking({
+        id: 'booking-near',
+        date: nearDate,
+        time: '11:00',
+        client: { id: 'client-near', name: 'Далёкий клиент', phone: null, photo: null },
+      }),
+    ])
+    setMaster(createMasterProfile())
+    const view = renderAtRoute(<HomePage />)
+
+    // Сегодня записей нет — показываем ссылку на ближайшую.
+    expect(await screen.findByText('В этот день нет записей')).toBeInTheDocument()
+    const link = screen.getByRole('button', { name: dayjs(nearDate).format('D MMMM') })
+
+    await view.user.click(link)
+
+    // Список показал запись этого дня, а полоска доскроллилась к его неделе.
+    expect(await screen.findByText('Далёкий клиент')).toBeInTheDocument()
+    expect(screen.getByTestId('week-strip')).toHaveAttribute('data-visible-week', nearMonday)
+  })
+
   it('HomePage prefetch pay URL и сохраняет payment return context для GRACE', async () => {
     const webApp = installWebApp()
     const graceEndsAt = new Date(Date.now() + 3 * 86_400_000).toISOString()
