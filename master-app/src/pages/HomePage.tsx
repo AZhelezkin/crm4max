@@ -12,6 +12,7 @@ import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, 
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
+import WeekStrip from '@/components/WeekStrip'
 
 dayjs.locale('ru')
 
@@ -60,6 +61,8 @@ export default function HomePage() {
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   const [selectedDate, setSelectedDate] = useState('')
+  // Bump возвращает WeekStrip на текущую неделю (кнопка «К сегодняшнему дню»).
+  const [weekResetToken, setWeekResetToken] = useState(0)
   // Меню действий по кебабу «⋮» (popover у иконки) + подтверждение отмены + тост.
   const [menu, setMenu] = useState<{ booking: Booking; right: number; top?: number; bottom?: number } | null>(null)
   const [menuBusy, setMenuBusy] = useState(false)
@@ -236,7 +239,7 @@ export default function HomePage() {
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
           {/* Шапка: «к сегодня» (скрыт, если активен сегодня) + дата + открыть календарь */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-            <button type="button" aria-label="К сегодняшнему дню" onClick={() => setSelectedDate(today)}
+            <button type="button" aria-label="К сегодняшнему дню" onClick={() => { setSelectedDate(today); setWeekResetToken((t) => t + 1) }}
               style={{ background: 'none', border: 'none', padding: 6, display: 'flex', flexShrink: 0,
                 opacity: isTodayActive ? 0 : 1, pointerEvents: isTodayActive ? 'none' : 'auto',
                 cursor: isTodayActive ? 'default' : 'pointer' }}>
@@ -251,34 +254,14 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Недельная полоска — тапабельные дни */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-            {WEEK_LETTERS.map((letter, i) => {
-              const d = weekStart.add(i, 'day')
-              const ds = d.format('YYYY-MM-DD')
-              const selected = ds === activeDate
-              const isToday = ds === today
-              const weekend = i >= 5
-              // Приоритет цвета: выбранный > сегодня(синий) > выходной(красный) > обычный.
-              const letterColor = selected ? 'var(--color-pattern-element)'
-                : weekend ? 'var(--color-error-element-muted)'
-                : 'var(--color-interactive-element-secondary)'
-              const numColor = selected ? 'var(--color-surface)'
-                : isToday ? 'var(--color-primary-surface)'
-                : weekend ? 'var(--color-error-surface-accented)'
-                : 'var(--color-interactive-element-accented)'
-              return (
-                <button key={i} type="button" onClick={() => setSelectedDate(ds)} style={{
-                  width: 48, padding: '8px 14px 6px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  background: selected ? 'var(--color-on-surface)' : 'transparent',
-                }}>
-                  <span style={{ fontSize: 11, lineHeight: '13px', fontWeight: 400, letterSpacing: -0.11, color: letterColor }}>{letter}</span>
-                  <span style={{ fontSize: 14, lineHeight: '20px', fontWeight: selected ? 700 : 400, letterSpacing: -0.14, color: numColor }}>{d.date()}</span>
-                </button>
-              )
-            })}
-          </div>
+          {/* Недельная полоска — свайп влево/вправо между неделями, тап выбирает день */}
+          <WeekStrip
+            baseMonday={weekStart}
+            today={today}
+            activeDate={activeDate}
+            onSelect={setSelectedDate}
+            resetToken={weekResetToken}
+          />
 
           {/* Записи активного дня / пустой день */}
           {bookingsLoading ? (
