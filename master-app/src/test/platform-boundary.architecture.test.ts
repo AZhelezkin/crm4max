@@ -35,7 +35,6 @@ const WEB_APP_ALLOWLIST = [
   // Поддержка переехала из навбара на экран «Другое» (макет 10302-42755).
   'src/pages/OtherPage.tsx',
   'src/pages/SubscriptionPlanPage.tsx',
-  'src/pages/WelcomePage.tsx',
   'src/standalone-pages/handoff/destination-selector/DestinationSelectorPage.tsx',
   'src/standalone-pages/handoff/destination-selector/useDestinationSelector.ts',
   'src/store/auth.store.ts',
@@ -282,7 +281,7 @@ describe('platform provider boundary architecture', () => {
     const actual = filesWithProviderWebAppAccess()
 
     assertExactLocations('provider WebApp access', actual, WEB_APP_ALLOWLIST)
-    expect(actual).toHaveLength(21)
+    expect(actual).toHaveLength(20)
   })
 
   it('изолирует tracked legacy JavaScript shadows от production imports', () => {

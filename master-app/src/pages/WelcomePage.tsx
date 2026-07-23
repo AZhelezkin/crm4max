@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
-import { subscriptionApi } from '@/api/subscription.api'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
 
@@ -130,21 +129,10 @@ export default function WelcomePage() {
     }
   }
 
-  // «Попробовать бесплатно 7 дней» → привязка карты на форме T-Bank. URL префетчим
-  // при входе: openLink требует синхронного user-gesture (await его рвёт), поэтому
-  // по тапу открываем уже готовый URL. Триал стартует на бэке при /trial.
-  const [trialUrl, setTrialUrl] = useState<string | null>(null)
-  useEffect(() => {
-    if (trialUrl) return
-    subscriptionApi.startTrial().then((r) => setTrialUrl(r.paymentURL)).catch(() => {})
-  }, [trialUrl])
-
+  // «Попробовать бесплатно 7 дней» → экран выбора периода подписки (макет 10256-54945).
+  // Привязку карты запускает уже тот экран после выбора периода; раньше форма карты
+  // открывалась прямо отсюда (не по макету — до выбора периода).
   const handleTrial = () => {
-    if (trialUrl) {
-      if (window.WebApp?.openLink) window.WebApp.openLink(trialUrl)
-      else window.open(trialUrl, '_blank')
-    }
-    // Дальше — экран «Подписка» (дни триала + выбор периода), макет 10256-54945.
     void finishToSubscription()
   }
 
