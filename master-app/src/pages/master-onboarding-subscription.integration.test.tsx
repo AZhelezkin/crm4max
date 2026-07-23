@@ -10,12 +10,14 @@ import { installWebApp } from '@/test/web-app-fixture'
 const api = vi.hoisted(() => ({
   getMe: vi.fn(),
   pay: vi.fn(),
+  startTrial: vi.fn(),
 }))
 
 vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: {
     getMe: api.getMe,
     pay: api.pay,
+    startTrial: api.startTrial,
   },
 }))
 vi.mock('qrcode.react', async () => {
@@ -42,6 +44,8 @@ describe('master onboarding subscription screens', () => {
   beforeEach(() => {
     api.getMe.mockReset()
     api.pay.mockReset()
+    api.startTrial.mockReset()
+    localStorage.clear()
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',
       trialEndsAt: new Date(Date.now() + 2.1 * 86_400_000).toISOString(),
@@ -49,11 +53,14 @@ describe('master onboarding subscription screens', () => {
     api.pay.mockImplementation((period: 'MONTH' | 'YEAR') => Promise.resolve({
       paymentURL: `https://pay.test/${period.toLowerCase()}`,
     }))
+    api.startTrial.mockImplementation((period: 'MONTH' | 'YEAR') => Promise.resolve({
+      paymentURL: `https://trial.test/${period.toLowerCase()}`,
+    }))
     setMaster()
     vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
-  it('показывает trial days и prefetch default yearly period', async () => {
+  it('показывает trial days и prefetch привязки карты (без списания) на default yearly', async () => {
     renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
 
     expect(await screen.findByText('3')).toBeInTheDocument()
@@ -61,17 +68,19 @@ describe('master onboarding subscription screens', () => {
     expect(screen.getByRole('button', { name: /Ежегодно/ })).toHaveStyle({
       border: '1px solid var(--color-selected-surface)',
     })
-    expect(api.pay).toHaveBeenCalledWith('YEAR')
+    // В триале «Подключить» — привязка карты без списания (startTrial), не оплата.
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
+    expect(api.pay).not.toHaveBeenCalled()
     expect(api.getMe).toHaveBeenCalledOnce()
   })
 
-  it('переключает month plan, требует оба согласия и открывает exact payment URL', async () => {
+  it('в триале: month plan, оба согласия → привязка карты без списания, в кабинет', async () => {
     const webApp = installWebApp()
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    await waitFor(() => expect(api.pay).toHaveBeenCalledWith('YEAR'))
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
 
     await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
-    await waitFor(() => expect(api.pay).toHaveBeenCalledWith('MONTH'))
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('MONTH'))
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
     expect(screen.getByText('Необходимые согласия')).toBeInTheDocument()
 
@@ -83,9 +92,10 @@ describe('master onboarding subscription screens', () => {
     await view.user.click(screen.getByRole('button', { name: /Я даю согласие/ }))
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
-    expect(webApp.openLink).toHaveBeenCalledWith('https://pay.test/month')
-    expect(localStorage.getItem('sub:payPending')).toBe('1')
-    expect(localStorage.getItem('sub:preErr')).toBe('')
+    // Форма привязки карты (не оплаты); флаги результата оплаты не ставятся; → кабинет.
+    expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month')
+    expect(api.pay).not.toHaveBeenCalled()
+    expect(localStorage.getItem('sub:payPending')).toBeNull()
     expect(view.getLocation().pathname).toBe('/')
   })
 
@@ -135,10 +145,10 @@ describe('master onboarding subscription screens', () => {
   it('остаётся failure-safe если subscription/payment reads недоступны', async () => {
     api.getMe.mockRejectedValue(new Error('subscription unavailable'))
     api.pay.mockRejectedValue(new Error('payment unavailable'))
+    api.startTrial.mockRejectedValue(new Error('trial unavailable'))
     const webApp = installWebApp()
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    await waitFor(() => expect(api.pay).toHaveBeenCalledWith('YEAR'))
-
+    // sub не загрузился → URL не префетчится; проходим шаги — ничего вредного.
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
     await view.user.click(screen.getByRole('button', { name: /Я принимаю условия/ }))
     await view.user.click(screen.getByRole('button', { name: /Я даю согласие/ }))

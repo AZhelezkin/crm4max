@@ -50,24 +50,33 @@ export default function SubscriptionPlanPage() {
     subscriptionApi.getMe().then(setSub).catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (payUrls[period]) return
-    subscriptionApi.pay(period)
-      .then((r) => setPayUrls((prev) => ({ ...prev, [period]: r.paymentURL })))
-      .catch(() => {})
-  }, [period, payUrls])
-
   const trialDays = sub?.status === 'TRIALING' ? daysLeft(sub.trialEndsAt) : 0
+  // Онбординг-триал (дни ещё есть): «Подключить» = привязка карты БЕЗ списания
+  // (startTrial), период сохраняется и спишется после триала. Иначе (истёкший
+  // триал / grace / blocked) — обычная оплата сразу (pay).
+  const isTrial = sub?.status === 'TRIALING' && trialDays > 0
+
+  useEffect(() => {
+    // Ждём загрузки sub — иначе не знаем, триал это или оплата (кэшировали бы не тот URL).
+    if (!sub || payUrls[period]) return
+    const req = isTrial ? subscriptionApi.startTrial(period) : subscriptionApi.pay(period)
+    req.then((r) => setPayUrls((prev) => ({ ...prev, [period]: r.paymentURL }))).catch(() => {})
+  }, [period, payUrls, sub, isTrial])
 
   const handleConnect = () => {
     const url = payUrls[period]
     if (!url) return
-    // Флаг «оплата открыта» → при возврате: ACTIVE → «Подписка оформлена!»,
-    // новая ошибка списания → «Оплата не прошла». preErr — чтобы не спутать со старой.
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
+    // В триале — только привязка карты, списания нет, поэтому флаги результата
+    // оплаты не ставим (иначе в кабинете покажется «Подписка оформлена/не прошла»).
+    if (!isTrial) {
+      // Флаг «оплата открыта» → при возврате: ACTIVE → «Подписка оформлена!»,
+      // новая ошибка списания → «Оплата не прошла». preErr — чтобы не спутать со старой.
+      localStorage.setItem('sub:payPending', '1')
+      localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
+    }
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
+    // Независимо от исхода привязки/оплаты — в кабинет.
     navigate('/', { replace: true })
   }
 

@@ -12,7 +12,9 @@ export interface SubscriptionState {
 
 export const subscriptionApi = {
   // «Попробовать бесплатно 7 дней»: привязка карты (без списания) + старт триала.
-  startTrial: () => api.post<{ paymentURL: string }>('/subscription/trial').then((r) => r.data),
+  // Привязка карты без списания + сохранение периода для пост-триального списания.
+  startTrial: (period: 'MONTH' | 'YEAR' = 'MONTH') =>
+    api.post<{ paymentURL: string }>('/subscription/trial', { period }).then((r) => r.data),
   // Оплата подписки (баннер/блокировка/«Подключить»): месяц 499 ₽ / год 4 790 ₽.
   pay: (period: 'MONTH' | 'YEAR' = 'MONTH') =>
     api.post<{ paymentURL: string }>('/subscription/pay', { period }).then((r) => r.data),
