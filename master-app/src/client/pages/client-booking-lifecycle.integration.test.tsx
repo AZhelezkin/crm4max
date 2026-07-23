@@ -76,6 +76,20 @@ function renderDetail(booking = futureBooking()) {
   )
 }
 
+// Экран сразу после создания записи: /book/success с bookingId в location.state
+// (не в URL) — id берётся из state, страница догружает запись через getById.
+function renderSuccess(booking = futureBooking()) {
+  api.getById.mockResolvedValue(booking)
+  return renderAtRoute(
+    <Routes>
+      <Route path="/my-bookings" element={<div>Мои записи</div>} />
+      <Route path="/book/success" element={<BookingDetailPage />} />
+      <Route path="/book/calendar" element={<div>Выбор даты</div>} />
+    </Routes>,
+    { entries: [{ pathname: '/book/success', state: { bookingId: booking.id } }] },
+  )
+}
+
 describe('client booking lifecycle', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
@@ -217,5 +231,12 @@ describe('client booking lifecycle', () => {
 
     await screen.findByRole('button', { name: 'Перенести' })
     expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument()
+  })
+
+  it('на экране сразу после создания записи (/book/success) кнопка «Отметить как оплачено» есть', async () => {
+    // Так запись приходит с бэкенда после create: status CONFIRMED, paymentStatus UNPAID.
+    renderSuccess(futureBooking({ status: 'CONFIRMED', paymentStatus: 'UNPAID' }))
+
+    expect(await screen.findByRole('button', { name: 'Отметить как оплачено' })).toBeInTheDocument()
   })
 })
