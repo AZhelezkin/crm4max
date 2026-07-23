@@ -51,6 +51,20 @@ function bookingAmount(b: Booking): number {
   return bookingTotal(b)
 }
 
+// Выбранный день полоски переживает уход в карточку записи и возврат «назад»:
+// HomePage при этом размонтируется, локальный state теряется, поэтому храним день
+// в sessionStorage (в рамках сессии SPA; на свежем открытии приложения — сегодня).
+const SELECTED_DATE_KEY = 'home.selectedDate'
+function readStoredDate(): string {
+  try { return sessionStorage.getItem(SELECTED_DATE_KEY) ?? '' } catch { return '' }
+}
+function storeSelectedDate(ds: string) {
+  try {
+    if (ds) sessionStorage.setItem(SELECTED_DATE_KEY, ds)
+    else sessionStorage.removeItem(SELECTED_DATE_KEY)
+  } catch { /* приватный режим / нет доступа — просто не персистим */ }
+}
+
 export default function HomePage() {
   const { master } = useAuthStore()
   const navigate = useNavigate()
@@ -60,9 +74,16 @@ export default function HomePage() {
   // Статус подписки — строка под именем в шапке (макет 10216-40371).
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
-  const [selectedDate, setSelectedDate] = useState('')
+  // Инициализируем из sessionStorage, чтобы вернуться на тот же день после карточки.
+  const [selectedDate, setSelectedDate] = useState(readStoredDate)
   // Доскролл полоски к неделе даты: bump токена при выборе «сегодня»/ближайшей.
-  const [weekFocus, setWeekFocus] = useState({ date: '', token: 0 })
+  // На восстановленной дате сразу фокусируем её неделю (token≠0 → эффект отработает).
+  const [weekFocus, setWeekFocus] = useState(() => {
+    const d = readStoredDate()
+    return d ? { date: d, token: 1 } : { date: '', token: 0 }
+  })
+  // Держим sessionStorage в синхроне с выбранным днём.
+  useEffect(() => { storeSelectedDate(selectedDate) }, [selectedDate])
   // Выбрать день И доскроллить полоску к его неделе (кнопка «сегодня», ссылка «ближайшая»).
   const focusDay = (ds: string) => {
     setSelectedDate(ds)

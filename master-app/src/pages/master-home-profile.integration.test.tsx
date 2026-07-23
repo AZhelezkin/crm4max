@@ -51,6 +51,8 @@ describe('master HomePage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     vi.spyOn(window, 'open').mockImplementation(() => null)
+    // Выбранный день полоски персистится в sessionStorage — чистим между тестами.
+    sessionStorage.clear()
     primeSuccessfulReads()
     setMaster(null)
   })
@@ -205,6 +207,32 @@ describe('master HomePage', () => {
     // Список показал запись этого дня, а полоска доскроллилась к его неделе.
     expect(await screen.findByText('Далёкий клиент')).toBeInTheDocument()
     expect(screen.getByTestId('week-strip')).toHaveAttribute('data-visible-week', nearMonday)
+  })
+
+  it('сохраняет выбранный день после ухода в карточку и возврата (remount)', async () => {
+    const pickDate = dayjs().add(9, 'day').format('YYYY-MM-DD')
+    const pickMonday = dayjs(pickDate).subtract((dayjs(pickDate).day() + 6) % 7, 'day').format('YYYY-MM-DD')
+    api.listBookings.mockResolvedValue([
+      createMasterBooking({
+        id: 'booking-picked',
+        date: pickDate,
+        time: '13:00',
+        client: { id: 'client-picked', name: 'Выбранный клиент', phone: null, photo: null },
+      }),
+    ])
+    setMaster(createMasterProfile())
+
+    // Первый заход: выбираем будущий день через ссылку «Ближайшая запись».
+    const first = renderAtRoute(<HomePage />)
+    await screen.findByText('В этот день нет записей')
+    await first.user.click(screen.getByRole('button', { name: dayjs(pickDate).format('D MMMM') }))
+    expect(await screen.findByText('Выбранный клиент')).toBeInTheDocument()
+    first.unmount()
+
+    // Возврат из карточки = свежий mount HomePage: день и неделя восстановлены.
+    renderAtRoute(<HomePage />)
+    expect(await screen.findByText('Выбранный клиент')).toBeInTheDocument()
+    expect(screen.getByTestId('week-strip')).toHaveAttribute('data-visible-week', pickMonday)
   })
 
   it('HomePage prefetch pay URL и сохраняет payment return context для GRACE', async () => {
