@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
+import { installHorizontalOverscrollGuard } from '@/lib/topOverscrollGuard'
 import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
@@ -100,10 +101,13 @@ export default function App() {
   const [mode, setMode] = useState<'master' | 'client' | null>(resolveInitialMode)
 
   // Свайп вниз в шторке Max закрывает мини-приложение — гасим нативный жест.
-  // Тест-страница #/swipe-test управляет им вручную, поэтому там не вмешиваемся.
+  // Плюс горизонтальная «резина» WebView (не покрывается bridge-методом) — всегда.
+  // Тест-страница #/swipe-test управляет вертикалью вручную, там не вмешиваемся.
   useEffect(() => {
     if (isSwipeTestHash()) return
-    return keepVerticalSwipesDisabled()
+    const stopVertical = keepVerticalSwipesDisabled()
+    const stopHorizontal = installHorizontalOverscrollGuard()
+    return () => { stopVertical(); stopHorizontal() }
   }, [])
 
   useEffect(() => {

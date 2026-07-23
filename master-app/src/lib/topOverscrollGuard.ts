@@ -86,3 +86,63 @@ function clampToSentinel() {
   if (body.scrollHeight <= body.clientHeight) return
   if (body.scrollTop < SENTINEL) body.scrollTop = SENTINEL
 }
+
+/**
+ * Гасит нативную горизонтальную «резину» (rubber-band) WebView.
+ *
+ * Страница по горизонтали не скроллится (overflow-x:hidden), но нативный
+ * контейнер Max всё равно «оттягивает» экран влево/вправо на горизонтальном
+ * свайпе. bridge-метод disableVerticalSwipes на это не влияет (он про
+ * вертикальный close-жест), поэтому нужен отдельный guard — и он ставится
+ * ВСЕГДА, независимо от поддержки bridge.
+ *
+ * Горизонтальный жест пропускаем только если у какого-то предка есть реальный
+ * горизонтальный скролл с запасом в сторону жеста (overflow-x:auto/scroll,
+ * scrollWidth>clientWidth) — так живут карусель платежей и т.п. Иначе
+ * preventDefault. JS-свайпы (WeekStrip, лайтбоксы) продолжают работать: они
+ * читают clientX сами, а preventDefault не отменяет их обработчики.
+ */
+export function installHorizontalOverscrollGuard(): () => void {
+  let startX = 0
+  let startY = 0
+  let axis: null | 'h' | 'v' = null
+
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1) { axis = 'v'; return } // мультитач (pinch) — не наше
+    startX = e.touches[0].clientX
+    startY = e.touches[0].clientY
+    axis = null
+  }
+
+  const onTouchMove = (e: TouchEvent) => {
+    if (!e.cancelable || e.touches.length !== 1 || axis === 'v') return
+    const dx = e.touches[0].clientX - startX
+    const dy = e.touches[0].clientY - startY
+    if (axis === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
+      axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+      if (axis === 'v') return // вертикаль — отдаём вертикальному guard'у/скроллу
+    }
+
+    // Есть ли предок с настоящим горизонтальным скроллом и запасом в сторону жеста?
+    let node = e.target as HTMLElement | null
+    while (node && node !== document.body && node !== document.documentElement) {
+      const ox = getComputedStyle(node).overflowX
+      if ((ox === 'auto' || ox === 'scroll') && node.scrollWidth > node.clientWidth) {
+        const maxLeft = node.scrollWidth - node.clientWidth
+        if (dx > 0 && node.scrollLeft > 0) return          // свайп вправо, есть куда
+        if (dx < 0 && node.scrollLeft < maxLeft - 0.5) return // свайп влево, есть куда
+      }
+      node = node.parentElement
+    }
+
+    e.preventDefault() // скроллить по горизонтали нечего — гасим bounce
+  }
+
+  document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
+  document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+  return () => {
+    document.removeEventListener('touchstart', onTouchStart, { capture: true })
+    document.removeEventListener('touchmove', onTouchMove, { capture: true })
+  }
+}

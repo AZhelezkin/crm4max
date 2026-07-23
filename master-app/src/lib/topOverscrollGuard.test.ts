@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { SENTINEL, installTopOverscrollGuard } from './topOverscrollGuard'
+import { SENTINEL, installHorizontalOverscrollGuard, installTopOverscrollGuard } from './topOverscrollGuard'
 
 let stop: (() => void) | null = null
 
@@ -163,5 +163,72 @@ describe('topOverscrollGuard', () => {
       expect(document.body.querySelector('[data-overscroll-spacer]')).toBeNull()
       expect(document.body.scrollTop).toBe(0)
     })
+  })
+})
+
+// ── Горизонтальная «резина» ──────────────────────────────────────────────────
+
+/** Тач с clientX/clientY (для горизонтального guard'а). */
+function touchXY(target: EventTarget, type: 'touchstart' | 'touchmove', clientX: number, clientY: number) {
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'touches', { value: [{ clientX, clientY }] })
+  Object.defineProperty(event, 'target', { value: target })
+  target.dispatchEvent(event)
+  return event
+}
+
+/** Горизонтальный свайп: dx<0 влево, dx>0 вправо (dy мал). */
+function swipeH(target: EventTarget, dx: number) {
+  touchXY(target, 'touchstart', 200, 100)
+  return touchXY(target, 'touchmove', 200 + dx, 104)
+}
+
+/** Элемент с горизонтальным скроллом и заданным scrollLeft. */
+function makeHScroll(scrollLeft: number, { scrollWidth = 900, clientWidth = 300 } = {}) {
+  const el = document.createElement('div')
+  el.style.overflowX = 'auto'
+  Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scrollWidth })
+  Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth })
+  let sl = scrollLeft
+  Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => sl, set: (v: number) => { sl = v } })
+  document.body.append(el)
+  return el
+}
+
+describe('installHorizontalOverscrollGuard', () => {
+  it('гасит горизонтальный свайп, когда скроллить нечего', () => {
+    stop = installHorizontalOverscrollGuard()
+    expect(swipeH(document.body, -120).defaultPrevented).toBe(true)
+    stop(); stop = null
+    expect(swipeH(document.body, 120).defaultPrevented).toBe(false)
+    stop = installHorizontalOverscrollGuard()
+    expect(swipeH(document.body, 120).defaultPrevented).toBe(true)
+  })
+
+  it('не мешает вертикальному жесту', () => {
+    stop = installHorizontalOverscrollGuard()
+    touchXY(document.body, 'touchstart', 200, 100)
+    expect(touchXY(document.body, 'touchmove', 202, 200).defaultPrevented).toBe(false)
+  })
+
+  it('пропускает горизонтальный скролл-контейнер, если есть куда ехать', () => {
+    // scrollLeft в середине: есть запас в обе стороны.
+    const list = makeHScroll(300)
+    stop = installHorizontalOverscrollGuard()
+    expect(swipeH(list, -120).defaultPrevented).toBe(false) // влево — есть куда
+    expect(swipeH(list, 120).defaultPrevented).toBe(false)  // вправо — есть куда
+  })
+
+  it('гасит на краю горизонтального скролл-контейнера', () => {
+    const atStart = makeHScroll(0)
+    stop = installHorizontalOverscrollGuard()
+    // scrollLeft=0: вправо ехать некуда → гасим; влево есть запас → пропускаем.
+    expect(swipeH(atStart, 120).defaultPrevented).toBe(true)
+    expect(swipeH(atStart, -120).defaultPrevented).toBe(false)
+  })
+
+  it('снимает слушатели после отписки', () => {
+    installHorizontalOverscrollGuard()()
+    expect(swipeH(document.body, -120).defaultPrevented).toBe(false)
   })
 })
