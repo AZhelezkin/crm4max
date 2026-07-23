@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   list: vi.fn(),
   getById: vi.fn(),
   cancel: vi.fn(),
+  confirmPayment: vi.fn(),
 }))
 
 vi.mock('@/App', () => ({ startParam: '' }))
@@ -23,6 +24,7 @@ vi.mock('@client/api/bookings.api', () => ({
     list: api.list,
     getById: api.getById,
     cancel: api.cancel,
+    confirmPayment: api.confirmPayment,
   },
 }))
 
@@ -195,5 +197,25 @@ describe('client booking lifecycle', () => {
       rescheduleId: 'booking-reschedule-entry',
     })
     expect(api.cancel).not.toHaveBeenCalled()
+  })
+
+  it('«Отметить как оплачено» отправляет confirmPayment и обновляет статус', async () => {
+    const booking = futureBooking({ paymentStatus: 'UNPAID' })
+    api.confirmPayment.mockResolvedValue({ ...booking, paymentStatus: 'PAID' })
+    const view = renderDetail(booking)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Отметить как оплачено' }))
+
+    expect(api.confirmPayment).toHaveBeenCalledWith(booking.id)
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('не показывает «Отметить как оплачено» для уже оплаченной записи', async () => {
+    renderDetail(futureBooking({ paymentStatus: 'PAID' }))
+
+    await screen.findByRole('button', { name: 'Перенести' })
+    expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument()
   })
 })
