@@ -28,14 +28,21 @@ describe('master OtherPage', () => {
     expect(screen.queryByRole('button', { name: 'Назад' })).not.toBeInTheDocument()
   })
 
-  it('оставляет неактивными пункты без экранов', () => {
+  it('оставляет неактивными пункты без экранов, «О платформе» и поддержка активны', () => {
     renderAtRoute(<OtherPage />, { route: '/other' })
 
     expect(screen.getByRole('button', { name: 'Согласия' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Подписка' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Способы оплаты' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'О платформе' })).toBeDisabled()
     expect(screen.getByRole('button', { name: SUPPORT })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'О платформе' })).toBeEnabled()
+  })
+
+  it('«О платформе» ведёт на экран платформы', async () => {
+    const { user, getLocation } = renderAtRoute(<OtherPage />, { route: '/other' })
+
+    await user.click(screen.getByRole('button', { name: 'О платформе' }))
+    expect(getLocation().pathname).toBe('/about-platform')
   })
 
   it('открывает support через openMaxLink', async () => {

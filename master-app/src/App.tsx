@@ -15,6 +15,7 @@ import PaymentsDayPage from '@/pages/PaymentsDayPage'
 
 import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
+import AboutPlatformPage from '@/pages/AboutPlatformPage'
 import AddressEditPage from '@/pages/AddressEditPage'
 import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage'
@@ -302,6 +303,7 @@ function MasterApp() {
           <Route path="/bookings/:id" element={<BookingDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutMePage />} />
+          <Route path="/about-platform" element={<AboutPlatformPage />} />
           <Route path="/address" element={<AddressEditPage />} />
           <Route path="/subscription" element={<SubscriptionPlanPage />} />
           <Route path="/schedule" element={<SchedulePage />} />

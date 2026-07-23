@@ -192,7 +192,8 @@ export default function WelcomePage() {
 
 // ─── Слайдер: авто-прокрутка + свайп по 5 слайдам, общие точки ─────────────────
 
-function Slider() {
+// Экспортируется: тот же слайдер-карусель фич используется на «О платформе».
+export function Slider() {
   const [index, setIndex] = useState(0)
   const touch = useRef<{ x: number; y: number } | null>(null)
 
@@ -372,7 +373,7 @@ function PrimaryButton({ children, onClick }: { children: ReactNode; onClick: ()
 
 // ─── Логотип sloto (Figma «Group 62», 116×24) ─────────────────────────────────
 
-function SlotoMark() {
+export function SlotoMark() {
   return (
     <svg width="116" height="24" viewBox="0 0 116 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="111.577" cy="7.93651" rx="4.4231" ry="4.39427" fill="#FF667F" />

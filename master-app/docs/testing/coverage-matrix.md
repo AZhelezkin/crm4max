@@ -81,6 +81,7 @@
 | `/bookings/:id` | `BookingDetailPage` | P0 |
 | `/settings` | `SettingsPage` | P1 |
 | `/about` | `AboutMePage` | P1 |
+| `/about-platform` | `AboutPlatformPage` (из «Другое») | P1 |
 | `/address` | `AddressEditPage` | P0 |
 | `/subscription` | `SubscriptionPlanPage` | P0 |
 | `/schedule` | `SchedulePage` | P0 |
