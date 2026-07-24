@@ -109,6 +109,23 @@ describe('master onboarding subscription screens', () => {
     expect(localStorage.getItem('sub:preErr')).toBe('old-charge-error')
   })
 
+  it('при ACTIVE показывает «Подписка активна до…» без выбора периода и кнопки', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      // Полдень UTC — локальная дата одинакова в любом поясе тестовой машины.
+      currentPeriodEnd: '2026-08-24T12:00:00.000Z',
+    }))
+    renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(await screen.findByText(/Подписка активна до 24 августа/)).toBeInTheDocument()
+    expect(screen.queryByText('пробный период закончился')).not.toBeInTheDocument()
+    expect(screen.queryByText('Выберите период подписки')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Подключить|Далее/ })).not.toBeInTheDocument()
+    // Префетч оплаты не дёргается — не плодим NEW-платежи на бэке.
+    expect(api.pay).not.toHaveBeenCalled()
+    expect(api.startTrial).not.toHaveBeenCalled()
+  })
+
   it('показывает expired trial transition как Далее', async () => {
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',

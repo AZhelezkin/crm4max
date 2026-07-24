@@ -24,6 +24,11 @@ function daysLeft(iso: string | null): number {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
 }
 
+/** «24 августа» — дата окончания оплаченного периода. */
+function formatDayMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
+
 export default function SubscriptionPlanPage() {
   const navigate = useNavigate()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
@@ -41,13 +46,17 @@ export default function SubscriptionPlanPage() {
   // (startTrial), период сохраняется и спишется после триала. Иначе (истёкший
   // триал / grace / blocked) — обычная оплата сразу (pay).
   const isTrial = sub?.status === 'TRIALING' && trialDays > 0
+  // Оплаченная подписка: ни плитки триала, ни выбора периода, ни «Подключить» —
+  // иначе экран выглядел как «пробный период закончился» и предлагал платить снова.
+  const isActive = sub?.status === 'ACTIVE'
 
   useEffect(() => {
-    // Ждём загрузки sub — иначе не знаем, триал это или оплата (кэшировали бы не тот URL).
-    if (!sub || payUrls[period]) return
+    // Ждём загрузки sub — иначе не знаем, триал это или оплата (кэшировали бы не
+    // тот URL). При ACTIVE не префетчим вовсе: pay() создаёт NEW-платёж на бэке.
+    if (!sub || isActive || payUrls[period]) return
     const req = isTrial ? subscriptionApi.startTrial(period) : subscriptionApi.pay(period)
     req.then((r) => setPayUrls((prev) => ({ ...prev, [period]: r.paymentURL }))).catch(() => {})
-  }, [period, payUrls, sub, isTrial])
+  }, [period, payUrls, sub, isTrial, isActive])
 
   const handleConnect = () => {
     const url = payUrls[period]
@@ -73,8 +82,18 @@ export default function SubscriptionPlanPage() {
       <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
 
       <div style={{ flex: 1, padding: '40px 16px 24px', display: 'flex', flexDirection: 'column', gap: 60 }}>
+        {/* Оплаченная подписка: статус вместо плитки триала (как строка на главной). */}
+        {isActive && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <ActiveTick28 />
+            <span style={{ ...text.body1, color: 'var(--color-on-surface)' }}>
+              Подписка активна{sub?.currentPeriodEnd ? ` до ${formatDayMonth(sub.currentPeriodEnd)}` : ''}
+            </span>
+          </div>
+        )}
+
         {/* Плитка дней триала (макеты 10256-55033…55098) */}
-        {sub && (
+        {sub && !isActive && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <DaysTile value={trialDays} expired={trialDays <= 0} />
             <span style={{ ...text.body1, color: 'var(--color-on-surface)', width: 167, whiteSpace: 'pre-wrap' }}>
@@ -83,7 +102,8 @@ export default function SubscriptionPlanPage() {
           </div>
         )}
 
-        {/* Выбор периода */}
+        {/* Выбор периода — только пока не оплачено. */}
+        {!isActive && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)', textAlign: 'center' }}>Выберите период подписки</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
@@ -107,6 +127,7 @@ export default function SubscriptionPlanPage() {
             </PlanCard>
           </div>
         </div>
+        )}
 
         {/* Преимущества */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
@@ -125,7 +146,8 @@ export default function SubscriptionPlanPage() {
         </div>
       </div>
 
-      {/* Подключить */}
+      {/* Подключить — скрыта при оплаченной подписке (иначе повторное списание). */}
+      {!isActive && (
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
         <button
           type="button"
@@ -143,6 +165,7 @@ export default function SubscriptionPlanPage() {
           {sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
         </button>
       </div>
+      )}
     </div>
   )
 }
@@ -196,6 +219,16 @@ function PlanCard({ selected, onSelect, title, children }: {
         {children}
       </div>
     </button>
+  )
+}
+
+// Статус оплаченной подписки: зелёная галка 28 (как success-тон статус-строки).
+function ActiveTick28() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="14" cy="14" r="13" fill="var(--color-success-surface-accented)" />
+      <path d="M8.5 14.3L12.2 18L19.5 10.5" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
