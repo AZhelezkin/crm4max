@@ -200,15 +200,22 @@ function MasterApp() {
       subscriptionApi.getMe()
         .then((s) => {
           if (localStorage.getItem('sub:payPending')) {
+            const clearMarkers = () => {
+              localStorage.removeItem('sub:payPending')
+              localStorage.removeItem('sub:preErr')
+              localStorage.removeItem('sub:payOpenedAt')
+            }
+            // Неуспех: не ACTIVE и (новая ошибка списания ИЛИ повтор той же —
+            // REJECTED-нотификация обновляет подписку после открытия формы).
+            const payOpenedAt = localStorage.getItem('sub:payOpenedAt') ?? ''
+            const newError = !!s?.lastChargeError && s.lastChargeError !== (localStorage.getItem('sub:preErr') ?? '')
+            const sameErrorAgain = !!s?.lastChargeError && !!payOpenedAt && !!s.updatedAt && s.updatedAt > payOpenedAt
             if (s?.status === 'ACTIVE') {
               // Успех: подписка оформлена.
-              localStorage.removeItem('sub:payPending')
-              localStorage.removeItem('sub:preErr')
+              clearMarkers()
               setPaidJustNow(true)
-            } else if (s?.lastChargeError && s.lastChargeError !== (localStorage.getItem('sub:preErr') ?? '')) {
-              // Неуспех: не ACTIVE и появилась новая ошибка списания (не старая из GRACE).
-              localStorage.removeItem('sub:payPending')
-              localStorage.removeItem('sub:preErr')
+            } else if (newError || sameErrorAgain) {
+              clearMarkers()
               setPayFailed(true)
             }
           }

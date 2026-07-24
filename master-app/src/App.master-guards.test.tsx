@@ -166,11 +166,14 @@ describe.sequential('App master guards', () => {
   it('не считает старую payment error новым failure', async () => {
     localStorage.setItem('sub:payPending', '1')
     localStorage.setItem('sub:preErr', 'same-error')
+    // Форма открыта ПОСЛЕ последнего обновления подписки — новых событий не было.
+    localStorage.setItem('sub:payOpenedAt', '2026-07-10T00:00:00.000Z')
     const { App, getMe } = await loadGuardApp({
       subscription: createSubscriptionState({
         status: 'GRACE',
         hasAccess: true,
         lastChargeError: 'same-error',
+        updatedAt: '2026-07-01T00:00:00.000Z',
       }),
     })
 
@@ -180,6 +183,27 @@ describe.sequential('App master guards', () => {
     expect(screen.getByTestId('master-home')).toBeInTheDocument()
     expect(screen.queryByTestId('subscription-failed')).not.toBeInTheDocument()
     expect(localStorage.getItem('sub:payPending')).toBe('1')
+  })
+
+  it('повтор той же ошибки после открытия формы — тоже failure', async () => {
+    localStorage.setItem('sub:payPending', '1')
+    localStorage.setItem('sub:preErr', 'same-error')
+    localStorage.setItem('sub:payOpenedAt', '2026-07-10T00:00:00.000Z')
+    const { App } = await loadGuardApp({
+      subscription: createSubscriptionState({
+        status: 'GRACE',
+        hasAccess: true,
+        lastChargeError: 'same-error',
+        // REJECTED-нотификация обновила подписку ПОСЛЕ открытия формы.
+        updatedAt: '2026-07-10T00:05:00.000Z',
+      }),
+    })
+
+    render(<App />)
+
+    expect(await screen.findByTestId('subscription-failed')).toBeInTheDocument()
+    expect(localStorage.getItem('sub:payPending')).toBeNull()
+    expect(localStorage.getItem('sub:payOpenedAt')).toBeNull()
   })
 
   it('удаляет focus и visibility listeners при unmount', async () => {

@@ -12,6 +12,8 @@ export function createSubscriptionState(
     lastChargeError: null,
     hasAccess: true,
     onlineBookingAvailable: true,
+    // В прошлом: детект «оплата не прошла» сравнивает с моментом открытия формы.
+    updatedAt: '2026-07-01T00:00:00.000Z',
     ...overrides,
   }
   // Если тест задал статус/сроки, но не задал onlineBookingAvailable явно —

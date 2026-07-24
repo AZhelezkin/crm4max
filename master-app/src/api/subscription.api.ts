@@ -10,6 +10,8 @@ export interface SubscriptionState {
   hasAccess: boolean
   /** Доступна ли клиентам онлайн-запись (кабинет мастера не блокируется никогда). */
   onlineBookingAvailable: boolean
+  /** Последнее обновление подписки на бэке — для детекта «оплата не прошла». */
+  updatedAt: string
 }
 
 export const subscriptionApi = {

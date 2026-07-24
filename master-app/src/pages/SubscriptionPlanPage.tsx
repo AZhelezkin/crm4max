@@ -56,9 +56,11 @@ export default function SubscriptionPlanPage() {
     // оплаты не ставим (иначе в кабинете покажется «Подписка оформлена/не прошла»).
     if (!isTrial) {
       // Флаг «оплата открыта» → при возврате: ACTIVE → «Подписка оформлена!»,
-      // новая ошибка списания → «Оплата не прошла». preErr — чтобы не спутать со старой.
+      // неуспех → «Оплата не прошла». preErr — отличать новую ошибку от старой;
+      // payOpenedAt — ловить повтор ТОЙ ЖЕ ошибки (REJECTED обновляет подписку).
       localStorage.setItem('sub:payPending', '1')
       localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
+      localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
     }
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
