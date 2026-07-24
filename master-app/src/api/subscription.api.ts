@@ -20,6 +20,9 @@ export const subscriptionApi = {
   // Оплата подписки (баннер/блокировка/«Подключить»): месяц 499 ₽ / год 4 790 ₽.
   pay: (period: 'MONTH' | 'YEAR' = 'MONTH') =>
     api.post<{ paymentURL: string }>('/subscription/pay', { period }).then((r) => r.data),
+  // «Способы оплаты» → «Изменить карту»: hosted-форма перепривязки (0 ₽ + 3DS).
+  rebindCard: () =>
+    api.post<{ paymentURL: string }>('/subscription/rebind-card').then((r) => r.data),
   // Текущее состояние подписки мастера.
   getMe: () => api.get<SubscriptionState | null>('/subscription/me').then((r) => r.data),
 }

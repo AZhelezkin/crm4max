@@ -16,6 +16,7 @@ import PaymentsDayPage from '@/pages/PaymentsDayPage'
 import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import AboutPlatformPage from '@/pages/AboutPlatformPage'
+import PaymentMethodsPage from '@/pages/PaymentMethodsPage'
 import AddressEditPage from '@/pages/AddressEditPage'
 import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage'
@@ -289,6 +290,7 @@ function MasterApp() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/about-platform" element={<AboutPlatformPage />} />
+          <Route path="/payment-methods" element={<PaymentMethodsPage />} />
           <Route path="/address" element={<AddressEditPage />} />
           <Route path="/subscription" element={<SubscriptionPlanPage />} />
           <Route path="/schedule" element={<SchedulePage />} />

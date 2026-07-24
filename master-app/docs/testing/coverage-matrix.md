@@ -82,6 +82,7 @@
 | `/settings` | `SettingsPage` | P1 |
 | `/about` | `AboutMePage` | P1 |
 | `/about-platform` | `AboutPlatformPage` (из «Другое») | P1 |
+| `/payment-methods` | `PaymentMethodsPage` — карта подписки, перепривязка (из «Другое») | P1 |
 | `/address` | `AddressEditPage` | P0 |
 | `/subscription` | `SubscriptionPlanPage` | P0 |
 | `/schedule` | `SchedulePage` | P0 |
@@ -156,6 +157,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/services.api.ts#servicesApi.update`
 - `src/api/subscription.api.ts#subscriptionApi.getMe`
 - `src/api/subscription.api.ts#subscriptionApi.pay`
+- `src/api/subscription.api.ts#subscriptionApi.rebindCard`
 - `src/api/subscription.api.ts#subscriptionApi.startTrial`
 - `src/api/support.api.ts#startSupport`
 - `src/api/upload.api.ts#compressImage`

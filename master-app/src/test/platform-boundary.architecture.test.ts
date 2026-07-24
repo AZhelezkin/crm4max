@@ -35,6 +35,8 @@ const WEB_APP_ALLOWLIST = [
   'src/pages/BookingDetailPage.tsx',
   // Поддержка переехала из навбара на экран «Другое» (макет 10302-42755).
   'src/pages/OtherPage.tsx',
+  // «Способы оплаты»: открывает hosted-форму перепривязки карты через openLink.
+  'src/pages/PaymentMethodsPage.tsx',
   'src/pages/SubscriptionPlanPage.tsx',
   'src/standalone-pages/handoff/destination-selector/DestinationSelectorPage.tsx',
   'src/standalone-pages/handoff/destination-selector/useDestinationSelector.ts',
@@ -282,7 +284,7 @@ describe('platform provider boundary architecture', () => {
     const actual = filesWithProviderWebAppAccess()
 
     assertExactLocations('provider WebApp access', actual, WEB_APP_ALLOWLIST)
-    expect(actual).toHaveLength(20)
+    expect(actual).toHaveLength(21)
   })
 
   it('изолирует tracked legacy JavaScript shadows от production imports', () => {

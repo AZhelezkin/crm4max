@@ -33,7 +33,7 @@ export default function OtherPage() {
   const items: Array<{ label: string; onClick?: () => void; loading?: boolean }> = [
     { label: 'Согласия' },
     { label: 'Подписка', onClick: () => navigate('/subscription') },
-    { label: 'Способы оплаты' },
+    { label: 'Способы оплаты', onClick: () => navigate('/payment-methods') },
     { label: 'Техническая поддержка', onClick: openSupport, loading: supportLoading },
     { label: 'О платформе', onClick: () => navigate('/about-platform') },
   ]
