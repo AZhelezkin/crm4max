@@ -15,7 +15,6 @@ const api = vi.hoisted(() => ({
   list: vi.fn(),
   getById: vi.fn(),
   cancel: vi.fn(),
-  confirmPayment: vi.fn(),
 }))
 
 vi.mock('@/App', () => ({ startParam: '' }))
@@ -24,7 +23,6 @@ vi.mock('@client/api/bookings.api', () => ({
     list: api.list,
     getById: api.getById,
     cancel: api.cancel,
-    confirmPayment: api.confirmPayment,
   },
 }))
 
@@ -73,20 +71,6 @@ function renderDetail(booking = futureBooking()) {
       <Route path="/book/calendar" element={<div>Выбор даты</div>} />
     </Routes>,
     { route: `/my-bookings/${booking.id}` },
-  )
-}
-
-// Экран сразу после создания записи: /book/success с bookingId в location.state
-// (не в URL) — id берётся из state, страница догружает запись через getById.
-function renderSuccess(booking = futureBooking()) {
-  api.getById.mockResolvedValue(booking)
-  return renderAtRoute(
-    <Routes>
-      <Route path="/my-bookings" element={<div>Мои записи</div>} />
-      <Route path="/book/success" element={<BookingDetailPage />} />
-      <Route path="/book/calendar" element={<div>Выбор даты</div>} />
-    </Routes>,
-    { entries: [{ pathname: '/book/success', state: { bookingId: booking.id } }] },
   )
 }
 
@@ -213,30 +197,10 @@ describe('client booking lifecycle', () => {
     expect(api.cancel).not.toHaveBeenCalled()
   })
 
-  it('«Отметить как оплачено» отправляет confirmPayment и обновляет статус', async () => {
-    const booking = futureBooking({ paymentStatus: 'UNPAID' })
-    api.confirmPayment.mockResolvedValue({ ...booking, paymentStatus: 'PAID' })
-    const view = renderDetail(booking)
-
-    await view.user.click(await screen.findByRole('button', { name: 'Отметить как оплачено' }))
-
-    expect(api.confirmPayment).toHaveBeenCalledWith(booking.id)
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument(),
-    )
-  })
-
-  it('не показывает «Отметить как оплачено» для уже оплаченной записи', async () => {
-    renderDetail(futureBooking({ paymentStatus: 'PAID' }))
+  it('у клиента нет кнопки «Отметить как оплачено» — оплату подтверждает мастер', async () => {
+    renderDetail(futureBooking({ paymentStatus: 'UNPAID' }))
 
     await screen.findByRole('button', { name: 'Перенести' })
     expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument()
-  })
-
-  it('на экране сразу после создания записи (/book/success) кнопка «Отметить как оплачено» есть', async () => {
-    // Так запись приходит с бэкенда после create: status CONFIRMED, paymentStatus UNPAID.
-    renderSuccess(futureBooking({ status: 'CONFIRMED', paymentStatus: 'UNPAID' }))
-
-    expect(await screen.findByRole('button', { name: 'Отметить как оплачено' })).toBeInTheDocument()
   })
 })

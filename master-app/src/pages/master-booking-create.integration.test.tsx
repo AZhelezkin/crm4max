@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
   getSlots: vi.fn(),
   getMaster: vi.fn(),
   getSubscription: vi.fn(),
+  confirmPayment: vi.fn(),
   openAddToCalendar: vi.fn(),
   scrollPageTop: vi.fn(),
 }))
@@ -37,6 +38,7 @@ vi.mock('@/api/bookings.api', () => ({
     createPackage: api.createPackage,
     reschedule: api.reschedule,
     cancel: api.cancel,
+    confirmPayment: api.confirmPayment,
   },
 }))
 vi.mock('@/api/masters.api', () => ({
@@ -203,6 +205,27 @@ describe('master CreateBookingPage', () => {
     api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     setMaster()
+  })
+
+  it('сразу после создания на success-экране есть «Отметить как оплачено»', async () => {
+    const selectedDate = nextBookableDate()
+    const created = bookingResult(selectedDate.format('YYYY-MM-DD'))
+    api.createBooking.mockResolvedValue(created)
+    api.confirmPayment.mockResolvedValue({ ...created, paymentStatus: 'PAID' })
+    const view = renderPage()
+
+    await completeRegularDraft(view, selectedDate)
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+    expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
+
+    // Кнопка доступна сразу после создания; тап помечает оплату и убирает кнопку.
+    await view.user.click(screen.getByRole('button', { name: 'Отметить как оплачено' }))
+
+    expect(api.confirmPayment).toHaveBeenCalledWith(created.id)
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument(),
+    )
+    expect(screen.getByText('ОПЛАЧЕНО')).toBeInTheDocument()
   })
 
   it('при истёкшем триале подтверждение записи ведёт на экран «Подписка» без create', async () => {

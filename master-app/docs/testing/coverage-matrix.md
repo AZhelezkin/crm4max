@@ -165,7 +165,6 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/auth.api.ts#authApi.loginWithMax`
 - `src/client/api/bookings.api.ts#bookingsApi.cancel`
 - `src/client/api/bookings.api.ts#bookingsApi.cancelPackage`
-- `src/client/api/bookings.api.ts#bookingsApi.confirmPayment`
 - `src/client/api/bookings.api.ts#bookingsApi.create`
 - `src/client/api/bookings.api.ts#bookingsApi.createPackage`
 - `src/client/api/bookings.api.ts#bookingsApi.getById`

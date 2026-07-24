@@ -615,6 +615,20 @@ export default function CreateBookingPage() {
     navigate('/bookings')
   }
 
+  // «Отметить как оплачено» на экране «Запись создана!» — сразу после создания.
+  const [payingBusy, setPayingBusy] = useState(false)
+  const handleConfirmPayment = async () => {
+    if (!createdBooking || payingBusy) return
+    setPayingBusy(true)
+    try {
+      setCreatedBooking(await bookingsApi.confirmPayment(createdBooking.id))
+    } catch (e) {
+      console.error('[booking] confirm payment failed', e)
+    } finally {
+      setPayingBusy(false)
+    }
+  }
+
   // Google-календарь: TEMPLATE-ссылка (openLink). Если нужен другой провайдер/ICS — поменяем.
   const handleAddToCalendar = () => {
     if (!createdBooking || !selectedService) return
@@ -1298,6 +1312,22 @@ export default function CreateBookingPage() {
 
         {/* Футер: «Добавить в календарь» + Перенести / Чат / Отменить — в конце контента, не прибит к низу */}
         <div style={{ padding: '16px 12px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Кнопка доступна сразу после создания (как в карточке записи мастера). */}
+          {createdBooking?.paymentStatus !== 'PAID' && (
+            <button
+              type="button"
+              disabled={payingBusy}
+              onClick={() => { void handleConfirmPayment() }}
+              style={{
+                width: '100%', height: 60, borderRadius: 20, border: 'none',
+                cursor: payingBusy ? 'default' : 'pointer', ...text.callout1,
+                background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)',
+                opacity: payingBusy ? 0.6 : 1,
+              }}
+            >
+              Отметить как оплачено
+            </button>
+          )}
           <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
             <CalendarIcon />
             <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>

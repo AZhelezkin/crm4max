@@ -30,10 +30,6 @@ export const bookingsApi = {
   cancel: (id: string) =>
     api.post<Booking>(`/bookings/${id}/cancel`).then((r) => r.data),
 
-  /** «Отметить как оплачено» — клиент помечает свою запись оплаченной. */
-  confirmPayment: (id: string) =>
-    api.post<Booking>(`/bookings/${id}/confirm-payment`).then((r) => r.data),
-
   /** Отмена всего курса (всех ещё не завершённых сеансов). */
   cancelPackage: (id: string) =>
     api.post<BookingPackage>(`/bookings/package/${id}/cancel`).then((r) => r.data),
