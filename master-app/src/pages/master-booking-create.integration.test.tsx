@@ -3,6 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
+import { createSubscriptionState } from '@/test/fixtures/subscriptions'
 import { createMasterClient } from '@/test/fixtures/clients'
 import { createMasterProfile } from '@/test/fixtures/masters'
 import { createMasterService } from '@/test/fixtures/services'
@@ -20,6 +21,7 @@ const api = vi.hoisted(() => ({
   cancel: vi.fn(),
   getSlots: vi.fn(),
   getMaster: vi.fn(),
+  getSubscription: vi.fn(),
   openAddToCalendar: vi.fn(),
   scrollPageTop: vi.fn(),
 }))
@@ -39,6 +41,9 @@ vi.mock('@/api/bookings.api', () => ({
 }))
 vi.mock('@/api/masters.api', () => ({
   mastersApi: { getSlots: api.getSlots, getMe: api.getMaster },
+}))
+vi.mock('@/api/subscription.api', () => ({
+  subscriptionApi: { getMe: api.getSubscription },
 }))
 vi.mock('@/lib/calendar', () => ({ openAddToCalendar: api.openAddToCalendar }))
 vi.mock('@/lib/scroll', () => ({ scrollPageTop: api.scrollPageTop }))
@@ -194,8 +199,25 @@ describe('master CreateBookingPage', () => {
     api.cancel.mockResolvedValue(undefined)
     api.getSlots.mockResolvedValue(['10:00', '11:00'])
     api.getMaster.mockResolvedValue(createMasterProfile())
+    // По умолчанию подписка действует — пейволл не срабатывает.
+    api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     setMaster()
+  })
+
+  it('при истёкшем триале подтверждение записи ведёт на экран «Подписка» без create', async () => {
+    api.getSubscription.mockResolvedValue(createSubscriptionState({
+      status: 'TRIALING',
+      trialEndsAt: new Date(Date.now() - 86_400_000).toISOString(),
+    }))
+    const selectedDate = nextBookableDate()
+    const view = renderPage()
+
+    await completeRegularDraft(view, selectedDate)
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    expect(api.createBooking).not.toHaveBeenCalled()
+    expect(view.getLocation().pathname).toBe('/subscription')
   })
 
   it('проходит все шаги обычной записи, не пишет раньше submit и блокирует duplicate', async () => {

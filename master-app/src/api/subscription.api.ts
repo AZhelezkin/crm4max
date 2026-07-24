@@ -8,6 +8,8 @@ export interface SubscriptionState {
   cardPan: string | null
   lastChargeError: string | null
   hasAccess: boolean
+  /** Доступна ли клиентам онлайн-запись (кабинет мастера не блокируется никогда). */
+  onlineBookingAvailable: boolean
 }
 
 export const subscriptionApi = {

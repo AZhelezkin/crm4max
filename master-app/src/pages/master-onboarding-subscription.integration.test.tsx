@@ -74,32 +74,25 @@ describe('master onboarding subscription screens', () => {
     expect(api.getMe).toHaveBeenCalledOnce()
   })
 
-  it('в триале: month plan, оба согласия → привязка карты без списания, в кабинет', async () => {
+  it('в триале: month plan → «Подключить» сразу открывает привязку карты, в кабинет', async () => {
     const webApp = installWebApp()
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
     await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
 
     await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
     await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('MONTH'))
-    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
-    expect(screen.getByText('Необходимые согласия')).toBeInTheDocument()
-
-    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
-    expect(webApp.openLink).not.toHaveBeenCalled()
-    expect(view.getLocation().pathname).toBe('/subscription')
-
-    await view.user.click(screen.getByRole('button', { name: /Я принимаю условия/ }))
-    await view.user.click(screen.getByRole('button', { name: /Я даю согласие/ }))
+    // Согласия даны на онбординге — шага согласий здесь больше нет.
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
     // Форма привязки карты (не оплаты); флаги результата оплаты не ставятся; → кабинет.
+    expect(screen.queryByText('Необходимые согласия')).not.toBeInTheDocument()
     expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month')
     expect(api.pay).not.toHaveBeenCalled()
     expect(localStorage.getItem('sub:payPending')).toBeNull()
     expect(view.getLocation().pathname).toBe('/')
   })
 
-  it('открывает default yearly URL через browser fallback ровно после согласий', async () => {
+  it('вне триала (GRACE) открывает yearly оплату через browser fallback', async () => {
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'GRACE',
       lastChargeError: 'old-charge-error',
@@ -107,11 +100,8 @@ describe('master onboarding subscription screens', () => {
     const open = vi.mocked(window.open)
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
     await waitFor(() => expect(api.pay).toHaveBeenCalledWith('YEAR'))
-    await view.user.click(screen.getByRole('button', { name: /Подключить|Далее/ }))
-    await view.user.click(screen.getByRole('button', { name: /Я принимаю условия/ }))
-    await view.user.click(screen.getByRole('button', { name: /Я даю согласие/ }))
 
-    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+    await view.user.click(screen.getByRole('button', { name: /Подключить|Далее/ }))
 
     expect(open).toHaveBeenCalledWith('https://pay.test/year', '_blank')
     expect(api.pay.mock.calls.filter(([period]) => period === 'YEAR')).toHaveLength(1)
@@ -131,27 +121,13 @@ describe('master onboarding subscription screens', () => {
     expect(screen.getByRole('button', { name: 'Далее' })).toBeInTheDocument()
   })
 
-  it('возвращается с consent step к plan без payment effect', async () => {
-    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
-
-    await view.user.click(screen.getByRole('button', { name: 'Назад' }))
-
-    expect(screen.getByText('Выберите период подписки')).toBeInTheDocument()
-    expect(view.getLocation().pathname).toBe('/subscription')
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-  })
-
   it('остаётся failure-safe если subscription/payment reads недоступны', async () => {
     api.getMe.mockRejectedValue(new Error('subscription unavailable'))
     api.pay.mockRejectedValue(new Error('payment unavailable'))
     api.startTrial.mockRejectedValue(new Error('trial unavailable'))
     const webApp = installWebApp()
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    // sub не загрузился → URL не префетчится; проходим шаги — ничего вредного.
-    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
-    await view.user.click(screen.getByRole('button', { name: /Я принимаю условия/ }))
-    await view.user.click(screen.getByRole('button', { name: /Я даю согласие/ }))
+    // sub не загрузился → URL не префетчится; тап «Подключить» — ничего вредного.
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
     expect(webApp.openLink).not.toHaveBeenCalled()

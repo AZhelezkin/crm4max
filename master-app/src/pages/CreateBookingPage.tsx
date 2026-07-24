@@ -7,6 +7,7 @@ import { servicesApi } from '@/api/services.api'
 import { bookingsApi } from '@/api/bookings.api'
 import { mastersApi } from '@/api/masters.api'
 import { clientsApi } from '@/api/clients.api'
+import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Client, Schedule, Service } from '@/types'
 import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, bookingDuration, bookingTotal, bookingServiceItems } from '@/types'
@@ -208,6 +209,12 @@ export default function CreateBookingPage() {
   const [timeOnly, setTimeOnly] = useState(!!rescheduleInit?.editTime)
   const [pendingReschedule, setPendingReschedule] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  // Пейволл: при истёкшем триале/неоплате подтверждение записи ведёт на экран
+  // «Подписка» (expired-вариант, макет 10256-55751). Ошибка загрузки → не блочим.
+  const [subState, setSubState] = useState<SubscriptionState | null>(null)
+  useEffect(() => {
+    subscriptionApi.getMe().then(setSubState).catch(() => {})
+  }, [])
 
   // Абонемент (Service.sessionsCount > 1): режим выбора слотов и сами слоты.
   const [packageMode, setPackageMode] = useState<'days' | 'weeks'>('days')
@@ -475,6 +482,8 @@ export default function CreateBookingPage() {
     if (!master || selectedServices.length === 0 || !date || !time || !selectedClient) return
     if (outbound && !address.trim()) return
     if (!allMiscValid) return
+    // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
+    if (subState && !subState.onlineBookingAvailable) { navigate('/subscription'); return }
     // Пересечение — предупреждаем один раз, затем разрешаем (allowOverlap на бэке).
     if (!force && hasOverlap) { setOverlapWarn(true); return }
     setOverlapWarn(false)
@@ -520,6 +529,8 @@ export default function CreateBookingPage() {
   const handleSavePackage = async () => {
     if (!master || !selectedService || !selectedClient) return
     if (homeVisit && !address.trim()) return
+    // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
+    if (subState && !subState.onlineBookingAvailable) { navigate('/subscription'); return }
     const slots = packageMode === 'days'
       ? packageSlots.filter((s) => s && s.date && s.time)
       : generateWeeklySlots(weekdays, weekTime, selectedService.sessionsCount)

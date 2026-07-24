@@ -26,12 +26,13 @@ const WEB_APP_ALLOWLIST = [
   'src/client/pages/QRScanPage.tsx',
   'src/client/pages/ServiceDetailPage.tsx',
   'src/client/store/auth.store.ts',
+  // Шаг согласий (онбординг): openDoc открывает оферту/политику через openLink.
+  'src/components/ConsentsStep.tsx',
   'src/hooks/usePaymentsExport.ts',
   'src/lib/bridge.ts',
   'src/lib/calendar.ts',
   'src/pages/BlockedSubscriptionPage.tsx',
   'src/pages/BookingDetailPage.tsx',
-  'src/pages/HomePage.tsx',
   // Поддержка переехала из навбара на экран «Другое» (макет 10302-42755).
   'src/pages/OtherPage.tsx',
   'src/pages/SubscriptionPlanPage.tsx',

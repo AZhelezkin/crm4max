@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
+import ConsentsStep from '@/components/ConsentsStep'
 
 // ─── Ассеты слайдера (Figma 10084-40089): глоу-подложки (SVG) + мокапы (PNG 2x) ──
 import profileGlow from '@/assets/welcome-v2/profile-glow.svg'
@@ -113,27 +114,33 @@ export default function WelcomePage() {
   const navigate = useNavigate()
   const setMaster = useAuthStore((s) => s.setMaster)
   const [finishing, setFinishing] = useState(false)
+  // Шаг согласий (макет 10261-55965) — между стартовым экраном и кабинетом.
+  const [step, setStep] = useState<'start' | 'consents'>('start')
 
-  // Кабинет уже заполнен пример-данными на бэке — после привязки карты завершаем
-  // онбординг и ведём на экран «Подписка» (макет 10256-54945): дни триала + выбор периода.
-  const finishToSubscription = async () => {
+  // Согласия приняты → завершаем онбординг и ведём в кабинет. Карта на онбординге
+  // не привязывается: триал стартует на бэке автоматически (getOrCreate подписки),
+  // оплата — позже через «Другое» → «Подписка» или плашку триала на главной.
+  const finishToCabinet = async () => {
     if (finishing) return
     setFinishing(true)
     try {
       await mastersApi.updateProfile({ isOnboarded: true })
       const master = await mastersApi.getMe()
       setMaster(master)
-      navigate('/subscription', { replace: true })
+      navigate('/', { replace: true })
     } catch {
       setFinishing(false)
     }
   }
 
-  // «Попробовать бесплатно 7 дней» → экран выбора периода подписки (макет 10256-54945).
-  // Привязку карты запускает уже тот экран после выбора периода; раньше форма карты
-  // открывалась прямо отсюда (не по макету — до выбора периода).
-  const handleTrial = () => {
-    void finishToSubscription()
+  if (step === 'consents') {
+    return (
+      <ConsentsStep
+        onBack={() => setStep('start')}
+        onConfirm={() => { void finishToCabinet() }}
+        busy={finishing}
+      />
+    )
   }
 
   // ── Экран активации ──
@@ -173,7 +180,8 @@ export default function WelcomePage() {
 
       {/* Кнопка (Figma top 728 → gap 24) */}
       <div style={{ width: '100%', maxWidth: 393, padding: '0 16px', marginTop: 24, boxSizing: 'border-box' }}>
-        <PrimaryButton onClick={handleTrial}>Попробовать бесплатно 7 дней</PrimaryButton>
+        {/* → шаг «Необходимые согласия» (10261-55965), после него — кабинет. */}
+        <PrimaryButton onClick={() => setStep('consents')}>Попробовать бесплатно 7 дней</PrimaryButton>
       </div>
 
       {/* Блок «Никаких списаний» (Figma top 825 → gap 37; shield 153×107, gap 12) */}

@@ -249,15 +249,15 @@ export default function MasterCardPage() {
     </>
   )
 
-  // Мастер заблокирован (не оплатил подписку) — вместо карточки показываем заглушку.
+  // У мастера нет онлайн-записи (истёк триал / не оплачено) — вместо карточки заглушка.
   if (master.blocked) return (
     <>
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px 95px', textAlign: 'center', gap: 12 }}>
         <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>
-          Личный кабинет недоступен
+          Онлайн-запись недоступна
         </div>
         <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>
-          У мастера больше нет личного кабинета. Попробуйте связаться с ним другим способом.
+          Напомните мастеру, чтобы подключил онлайн-запись{master.phone ? `, а пока можно связаться по телефону ${master.phone}` : ''}.
         </div>
       </div>
       <BottomNav />

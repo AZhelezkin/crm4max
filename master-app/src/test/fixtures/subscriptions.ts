@@ -3,7 +3,7 @@ import type { SubscriptionState } from '@/api/subscription.api'
 export function createSubscriptionState(
   overrides: Partial<SubscriptionState> = {},
 ): SubscriptionState {
-  return {
+  const base: SubscriptionState = {
     status: 'ACTIVE',
     trialEndsAt: null,
     currentPeriodEnd: '2026-08-19T00:00:00.000Z',
@@ -11,6 +11,17 @@ export function createSubscriptionState(
     cardPan: '2200 **** **** 0000',
     lastChargeError: null,
     hasAccess: true,
+    onlineBookingAvailable: true,
     ...overrides,
   }
+  // Если тест задал статус/сроки, но не задал onlineBookingAvailable явно —
+  // выводим его по той же логике, что бэкенд (isOnlineBookingAvailable).
+  if (overrides.onlineBookingAvailable === undefined) {
+    const now = Date.now()
+    base.onlineBookingAvailable =
+      base.status === 'ACTIVE'
+      || (base.status === 'TRIALING' && !!base.trialEndsAt && new Date(base.trialEndsAt).getTime() > now)
+      || (base.status === 'GRACE' && base.currentPeriodEnd != null)
+  }
+  return base
 }

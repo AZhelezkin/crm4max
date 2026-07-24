@@ -104,14 +104,6 @@ export default function HomePage() {
     subscriptionApi.getMe().then(setSub).catch(() => {}).finally(() => setSubLoading(false))
   }, [])
 
-  // GRACE — не удалось списать (макет 10265-59019): peach-тост «Оплатить» на главной.
-  // payUrl префетчим (openLink требует синхронного user-gesture), открываем по тапу.
-  const [payUrl, setPayUrl] = useState<string | null>(null)
-  useEffect(() => {
-    if (sub?.status === 'GRACE' && !payUrl) {
-      subscriptionApi.pay().then((r) => setPayUrl(r.paymentURL)).catch(() => {})
-    }
-  }, [sub, payUrl])
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
   // «Напомнить клиенту» — разовая нотификация в клиент-бот (POST /bookings/:id/remind).
@@ -143,17 +135,38 @@ export default function HomePage() {
     }
   }
 
-  const handlePaySubscription = () => {
-    if (!payUrl) return
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
-    if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
-    else window.open(payUrl, '_blank')
-  }
   // Дней до отключения (grace) — «через N дней»; фолбэк 7.
   const graceDays = (() => {
     if (!sub?.graceEndsAt) return 7
     return Math.max(1, Math.ceil((new Date(sub.graceEndsAt).getTime() - Date.now()) / 86_400_000))
+  })()
+  // Плашка подписки (макет 10265-59019): триал на исходе (≤1 дня) или истёк /
+  // не оплачено — тап ведёт на экран «Подписка» (обычный или expired-вариант).
+  const trialDaysLeft = sub?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(sub.trialEndsAt).getTime() - Date.now()) / 86_400_000))
+    : 0
+  const subBanner = (() => {
+    if (!sub) return null
+    if (sub.status === 'TRIALING' && trialDaysLeft > 1) return null
+    if (sub.status === 'ACTIVE') return null
+    if (sub.status === 'GRACE' && sub.currentPeriodEnd) {
+      // Льгота после неудачного списания оплаченного периода — прежний текст.
+      return {
+        text: `Не удалось оплатить подписку. Через ${graceDays === 1 ? 'день' : `${graceDays} ${graceDays >= 2 && graceDays <= 4 ? 'дня' : 'дней'}`} доступ к сервису будет отключен.`,
+        action: 'Оплатить',
+      }
+    }
+    if (sub.status === 'TRIALING' && trialDaysLeft === 1) {
+      return {
+        text: 'Пробный период заканчивается: остался 1 день. Подключите подписку, чтобы клиенты могли записываться онлайн.',
+        action: 'Подключить',
+      }
+    }
+    // Истёкший триал / GRACE без оплаты / BLOCKED — онлайн-запись уже недоступна.
+    return {
+      text: 'Пробный период закончился. Онлайн-запись для клиентов недоступна — подключите подписку.',
+      action: 'Подключить',
+    }
   })()
 
   const today = dayjs().format('YYYY-MM-DD')
@@ -235,11 +248,12 @@ export default function HomePage() {
       {/* ── list: карточки, gap 20, px 16 (Figma 10065:50913) ── */}
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* GRACE — «Не удалось оплатить подписку» (макет 10265-59019): peach-тост + «Оплатить». */}
-        {sub?.status === 'GRACE' && (
+        {/* Плашка подписки (макет 10265-59019): триал ≤1 дня / истёк / не оплачено.
+            Тап → экран «Подписка» (обычный или expired-вариант — по состоянию). */}
+        {subBanner && (
           <button
             type="button"
-            onClick={handlePaySubscription}
+            onClick={() => navigate('/subscription')}
             style={{
               width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', gap: 8,
@@ -252,11 +266,11 @@ export default function HomePage() {
                 <SlashIcon />
               </span>
               <span style={{ ...text.body2, flex: 1, minWidth: 0, color: 'var(--color-on-surface)' }}>
-                Не удалось оплатить подписку. Через {graceDays === 1 ? 'день' : `${graceDays} ${graceDays >= 2 && graceDays <= 4 ? 'дня' : 'дней'}`} доступ к сервису будет отключен.
+                {subBanner.text}
               </span>
             </span>
             <span style={{ paddingLeft: 32, width: '100%', ...text.callout1, color: 'var(--color-on-surface)' }}>
-              Оплатить
+              {subBanner.action}
             </span>
           </button>
         )}

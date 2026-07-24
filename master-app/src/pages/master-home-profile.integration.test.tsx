@@ -235,26 +235,60 @@ describe('master HomePage', () => {
     expect(screen.getByTestId('week-strip')).toHaveAttribute('data-visible-week', pickMonday)
   })
 
-  it('HomePage prefetch pay URL и сохраняет payment return context для GRACE', async () => {
-    const webApp = installWebApp()
+  it('плашка GRACE (оплаченный период) ведёт на экран подписки', async () => {
     const graceEndsAt = new Date(Date.now() + 3 * 86_400_000).toISOString()
     api.getSubscription.mockResolvedValue(createSubscriptionState({
       status: 'GRACE',
       graceEndsAt,
+      currentPeriodEnd: new Date(Date.now() - 86_400_000).toISOString(),
       lastChargeError: 'insufficient_funds',
       hasAccess: true,
     }))
-    api.paySubscription.mockResolvedValue({ paymentURL: 'https://pay.test/retry' })
     setMaster(createMasterProfile())
     const view = renderAtRoute(<HomePage />)
-    const pay = await screen.findByRole('button', { name: /Не удалось оплатить подписку/ })
-    await waitFor(() => expect(api.paySubscription).toHaveBeenCalledOnce())
 
-    await view.user.click(pay)
+    await view.user.click(await screen.findByRole('button', { name: /Не удалось оплатить подписку/ }))
 
-    expect(webApp.openLink).toHaveBeenCalledWith('https://pay.test/retry')
-    expect(localStorage.getItem('sub:payPending')).toBe('1')
-    expect(localStorage.getItem('sub:preErr')).toBe('insufficient_funds')
+    expect(view.getLocation().pathname).toBe('/subscription')
+    // Оплату открывает уже экран подписки — с главной pay не дёргается.
+    expect(api.paySubscription).not.toHaveBeenCalled()
+  })
+
+  it('плашка триала: остался 1 день → «Подключить» → экран подписки', async () => {
+    api.getSubscription.mockResolvedValue(createSubscriptionState({
+      status: 'TRIALING',
+      trialEndsAt: new Date(Date.now() + 0.9 * 86_400_000).toISOString(),
+    }))
+    setMaster(createMasterProfile())
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: /Пробный период заканчивается/ }))
+    expect(view.getLocation().pathname).toBe('/subscription')
+  })
+
+  it('плашка истёкшего триала: онлайн-запись недоступна → экран подписки', async () => {
+    api.getSubscription.mockResolvedValue(createSubscriptionState({
+      status: 'TRIALING',
+      trialEndsAt: new Date(Date.now() - 86_400_000).toISOString(),
+    }))
+    setMaster(createMasterProfile())
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: /Пробный период закончился/ }))
+    expect(view.getLocation().pathname).toBe('/subscription')
+  })
+
+  it('не показывает плашку при свежем триале и при ACTIVE', async () => {
+    api.getSubscription.mockResolvedValue(createSubscriptionState({
+      status: 'TRIALING',
+      trialEndsAt: new Date(Date.now() + 6 * 86_400_000).toISOString(),
+    }))
+    setMaster(createMasterProfile())
+    renderAtRoute(<HomePage />)
+
+    // Строка статуса под именем есть, а красной плашки нет.
+    expect(await screen.findByText(/Пробный период\./)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Пробный период заканчивается|Пробный период закончился/ })).not.toBeInTheDocument()
   })
 
 })

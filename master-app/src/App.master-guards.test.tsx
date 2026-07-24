@@ -106,15 +106,17 @@ describe.sequential('App master guards', () => {
     expect(window.location.hash).toBe('#/')
   })
 
-  it('перекрывает кабинет экраном заблокированной подписки', async () => {
+  it('НЕ перекрывает кабинет при заблокированной подписке (функционал мастера не блочим)', async () => {
     const { App } = await loadGuardApp({
       subscription: createSubscriptionState({ status: 'BLOCKED', hasAccess: false }),
     })
 
     render(<App />)
 
-    expect(await screen.findByTestId('subscription-plan')).toBeInTheDocument()
-    expect(screen.queryByTestId('master-home')).not.toBeInTheDocument()
+    // Кабинет работает; ограничение только на клиентскую онлайн-запись
+    // (плашка на главной + пейволл на подтверждении записи).
+    expect(await screen.findByTestId('master-home')).toBeInTheDocument()
+    expect(screen.queryByTestId('subscription-plan')).not.toBeInTheDocument()
   })
 
   it('показывает success после pending оплаты и очищает markers', async () => {

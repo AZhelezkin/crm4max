@@ -176,10 +176,8 @@ function MasterIndexRoute() {
 
 function MasterApp() {
   const { init, isLoading, master } = useAuthStore()
-  // Подписка заблокирована (не оплачена после grace) → весь кабинет закрыт
-  // экраном «Оформить подписку». Проверяем только у онбордингованного мастера —
-  // новый идёт через триал, у него статус TRIALING.
-  const [subBlocked, setSubBlocked] = useState(false)
+  // Кабинет мастера НЕ блокируется по подписке: при истёкшем триале недоступна
+  // только клиентская онлайн-запись (плашка на главной + пейволл на создании записи).
   // Только что оплатил (флаг sub:payPending выставлен при открытии hosted-формы) и
   // статус стал ACTIVE → экран «Подписка оформлена!» (макет 10256-55423).
   const [paidJustNow, setPaidJustNow] = useState(false)
@@ -200,7 +198,6 @@ function MasterApp() {
     const check = () => {
       subscriptionApi.getMe()
         .then((s) => {
-          setSubBlocked(s?.status === 'BLOCKED')
           if (localStorage.getItem('sub:payPending')) {
             if (s?.status === 'ACTIVE') {
               // Успех: подписка оформлена.
@@ -260,18 +257,6 @@ function MasterApp() {
         onRetry={() => { window.location.hash = '#/subscription'; setPayFailed(false) }}
         onBack={() => setPayFailed(false)}
       />
-    )
-  }
-
-  // Заблокированная подписка перекрывает кабинет (но не онбординг нового мастера)
-  // экраном «Подписка» (макет 10256-55751: «пробный период закончился» + выбор периода).
-  // Router нужен для useNavigate внутри страницы; после оплаты re-check по
-  // visibilitychange/focus снимет блокировку и вернёт кабинет.
-  if (!needsOnboarding && subBlocked) {
-    return (
-      <BrowserRouter>
-        <SubscriptionPlanPage />
-      </BrowserRouter>
     )
   }
 
