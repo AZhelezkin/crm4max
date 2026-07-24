@@ -41,20 +41,30 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
 
   return (
     <div style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Hero-визуал (макет sub-hero-bg): surface→background градиент + два размытых
-          круга (Ellipse16 #29C643, Ellipse17 #DCEEEF, blur 60px) + GIF-конфетти. */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 360, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%)' }} />
-        <div style={{ position: 'absolute', left: '50%', top: -299, width: 454, height: 454, marginLeft: -227, borderRadius: '50%', background: '#29C643', filter: 'blur(60px)' }} />
-        <div style={{ position: 'absolute', left: '50%', top: -158, width: 248, height: 248, marginLeft: -124, borderRadius: '50%', background: '#DCEEEF', filter: 'blur(60px)' }} />
+      {/* Hero-фон (макет: Ellipse16 зелёная + Ellipse17 + blur-плёнка, зона 390px).
+          Тот же приём, что глобальный --gradient-hero-background в index.css
+          (radial-круги с soft-falloff + плёнка background-blur) — element-blur
+          через filter в WebView давал кислотное пятно вместо мягкого залива. */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 390, overflow: 'hidden', pointerEvents: 'none',
+        background: [
+          'radial-gradient(circle 184px at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%) center top / 100% 390px no-repeat',
+          'radial-gradient(circle 287px at 50% -72px, #29C643 0%, #29C643 50%, transparent 100%) center top / 100% 390px no-repeat',
+          'linear-gradient(var(--color-background-blur), var(--color-background-blur)) center top / 100% 390px no-repeat',
+          'linear-gradient(180deg, var(--color-surface) 0px, var(--color-background) 390px)',
+        ].join(', '),
+      }}>
         <img src={confettiGif} alt="" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 420, display: 'block' }} />
       </div>
 
       {/* Hero-контент */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 38 }}>
-        <img src={wordmarkSvg} alt="sloto" style={{ height: 24, display: 'block' }} />
+        {/* SVG-ассеты экспортированы с width/height=100% и preserveAspectRatio=none —
+            без ОБОИХ явных размеров WebView растягивает их на весь контейнер. */}
+        <img src={wordmarkSvg} alt="sloto" style={{ width: 121, height: 24, display: 'block' }} />
         <div style={{ height: 66 }} />
-        <img src={logoTileSvg} alt="" style={{ width: 72, display: 'block' }} />
+        {/* 75×77 = плитка 71×73 + тень из viewBox. */}
+        <img src={logoTileSvg} alt="" style={{ width: 75, height: 77, display: 'block' }} />
         <div style={{ height: 36 }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка оформлена!</span>
@@ -73,7 +83,7 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 165, height: 165, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {hasLink ? (
-              <QRCodeCanvas ref={canvasRef} value={deepLink} size={165} bgColor={colors.black00} fgColor={colors.black100} level="M" />
+              <QRCodeCanvas ref={canvasRef} value={deepLink} size={165} bgColor={colors.black00} fgColor={colors.black100} level="M" style={{ width: 165, height: 165 }} />
             ) : (
               <span style={{ ...text.footnote, color: 'var(--color-on-surface-muted)', textAlign: 'center' }}>QR-код появится после авторизации</span>
             )}
