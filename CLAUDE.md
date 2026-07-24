@@ -63,7 +63,7 @@ infra/          — docker-compose.prod.yml, deploy.sh, nginx
 - `discountPercent` (0–100%) — скидки, красный бейдж
 - `workPhotos: ServicePhoto[]` — фото работ в S3 папке `work/`
 - `remind: boolean` в `useBookingStore` — напоминание за 1 час
-- Напоминания за 24ч через cron: `POST /api/notifications/reminders` + `x-cron-secret`
+- Напоминания (за 1ч и 24ч): `POST /api/notifications/reminders` + `x-cron-secret` — дёргается serverless-кроном (см. «Cron» в разделе Продакшн)
 - `window.WebApp.openCodeReader(fileSelect: boolean)` — QR-сканер Max Bridge
 
 ## Продакшн (Yandex Cloud)
@@ -77,6 +77,17 @@ infra/          — docker-compose.prod.yml, deploy.sh, nginx
 | Registry | `cr.yandex/crp6mv57ms1a67he7ukv` |
 | S3 | `crm4max-media`, endpoint `https://storage.yandexcloud.net` |
 | Managed PG | `crm4max-pg` (`c9q4otmferkauueju72n`), host `rc1d-mccl9656o7v0rrab.mdb.yandexcloud.net:6432` |
+
+### Cron — Yandex Cloud serverless (НЕ crontab на ВМ!)
+
+Все кроны живут как **serverless-функции + таймер-триггеры** в фолдере `b1g6l35jmat38ckkiugq` (crontab/systemd-таймеров на ВМ нет). Функция — nodejs18, POST на `${API_URL}${TARGET_PATH}` с заголовком `x-cron-secret` (env: `API_URL`, `CRON_SECRET`, `TARGET_PATH`); сервисный аккаунт триггеров `ajebc7afeuo1q3gfd8le`.
+
+| Триггер | Функция | Расписание | Эндпоинт |
+|---|---|---|---|
+| `crm4max-charge-due-daily` | `crm4max-subscription-charge` (`d4eu8povn1g53tai3uua`) | 03:00 UTC ежедневно | `POST /api/subscription/charge-due` — автосписания/продления, GRACE→BLOCKED |
+| `crm4max-reminders-hourly` | `crm4max-reminders` (`d4er19o3c1bncjmpob4a`) | каждый час | `POST /api/notifications/reminders` — напоминания за 1ч и 24ч |
+
+Управление: `yc serverless trigger list` / `pause` / `resume`; ручной прогон — `yc serverless function invoke <name>`. NB: `charge-due` списывает реальные деньги — на время тестов триггер ставили на `pause` (так он и простоял с 24.06 до 24.07).
 
 Деплой: основной путь — **GitLab CI** (push в `main` → gitlab-runner на самой ВМ, см. ниже; внешний SSH не нужен). Ручной `infra/deploy.sh` ходил ключом `~/.ssh/crm4max_deploy` и после включения OS Login **не работает** без переделки на OS Login.
 
