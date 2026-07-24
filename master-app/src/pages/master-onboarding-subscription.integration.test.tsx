@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   getMe: vi.fn(),
   pay: vi.fn(),
   startTrial: vi.fn(),
+  cancel: vi.fn(),
 }))
 
 vi.mock('@/api/subscription.api', () => ({
@@ -18,6 +19,7 @@ vi.mock('@/api/subscription.api', () => ({
     getMe: api.getMe,
     pay: api.pay,
     startTrial: api.startTrial,
+    cancel: api.cancel,
   },
 }))
 vi.mock('qrcode.react', async () => {
@@ -45,6 +47,7 @@ describe('master onboarding subscription screens', () => {
     api.getMe.mockReset()
     api.pay.mockReset()
     api.startTrial.mockReset()
+    api.cancel.mockReset()
     localStorage.clear()
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',
@@ -109,21 +112,59 @@ describe('master onboarding subscription screens', () => {
     expect(localStorage.getItem('sub:preErr')).toBe('old-charge-error')
   })
 
-  it('при ACTIVE показывает «Подписка активна до…» без выбора периода и кнопки', async () => {
+  it('ACTIVE (макет 10352-43925): оформлена, дата списания, оплаченный план, без «Подключить»', async () => {
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'ACTIVE',
       // Полдень UTC — локальная дата одинакова в любом поясе тестовой машины.
-      currentPeriodEnd: '2026-08-24T12:00:00.000Z',
+      currentPeriodEnd: '2027-07-28T12:00:00.000Z',
+      plannedPeriod: 'YEAR',
+      cardPan: '430000******0777',
     }))
     renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
 
-    expect(await screen.findByText(/Подписка активна до 24 августа/)).toBeInTheDocument()
-    expect(screen.queryByText('пробный период закончился')).not.toBeInTheDocument()
+    expect(await screen.findByText('Подписка оформлена 🎉')).toBeInTheDocument()
+    expect(screen.getByText('Следующий платёж спишется 28.07.2027')).toBeInTheDocument()
+    // Карточка оплаченного плана — только годовая, без выбора.
+    expect(screen.getByText('Ежегодно')).toBeInTheDocument()
+    expect(screen.getByText('4 790 ₽ / год')).toBeInTheDocument()
+    expect(screen.queryByText('Ежемесячно')).not.toBeInTheDocument()
     expect(screen.queryByText('Выберите период подписки')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Подключить|Далее/ })).not.toBeInTheDocument()
     // Префетч оплаты не дёргается — не плодим NEW-платежи на бэке.
     expect(api.pay).not.toHaveBeenCalled()
     expect(api.startTrial).not.toHaveBeenCalled()
+  })
+
+  it('«Отменить подписку» → диалог (10352-44386) → cancel, статус «активна до…»', async () => {
+    api.getMe
+      .mockResolvedValueOnce(createSubscriptionState({
+        status: 'ACTIVE',
+        currentPeriodEnd: '2027-07-28T12:00:00.000Z',
+        plannedPeriod: 'YEAR',
+        cardPan: '430000******0777',
+      }))
+      // Перечитка после cancel: карта отвязана.
+      .mockResolvedValueOnce(createSubscriptionState({
+        status: 'ACTIVE',
+        currentPeriodEnd: '2027-07-28T12:00:00.000Z',
+        plannedPeriod: 'YEAR',
+        cardPan: null,
+      }))
+    api.cancel.mockResolvedValue({ ok: true })
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
+    expect(screen.getByText(/Новые списания производиться не будут/)).toBeInTheDocument()
+    // «Закрыть» — отказ от отмены.
+    expect(api.cancel).not.toHaveBeenCalled()
+
+    // Подтверждение — вторая кнопка «Отменить подписку» (в диалоге).
+    await view.user.click(screen.getAllByRole('button', { name: 'Отменить подписку' }).at(-1)!)
+
+    expect(api.cancel).toHaveBeenCalledOnce()
+    expect(await screen.findByText('Подписка активна до 28.07.2027')).toBeInTheDocument()
+    // Кнопка отмены исчезла — подписка уже отменена.
+    expect(screen.queryByRole('button', { name: 'Отменить подписку' })).not.toBeInTheDocument()
   })
 
   it('показывает expired trial transition как Далее', async () => {

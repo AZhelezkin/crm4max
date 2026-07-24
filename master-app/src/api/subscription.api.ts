@@ -12,6 +12,8 @@ export interface SubscriptionState {
   onlineBookingAvailable: boolean
   /** Последнее обновление подписки на бэке — для детекта «оплата не прошла». */
   updatedAt: string
+  /** Оплаченный/продлеваемый период (null = месяц) — карточка на экране «Подписка». */
+  plannedPeriod: 'MONTH' | 'YEAR' | null
 }
 
 export const subscriptionApi = {
@@ -25,6 +27,8 @@ export const subscriptionApi = {
   // «Способы оплаты» → «Изменить карту»: hosted-форма перепривязки (0 ₽ + 3DS).
   rebindCard: () =>
     api.post<{ paymentURL: string }>('/subscription/rebind-card').then((r) => r.data),
+  // «Отменить подписку»: списания прекращаются, доступ — до конца периода.
+  cancel: () => api.post<{ ok: true }>('/subscription/cancel').then((r) => r.data),
   // Текущее состояние подписки мастера.
   getMe: () => api.get<SubscriptionState | null>('/subscription/me').then((r) => r.data),
 }

@@ -156,6 +156,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/services.api.ts#servicesApi.removeWorkPhoto`
 - `src/api/services.api.ts#servicesApi.update`
 - `src/api/subscription.api.ts#subscriptionApi.getMe`
+- `src/api/subscription.api.ts#subscriptionApi.cancel`
 - `src/api/subscription.api.ts#subscriptionApi.pay`
 - `src/api/subscription.api.ts#subscriptionApi.rebindCard`
 - `src/api/subscription.api.ts#subscriptionApi.startTrial`
