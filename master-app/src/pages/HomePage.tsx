@@ -98,8 +98,9 @@ export default function HomePage() {
   // Флаг снимается и на ошибке: показываем пустое состояние, а не вечный shimmer.
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [subLoading, setSubLoading] = useState(true)
+  const [clientsLoading, setClientsLoading] = useState(true)
   useEffect(() => {
-    clientsApi.list().then(setClients).catch(() => {})
+    clientsApi.list().then(setClients).catch(() => {}).finally(() => setClientsLoading(false))
     bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setBookingsLoading(false))
     subscriptionApi.getMe().then(setSub).catch(() => {}).finally(() => setSubLoading(false))
   }, [])
@@ -405,18 +406,39 @@ export default function HomePage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{clients.length}</span>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {clientAvatars.map((c, i) => (
-                    <div key={c.id} style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', background: 'var(--color-surface)', marginLeft: i ? -8 : 0, border: '2px solid var(--color-background)' }}>
-                      <img src={c.photo!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {clientsLoading ? (
+                  <>
+                    {/* Число клиентов (H3 = 26) + стопка из 3 аватарок 32. */}
+                    <TextBarSkeleton lineHeight={26} width={28} height={20} />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} style={{ marginLeft: i ? -8 : 0, borderRadius: 16, border: '2px solid var(--color-background)' }}>
+                          <Skeleton width={32} height={32} radius={16} />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{clients.length}</span>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {clientAvatars.map((c, i) => (
+                        <div key={c.id} style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', background: 'var(--color-surface)', marginLeft: i ? -8 : 0, border: '2px solid var(--color-background)' }}>
+                          <img src={c.photo!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-              <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-                ходят {goingCount}, не ходят {Math.max(0, clients.length - goingCount)}
-              </span>
+              {/* «ходят/не ходят» считается из клиентов И записей — ждём оба ответа. */}
+              {clientsLoading || bookingsLoading ? (
+                <TextBarSkeleton lineHeight={16} width={110} height={14} />
+              ) : (
+                <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+                  ходят {goingCount}, не ходят {Math.max(0, clients.length - goingCount)}
+                </span>
+              )}
             </div>
           </div>
 
