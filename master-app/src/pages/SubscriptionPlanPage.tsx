@@ -5,6 +5,7 @@ import { text } from '@/styles/typography'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { HeroHeader } from '@/components/onboardingShared'
 import { Radio44 } from '@/components/ConsentsStep'
+import { openPaymentForm } from '@/lib/paymentForm'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
 
 // «Переход в подписку» (макет 10256-54945): плитка оставшихся дней триала
@@ -78,19 +79,22 @@ export default function SubscriptionPlanPage() {
   const handleConnect = () => {
     const url = payUrls[period]
     if (!url) return
-    // В триале — только привязка карты, списания нет, поэтому флаги результата
-    // оплаты не ставим (иначе в кабинете покажется «Подписка оформлена/не прошла»).
     if (!isTrial) {
-      // Флаг «оплата открыта» → при возврате: ACTIVE → «Подписка оформлена!»,
-      // неуспех → «Оплата не прошла». preErr — отличать новую ошибку от старой;
-      // payOpenedAt — ловить повтор ТОЙ ЖЕ ошибки (REJECTED обновляет подписку).
+      // Оплата. Флаг «оплата открыта» → по возвращении: ACTIVE → «Подписка
+      // оформлена!», неуспех → «Оплата не прошла». preErr — отличать новую
+      // ошибку от старой; payOpenedAt — ловить повтор ТОЙ ЖЕ ошибки.
       localStorage.setItem('sub:payPending', '1')
       localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
       localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
+      // Форма — в ТОМ ЖЕ WebView: после оплаты T-Bank вернёт на #/pay-result,
+      // приложение перезагрузится и покажет результат (тикер — подстраховка).
+      openPaymentForm(url)
+      return
     }
+    // Привязка карты в триале (AddCard, без списания): SuccessURL форма не
+    // принимает — открываем во внешнем браузере, мастер вернётся сам.
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
-    // Независимо от исхода привязки/оплаты — в кабинет.
     navigate('/', { replace: true })
   }
 

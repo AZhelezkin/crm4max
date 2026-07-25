@@ -22,6 +22,9 @@ vi.mock('@/api/subscription.api', () => ({
     cancel: api.cancel,
   },
 }))
+const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn() }))
+vi.mock('@/lib/paymentForm', () => paymentForm)
+
 vi.mock('qrcode.react', async () => {
   const { forwardRef } = await vi.importActual<typeof import('react')>('react')
   return {
@@ -95,7 +98,7 @@ describe('master onboarding subscription screens', () => {
     expect(view.getLocation().pathname).toBe('/')
   })
 
-  it('вне триала (GRACE) открывает yearly оплату через browser fallback', async () => {
+  it('вне триала (GRACE) открывает оплату в том же WebView (openPaymentForm)', async () => {
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'GRACE',
       lastChargeError: 'old-charge-error',
@@ -106,10 +109,15 @@ describe('master onboarding subscription screens', () => {
 
     await view.user.click(screen.getByRole('button', { name: /Подключить|Далее/ }))
 
-    expect(open).toHaveBeenCalledWith('https://pay.test/year', '_blank')
+    // Оплата — навигация того же WebView (SuccessURL вернёт на #/pay-result),
+    // НЕ внешний браузер.
+    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year')
+    expect(open).not.toHaveBeenCalled()
     expect(api.pay.mock.calls.filter(([period]) => period === 'YEAR')).toHaveLength(1)
     expect(localStorage.getItem('sub:payPending')).toBe('1')
     expect(localStorage.getItem('sub:preErr')).toBe('old-charge-error')
+    // Остаёмся на месте — WebView уходит на форму сам.
+    expect(view.getLocation().pathname).toBe('/subscription')
   })
 
   it('ACTIVE (макет 10352-43925): оформлена, дата списания, оплаченный план, без «Подключить»', async () => {

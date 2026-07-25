@@ -306,6 +306,10 @@ function MasterApp() {
             <Route path="other" element={<OtherPage />} />
           </Route>
 
+          {/* Возврат из hosted-формы оплаты T-Bank (SuccessURL/FailURL ведут на
+              #/pay-result в том же WebView): просто в кабинет — глобальный check
+              покажет «Подписка оформлена!» или «Оплата не прошла» поверх. */}
+          <Route path="/pay-result" element={<Navigate to="/" replace />} />
           {/* Тест жеста свайпа — вход с экрана «Другое» (пре-роутерная проверка
               isSwipeTestHash при клиентской навигации уже не срабатывает). */}
           <Route path="/swipe-test" element={<SwipeTestPage />} />
