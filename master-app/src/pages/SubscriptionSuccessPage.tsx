@@ -57,28 +57,30 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
         <img src={confettiGif} alt="" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 420, display: 'block' }} />
       </div>
 
-      {/* Hero-контент */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 38 }}>
+      {/* Hero-контент. Вертикальный воздух — clamp по высоте вьюпорта: на высоких
+          экранах отступы макета (38/66/36/48), на низких сжимаются, чтобы карточка
+          с QR и обеими кнопками влезала целиком (иначе QR/кнопки обрезались). */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 'clamp(16px, 4dvh, 38px)' }}>
         {/* SVG-ассеты экспортированы с width/height=100% и preserveAspectRatio=none —
             без ОБОИХ явных размеров WebView растягивает их на весь контейнер. */}
         <img src={wordmarkSvg} alt="sloto" style={{ width: 121, height: 24, display: 'block' }} />
-        <div style={{ height: 66 }} />
+        <div style={{ height: 'clamp(24px, 7dvh, 66px)' }} />
         {/* 75×77 = плитка 71×73 + тень из viewBox. */}
         <img src={logoTileSvg} alt="" style={{ width: 75, height: 77, display: 'block' }} />
-        <div style={{ height: 36 }} />
+        <div style={{ height: 'clamp(16px, 4dvh, 36px)' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка оформлена!</span>
           <span style={{ ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>Поздравляем 🎉</span>
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 24 }} />
+      <div style={{ flex: 1, minHeight: 16 }} />
 
       {/* Карточка: QR + текст + кнопки */}
       <div style={{
-        margin: '0 16px', marginBottom: 'calc(48px + env(safe-area-inset-bottom))',
+        margin: '0 16px', marginBottom: 'calc(clamp(16px, 5dvh, 48px) + env(safe-area-inset-bottom))',
         background: 'var(--color-surface)', borderRadius: 12, padding: 24,
-        display: 'flex', flexDirection: 'column', gap: 24,
+        display: 'flex', flexDirection: 'column', gap: 'clamp(16px, 2.5dvh, 24px)',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 165, height: 165, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
