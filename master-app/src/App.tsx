@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
 import { installHorizontalOverscrollGuard } from '@/lib/topOverscrollGuard'
@@ -31,7 +31,6 @@ import ShareLinkPage from '@/pages/ShareLinkPage'
 import OtherPage from '@/pages/OtherPage'
 import MapTestPage from '@/pages/MapTestPage'
 import SwipeTestPage from '@/pages/SwipeTestPage'
-import { subscriptionApi } from '@/api/subscription.api'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
 
@@ -175,79 +174,37 @@ function MasterIndexRoute() {
   return <HomePage />
 }
 
+// Экраны результата оплаты — по URL возврата из hosted-формы T-Bank
+// (макеты 10256-55423 / 10256-55004). Кнопки уводят обычной навигацией.
+function PaySuccessRoute() {
+  const navigate = useNavigate()
+  return <SubscriptionSuccessPage onGoProfile={() => navigate('/', { replace: true })} />
+}
+
+function PayFailRoute() {
+  const navigate = useNavigate()
+  return (
+    <SubscriptionFailedPage
+      onRetry={() => navigate('/subscription', { replace: true })}
+      onBack={() => navigate('/', { replace: true })}
+    />
+  )
+}
+
 function MasterApp() {
   const { init, isLoading, master } = useAuthStore()
   // Кабинет мастера НЕ блокируется по подписке: при истёкшем триале недоступна
   // только клиентская онлайн-запись (плашка на главной + пейволл на создании записи).
-  // Только что оплатил (флаг sub:payPending выставлен при открытии hosted-формы) и
-  // статус стал ACTIVE → экран «Подписка оформлена!» (макет 10256-55423).
-  const [paidJustNow, setPaidJustNow] = useState(false)
-  // Оплата не прошла (статус не ACTIVE, появилась новая ошибка списания) →
-  // экран «Оплата не прошла» (макет 10256-55004).
-  const [payFailed, setPayFailed] = useState(false)
+  //
+  // Результат оплаты: UI и данные разделены. Экран успеха/неуспеха рисуется
+  // МАРШРУТОМ — T-Bank возвращает WebView на #/pay-result/success|fail
+  // (SuccessURL/FailURL формы). Само состояние подписки — на бэке, источник
+  // истины — нотификация T-Bank (+ GetState-синк как подстраховка); фронт
+  // просто читает getMe, детект-эвристик здесь больше нет.
 
   useEffect(() => {
     init()
   }, [init])
-
-  useEffect(() => {
-    if (!master?.isOnboarded) return
-    // Проверяем статус подписки при старте И при каждом возврате в приложение
-    // (visibilitychange/focus). После оплаты во внешнем браузере T-Bank мастер
-    // возвращается в тот же инстанс мини-аппа — без перепроверки результат
-    // оплаты не показался бы, хотя подписка уже ACTIVE.
-    let checking = false
-    const check = () => {
-      if (checking) return
-      checking = true
-      subscriptionApi.getMe()
-        .then((s) => {
-          if (localStorage.getItem('sub:payPending')) {
-            const clearMarkers = () => {
-              localStorage.removeItem('sub:payPending')
-              localStorage.removeItem('sub:preErr')
-              localStorage.removeItem('sub:payOpenedAt')
-            }
-            // Неуспех: не ACTIVE и (новая ошибка списания ИЛИ повтор той же —
-            // REJECTED-нотификация обновляет подписку после открытия формы).
-            const payOpenedAt = localStorage.getItem('sub:payOpenedAt') ?? ''
-            const newError = !!s?.lastChargeError && s.lastChargeError !== (localStorage.getItem('sub:preErr') ?? '')
-            const sameErrorAgain = !!s?.lastChargeError && !!payOpenedAt && !!s.updatedAt && s.updatedAt > payOpenedAt
-            if (s?.status === 'ACTIVE') {
-              // Успех: подписка оформлена.
-              clearMarkers()
-              setPaidJustNow(true)
-            } else if (newError || sameErrorAgain) {
-              clearMarkers()
-              setPayFailed(true)
-            }
-          }
-        })
-        .catch(() => {})
-        .finally(() => { checking = false })
-    }
-    // Max НЕ шлёт visibilitychange/focus при возврате из внешнего браузера
-    // (WebView остаётся «visible» под ним) — поэтому события дополняет тикер:
-    // каждые 3с смотрим localStorage (без сети) и, пока «оплата открыта» и не
-    // старше 10 минут, опрашиваем статус. Ловит и установку флага после mount,
-    // и «оплату в полёте» (банк подтверждает через ~20-30с после возврата).
-    const tick = () => {
-      if (!localStorage.getItem('sub:payPending')) return
-      const opened = Date.parse(localStorage.getItem('sub:payOpenedAt') ?? '')
-      if (Number.isFinite(opened) && Date.now() - opened > 10 * 60 * 1000) return
-      check()
-    }
-    const interval = window.setInterval(tick, 3000)
-    check()
-    const onVisible = () => { if (document.visibilityState === 'visible') check() }
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('focus', check)
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('focus', check)
-      window.clearInterval(interval)
-    }
-  }, [master?.isOnboarded])
 
   if (isLoading) {
     return (
@@ -264,26 +221,6 @@ function MasterApp() {
   // Онбординг сведён к велком-экрану: привязка карты → одобрение → кабинет
   // (профиль/расписание/услуги/клиент уже заведены пример-данными на бэке).
   const needsOnboarding = !master || !master.isOnboarded
-
-  // Успех оплаты (макет 10256-55423) — поверх кабинета, до гейта блокировки.
-  // «Перейти в профиль» ведёт на главную (новый кабинет мастера).
-  if (!needsOnboarding && paidJustNow) {
-    return (
-      <SubscriptionSuccessPage
-        onGoProfile={() => { window.location.hash = '#/'; setPaidJustNow(false) }}
-      />
-    )
-  }
-
-  // Неуспех оплаты (макет 10256-55004). «Повторить оплату» открывает экран «Подписка».
-  if (!needsOnboarding && payFailed) {
-    return (
-      <SubscriptionFailedPage
-        onRetry={() => { window.location.hash = '#/subscription'; setPayFailed(false) }}
-        onBack={() => setPayFailed(false)}
-      />
-    )
-  }
 
   return (
     <BrowserRouter>
@@ -306,10 +243,11 @@ function MasterApp() {
             <Route path="other" element={<OtherPage />} />
           </Route>
 
-          {/* Возврат из hosted-формы оплаты T-Bank (SuccessURL/FailURL ведут на
-              #/pay-result в том же WebView): просто в кабинет — глобальный check
-              покажет «Подписка оформлена!» или «Оплата не прошла» поверх. */}
-          <Route path="/pay-result" element={<Navigate to="/" replace />} />
+          {/* Возврат из hosted-формы оплаты T-Bank: SuccessURL/FailURL ведут на
+              эти маршруты в том же WebView — экран результата рисуется по URL.
+              Состояние подписки при этом обновляет бэкенд (нотификация T-Bank). */}
+          <Route path="/pay-result/success" element={<PaySuccessRoute />} />
+          <Route path="/pay-result/fail" element={<PayFailRoute />} />
           {/* Тест жеста свайпа — вход с экрана «Другое» (пре-роутерная проверка
               isSwipeTestHash при клиентской навигации уже не срабатывает). */}
           <Route path="/swipe-test" element={<SwipeTestPage />} />

@@ -94,7 +94,6 @@ describe('master onboarding subscription screens', () => {
     expect(screen.queryByText('Необходимые согласия')).not.toBeInTheDocument()
     expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month')
     expect(api.pay).not.toHaveBeenCalled()
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
     expect(view.getLocation().pathname).toBe('/')
   })
 
@@ -114,8 +113,6 @@ describe('master onboarding subscription screens', () => {
     expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year')
     expect(open).not.toHaveBeenCalled()
     expect(api.pay.mock.calls.filter(([period]) => period === 'YEAR')).toHaveLength(1)
-    expect(localStorage.getItem('sub:payPending')).toBe('1')
-    expect(localStorage.getItem('sub:preErr')).toBe('old-charge-error')
     // Остаёмся на месте — WebView уходит на форму сам.
     expect(view.getLocation().pathname).toBe('/subscription')
   })
@@ -198,7 +195,6 @@ describe('master onboarding subscription screens', () => {
 
     expect(webApp.openLink).not.toHaveBeenCalled()
     expect(view.getLocation().pathname).toBe('/subscription')
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
   })
 
   it('SubscriptionSuccessPage строит QR/share contract и ведёт в профиль', async () => {

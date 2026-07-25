@@ -85,7 +85,8 @@
 | `/payment-methods` | `PaymentMethodsPage` — карта подписки, перепривязка (из «Другое») | P1 |
 | `/address` | `AddressEditPage` | P0 |
 | `/subscription` | `SubscriptionPlanPage` | P0 |
-| `/pay-result` | возврат из hosted-формы T-Bank → redirect `/` (check покажет результат) | P1 |
+| `/pay-result/success` | возврат из hosted-формы T-Bank → `SubscriptionSuccessPage` (экран по URL) | P0 |
+| `/pay-result/fail` | возврат из hosted-формы T-Bank → `SubscriptionFailedPage` (экран по URL) | P0 |
 | `/schedule` | `SchedulePage` | P0 |
 | `/services` | `ServicesPage` | P0 |
 | `/income/:date` | `PaymentsDayPage` | P1 |

@@ -80,14 +80,9 @@ export default function SubscriptionPlanPage() {
     const url = payUrls[period]
     if (!url) return
     if (!isTrial) {
-      // Оплата. Флаг «оплата открыта» → по возвращении: ACTIVE → «Подписка
-      // оформлена!», неуспех → «Оплата не прошла». preErr — отличать новую
-      // ошибку от старой; payOpenedAt — ловить повтор ТОЙ ЖЕ ошибки.
-      localStorage.setItem('sub:payPending', '1')
-      localStorage.setItem('sub:preErr', sub?.lastChargeError ?? '')
-      localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
-      // Форма — в ТОМ ЖЕ WebView: после оплаты T-Bank вернёт на #/pay-result,
-      // приложение перезагрузится и покажет результат (тикер — подстраховка).
+      // Оплата — форма в том же WebView: T-Bank вернёт на #/pay-result/success
+      // или /fail (экран результата рисуется по URL), состояние подписки
+      // обновит бэкенд по нотификации.
       openPaymentForm(url)
       return
     }

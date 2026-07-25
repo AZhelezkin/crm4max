@@ -119,146 +119,39 @@ describe.sequential('App master guards', () => {
     expect(screen.queryByTestId('subscription-plan')).not.toBeInTheDocument()
   })
 
-  it('показывает success после pending оплаты и очищает markers', async () => {
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', 'old-error')
-    const { App } = await loadGuardApp({
-      subscription: createSubscriptionState({ status: 'ACTIVE', lastChargeError: null }),
-    })
+  // ── Результат оплаты — по URL возврата из hosted-формы T-Bank ──────────────
+  // (SuccessURL/FailURL ведут на #/pay-result/success|fail; состояние подписки
+  // обновляет бэкенд по нотификации — фронт-детекта больше нет.)
+
+  it('возврат на #/pay-result/success рисует экран успеха; кнопка → главная', async () => {
+    const user = userEvent.setup()
+    const { App } = await loadGuardApp({ hash: '#/pay-result/success' })
 
     render(<App />)
 
     expect(await screen.findByTestId('subscription-success')).toBeInTheDocument()
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-    expect(localStorage.getItem('sub:preErr')).toBeNull()
-  })
-
-  it('переходит из payment success на главную', async () => {
-    const user = userEvent.setup()
-    localStorage.setItem('sub:payPending', '1')
-    const { App } = await loadGuardApp()
-
-    render(<App />)
-    await user.click(await screen.findByTestId('subscription-success'))
-
+    await user.click(screen.getByTestId('subscription-success'))
     expect(await screen.findByTestId('master-home')).toBeInTheDocument()
-    expect(window.location.hash).toBe('#/')
   })
 
-  it('показывает failure только для новой ошибки оплаты', async () => {
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', 'old-error')
-    const { App } = await loadGuardApp({
-      subscription: createSubscriptionState({
-        status: 'GRACE',
-        hasAccess: true,
-        lastChargeError: 'new-error',
-      }),
-    })
+  it('возврат на #/pay-result/fail рисует экран неуспеха; retry → «Подписка», назад → главная', async () => {
+    const user = userEvent.setup()
+    const { App } = await loadGuardApp({ hash: '#/pay-result/fail' })
 
     render(<App />)
 
     expect(await screen.findByTestId('subscription-failed')).toBeInTheDocument()
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-    expect(localStorage.getItem('sub:preErr')).toBeNull()
+    await user.click(screen.getByText('Повторить'))
+    expect(await screen.findByTestId('subscription-plan')).toBeInTheDocument()
   })
 
-  it('не считает старую payment error новым failure', async () => {
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', 'same-error')
-    // Форма открыта ПОСЛЕ последнего обновления подписки — новых событий не было.
-    localStorage.setItem('sub:payOpenedAt', '2026-07-10T00:00:00.000Z')
-    const { App, getMe } = await loadGuardApp({
-      subscription: createSubscriptionState({
-        status: 'GRACE',
-        hasAccess: true,
-        lastChargeError: 'same-error',
-        updatedAt: '2026-07-01T00:00:00.000Z',
-      }),
-    })
+  it('назад с экрана неуспеха ведёт в кабинет', async () => {
+    const user = userEvent.setup()
+    const { App } = await loadGuardApp({ hash: '#/pay-result/fail' })
 
     render(<App />)
 
-    await waitFor(() => expect(getMe).toHaveBeenCalledOnce())
-    expect(screen.getByTestId('master-home')).toBeInTheDocument()
-    expect(screen.queryByTestId('subscription-failed')).not.toBeInTheDocument()
-    expect(localStorage.getItem('sub:payPending')).toBe('1')
-  })
-
-  it('тикер ловит оплату, начатую после mount, без событий видимости', async () => {
-    // payPending НЕ установлен при старте (как в реальном флоу: мастер жмёт
-    // «Далее» уже внутри приложения; Max не шлёт visibilitychange при возврате).
-    const { App, getMe } = await loadGuardApp({
-      subscription: createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }),
-    })
-    render(<App />)
-    await waitFor(() => expect(getMe).toHaveBeenCalled())
-
-    // Оплата открыта (handleConnect) и прошла на бэке.
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', '')
-    localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
-    getMe.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
-
-    expect(await screen.findByTestId('subscription-success', {}, { timeout: 6000 })).toBeInTheDocument()
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-  }, 10_000)
-
-  it('поллит «оплату в полёте» и показывает success без повторного visibilitychange', async () => {
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', '')
-    localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
-    const { App, getMe } = await loadGuardApp({
-      // Первый check: оплата ещё «в полёте» (не ACTIVE, ошибки нет).
-      subscription: createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }),
-    })
-    // Второй ответ (поллинг через 3с): подписка стала ACTIVE.
-    getMe.mockResolvedValueOnce(createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }))
-    getMe.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
-
-    render(<App />)
-
-    expect(await screen.findByTestId('subscription-success', {}, { timeout: 6000 })).toBeInTheDocument()
-    expect(getMe.mock.calls.length).toBeGreaterThanOrEqual(2)
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-  }, 10_000)
-
-  it('повтор той же ошибки после открытия формы — тоже failure', async () => {
-    localStorage.setItem('sub:payPending', '1')
-    localStorage.setItem('sub:preErr', 'same-error')
-    localStorage.setItem('sub:payOpenedAt', '2026-07-10T00:00:00.000Z')
-    const { App } = await loadGuardApp({
-      subscription: createSubscriptionState({
-        status: 'GRACE',
-        hasAccess: true,
-        lastChargeError: 'same-error',
-        // REJECTED-нотификация обновила подписку ПОСЛЕ открытия формы.
-        updatedAt: '2026-07-10T00:05:00.000Z',
-      }),
-    })
-
-    render(<App />)
-
-    expect(await screen.findByTestId('subscription-failed')).toBeInTheDocument()
-    expect(localStorage.getItem('sub:payPending')).toBeNull()
-    expect(localStorage.getItem('sub:payOpenedAt')).toBeNull()
-  })
-
-  it('удаляет focus и visibility listeners при unmount', async () => {
-    const removeDocumentListener = vi.spyOn(document, 'removeEventListener')
-    const removeWindowListener = vi.spyOn(window, 'removeEventListener')
-    const { App, getMe } = await loadGuardApp()
-    const view = render(<App />)
-
-    await waitFor(() => expect(getMe).toHaveBeenCalledOnce())
-    window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(getMe).toHaveBeenCalledTimes(2))
-
-    view.unmount()
-    window.dispatchEvent(new Event('focus'))
-
-    expect(getMe).toHaveBeenCalledTimes(2)
-    expect(removeDocumentListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
-    expect(removeWindowListener).toHaveBeenCalledWith('focus', expect.any(Function))
+    await user.click(await screen.findByText('Назад'))
+    expect(await screen.findByTestId('master-home')).toBeInTheDocument()
   })
 })
