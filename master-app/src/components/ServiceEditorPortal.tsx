@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { markGuideStep } from '@/lib/guide'
 import { servicesApi } from '@/api/services.api'
 import type { Service } from '@/types'
 import type { LocalWorkPhoto } from '@/lib/workPhotos'
@@ -77,6 +78,7 @@ export default function ServiceEditorPortal({ target, onClose, onSaved }: Props)
     }
     if (editService) {
       await servicesApi.update(editService.id, data)
+      markGuideStep('edited')
       const origIds = new Set((editService.workPhotos ?? []).map((p) => p.id))
       const currentIds = new Set(workPhotos.map((p) => p.id))
       for (const id of origIds) {
@@ -88,6 +90,7 @@ export default function ServiceEditorPortal({ target, onClose, onSaved }: Props)
       }
     } else {
       const created = await servicesApi.create(data)
+      markGuideStep('edited')
       const uploaded = workPhotos.filter((p) => !p.uploading && p.url)
       for (let i = 0; i < uploaded.length; i++) {
         await servicesApi.addWorkPhoto(created.id, uploaded[i].url as string, i)

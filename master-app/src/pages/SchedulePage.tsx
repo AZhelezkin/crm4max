@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { scheduleApi } from '@/api/schedule.api'
 import { useAuthStore } from '@/store/auth.store'
+import { markGuideStep } from '@/lib/guide'
 import { Step1Form } from '@/pages/OnboardingPage'
 
 // «График работы» (Настройки → График работы). Переиспользует форму шага 3
@@ -60,6 +61,7 @@ export default function SchedulePage() {
       // master.schedule в сторе читает главная («График работы») — обновляем,
       // иначе после возврата там остаётся старое расписание.
       await refreshMaster()
+      markGuideStep('edited')
       navigate(-1)
     } finally {
       setSaving(false)

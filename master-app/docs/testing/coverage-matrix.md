@@ -145,6 +145,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/masters.api.ts#mastersApi.getReviews`
 - `src/api/masters.api.ts#mastersApi.getSlots`
 - `src/api/masters.api.ts#mastersApi.updatePayment`
+- `src/api/masters.api.ts#mastersApi.markGuideStep`
 - `src/api/masters.api.ts#mastersApi.updateProfile`
 - `src/api/payments.api.ts#paymentsApi.exportXlsx`
 - `src/api/payments.api.ts#paymentsApi.list`

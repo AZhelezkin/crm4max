@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { markGuideStep } from '@/lib/guide'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -69,7 +70,7 @@ export default function BookingDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   useEffect(() => {
-    if (id) bookingsApi.getById(id).then(setBooking).catch(() => {})
+    if (id) bookingsApi.getById(id).then((bk) => { setBooking(bk); markGuideStep('openedBooking') }).catch(() => {})
   }, [id])
 
   if (!booking) return null

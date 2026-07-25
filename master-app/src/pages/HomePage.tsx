@@ -13,6 +13,7 @@ import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
 import WeekStrip from '@/components/WeekStrip'
+import GuideCard from '@/components/GuideCard'
 
 dayjs.locale('ru')
 
@@ -248,6 +249,10 @@ export default function HomePage() {
 
       {/* ── list: карточки, gap 20, px 16 (Figma 10065:50913) ── */}
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* Гид «Добро пожаловать!» (макеты 10053-50054 / 10065-50531) — чек-лист
+            погружения; скрывается крестиком навсегда. Первым в списке. */}
+        <GuideCard firstBookingId={bookings[0]?.id} />
 
         {/* Плашка подписки (макет 10265-59019): триал ≤1 дня / истёк / не оплачено.
             Тап → экран «Подписка» (обычный или expired-вариант — по состоянию). */}

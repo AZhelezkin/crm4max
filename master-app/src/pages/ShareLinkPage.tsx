@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { markGuideStep } from '@/lib/guide'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
@@ -60,6 +61,7 @@ export default function ShareLinkPage() {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(deepLink)
+      markGuideStep('shared')
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -75,6 +77,7 @@ export default function ShareLinkPage() {
           text: `Записывайтесь ко мне через Max: ${master?.name ?? ''}`,
           url: deepLink,
         })
+        markGuideStep('shared')
       } catch {
         // пользователь отменил
       }

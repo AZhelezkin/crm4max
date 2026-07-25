@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
+import { markGuideStep } from '@/lib/guide'
 import { uploadPhoto } from '@/api/upload.api'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import { Step0Form } from '@/pages/OnboardingPage'
@@ -86,6 +87,7 @@ export default function AboutMePage() {
         photo: photoUrl,
       })
       setMaster({ ...master!, ...updated })
+      markGuideStep('edited')
       navigate(-1)
     } finally {
       setSaving(false)

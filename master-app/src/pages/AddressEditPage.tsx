@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
+import { markGuideStep } from '@/lib/guide'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import { HeroHeader, FloatingField } from '@/components/onboardingShared'
 
@@ -29,6 +30,7 @@ export default function AddressEditPage() {
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
       })
       setMaster({ ...master!, ...updated })
+      markGuideStep('edited')
       navigate(-1)
     } finally {
       setSaving(false)
