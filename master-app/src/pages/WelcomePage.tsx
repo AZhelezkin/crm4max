@@ -42,6 +42,9 @@ interface Layer {
   offsetX?: number      // задан → центрирование по X со смещением
   rot?: number
   flipY?: boolean
+  /** Глоу-подложка: доп. CSS-blur — SVG-экспорт режет гаусс по рамке файла,
+      и у прямоугольника видна грань (особенно на повёрнутых слоях). */
+  soften?: boolean
   iw: number
   ih: number
   inset: [number, number, number, number] // top right bottom left, в % (отрицательные = bleed)
@@ -60,7 +63,7 @@ const SLIDES: SlideDef[] = [
     title: 'Личная страница',
     subtitle: 'Клиенты смогут записываться самостоятельно',
     layers: [
-      { src: profileGlow, offsetX: -9.57, top: 11, w: 337.925, h: 192.325, rot: 180, flipY: true, iw: 337.925, ih: 192.325, inset: [-14.56, -8.29, -14.56, -8.29] },
+      { src: profileGlow, soften: true, offsetX: -9.57, top: 11, w: 337.925, h: 192.325, rot: 180, flipY: true, iw: 337.925, ih: 192.325, inset: [-14.56, -8.29, -14.56, -8.29] },
       { src: profilePhoneLeft, left: 36.84, top: -0.5, w: 176.425, h: 246.168, rot: -16.04, iw: 119.825, ih: 221.687, inset: [-1.16, -3.95, -2.94, -3.7] },
       { src: profilePhoneRight, left: 147, top: -4, w: 155.486, h: 253.477, rot: 5.09, iw: 134.5, ih: 242.5, inset: [-6.43, -14.63, -9.82, -14.33] },
     ],
@@ -70,7 +73,7 @@ const SLIDES: SlideDef[] = [
     title: 'Календарь записей',
     subtitle: 'Все записи в одном месте',
     layers: [
-      { src: calendGlow, offsetX: 0.04, top: 56.5, w: 357.082, h: 175.826, iw: 357.082, ih: 175.826, inset: [-15.92, -7.84, -15.92, -7.84] },
+      { src: calendGlow, soften: true, offsetX: 0.04, top: 56.5, w: 357.082, h: 175.826, iw: 357.082, ih: 175.826, inset: [-15.92, -7.84, -15.92, -7.84] },
       { src: calendCard, offsetX: -7.77, top: 0, w: 238, h: 236, iw: 238, ih: 236, inset: [-4.24, -12.61, -12.71, -4.2] },
     ],
   },
@@ -79,7 +82,7 @@ const SLIDES: SlideDef[] = [
     title: 'Доходы',
     subtitle: 'Покажем, сколько вы заработали',
     layers: [
-      { src: moneyGlow, offsetX: -3, top: 82.78, w: 347.863, h: 115.938, rot: 180, flipY: true, iw: 347.863, ih: 115.938, inset: [-24.15, -8.05, -24.15, -8.05] },
+      { src: moneyGlow, soften: true, offsetX: -3, top: 82.78, w: 347.863, h: 115.938, rot: 180, flipY: true, iw: 347.863, ih: 115.938, inset: [-24.15, -8.05, -24.15, -8.05] },
       { src: moneyCards, left: 44, top: 18, w: 270, h: 210, iw: 270, ih: 210, inset: [-7.14, -3.7, -11.9, -11.11] },
     ],
   },
@@ -88,7 +91,7 @@ const SLIDES: SlideDef[] = [
     title: 'Уведомления',
     subtitle: 'ИИ-ассистент отправит уведомления о записях и изменениях прямо в Max',
     layers: [
-      { src: notifyGlow, offsetX: -10.26, top: -39.1, w: 390.992, h: 309.904, rot: 148.72, flipY: true, iw: 375.949, ih: 134.218, inset: [-20.86, -7.45, -20.86, -7.45] },
+      { src: notifyGlow, soften: true, offsetX: -10.26, top: -39.1, w: 390.992, h: 309.904, rot: 148.72, flipY: true, iw: 375.949, ih: 134.218, inset: [-20.86, -7.45, -20.86, -7.45] },
       { src: notifyShot, left: 27, top: 49, w: 307, h: 162, iw: 307, ih: 162, inset: [-6.17, -6.51, -18.52, -6.51] },
     ],
   },
@@ -97,7 +100,7 @@ const SLIDES: SlideDef[] = [
     title: 'ИИ-ассистент',
     subtitle: 'Записывает клиентов и помогает управлять расписанием',
     layers: [
-      { src: agentGlow, offsetX: 0.7, top: 9.89, w: 374.078, h: 207.008, rot: 167.62, flipY: true, iw: 353.496, ih: 134.335, inset: [-20.84, -7.92, -20.84, -7.92] },
+      { src: agentGlow, soften: true, offsetX: 0.7, top: 9.89, w: 374.078, h: 207.008, rot: 167.62, flipY: true, iw: 353.496, ih: 134.335, inset: [-20.84, -7.92, -20.84, -7.92] },
       { src: agentArt, left: 42, top: 0, w: 279, h: 240, iw: 279, ih: 240, inset: [-6.67, -10.75, -10, -3.58] },
     ],
   },
@@ -270,7 +273,7 @@ export function Slider() {
 }
 
 // Слой-картинка: контейнер → поворот → бокс → img с bleed-inset (см. Figma).
-function LayerImg({ src, top, w, h, left, offsetX, rot = 0, flipY, iw, ih, inset }: Layer) {
+function LayerImg({ src, top, w, h, left, offsetX, rot = 0, flipY, soften, iw, ih, inset }: Layer) {
   const [it, ir, ib, il] = inset
   const centered = offsetX !== undefined
   const transform = `${flipY ? 'scaleY(-1) ' : ''}${rot ? `rotate(${rot}deg)` : ''}`.trim()
@@ -290,7 +293,7 @@ function LayerImg({ src, top, w, h, left, offsetX, rot = 0, flipY, iw, ih, inset
       <div style={{ transform: transform || undefined, flexShrink: 0 }}>
         <div style={{ position: 'relative', width: iw, height: ih }}>
           <div style={{ position: 'absolute', top: `${it}%`, right: `${ir}%`, bottom: `${ib}%`, left: `${il}%` }}>
-            <img src={src} alt="" style={{ display: 'block', width: '100%', height: '100%', maxWidth: 'none' }} />
+            <img src={src} alt="" style={{ display: 'block', width: '100%', height: '100%', maxWidth: 'none', ...(soften ? { filter: 'blur(14px)' } : {}) }} />
           </div>
         </div>
       </div>
