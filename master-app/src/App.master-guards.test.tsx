@@ -185,6 +185,25 @@ describe.sequential('App master guards', () => {
     expect(localStorage.getItem('sub:payPending')).toBe('1')
   })
 
+  it('поллит «оплату в полёте» и показывает success без повторного visibilitychange', async () => {
+    localStorage.setItem('sub:payPending', '1')
+    localStorage.setItem('sub:preErr', '')
+    localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
+    const { App, getMe } = await loadGuardApp({
+      // Первый check: оплата ещё «в полёте» (не ACTIVE, ошибки нет).
+      subscription: createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }),
+    })
+    // Второй ответ (поллинг через 3с): подписка стала ACTIVE.
+    getMe.mockResolvedValueOnce(createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }))
+    getMe.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
+
+    render(<App />)
+
+    expect(await screen.findByTestId('subscription-success', {}, { timeout: 6000 })).toBeInTheDocument()
+    expect(getMe.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(localStorage.getItem('sub:payPending')).toBeNull()
+  }, 10_000)
+
   it('повтор той же ошибки после открытия формы — тоже failure', async () => {
     localStorage.setItem('sub:payPending', '1')
     localStorage.setItem('sub:preErr', 'same-error')

@@ -194,8 +194,10 @@ function MasterApp() {
     if (!master?.isOnboarded) return
     // Проверяем статус подписки при старте И при каждом возврате в приложение
     // (visibilitychange/focus). После оплаты во внешнем браузере T-Bank мастер
-    // возвращается в тот же инстанс мини-аппа — без перепроверки экран «Доступ
-    // приостановлен» завис бы, хотя подписка уже ACTIVE.
+    // возвращается в тот же инстанс мини-аппа — без перепроверки результат
+    // оплаты не показался бы, хотя подписка уже ACTIVE.
+    let pollTimer: number | null = null
+    let pollLeft = 20 // ~60с поллинга после возврата с «оплатой в полёте»
     const check = () => {
       subscriptionApi.getMe()
         .then((s) => {
@@ -217,6 +219,13 @@ function MasterApp() {
             } else if (newError || sameErrorAgain) {
               clearMarkers()
               setPayFailed(true)
+            } else if (pollLeft > 0 && pollTimer === null) {
+              // Оплата «в полёте»: мастер вернулся из формы до завершения
+              // авторизации банком — ни CONFIRMED, ни REJECTED ещё нет (даже
+              // GetState-синк на бэке видит промежуточный статус). Поллим,
+              // иначе результат покажется только при следующем сворачивании.
+              pollLeft -= 1
+              pollTimer = window.setTimeout(() => { pollTimer = null; check() }, 3000)
             }
           }
         })
@@ -229,6 +238,7 @@ function MasterApp() {
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', check)
+      if (pollTimer !== null) window.clearTimeout(pollTimer)
     }
   }, [master?.isOnboarded])
 
