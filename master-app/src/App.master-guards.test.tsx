@@ -185,6 +185,25 @@ describe.sequential('App master guards', () => {
     expect(localStorage.getItem('sub:payPending')).toBe('1')
   })
 
+  it('тикер ловит оплату, начатую после mount, без событий видимости', async () => {
+    // payPending НЕ установлен при старте (как в реальном флоу: мастер жмёт
+    // «Далее» уже внутри приложения; Max не шлёт visibilitychange при возврате).
+    const { App, getMe } = await loadGuardApp({
+      subscription: createSubscriptionState({ status: 'TRIALING', trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }),
+    })
+    render(<App />)
+    await waitFor(() => expect(getMe).toHaveBeenCalled())
+
+    // Оплата открыта (handleConnect) и прошла на бэке.
+    localStorage.setItem('sub:payPending', '1')
+    localStorage.setItem('sub:preErr', '')
+    localStorage.setItem('sub:payOpenedAt', new Date().toISOString())
+    getMe.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
+
+    expect(await screen.findByTestId('subscription-success', {}, { timeout: 6000 })).toBeInTheDocument()
+    expect(localStorage.getItem('sub:payPending')).toBeNull()
+  }, 10_000)
+
   it('поллит «оплату в полёте» и показывает success без повторного visibilitychange', async () => {
     localStorage.setItem('sub:payPending', '1')
     localStorage.setItem('sub:preErr', '')

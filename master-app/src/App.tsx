@@ -196,9 +196,10 @@ function MasterApp() {
     // (visibilitychange/focus). После оплаты во внешнем браузере T-Bank мастер
     // возвращается в тот же инстанс мини-аппа — без перепроверки результат
     // оплаты не показался бы, хотя подписка уже ACTIVE.
-    let pollTimer: number | null = null
-    let pollLeft = 20 // ~60с поллинга после возврата с «оплатой в полёте»
+    let checking = false
     const check = () => {
+      if (checking) return
+      checking = true
       subscriptionApi.getMe()
         .then((s) => {
           if (localStorage.getItem('sub:payPending')) {
@@ -219,18 +220,24 @@ function MasterApp() {
             } else if (newError || sameErrorAgain) {
               clearMarkers()
               setPayFailed(true)
-            } else if (pollLeft > 0 && pollTimer === null) {
-              // Оплата «в полёте»: мастер вернулся из формы до завершения
-              // авторизации банком — ни CONFIRMED, ни REJECTED ещё нет (даже
-              // GetState-синк на бэке видит промежуточный статус). Поллим,
-              // иначе результат покажется только при следующем сворачивании.
-              pollLeft -= 1
-              pollTimer = window.setTimeout(() => { pollTimer = null; check() }, 3000)
             }
           }
         })
         .catch(() => {})
+        .finally(() => { checking = false })
     }
+    // Max НЕ шлёт visibilitychange/focus при возврате из внешнего браузера
+    // (WebView остаётся «visible» под ним) — поэтому события дополняет тикер:
+    // каждые 3с смотрим localStorage (без сети) и, пока «оплата открыта» и не
+    // старше 10 минут, опрашиваем статус. Ловит и установку флага после mount,
+    // и «оплату в полёте» (банк подтверждает через ~20-30с после возврата).
+    const tick = () => {
+      if (!localStorage.getItem('sub:payPending')) return
+      const opened = Date.parse(localStorage.getItem('sub:payOpenedAt') ?? '')
+      if (Number.isFinite(opened) && Date.now() - opened > 10 * 60 * 1000) return
+      check()
+    }
+    const interval = window.setInterval(tick, 3000)
     check()
     const onVisible = () => { if (document.visibilityState === 'visible') check() }
     document.addEventListener('visibilitychange', onVisible)
@@ -238,7 +245,7 @@ function MasterApp() {
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', check)
-      if (pollTimer !== null) window.clearTimeout(pollTimer)
+      window.clearInterval(interval)
     }
   }, [master?.isOnboarded])
 
