@@ -93,7 +93,7 @@ export default function SubscriptionPlanPage() {
   //    «Подписка оформлена 🎉», карточка оплаченного плана, «Отменить подписку».
   if (isActive && sub) {
     // Автопродление живо, пока привязана карта; после отмены — «активна до…».
-    const autoRenew = !!sub.cardPan
+    const autoRenew = sub.autoRenewEnabled
     const isYear = sub.plannedPeriod === 'YEAR'
     return (
       <div style={{ minHeight: '100dvh', position: 'relative', display: 'flex', flexDirection: 'column' }}>

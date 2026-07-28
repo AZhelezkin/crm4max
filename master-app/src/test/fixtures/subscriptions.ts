@@ -8,6 +8,7 @@ export function createSubscriptionState(
     trialEndsAt: null,
     currentPeriodEnd: '2026-08-19T00:00:00.000Z',
     graceEndsAt: null,
+    autoRenewEnabled: true,
     cardPan: '2200 **** **** 0000',
     lastChargeError: null,
     hasAccess: true,

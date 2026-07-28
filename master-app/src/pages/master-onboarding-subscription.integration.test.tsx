@@ -144,7 +144,8 @@ describe('master onboarding subscription screens', () => {
       // Полдень UTC — локальная дата одинакова в любом поясе тестовой машины.
       currentPeriodEnd: '2027-07-28T12:00:00.000Z',
       plannedPeriod: 'YEAR',
-      cardPan: '430000******0777',
+      autoRenewEnabled: true,
+      cardPan: null,
     }))
     renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
 
@@ -167,6 +168,7 @@ describe('master onboarding subscription screens', () => {
         status: 'ACTIVE',
         currentPeriodEnd: '2027-07-28T12:00:00.000Z',
         plannedPeriod: 'YEAR',
+        autoRenewEnabled: true,
         cardPan: '430000******0777',
       }))
       // Перечитка после cancel: карта отвязана.
@@ -174,6 +176,7 @@ describe('master onboarding subscription screens', () => {
         status: 'ACTIVE',
         currentPeriodEnd: '2027-07-28T12:00:00.000Z',
         plannedPeriod: 'YEAR',
+        autoRenewEnabled: false,
         cardPan: null,
       }))
     api.cancel.mockResolvedValue({ ok: true })
