@@ -122,13 +122,15 @@ export interface FloatingFieldProps {
   suffix?: string
   /** Значение поля жирным (Figma «Callout 1» 17/700) вместо обычного body2 — макеты клиента. */
   valueBold?: boolean
+  /** Ошибка без helper-текста: красные фон, лейбл и значение. */
+  error?: boolean
 }
 
 const LINE_H = 24 // body2 lineHeight — шаг авто-роста textarea
 
 export function FloatingField({
   label, value, onChange, type = 'text', inputMode, maxLength, multiline = false, autoFocus, inputRef,
-  minHeight = 72, align = 'center', rows = 1, autoGrow = false, maxRows = 7, showCounter = false, suffix, valueBold = false,
+  minHeight = 72, align = 'center', rows = 1, autoGrow = false, maxRows = 7, showCounter = false, suffix, valueBold = false, error = false,
 }: FloatingFieldProps) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
@@ -158,14 +160,15 @@ export function FloatingField({
     el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden'
   }, [value, autoGrow, multiline, maxRows])
 
-  const innerInputStyle: CSSProperties = {
+  const innerInputStyle: CSSProperties & { '--field-placeholder-color'?: string } = {
     ...(valueBold ? text.callout1 : text.body2),
     width: '100%',
     minWidth: 0,
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    color: 'var(--color-on-surface)',
+    color: error ? 'var(--color-on-error-surface-lite)' : 'var(--color-on-surface)',
+    '--field-placeholder-color': error ? 'var(--color-on-error-surface-lite)' : undefined,
     padding: 0,
     fontFamily: 'inherit',
   }
@@ -181,7 +184,7 @@ export function FloatingField({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: align === 'top' ? 'flex-start' : 'center',
-      background: focused ? 'var(--color-surface)' : 'var(--color-surface-transparent)',
+      background: error ? 'var(--color-error-surface-lite)' : focused ? 'var(--color-surface)' : 'var(--color-surface-transparent)',
       boxShadow: focused ? 'inset 0 0 0 2px var(--color-active-element)' : undefined,
       transition: 'background 0.15s ease, box-shadow 0.15s ease',
     }}>
@@ -189,7 +192,7 @@ export function FloatingField({
         {floated && (
           <span style={{
             ...text.caption,
-            color: 'var(--color-on-surface-secondary)',
+            color: error ? 'var(--color-on-error-surface-lite)' : 'var(--color-on-surface-secondary)',
             marginBottom: 2,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -208,6 +211,7 @@ export function FloatingField({
             onBlur={() => setFocused(false)}
             rows={autoGrow ? 1 : rows}
             maxLength={maxLength}
+            aria-invalid={error || undefined}
             style={{ ...innerInputStyle, resize: 'none', overflowY: autoGrow ? 'hidden' : 'auto' }}
           />
         ) : (
@@ -222,6 +226,7 @@ export function FloatingField({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               maxLength={maxLength}
+              aria-invalid={error || undefined}
               style={{ ...innerInputStyle, flex: 1, width: 'auto' }}
             />
             {suffix && (

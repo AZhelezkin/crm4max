@@ -18,7 +18,7 @@
 /* Плейсхолдеры полей — on-surface-secondary (Figma value&label у пустого textField). */
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-on-surface-secondary);
+  color: var(--field-placeholder-color, var(--color-on-surface-secondary));
   opacity: 1;
 }
 
@@ -98,6 +98,8 @@ textarea::placeholder {
   --color-grad-mint-100:           #449395;
   --color-grad-peach-0:            #C15781;
   --color-grad-peach-100:          #DA6461;
+  --color-error-popup-grad-0:      #C15781;
+  --color-error-popup-grad-100:    #DA6461;
   --color-grad-green-0:            #15482F;
   --color-grad-green-100:          #195838;
   --color-grad-green-vibrance-0:   #3C8F7F;
@@ -193,6 +195,8 @@ textarea::placeholder {
   --color-grad-mint-100:           #DCEEEF;
   --color-grad-peach-0:            #F7E9EE;
   --color-grad-peach-100:          #F7DFDE;
+  --color-error-popup-grad-0:      #C15781;
+  --color-error-popup-grad-100:    #DA6461;
   --color-grad-green-0:            #E7F8F0;
   --color-grad-green-100:          #DFF6EA;
   --color-grad-green-vibrance-0:   #32D9B9;

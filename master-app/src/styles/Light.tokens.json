@@ -54,6 +54,8 @@
   "gradMint100":          { "$type": "color", "$value": "#DCEEEF" },
   "gradPeach0":           { "$type": "color", "$value": "#F7E9EE" },
   "gradPeach100":         { "$type": "color", "$value": "#F7DFDE" },
+  "errorPopupGrad0":      { "$type": "color", "$value": "#C15781" },
+  "errorPopupGrad100":    { "$type": "color", "$value": "#DA6461" },
   "gradGreen0":           { "$type": "color", "$value": "#E7F8F0" },
   "gradGreen100":         { "$type": "color", "$value": "#DFF6EA" },
   "gradGreenVibrance0":   { "$type": "color", "$value": "#32D9B9" },

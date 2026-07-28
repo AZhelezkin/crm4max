@@ -53,6 +53,8 @@ type SemanticTheme = {
   gradMint100: string
   gradPeach0: string
   gradPeach100: string
+  errorPopupGrad0: string
+  errorPopupGrad100: string
   gradGreen0: string
   gradGreen100: string
   gradGreenVibrance0: string
@@ -132,6 +134,8 @@ export const darkTheme: SemanticTheme = {
   gradMint100:          '#449395',                        // mintbright2
   gradPeach0:           '#C15781',                        // peachbright1
   gradPeach100:         '#DA6461',                        // peachbright2
+  errorPopupGrad0:      '#C15781',                        // peachbright1
+  errorPopupGrad100:    '#DA6461',                        // peachbright2
   gradGreen0:           '#15482F',                        // greendim1
   gradGreen100:         '#195838',                        // greendim2
   gradGreenVibrance0:   '#3C8F7F',                        // greenvibrance1
@@ -204,6 +208,8 @@ export const lightTheme: SemanticTheme = {
   gradMint100:          '#DCEEEF',
   gradPeach0:           '#F7E9EE',
   gradPeach100:         '#F7DFDE',
+  errorPopupGrad0:      '#C15781',                        // peachbright1
+  errorPopupGrad100:    '#DA6461',                        // peachbright2
   gradGreen0:           '#E7F8F0',
   gradGreen100:         '#DFF6EA',
   gradGreenVibrance0:   '#32D9B9',

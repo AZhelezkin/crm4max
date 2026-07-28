@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -27,9 +27,11 @@ vi.mock('@/api/upload.api', () => ({ uploadPhoto: api.uploadPhoto }))
 vi.mock('@/pages/OnboardingPage', () => ({
   Step0Form: ({
     name,
+    nameError,
     setName,
     phone,
     phoneError,
+    showPhoneErrorMessage,
     onPhoneChange,
     description,
     setDescription,
@@ -37,13 +39,16 @@ vi.mock('@/pages/OnboardingPage', () => ({
     homeVisit,
     setHomeVisit,
     onAddressClick,
+    onPhotoChange,
     onBack,
     footer,
   }: {
     name: string
+    nameError?: boolean
     setName: (value: string) => void
     phone: string
     phoneError: string | null
+    showPhoneErrorMessage?: boolean
     onPhoneChange: (value: string) => void
     description: string
     setDescription: (value: string) => void
@@ -51,14 +56,16 @@ vi.mock('@/pages/OnboardingPage', () => ({
     homeVisit: boolean
     setHomeVisit: (value: boolean) => void
     onAddressClick: () => void
+    onPhotoChange: (event: ChangeEvent<HTMLInputElement>) => void
     onBack: () => void
     footer: ReactNode
   }) => (
     <div>
-      <label>Имя<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-      <label>Телефон<input value={phone} onChange={(event) => onPhoneChange(event.target.value)} /></label>
-      {phoneError && <div>{phoneError}</div>}
+      <label>Имя<input aria-invalid={nameError || undefined} value={name} onChange={(event) => setName(event.target.value)} /></label>
+      <label>Телефон<input aria-invalid={!!phoneError || undefined} value={phone} onChange={(event) => onPhoneChange(event.target.value)} /></label>
+      {showPhoneErrorMessage && phoneError && <div>{phoneError}</div>}
       <label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+      <input aria-label="Загрузить фото профиля" type="file" onChange={onPhotoChange} />
       <button type="button" onClick={onAddressClick}>Адрес: {location}</button>
       <button type="button" onClick={() => setHomeVisit(!homeVisit)}>Выезд: {homeVisit ? 'да' : 'нет'}</button>
       <button type="button" onClick={onBack}>Назад из формы</button>
@@ -85,6 +92,26 @@ vi.mock('@/components/AddressPickerPortal', () => ({
         Выбрать новый адрес
       </button>
       <button type="button" onClick={onClose}>Закрыть пикер</button>
+    </div>
+  ) : null,
+}))
+
+vi.mock('@/components/AvatarCropPortal', () => ({
+  default: ({
+    open,
+    onCancel,
+    onConfirm,
+  }: {
+    open: boolean
+    onCancel: () => void
+    onConfirm: (file: File) => void
+  }) => open ? (
+    <div>
+      <span>Кадрирование фото</span>
+      <button type="button" onClick={onCancel}>Отменить кадрирование</button>
+      <button type="button" onClick={() => onConfirm(new File(['cropped'], 'avatar.jpg', { type: 'image/jpeg' }))}>
+        Сохранить кадрирование
+      </button>
     </div>
   ) : null,
 }))
@@ -167,18 +194,23 @@ describe('master settings pages', () => {
     expect(api.updateProfile).not.toHaveBeenCalled()
   })
 
-  it('AboutMePage валидирует неполный телефон до mutation и разрешает исправить', async () => {
+  it('AboutMePage валидирует имя и телефон без текста ошибки и разрешает исправить', async () => {
     const updated = createMasterProfile({ phone: '+7 (999) 111-22-33' })
     api.updateProfile.mockResolvedValue(updated)
     const view = renderAtRoute(<AboutMePage />)
+    await view.user.clear(screen.getByLabelText('Имя'))
     await view.user.clear(screen.getByLabelText('Телефон'))
     await view.user.type(screen.getByLabelText('Телефон'), '123')
 
+    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeEnabled()
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
-    expect(screen.getByText('Введите номер полностью: +7 (XXX) XXX-XX-XX')).toBeInTheDocument()
+    expect(screen.getByLabelText('Имя')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Телефон')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.queryByText('Введите номер полностью: +7 (XXX) XXX-XX-XX')).not.toBeInTheDocument()
     expect(api.updateProfile).not.toHaveBeenCalled()
 
+    await view.user.type(screen.getByLabelText('Имя'), 'Анна Мастерова')
     await view.user.clear(screen.getByLabelText('Телефон'))
     await view.user.type(screen.getByLabelText('Телефон'), '89991112233')
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
@@ -232,6 +264,39 @@ describe('master settings pages', () => {
     await act(async () => update.resolve(updated))
     await waitFor(() => expect(view.getLocation().pathname).toBe('/settings'))
     expect(useAuthStore.getState().master).toEqual(updated)
+  })
+
+  it('AboutMePage показывает одинаковый popup при ошибке сохранения профиля', async () => {
+    api.updateProfile.mockRejectedValue(new Error('update unavailable'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const view = renderAtRoute(<AboutMePage />)
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(await screen.findByText(/Не удалось сохранить фото\s+профиля\. Попробуйте ещё раз/)).toBeInTheDocument()
+    expect(error).toHaveBeenCalled()
+  })
+
+  it('AboutMePage показывает тот же popup при ошибке загрузки фото', async () => {
+    api.uploadPhoto.mockRejectedValue(new Error('upload unavailable'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:profile-photo') })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+    const view = renderAtRoute(<AboutMePage />)
+
+    await view.user.upload(
+      screen.getByLabelText('Загрузить фото профиля'),
+      new File(['photo'], 'photo.png', { type: 'image/png' }),
+    )
+
+    expect(screen.getByText('Кадрирование фото')).toBeInTheDocument()
+    expect(api.uploadPhoto).not.toHaveBeenCalled()
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить кадрирование' }))
+
+    expect(api.uploadPhoto).toHaveBeenCalledWith(expect.any(File), 'masters')
+    expect(await screen.findByText(/Не удалось сохранить фото\s+профиля\. Попробуйте ещё раз/)).toBeInTheDocument()
+    expect(error).toHaveBeenCalled()
   })
 
   it('AddressEditPage показывает values и сохраняет bounded note с coordinates', async () => {
