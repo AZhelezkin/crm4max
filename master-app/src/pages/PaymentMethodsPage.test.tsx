@@ -78,7 +78,9 @@ describe('PaymentMethodsPage', () => {
     await view.user.click(confirm)
 
     expect(webApp.openLink).toHaveBeenCalledWith('https://pay.test/rebind')
-    await waitFor(() => expect(api.rebindCard).toHaveBeenCalledTimes(2))
+    // Открытие уже подготовленной формы не создаёт следующую AddCard-попытку:
+    // иначе backend пометит текущий RequestKey устаревшим до завершения 3DS.
+    expect(api.rebindCard).toHaveBeenCalledOnce()
   })
 
   it('«Отмена» в диалоге не открывает форму', async () => {

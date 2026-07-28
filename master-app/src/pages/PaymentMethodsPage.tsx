@@ -87,9 +87,10 @@ export default function PaymentMethodsPage() {
     beginReconciliation(sub)
     if (window.WebApp?.openLink) window.WebApp.openLink(rebindUrl)
     else window.open(rebindUrl, '_blank')
-    // Следующее открытие диалога — со свежим URL (форма одноразовая).
+    // Форма одноразовая. Следующую попытку готовим только по новому клику:
+    // немедленный prefetch создал бы более новый RequestKey и сделал только что
+    // открытую форму устаревшей на backend.
     setRebindUrl(null)
-    void prepareRebind()
   }
 
   const handleEdit = () => {
