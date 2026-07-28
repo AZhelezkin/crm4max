@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import { screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
 import { createMasterClient } from '@/test/fixtures/clients'
@@ -47,6 +47,12 @@ function primeSuccessfulReads(master = createMasterProfile()) {
   api.getReviews.mockResolvedValue([])
 }
 
+function deferred<T>() {
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((_, fail) => { reject = fail })
+  return { promise, reject }
+}
+
 describe('master HomePage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
@@ -55,6 +61,41 @@ describe('master HomePage', () => {
     sessionStorage.clear()
     primeSuccessfulReads()
     setMaster(null)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('после TTL pending marker делает обычный getMe, если reconciliation не ответил', async () => {
+    vi.useFakeTimers()
+    const initiatedAt = Date.now()
+    sessionStorage.setItem('subscription.pendingCardBinding', JSON.stringify({
+      baselineCardPan: null,
+      baselineUpdatedAt: '2026-07-01T00:00:00.000Z',
+      initiatedAt,
+    }))
+    const reconciliation = deferred<ReturnType<typeof createSubscriptionState>>()
+    const fallback = createSubscriptionState({ status: 'ACTIVE' })
+    api.getSubscription
+      .mockReturnValueOnce(reconciliation.promise)
+      .mockResolvedValueOnce(fallback)
+    setMaster(createMasterProfile())
+    renderAtRoute(<HomePage />)
+    await act(async () => { await Promise.resolve() })
+    expect(api.getSubscription).toHaveBeenCalledOnce()
+
+    await act(async () => {
+      vi.advanceTimersByTime(3 * 60_000)
+      reconciliation.reject(new Error('reconciliation unavailable'))
+      await Promise.resolve()
+      vi.advanceTimersByTime(17 * 60_000 + 1)
+      await Promise.resolve()
+    })
+
+    expect(api.getSubscription).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('Подписка активна')).toBeInTheDocument()
+    expect(sessionStorage.getItem('subscription.pendingCardBinding')).toBeNull()
   })
 
   it('показывает skeleton пока master не загружен', () => {

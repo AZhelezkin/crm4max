@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterProfile } from '@/test/fixtures/masters'
@@ -45,6 +45,12 @@ function setMaster(master = createMasterProfile()) {
   return master
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((next) => { resolve = next })
+  return { promise, resolve }
+}
+
 describe('master onboarding subscription screens', () => {
   beforeEach(() => {
     api.getMe.mockReset()
@@ -52,6 +58,7 @@ describe('master onboarding subscription screens', () => {
     api.startTrial.mockReset()
     api.cancel.mockReset()
     localStorage.clear()
+    sessionStorage.clear()
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',
       trialEndsAt: new Date(Date.now() + 2.1 * 86_400_000).toISOString(),
@@ -95,6 +102,31 @@ describe('master onboarding subscription screens', () => {
     expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month')
     expect(api.pay).not.toHaveBeenCalled()
     expect(view.getLocation().pathname).toBe('/')
+    expect(sessionStorage.getItem('subscription.pendingCardBinding')).not.toBeNull()
+  })
+
+  it('держит single-flight URL отдельно для MONTH/YEAR при ответах вне порядка', async () => {
+    const webApp = installWebApp()
+    const yearly = deferred<{ paymentURL: string }>()
+    const monthly = deferred<{ paymentURL: string }>()
+    api.startTrial.mockImplementation((period: 'MONTH' | 'YEAR') => (
+      period === 'YEAR' ? yearly.promise : monthly.promise
+    ))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
+
+    await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('MONTH'))
+    await view.user.click(screen.getByRole('button', { name: /Ежегодно/ }))
+    await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
+    expect(api.startTrial.mock.calls.filter(([period]) => period === 'YEAR')).toHaveLength(1)
+    expect(api.startTrial.mock.calls.filter(([period]) => period === 'MONTH')).toHaveLength(1)
+
+    await act(async () => monthly.resolve({ paymentURL: 'https://trial.test/month-deferred' }))
+    await act(async () => yearly.resolve({ paymentURL: 'https://trial.test/year-deferred' }))
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+
+    expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month-deferred')
   })
 
   it('вне триала (GRACE) открывает оплату в том же WebView (openPaymentForm)', async () => {
@@ -164,7 +196,8 @@ describe('master onboarding subscription screens', () => {
     expect(api.cancel).not.toHaveBeenCalled()
 
     // Подтверждение — вторая кнопка «Отменить подписку» (в диалоге).
-    await view.user.click(screen.getAllByRole('button', { name: 'Отменить подписку' }).at(-1)!)
+    const cancelButtons = screen.getAllByRole('button', { name: 'Отменить подписку' })
+    await view.user.click(cancelButtons[cancelButtons.length - 1])
 
     expect(api.cancel).toHaveBeenCalledOnce()
     expect(await screen.findByText('Подписка активна до 28.07.2027')).toBeInTheDocument()
@@ -184,17 +217,21 @@ describe('master onboarding subscription screens', () => {
     expect(screen.getByRole('button', { name: 'Далее' })).toBeInTheDocument()
   })
 
-  it('остаётся failure-safe если subscription/payment reads недоступны', async () => {
-    api.getMe.mockRejectedValue(new Error('subscription unavailable'))
-    api.pay.mockRejectedValue(new Error('payment unavailable'))
-    api.startTrial.mockRejectedValue(new Error('trial unavailable'))
+  it('после ошибки prefetch trial повторяет запрос и не оставляет кнопку no-op', async () => {
+    api.startTrial
+      .mockRejectedValueOnce(new Error('trial unavailable'))
+      .mockResolvedValueOnce({ paymentURL: 'https://trial.test/retry' })
     const webApp = installWebApp()
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    // sub не загрузился → URL не префетчится; тап «Подключить» — ничего вредного.
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось подготовить оплату')
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+    await waitFor(() => expect(api.startTrial).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
-    expect(webApp.openLink).not.toHaveBeenCalled()
-    expect(view.getLocation().pathname).toBe('/subscription')
+    expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/retry')
+    expect(view.getLocation().pathname).toBe('/')
   })
 
   it('SubscriptionSuccessPage строит QR/share contract и ведёт в профиль', async () => {

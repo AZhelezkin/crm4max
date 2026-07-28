@@ -1,5 +1,5 @@
 import { text } from '@/styles/typography'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
@@ -30,11 +30,23 @@ export default function AboutMePage() {
   const [profileError, setProfileError] = useState<string | null>(null)
 
   const [photoPreview, setPhotoPreview]     = useState<string | null>(master?.photo ?? null)
-  const [photoUrl, setPhotoUrl]             = useState<string | null>(master?.photo ?? null)
+  const [, setPhotoUrl]                     = useState<string | null>(master?.photo ?? null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [avatarCropSrc, setAvatarCropSrc]   = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const photoUrlRef = useRef(master?.photo ?? null)
+  const uploadRequestIdRef = useRef(0)
+  const uploadPreviewUrlsRef = useRef(new Set<string>())
   const [showAddressPortal, setShowAddressPortal] = useState(false)
+
+  useEffect(() => () => {
+    if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+  }, [avatarCropSrc])
+  useEffect(() => () => {
+    uploadRequestIdRef.current += 1
+    uploadPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    uploadPreviewUrlsRef.current.clear()
+  }, [])
 
   const formatPhone = (raw: string): string => {
     const digits = raw.replace(/\D/g, '')
@@ -68,16 +80,28 @@ export default function AboutMePage() {
   }
 
   const uploadProfilePhoto = async (file: File) => {
-    setPhotoPreview(URL.createObjectURL(file))
+    const requestId = ++uploadRequestIdRef.current
+    const previousPhotoUrl = photoUrlRef.current
+    const previewUrl = URL.createObjectURL(file)
+    uploadPreviewUrlsRef.current.add(previewUrl)
+    setPhotoPreview(previewUrl)
     setPhotoUploading(true)
     try {
       const url = await uploadPhoto(file, 'masters')
+      if (requestId !== uploadRequestIdRef.current) return
+      photoUrlRef.current = url
       setPhotoUrl(url)
+      setPhotoPreview(url)
     } catch (err) {
+      if (requestId !== uploadRequestIdRef.current) return
       console.error('Ошибка загрузки фото:', err)
+      photoUrlRef.current = previousPhotoUrl
+      setPhotoUrl(previousPhotoUrl)
+      setPhotoPreview(previousPhotoUrl)
       setProfileError(PROFILE_ERROR_MESSAGE)
     } finally {
-      setPhotoUploading(false)
+      if (uploadPreviewUrlsRef.current.delete(previewUrl)) URL.revokeObjectURL(previewUrl)
+      if (requestId === uploadRequestIdRef.current) setPhotoUploading(false)
     }
   }
 
@@ -90,6 +114,7 @@ export default function AboutMePage() {
     setProfileError(null)
     setSaving(true)
     try {
+      const savedPhotoUrl = photoUrlRef.current
       const updated = await mastersApi.updateProfile({
         name,
         // null при очистке — иначе телефон/фото не обнулятся при сохранении.
@@ -99,9 +124,9 @@ export default function AboutMePage() {
         location,
         homeVisit,
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-        photo: photoUrl,
+        photo: savedPhotoUrl,
       })
-      setMaster({ ...master!, ...updated })
+      setMaster({ ...master!, ...updated, photo: savedPhotoUrl })
       markGuideStep('edited')
       navigate(-1)
     } catch (err) {
@@ -168,11 +193,9 @@ export default function AboutMePage() {
         open={!!avatarCropSrc}
         src={avatarCropSrc ?? ''}
         onCancel={() => {
-          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
           setAvatarCropSrc(null)
         }}
         onConfirm={(file) => {
-          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
           setAvatarCropSrc(null)
           void uploadProfilePhoto(file)
         }}

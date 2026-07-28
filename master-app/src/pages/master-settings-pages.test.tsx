@@ -36,6 +36,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
     description,
     setDescription,
     location,
+    photoPreview,
     homeVisit,
     setHomeVisit,
     onAddressClick,
@@ -53,6 +54,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
     description: string
     setDescription: (value: string) => void
     location: string
+    photoPreview: string | null
     homeVisit: boolean
     setHomeVisit: (value: boolean) => void
     onAddressClick: () => void
@@ -65,6 +67,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
       <label>Телефон<input aria-invalid={!!phoneError || undefined} value={phone} onChange={(event) => onPhoneChange(event.target.value)} /></label>
       {showPhoneErrorMessage && phoneError && <div>{phoneError}</div>}
       <label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+      {photoPreview && <img src={photoPreview} alt="Текущее фото профиля" />}
       <input aria-label="Загрузить фото профиля" type="file" onChange={onPhotoChange} />
       <button type="button" onClick={onAddressClick}>Адрес: {location}</button>
       <button type="button" onClick={() => setHomeVisit(!homeVisit)}>Выезд: {homeVisit ? 'да' : 'нет'}</button>
@@ -278,10 +281,16 @@ describe('master settings pages', () => {
   })
 
   it('AboutMePage показывает тот же popup при ошибке загрузки фото', async () => {
+    const persistedPhoto = 'https://cdn.test/old-avatar.jpg'
+    setMaster(createMasterProfile({ photo: persistedPhoto }))
     api.uploadPhoto.mockRejectedValue(new Error('upload unavailable'))
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:profile-photo') })
-    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+    const createObjectURL = vi.fn()
+      .mockReturnValueOnce('blob:crop-photo')
+      .mockReturnValueOnce('blob:profile-photo')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL })
     const view = renderAtRoute(<AboutMePage />)
 
     await view.user.upload(
@@ -296,7 +305,79 @@ describe('master settings pages', () => {
 
     expect(api.uploadPhoto).toHaveBeenCalledWith(expect.any(File), 'masters')
     expect(await screen.findByText(/Не удалось сохранить фото\s+профиля\. Попробуйте ещё раз/)).toBeInTheDocument()
+    expect(screen.getByAltText('Текущее фото профиля')).toHaveAttribute('src', persistedPhoto)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:crop-photo')
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:profile-photo')
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(api.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ photo: persistedPhoto }))
     expect(error).toHaveBeenCalled()
+  })
+
+  it('AboutMePage сохраняет загруженный URL в профиль и store', async () => {
+    const uploadedPhoto = 'https://cdn.test/new-avatar.jpg'
+    const original = setMaster(createMasterProfile({ photo: 'https://cdn.test/old-avatar.jpg' }))
+    api.uploadPhoto.mockResolvedValue(uploadedPhoto)
+    api.updateProfile.mockResolvedValue(createMasterProfile({ ...original, photo: uploadedPhoto }))
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn().mockReturnValueOnce('blob:crop-photo').mockReturnValueOnce('blob:profile-photo'),
+    })
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL })
+    const view = renderAtRoute(<AboutMePage />, { entries: ['/settings', '/about'] })
+
+    await view.user.upload(
+      screen.getByLabelText('Загрузить фото профиля'),
+      new File(['photo'], 'photo.png', { type: 'image/png' }),
+    )
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить кадрирование' }))
+    expect(await screen.findByAltText('Текущее фото профиля')).toHaveAttribute('src', uploadedPhoto)
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(api.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ photo: uploadedPhoto }))
+    expect(useAuthStore.getState().master?.photo).toBe(uploadedPhoto)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:profile-photo')
+  })
+
+  it('AboutMePage применяет только последний concurrent upload и держит Save disabled', async () => {
+    const originalPhoto = 'https://cdn.test/old-avatar.jpg'
+    setMaster(createMasterProfile({ photo: originalPhoto }))
+    const firstUpload = deferred<string>()
+    const secondUpload = deferred<string>()
+    api.uploadPhoto
+      .mockReturnValueOnce(firstUpload.promise)
+      .mockReturnValueOnce(secondUpload.promise)
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn()
+        .mockReturnValueOnce('blob:crop-first')
+        .mockReturnValueOnce('blob:preview-first')
+        .mockReturnValueOnce('blob:crop-second')
+        .mockReturnValueOnce('blob:preview-second'),
+    })
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL })
+    const view = renderAtRoute(<AboutMePage />, { entries: ['/settings', '/about'] })
+    const input = screen.getByLabelText('Загрузить фото профиля')
+
+    await view.user.upload(input, new File(['first'], 'first.png', { type: 'image/png' }))
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить кадрирование' }))
+    await view.user.upload(input, new File(['second'], 'second.png', { type: 'image/png' }))
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить кадрирование' }))
+    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled()
+
+    await act(async () => secondUpload.resolve('https://cdn.test/second-avatar.jpg'))
+    expect(screen.getByAltText('Текущее фото профиля')).toHaveAttribute('src', 'https://cdn.test/second-avatar.jpg')
+    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeEnabled()
+
+    await act(async () => firstUpload.resolve('https://cdn.test/stale-first-avatar.jpg'))
+    expect(screen.getByAltText('Текущее фото профиля')).toHaveAttribute('src', 'https://cdn.test/second-avatar.jpg')
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(api.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ photo: 'https://cdn.test/second-avatar.jpg' }))
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-first')
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-second')
   })
 
   it('AddressEditPage показывает values и сохраняет bounded note с coordinates', async () => {

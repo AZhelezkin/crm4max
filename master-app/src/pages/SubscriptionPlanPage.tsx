@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
@@ -7,6 +7,7 @@ import { HeroHeader } from '@/components/onboardingShared'
 import { Radio44 } from '@/components/ConsentsStep'
 import { openPaymentForm } from '@/lib/paymentForm'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
+import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
 // «Переход в подписку» (макет 10256-54945): плитка оставшихся дней триала
 // (варианты 10256-55033…55098), выбор периода (месяц 499 ₽ / год 4 790 ₽ со
@@ -39,12 +40,22 @@ export default function SubscriptionPlanPage() {
   // paymentURL префетчим по выбранному периоду: openLink требует синхронного
   // user-gesture (await его рвёт), поэтому по тапу открываем уже готовый URL.
   const [payUrls, setPayUrls] = useState<Partial<Record<Period, string>>>({})
+  const payUrlsRef = useRef<Partial<Record<Period, string>>>({})
+  const [payUrlLoading, setPayUrlLoading] = useState<Partial<Record<Period, boolean>>>({})
+  const [payUrlErrors, setPayUrlErrors] = useState<Partial<Record<Period, string>>>({})
+  const paymentRequestsRef = useRef<Partial<Record<Period, { generation: number }>>>({})
+  const paymentGenerationsRef = useRef<Partial<Record<Period, number>>>({})
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   // «Отменить подписку» (макеты 10352-43925 / диалог 10352-44386).
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const { begin: beginCardReconciliation } = useCardBindingReconciliation(setSub)
 
   useEffect(() => {
-    subscriptionApi.getMe().then(setSub).catch(() => {})
+    subscriptionApi.getMe()
+      .then(setSub)
+      .catch(() => setPayUrlErrors((prev) => ({ ...prev, YEAR: 'Не удалось загрузить подписку. Нажмите ещё раз.' })))
+      .finally(() => setSubscriptionLoading(false))
   }, [])
 
   const handleCancelSubscription = async () => {
@@ -68,17 +79,55 @@ export default function SubscriptionPlanPage() {
   // иначе экран выглядел как «пробный период закончился» и предлагал платить снова.
   const isActive = sub?.status === 'ACTIVE'
 
+  const preparePaymentUrl = (targetPeriod: Period, trial: boolean) => {
+    if (payUrlsRef.current[targetPeriod] || paymentRequestsRef.current[targetPeriod]) return
+    const generation = (paymentGenerationsRef.current[targetPeriod] ?? 0) + 1
+    paymentGenerationsRef.current[targetPeriod] = generation
+    paymentRequestsRef.current[targetPeriod] = { generation }
+    setPayUrlLoading((prev) => ({ ...prev, [targetPeriod]: true }))
+    setPayUrlErrors((prev) => ({ ...prev, [targetPeriod]: undefined }))
+
+    const request = trial ? subscriptionApi.startTrial(targetPeriod) : subscriptionApi.pay(targetPeriod)
+    request
+      .then((result) => {
+        if (paymentRequestsRef.current[targetPeriod]?.generation !== generation) return
+        payUrlsRef.current[targetPeriod] = result.paymentURL
+        setPayUrls((prev) => ({ ...prev, [targetPeriod]: result.paymentURL }))
+      })
+      .catch(() => {
+        if (paymentRequestsRef.current[targetPeriod]?.generation !== generation) return
+        setPayUrlErrors((prev) => ({ ...prev, [targetPeriod]: 'Не удалось подготовить оплату. Нажмите ещё раз.' }))
+      })
+      .finally(() => {
+        if (paymentRequestsRef.current[targetPeriod]?.generation !== generation) return
+        delete paymentRequestsRef.current[targetPeriod]
+        setPayUrlLoading((prev) => ({ ...prev, [targetPeriod]: false }))
+      })
+  }
+
   useEffect(() => {
     // Ждём загрузки sub — иначе не знаем, триал это или оплата (кэшировали бы не
     // тот URL). При ACTIVE не префетчим вовсе: pay() создаёт NEW-платёж на бэке.
     if (!sub || isActive || payUrls[period]) return
-    const req = isTrial ? subscriptionApi.startTrial(period) : subscriptionApi.pay(period)
-    req.then((r) => setPayUrls((prev) => ({ ...prev, [period]: r.paymentURL }))).catch(() => {})
+    preparePaymentUrl(period, isTrial)
   }, [period, payUrls, sub, isTrial, isActive])
 
   const handleConnect = () => {
     const url = payUrls[period]
-    if (!url) return
+    if (!url) {
+      if (payUrlLoading[period] || subscriptionLoading) return
+      if (!sub) {
+        setSubscriptionLoading(true)
+        setPayUrlErrors((prev) => ({ ...prev, [period]: undefined }))
+        subscriptionApi.getMe()
+          .then(setSub)
+          .catch(() => setPayUrlErrors((prev) => ({ ...prev, [period]: 'Не удалось загрузить подписку. Нажмите ещё раз.' })))
+          .finally(() => setSubscriptionLoading(false))
+        return
+      }
+      preparePaymentUrl(period, isTrial)
+      return
+    }
     if (!isTrial) {
       // Оплата — форма в том же WebView: T-Bank вернёт на #/pay-result/success
       // или /fail (экран результата рисуется по URL), состояние подписки
@@ -88,6 +137,7 @@ export default function SubscriptionPlanPage() {
     }
     // Привязка карты в триале (AddCard, без списания): SuccessURL форма не
     // принимает — открываем во внешнем браузере, мастер вернётся сам.
+    beginCardReconciliation(sub)
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.open(url, '_blank')
     navigate('/', { replace: true })
@@ -268,19 +318,21 @@ export default function SubscriptionPlanPage() {
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
         <button
           type="button"
+          disabled={subscriptionLoading || !!payUrlLoading[period]}
           onClick={handleConnect}
           style={{
             width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
             display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
-            cursor: 'pointer',
-            background: 'var(--color-primary-surface)',
-            color: 'var(--color-on-primary-surface)',
+            cursor: subscriptionLoading || payUrlLoading[period] ? 'default' : 'pointer',
+            background: subscriptionLoading || payUrlLoading[period] ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+            color: subscriptionLoading || payUrlLoading[period] ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
           }}
         >
           {/* Согласия даны на онбординге — сразу привязка карты (триал) или оплата.
               «Далее» — вариант закончившегося триала (макет 10256-55751). */}
-          {sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
+          {subscriptionLoading || payUrlLoading[period] ? 'Подготавливаем...' : sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
         </button>
+        {payUrlErrors[period] && <div role="alert" style={{ paddingTop: 8, ...text.caption2, color: 'var(--color-error-surface-accented)', textAlign: 'center' }}>{payUrlErrors[period]}</div>}
       </div>
       )}
     </div>

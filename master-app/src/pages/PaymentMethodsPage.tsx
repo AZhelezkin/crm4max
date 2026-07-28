@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
+import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
 /**
  * «Способы оплаты» (макет 10352-44457) — открывается из «Другое». Карта, с
@@ -12,34 +13,92 @@ import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
  *
  * URL перепривязки префетчится при входе: openLink требует синхронного
  * user-gesture, await в обработчике его рвёт. После возврата из формы карта
- * перечитывается по visibilitychange (нотификация AddCard обновляет её на бэке).
+ * сверяется по lifecycle-событиям и ограниченному polling через subscription/me.
  */
 export default function PaymentMethodsPage() {
   const navigate = useNavigate()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   const [confirmChange, setConfirmChange] = useState(false)
   const [rebindUrl, setRebindUrl] = useState<string | null>(null)
+  const [rebindLoading, setRebindLoading] = useState(true)
+  const [rebindError, setRebindError] = useState<string | null>(null)
+  const [subLoaded, setSubLoaded] = useState(false)
+  const subLoadedRef = useRef(false)
+  const subRequestRef = useRef<Promise<void> | null>(null)
+  const { begin: beginReconciliation, isPending: reconciliationPending } = useCardBindingReconciliation((state) => {
+    subLoadedRef.current = true
+    setSubLoaded(true)
+    setSub(state)
+  })
+  const rebindRequestRef = useRef<Promise<void> | null>(null)
+  const rebindGenerationRef = useRef(0)
+
+  const prepareRebind = () => {
+    if (rebindRequestRef.current) return rebindRequestRef.current
+    const generation = ++rebindGenerationRef.current
+    setRebindLoading(true)
+    setRebindError(null)
+    const request = subscriptionApi.rebindCard()
+      .then((r) => {
+        if (rebindGenerationRef.current === generation) setRebindUrl(r.paymentURL)
+      })
+      .catch(() => {
+        if (rebindGenerationRef.current === generation) {
+          setRebindError('Не удалось подготовить привязку карты. Нажмите ещё раз.')
+        }
+      })
+      .finally(() => {
+        if (rebindGenerationRef.current !== generation) return
+        rebindRequestRef.current = null
+        setRebindLoading(false)
+      })
+    rebindRequestRef.current = request
+    return request
+  }
 
   useEffect(() => {
-    const load = () => { subscriptionApi.getMe().then(setSub).catch(() => {}) }
-    load()
-    const onVisible = () => { if (document.visibilityState === 'visible') load() }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    if (reconciliationPending || subLoadedRef.current || subRequestRef.current) return
+    const request = subscriptionApi.getMe()
+      .then((state) => {
+        subLoadedRef.current = true
+        setSubLoaded(true)
+        setSub(state)
+      })
+      .catch(() => {})
+      .finally(() => { subRequestRef.current = null })
+    subRequestRef.current = request
+  }, [reconciliationPending])
+
+  useEffect(() => {
+    void prepareRebind()
+    return () => {
+      rebindGenerationRef.current += 1
+      rebindRequestRef.current = null
+    }
   }, [])
-
-  useEffect(() => {
-    if (rebindUrl) return
-    subscriptionApi.rebindCard().then((r) => setRebindUrl(r.paymentURL)).catch(() => {})
-  }, [rebindUrl])
 
   const openRebind = () => {
     setConfirmChange(false)
-    if (!rebindUrl) return
+    if (!subLoaded) return
+    if (!rebindUrl) {
+      prepareRebind()
+      return
+    }
+    beginReconciliation(sub)
     if (window.WebApp?.openLink) window.WebApp.openLink(rebindUrl)
     else window.open(rebindUrl, '_blank')
     // Следующее открытие диалога — со свежим URL (форма одноразовая).
     setRebindUrl(null)
+    void prepareRebind()
+  }
+
+  const handleEdit = () => {
+    if (!rebindUrl) {
+      void prepareRebind()
+      return
+    }
+    if (last4) setConfirmChange(true)
+    else openRebind()
   }
 
   // Маскированный PAN от T-Bank (напр. «430000******0777») → «** 0777» как в макете.
@@ -76,12 +135,14 @@ export default function PaymentMethodsPage() {
             type="button"
             aria-label="Изменить карту"
             // Без карты подтверждать нечего — сразу открываем форму привязки.
-            onClick={() => (last4 ? setConfirmChange(true) : openRebind())}
-            style={{ width: 24, height: 24, padding: 4, boxSizing: 'content-box', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-primary-surface)' }}
+            disabled={rebindLoading || !subLoaded}
+            onClick={handleEdit}
+            style={{ width: 24, height: 24, padding: 4, boxSizing: 'content-box', background: 'none', border: 'none', cursor: rebindLoading || !subLoaded ? 'default' : 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-primary-surface)', opacity: rebindLoading || !subLoaded ? 0.6 : 1 }}
           >
             <Edit2Icon />
           </button>
         </div>
+        {rebindError && <span role="alert" style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>{rebindError}</span>}
       </div>
 
       {/* Диалог «Изменить карту» (макет 10352-44653) → перепривязка. */}

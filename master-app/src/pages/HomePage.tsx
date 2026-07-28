@@ -14,6 +14,7 @@ import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
 import WeekStrip from '@/components/WeekStrip'
 import GuideCard from '@/components/GuideCard'
+import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
 dayjs.locale('ru')
 
@@ -74,6 +75,14 @@ export default function HomePage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   // Статус подписки — строка под именем в шапке (макет 10216-40371).
   const [sub, setSub] = useState<SubscriptionState | null>(null)
+  const [subLoading, setSubLoading] = useState(true)
+  const subLoadedRef = useRef(false)
+  const subRequestRef = useRef<Promise<void> | null>(null)
+  const { isPending: cardReconciliationPending } = useCardBindingReconciliation((state) => {
+    subLoadedRef.current = true
+    setSub(state)
+    setSubLoading(false)
+  })
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   // Инициализируем из sessionStorage, чтобы вернуться на тот же день после карточки.
   const [selectedDate, setSelectedDate] = useState(readStoredDate)
@@ -98,13 +107,25 @@ export default function HomePage() {
   // Пока ответы не пришли — скелетоны вместо списка записей и строки подписки.
   // Флаг снимается и на ошибке: показываем пустое состояние, а не вечный shimmer.
   const [bookingsLoading, setBookingsLoading] = useState(true)
-  const [subLoading, setSubLoading] = useState(true)
   const [clientsLoading, setClientsLoading] = useState(true)
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {}).finally(() => setClientsLoading(false))
     bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setBookingsLoading(false))
-    subscriptionApi.getMe().then(setSub).catch(() => {}).finally(() => setSubLoading(false))
   }, [])
+  useEffect(() => {
+    if (cardReconciliationPending || subLoadedRef.current || subRequestRef.current) return
+    const request = subscriptionApi.getMe()
+      .then((state) => {
+        subLoadedRef.current = true
+        setSub(state)
+      })
+      .catch(() => {})
+      .finally(() => {
+        subRequestRef.current = null
+        setSubLoading(false)
+      })
+    subRequestRef.current = request
+  }, [cardReconciliationPending])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
