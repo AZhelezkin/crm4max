@@ -222,6 +222,21 @@ describe('master onboarding subscription screens', () => {
     expect(view.getLocation().pathname).toBe('/subscription')
   })
 
+  it('объясняет необходимость телефона для чека', async () => {
+    api.pay.mockRejectedValue({
+      response: { data: { error: 'SUBSCRIPTION_CONTACT_REQUIRED' } },
+    })
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await screen.findByText('3')
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Для оплаты укажите номер телефона в разделе «Обо мне».',
+    )
+    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
+  })
+
   it('SubscriptionSuccessPage строит QR/share contract и ведёт в профиль', async () => {
     const master = setMaster(createMasterProfile({ name: 'Анна Мастерова' }))
     const browser = installBrowserFixture()

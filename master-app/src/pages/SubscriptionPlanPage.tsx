@@ -78,8 +78,11 @@ export default function SubscriptionPlanPage() {
       // карту. location.assign не требует предварительного user-gesture URL.
       const result = await subscriptionApi.pay(period)
       openPaymentForm(result.paymentURL)
-    } catch {
-      setPaymentError('Не удалось подготовить оплату. Нажмите ещё раз.')
+    } catch (error) {
+      const code = (error as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setPaymentError(code === 'SUBSCRIPTION_CONTACT_REQUIRED'
+        ? 'Для оплаты укажите номер телефона в разделе «Обо мне».'
+        : 'Не удалось подготовить оплату. Нажмите ещё раз.')
     } finally {
       paymentInFlight.current = false
       setPaymentLoading(false)
