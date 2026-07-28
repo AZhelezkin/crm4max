@@ -702,8 +702,10 @@ function ChevronDownIcon() {
 export interface Step0Props {
   name: string
   setName: (v: string) => void
+  nameError?: boolean
   phone: string
   phoneError: string | null
+  showPhoneErrorMessage?: boolean
   onPhoneChange: (v: string) => void
   description: string
   setDescription: (v: string) => void
@@ -719,6 +721,8 @@ export interface Step0Props {
   onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onAddressClick: () => void
   onBack: () => void
+  title?: ReactNode
+  showServiceMode?: boolean
   footer?: ReactNode
 }
 
@@ -727,13 +731,13 @@ const captionTextStyle: CSSProperties = { ...text.caption2 }
 
 export function Step0Form(props: Step0Props) {
   const {
-    name, setName,
-    phone, phoneError, onPhoneChange,
+    name, setName, nameError = false,
+    phone, phoneError, showPhoneErrorMessage = true, onPhoneChange,
     description, setDescription,
     location,
     homeVisit, setHomeVisit,
     photoPreview, photoUploading, photoInputRef, onPhotoChange,
-    onAddressClick, onBack, footer,
+    onAddressClick, onBack, title, showServiceMode = true, footer,
   } = props
 
   // Описание: auto-grow textarea (до 7 строк по 24px = 168px, потом скролл).
@@ -765,6 +769,7 @@ export function Step0Form(props: Step0Props) {
           position: 'absolute',
           top: 0, left: 0, right: 0,
           display: 'flex', alignItems: 'center',
+          justifyContent: title ? 'center' : undefined,
           padding: '6px 12px',
           height: 56,
           zIndex: 1,
@@ -776,6 +781,8 @@ export function Step0Form(props: Step0Props) {
           onClick={onBack}
           aria-label="Назад"
           style={{
+            position: title ? 'absolute' : undefined,
+            left: title ? 12 : undefined,
             width: 44, height: 44,
             borderRadius: '50%',
             background: 'var(--color-background)',
@@ -789,6 +796,15 @@ export function Step0Form(props: Step0Props) {
         >
           <ArrowLeftIcon />
         </button>
+        {title && (
+          <div style={{
+            position: 'absolute', left: 64, right: 64,
+            overflow: 'hidden', color: 'var(--color-on-surface)', textAlign: 'center',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...text.callout1,
+          }}>
+            {title}
+          </div>
+        )}
       </div>
 
       {/* Form: padding 32/16 + gap 35 между секциями (аватар, подсказка, fields).
@@ -796,7 +812,7 @@ export function Step0Form(props: Step0Props) {
           (avatar по центру, кнопка слева → не пересекаются по x). */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 35,
-        padding: '32px 16px 0', width: '100%',
+        padding: `${title ? 88 : 32}px 16px 0`, width: '100%',
       }}>
         {/* Аватар 104×104 — белый круг с фиолетовым градиентом и белой иконкой камеры */}
         <button
@@ -825,7 +841,7 @@ export function Step0Form(props: Step0Props) {
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <div style={{ color: '#FFFFFF', display: 'flex' }}>
+            <div style={{ color: 'var(--color-service-text)', display: 'flex' }}>
               <CameraBoldIcon />
             </div>
           )}
@@ -856,6 +872,7 @@ export function Step0Form(props: Step0Props) {
             label="Имя или название бизнеса"
             value={name}
             onChange={setName}
+            error={nameError}
           />
 
           {/* Описание — плавающий лейбл, auto-grow, счётчик при ≥190 */}
@@ -901,8 +918,9 @@ export function Step0Form(props: Step0Props) {
               onChange={onPhoneChange}
               type="tel"
               inputMode="tel"
+              error={!!phoneError}
             />
-            {phoneError && (
+            {showPhoneErrorMessage && phoneError && (
               <div style={{
                 ...text.footnote,
                 color: 'var(--color-error-surface-accented)',
@@ -916,7 +934,7 @@ export function Step0Form(props: Step0Props) {
           {/* Address widget: сегмент + (опционально) поле адреса.
               Заметка к адресу редактируется на отдельном экране /address (макет 10220-101957). */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-            <ServiceModeSegment value={homeVisit} onChange={setHomeVisit} />
+            {showServiceMode && <ServiceModeSegment value={homeVisit} onChange={setHomeVisit} />}
             {!homeVisit && (
               <AddressButton location={location} onClick={onAddressClick} />
             )}
@@ -1094,7 +1112,6 @@ function ChevronRightIcon() {
     </svg>
   )
 }
-
 
 
 
