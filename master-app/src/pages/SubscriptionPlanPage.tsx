@@ -89,6 +89,14 @@ export default function SubscriptionPlanPage() {
     }
   }
 
+  if (subscriptionLoading) {
+    return (
+      <div style={{ minHeight: '100dvh' }}>
+        <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+      </div>
+    )
+  }
+
   // ── Оплаченная подписка (макет 10352-43925): зелёный hero + плитка-лого,
   //    «Подписка оформлена 🎉», карточка оплаченного плана, «Отменить подписку».
   if (isActive && sub) {
@@ -194,6 +202,7 @@ export default function SubscriptionPlanPage() {
         {confirmCancel && (
           <CancelSubscriptionDialog
             busy={cancelling}
+            refundable={isYear}
             onClose={() => setConfirmCancel(false)}
             onConfirm={() => { void handleCancelSubscription() }}
           />
@@ -343,8 +352,9 @@ function PlanCard({ selected, onSelect, title, children }: {
 // ConfirmDialog — primary-кнопка «Закрыть» (отказ), подтверждение отмены —
 // вторичная. Клик по подложке = закрыть (не отмена!), поэтому общий
 // ConfirmDialog с переставленными колбэками не подходит.
-function CancelSubscriptionDialog({ busy, onClose, onConfirm }: {
+function CancelSubscriptionDialog({ busy, refundable, onClose, onConfirm }: {
   busy: boolean
+  refundable: boolean
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -366,7 +376,9 @@ function CancelSubscriptionDialog({ busy, onClose, onConfirm }: {
       >
         <div style={{ padding: '0 8px 8px', ...text.h4, color: 'var(--color-on-surface)' }}>Отмена подписки</div>
         <div style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>
-          Новые списания производиться не будут. Доступ к сервису сохранится до конца оплаченного периода
+          Новые списания производиться не будут.<br />
+          {refundable && <>Для годовой подписки проверим сумму возврата за неиспользованные месяцы.<br /></>}
+          Доступ к сервису сохранится до конца текущего оплаченного месяца.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
           <button

@@ -85,6 +85,17 @@ describe('master onboarding subscription screens', () => {
     expect(api.getMe).toHaveBeenCalledOnce()
   })
 
+  it('не показывает выбор тарифа до загрузки состояния подписки', async () => {
+    const subscription = deferred<ReturnType<typeof createSubscriptionState>>()
+    api.getMe.mockReturnValue(subscription.promise)
+    renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(screen.queryByText('Выберите период подписки')).not.toBeInTheDocument()
+
+    await act(async () => subscription.resolve(createSubscriptionState({ status: 'ACTIVE' })))
+    expect(await screen.findByText('Подписка оформлена 🎉')).toBeInTheDocument()
+  })
+
   it('в триале: month plan → «Подключить» открывает оплату в том же WebView', async () => {
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
     await screen.findByText('3')
@@ -184,6 +195,7 @@ describe('master onboarding subscription screens', () => {
 
     await view.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
     expect(screen.getByText(/Новые списания производиться не будут/)).toBeInTheDocument()
+    expect(screen.getByText(/Для годовой подписки проверим сумму возврата за неиспользованные месяцы/)).toBeInTheDocument()
     // «Закрыть» — отказ от отмены.
     expect(api.cancel).not.toHaveBeenCalled()
 
@@ -197,6 +209,20 @@ describe('master onboarding subscription screens', () => {
     expect(screen.queryByText('Подписка оформлена 🎉')).not.toBeInTheDocument()
     // Кнопка отмены исчезла — подписка уже отменена.
     expect(screen.queryByRole('button', { name: 'Отменить подписку' })).not.toBeInTheDocument()
+  })
+
+  it('не обещает возврат для месячной подписки', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      plannedPeriod: 'MONTH',
+      autoRenewEnabled: true,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
+
+    expect(screen.queryByText(/Для годовой подписки проверим сумму возврата за неиспользованные месяцы/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Доступ к сервису сохранится до конца текущего оплаченного месяца/)).toBeInTheDocument()
   })
 
   it('показывает expired trial transition как Далее', async () => {
