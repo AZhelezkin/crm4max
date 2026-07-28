@@ -17,6 +17,7 @@ const api = vi.hoisted(() => ({
   paySubscription: vi.fn(),
   getMaster: vi.fn(),
   getReviews: vi.fn(),
+  markGuideStep: vi.fn(),
 }))
 
 vi.mock('@/api/bookings.api', () => ({ bookingsApi: { list: api.listBookings } }))
@@ -25,7 +26,7 @@ vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: { getMe: api.getSubscription, pay: api.paySubscription },
 }))
 vi.mock('@/api/masters.api', () => ({
-  mastersApi: { getMe: api.getMaster, getReviews: api.getReviews },
+  mastersApi: { getMe: api.getMaster, getReviews: api.getReviews, markGuideStep: api.markGuideStep },
 }))
 
 import { useAuthStore } from '@/store/auth.store'
@@ -45,6 +46,7 @@ function primeSuccessfulReads(master = createMasterProfile()) {
   api.paySubscription.mockResolvedValue({ paymentURL: 'https://pay.test/subscription' })
   api.getMaster.mockResolvedValue(master)
   api.getReviews.mockResolvedValue([])
+  api.markGuideStep.mockResolvedValue({ guideProgress: { edited: true } })
 }
 
 function deferred<T>() {
@@ -65,6 +67,16 @@ describe('master HomePage', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('считает знакомство с режимом редактирования по нажатию на карандаш', async () => {
+    setMaster(createMasterProfile({ guideProgress: null }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click((await screen.findAllByRole('button', { name: 'Редактировать' }))[0])
+
+    expect(view.getLocation().pathname).toBe('/about')
+    await waitFor(() => expect(api.markGuideStep).toHaveBeenCalledWith('edited'))
   })
 
   it('после TTL pending marker делает обычный getMe, если reconciliation не ответил', async () => {

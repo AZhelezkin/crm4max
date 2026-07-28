@@ -14,6 +14,7 @@ import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
 import WeekStrip from '@/components/WeekStrip'
 import GuideCard from '@/components/GuideCard'
+import { markGuideStep } from '@/lib/guide'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
 dayjs.locale('ru')
@@ -808,8 +809,12 @@ function SlashIcon() {
 
 // Кнопка-карандаш: редактирование срабатывает только по её нажатию (не по всей карточке).
 function EditButton({ onClick }: { onClick: () => void }) {
+  const handleClick = () => {
+    markGuideStep('edited')
+    onClick()
+  }
   return (
-    <button type="button" onClick={onClick} aria-label="Редактировать"
+    <button type="button" onClick={handleClick} aria-label="Редактировать"
       style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-profile-edit-icon)' }}>
       <Edit2Icon />
     </button>
