@@ -234,13 +234,14 @@ export default function AvatarCropPortal({ open, src, onCancel, onConfirm, outpu
         WebkitUserSelect: 'none',
       }}
     >
-      {/* Header: круглая back-кнопка (макет x12 y6 от контента, 44×44) */}
-      <div style={{ flexShrink: 0, height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center' }}>
+      {/* Header: back 44×44 слева, заголовок центрирован относительно viewport. */}
+      <div style={{ position: 'relative', flexShrink: 0, height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button
           type="button"
           onClick={onCancel}
           aria-label="Назад"
           style={{
+            position: 'absolute', left: 12,
             width: 44, height: 44,
             borderRadius: '50%',
             background: 'var(--color-background)',
@@ -253,6 +254,13 @@ export default function AvatarCropPortal({ open, src, onCancel, onConfirm, outpu
         >
           <ArrowLeftIcon />
         </button>
+        <div style={{
+          position: 'absolute', left: 64, right: 64,
+          overflow: 'hidden', color: 'var(--color-on-surface)', textAlign: 'center',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...text.callout1,
+        }}>
+          Профиль
+        </div>
       </div>
 
       {/* Main: окно кропа (макет 358×460 rx16, поля по 16px) */}

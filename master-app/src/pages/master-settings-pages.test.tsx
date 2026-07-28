@@ -96,6 +96,26 @@ vi.mock('@/components/AddressPickerPortal', () => ({
   ) : null,
 }))
 
+vi.mock('@/components/AvatarCropPortal', () => ({
+  default: ({
+    open,
+    onCancel,
+    onConfirm,
+  }: {
+    open: boolean
+    onCancel: () => void
+    onConfirm: (file: File) => void
+  }) => open ? (
+    <div>
+      <span>Кадрирование фото</span>
+      <button type="button" onClick={onCancel}>Отменить кадрирование</button>
+      <button type="button" onClick={() => onConfirm(new File(['cropped'], 'avatar.jpg', { type: 'image/jpeg' }))}>
+        Сохранить кадрирование
+      </button>
+    </div>
+  ) : null,
+}))
+
 import { useAuthStore } from '@/store/auth.store'
 
 import AboutMePage from './AboutMePage'
@@ -261,6 +281,7 @@ describe('master settings pages', () => {
     api.uploadPhoto.mockRejectedValue(new Error('upload unavailable'))
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:profile-photo') })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
     const view = renderAtRoute(<AboutMePage />)
 
     await view.user.upload(
@@ -268,6 +289,12 @@ describe('master settings pages', () => {
       new File(['photo'], 'photo.png', { type: 'image/png' }),
     )
 
+    expect(screen.getByText('Кадрирование фото')).toBeInTheDocument()
+    expect(api.uploadPhoto).not.toHaveBeenCalled()
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить кадрирование' }))
+
+    expect(api.uploadPhoto).toHaveBeenCalledWith(expect.any(File), 'masters')
     expect(await screen.findByText(/Не удалось сохранить фото\s+профиля\. Попробуйте ещё раз/)).toBeInTheDocument()
     expect(error).toHaveBeenCalled()
   })

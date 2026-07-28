@@ -6,6 +6,7 @@ import { mastersApi } from '@/api/masters.api'
 import { markGuideStep } from '@/lib/guide'
 import { uploadPhoto } from '@/api/upload.api'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
+import AvatarCropPortal from '@/components/AvatarCropPortal'
 import { Step0Form } from '@/pages/OnboardingPage'
 
 const PROFILE_ERROR_MESSAGE = 'Не удалось сохранить фото\nпрофиля. Попробуйте ещё раз'
@@ -31,6 +32,7 @@ export default function AboutMePage() {
   const [photoPreview, setPhotoPreview]     = useState<string | null>(master?.photo ?? null)
   const [photoUrl, setPhotoUrl]             = useState<string | null>(master?.photo ?? null)
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [avatarCropSrc, setAvatarCropSrc]   = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [showAddressPortal, setShowAddressPortal] = useState(false)
 
@@ -57,11 +59,16 @@ export default function AboutMePage() {
     setPhone(digits ? formatPhone(digits) : '')
   }
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    setPhotoPreview(URL.createObjectURL(file))
     setProfileError(null)
+    setAvatarCropSrc(URL.createObjectURL(file))
+  }
+
+  const uploadProfilePhoto = async (file: File) => {
+    setPhotoPreview(URL.createObjectURL(file))
     setPhotoUploading(true)
     try {
       const url = await uploadPhoto(file, 'masters')
@@ -154,6 +161,20 @@ export default function AboutMePage() {
         onConfirm={(address, pickedCoords) => {
           setLocation(address)
           if (pickedCoords) setCoords(pickedCoords)
+        }}
+      />
+
+      <AvatarCropPortal
+        open={!!avatarCropSrc}
+        src={avatarCropSrc ?? ''}
+        onCancel={() => {
+          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+          setAvatarCropSrc(null)
+        }}
+        onConfirm={(file) => {
+          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+          setAvatarCropSrc(null)
+          void uploadProfilePhoto(file)
         }}
       />
     </div>
