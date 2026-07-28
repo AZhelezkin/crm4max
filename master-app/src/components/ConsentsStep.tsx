@@ -1,20 +1,11 @@
 import { useState } from 'react'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
+import { OFFER_URL, PERSONAL_DATA_URL, openLegalDocument } from '@/lib/legalDocuments'
 
 // Шаг «Необходимые согласия» (макеты 10261-55965 / 10261-56252 с ошибкой).
 // Используется на онбординге (Welcome → согласия → кабинет). Кнопка всегда
 // активна: без обоих согласий подсвечиваем невыбранные чекбоксы ошибкой.
-
-// Документы. TODO: подставить реальные URL оферты и политики ПДн.
-const OFFER_URL = ''
-const PRIVACY_URL = ''
-
-function openDoc(url: string) {
-  if (!url) return
-  if (window.WebApp?.openLink) window.WebApp.openLink(url)
-  else window.open(url, '_blank')
-}
 
 export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Подключить', busy = false }: {
   onBack: () => void
@@ -45,7 +36,7 @@ export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Под
             checked={offerAccepted}
             error={consentError && !offerAccepted}
             onToggle={() => setOfferAccepted((v) => !v)}
-            onRead={() => openDoc(OFFER_URL)}
+            onRead={() => openLegalDocument(OFFER_URL)}
           />
           <ConsentCard
             title="Персональные данные"
@@ -53,7 +44,7 @@ export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Под
             checked={privacyAccepted}
             error={consentError && !privacyAccepted}
             onToggle={() => setPrivacyAccepted((v) => !v)}
-            onRead={() => openDoc(PRIVACY_URL)}
+            onRead={() => openLegalDocument(PERSONAL_DATA_URL)}
           />
         </div>
       </div>
