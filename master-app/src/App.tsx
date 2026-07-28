@@ -17,6 +17,7 @@ import WelcomePage from '@/pages/WelcomePage'
 import AboutMePage from '@/pages/AboutMePage'
 import AboutPlatformPage from '@/pages/AboutPlatformPage'
 import PaymentMethodsPage from '@/pages/PaymentMethodsPage'
+import ConsentsPage from '@/pages/ConsentsPage'
 import AddressEditPage from '@/pages/AddressEditPage'
 import SubscriptionPlanPage from '@/pages/SubscriptionPlanPage'
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage'
@@ -257,6 +258,7 @@ function MasterApp() {
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/about-platform" element={<AboutPlatformPage />} />
           <Route path="/payment-methods" element={<PaymentMethodsPage />} />
+          <Route path="/consents" element={<ConsentsPage />} />
           <Route path="/address" element={<AddressEditPage />} />
           <Route path="/subscription" element={<SubscriptionPlanPage />} />
           <Route path="/schedule" element={<SchedulePage />} />

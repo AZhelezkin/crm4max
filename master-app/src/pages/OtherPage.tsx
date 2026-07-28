@@ -6,8 +6,8 @@ import { startSupport } from '@/api/support.api'
 
 // Экран «Другое» (макеты 10302-42755, 10338-42120) — вкладка навбара: тулбар без
 // кнопки «назад» (leading-слот пуст), снизу виден навбар с активной вкладкой.
-// Пункты-меню; пока рабочая только «Техническая поддержка» (запуск режима поддержки
-// в боте), остальные — заглушки: неактивны (экраны появятся позже).
+// Пункты-меню ведут на самостоятельные экраны; техподдержка запускает режим
+// поддержки в мастер-боте.
 export default function OtherPage() {
   const navigate = useNavigate()
   const [supportLoading, setSupportLoading] = useState(false)
@@ -31,7 +31,7 @@ export default function OtherPage() {
   }
 
   const items: Array<{ label: string; onClick?: () => void; loading?: boolean }> = [
-    { label: 'Согласия' },
+    { label: 'Согласия', onClick: () => navigate('/consents') },
     { label: 'Подписка', onClick: () => navigate('/subscription') },
     { label: 'Способы оплаты', onClick: () => navigate('/payment-methods') },
     { label: 'Техническая поддержка', onClick: openSupport, loading: supportLoading },

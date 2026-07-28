@@ -28,14 +28,21 @@ describe('master OtherPage', () => {
     expect(screen.queryByRole('button', { name: 'Назад' })).not.toBeInTheDocument()
   })
 
-  it('неактивны только «Согласия»; остальные пункты ведут на свои экраны', () => {
+  it('все пункты меню активны', () => {
     renderAtRoute(<OtherPage />, { route: '/other' })
 
-    expect(screen.getByRole('button', { name: 'Согласия' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Согласия' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Способы оплаты' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Подписка' })).toBeEnabled()
     expect(screen.getByRole('button', { name: SUPPORT })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'О платформе' })).toBeEnabled()
+  })
+
+  it('«Согласия» ведут на экран документов', async () => {
+    const { user, getLocation } = renderAtRoute(<OtherPage />, { route: '/other' })
+
+    await user.click(screen.getByRole('button', { name: 'Согласия' }))
+    expect(getLocation().pathname).toBe('/consents')
   })
 
   it('«Способы оплаты» ведёт на экран карты', async () => {
