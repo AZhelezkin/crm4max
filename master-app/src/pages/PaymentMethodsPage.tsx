@@ -5,22 +5,21 @@ import { HeroHeader } from '@/components/onboardingShared'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
+import { openPaymentForm } from '@/lib/paymentForm'
 
 /**
  * «Способы оплаты» (макет 10352-44457) — открывается из «Другое». Карта, с
  * которой списывается подписка; карандаш → диалог «Изменить карту»
  * (макет 10352-44653) → hosted-форма перепривязки T-Bank (AddCard, 0 ₽ + 3DS).
  *
- * URL перепривязки префетчится при входе: openLink требует синхронного
- * user-gesture, await в обработчике его рвёт. После возврата из формы карта
- * сверяется по lifecycle-событиям и ограниченному polling через subscription/me.
+ * AddCard создаётся по клику и открывается в том же WebView. После возврата
+ * назад из формы карта сверяется по lifecycle-событиям и ограниченному polling.
  */
 export default function PaymentMethodsPage() {
   const navigate = useNavigate()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   const [confirmChange, setConfirmChange] = useState(false)
-  const [rebindUrl, setRebindUrl] = useState<string | null>(null)
-  const [rebindLoading, setRebindLoading] = useState(true)
+  const [rebindLoading, setRebindLoading] = useState(false)
   const [rebindError, setRebindError] = useState<string | null>(null)
   const [subLoaded, setSubLoaded] = useState(false)
   const subLoadedRef = useRef(false)
@@ -30,30 +29,24 @@ export default function PaymentMethodsPage() {
     setSubLoaded(true)
     setSub(state)
   })
-  const rebindRequestRef = useRef<Promise<void> | null>(null)
-  const rebindGenerationRef = useRef(0)
+  const rebindInFlightRef = useRef(false)
 
-  const prepareRebind = () => {
-    if (rebindRequestRef.current) return rebindRequestRef.current
-    const generation = ++rebindGenerationRef.current
+  const openRebind = async () => {
+    setConfirmChange(false)
+    if (!subLoaded || rebindInFlightRef.current) return
+    rebindInFlightRef.current = true
     setRebindLoading(true)
     setRebindError(null)
-    const request = subscriptionApi.rebindCard()
-      .then((r) => {
-        if (rebindGenerationRef.current === generation) setRebindUrl(r.paymentURL)
-      })
-      .catch(() => {
-        if (rebindGenerationRef.current === generation) {
-          setRebindError('Не удалось подготовить привязку карты. Нажмите ещё раз.')
-        }
-      })
-      .finally(() => {
-        if (rebindGenerationRef.current !== generation) return
-        rebindRequestRef.current = null
-        setRebindLoading(false)
-      })
-    rebindRequestRef.current = request
-    return request
+    try {
+      const result = await subscriptionApi.rebindCard()
+      beginReconciliation(sub)
+      openPaymentForm(result.paymentURL)
+    } catch {
+      setRebindError('Не удалось подготовить привязку карты. Нажмите ещё раз.')
+    } finally {
+      rebindInFlightRef.current = false
+      setRebindLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -69,37 +62,9 @@ export default function PaymentMethodsPage() {
     subRequestRef.current = request
   }, [reconciliationPending])
 
-  useEffect(() => {
-    void prepareRebind()
-    return () => {
-      rebindGenerationRef.current += 1
-      rebindRequestRef.current = null
-    }
-  }, [])
-
-  const openRebind = () => {
-    setConfirmChange(false)
-    if (!subLoaded) return
-    if (!rebindUrl) {
-      prepareRebind()
-      return
-    }
-    beginReconciliation(sub)
-    if (window.WebApp?.openLink) window.WebApp.openLink(rebindUrl)
-    else window.open(rebindUrl, '_blank')
-    // Форма одноразовая. Следующую попытку готовим только по новому клику:
-    // немедленный prefetch создал бы более новый RequestKey и сделал только что
-    // открытую форму устаревшей на backend.
-    setRebindUrl(null)
-  }
-
   const handleEdit = () => {
-    if (!rebindUrl) {
-      void prepareRebind()
-      return
-    }
     if (last4) setConfirmChange(true)
-    else openRebind()
+    else void openRebind()
   }
 
   // Маскированный PAN от T-Bank (напр. «430000******0777») → «** 0777» как в макете.
@@ -153,7 +118,7 @@ export default function PaymentMethodsPage() {
           message="Вы действительно хотите привязать новую карту для оплаты подписки?"
           confirmLabel="Изменить карту"
           danger={false}
-          onConfirm={openRebind}
+          onConfirm={() => { void openRebind() }}
           onCancel={() => setConfirmChange(false)}
         />
       )}

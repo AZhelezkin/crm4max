@@ -116,7 +116,9 @@ export default function SubscriptionPlanPage() {
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32, gap: 36 }}>
           <img src={logoTileSvg} alt="" style={{ width: 75, height: 77, display: 'block' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center', padding: '0 16px' }}>
-            <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка оформлена 🎉</span>
+            <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>
+              {autoRenew ? 'Подписка оформлена 🎉' : 'Подписка отменена'}
+            </span>
             <span style={{ ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>
               {sub.currentPeriodEnd
                 ? autoRenew

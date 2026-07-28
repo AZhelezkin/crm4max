@@ -168,6 +168,11 @@ describe('master settings pages', () => {
     const services = renderAtRoute(<SettingsPage />)
     await services.user.click(screen.getByRole('button', { name: /Мои услуги/ }))
     expect(services.getLocation().pathname).toBe('/services')
+    services.unmount()
+
+    const subscription = renderAtRoute(<SettingsPage />)
+    await subscription.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
+    expect(subscription.getLocation().pathname).toBe('/subscription')
   })
 
   it('SettingsPage возвращается назад и остаётся failure-safe без subscription', async () => {

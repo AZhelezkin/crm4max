@@ -92,20 +92,24 @@ export default function SettingsPage() {
         {/* «Оплата от клиентов» (привязка карты для приёма оплат от клиентов) скрыта
             до появления функционала — см. историю, вернуть из Figma 8945:29664. */}
 
-        {/* ── Оплата подписки (некликабельно) — реальный статус подписки. ── */}
+        {/* ── Оплата подписки — реальный статус и переход к управлению. ── */}
         <Section label="Оплата подписки">
           <SettingRow
             icon={<CardIcon />}
             title={subRow.title}
             subtitle={subRow.subtitle}
-            trailing={null}
+            trailing={<ChevronRightIcon />}
+            onClick={() => navigate('/subscription')}
           />
         </Section>
 
-        {/* «Отменить подписку» — некликабельный приглушённый текст (Figma 8945:63705). */}
-        <div style={{ ...text.caption2, color: 'var(--color-on-surface-muted)' }}>
+        <button
+          type="button"
+          onClick={() => navigate('/subscription')}
+          style={{ padding: 0, border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', ...text.caption2, color: 'var(--color-on-surface-muted)' }}
+        >
           Отменить подписку
-        </div>
+        </button>
       </div>
     </div>
   )

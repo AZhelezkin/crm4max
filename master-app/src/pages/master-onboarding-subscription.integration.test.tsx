@@ -189,7 +189,9 @@ describe('master onboarding subscription screens', () => {
     await view.user.click(cancelButtons[cancelButtons.length - 1])
 
     expect(api.cancel).toHaveBeenCalledOnce()
+    expect(await screen.findByText('Подписка отменена')).toBeInTheDocument()
     expect(await screen.findByText('Подписка активна до 28.07.2027')).toBeInTheDocument()
+    expect(screen.queryByText('Подписка оформлена 🎉')).not.toBeInTheDocument()
     // Кнопка отмены исчезла — подписка уже отменена.
     expect(screen.queryByRole('button', { name: 'Отменить подписку' })).not.toBeInTheDocument()
   })
