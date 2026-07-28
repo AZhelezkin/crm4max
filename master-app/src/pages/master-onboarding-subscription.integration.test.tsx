@@ -96,6 +96,27 @@ describe('master onboarding subscription screens', () => {
     expect(await screen.findByText('Подписка оформлена 🎉')).toBeInTheDocument()
   })
 
+  it('возвращается с подписки на предыдущий внутренний экран', async () => {
+    window.history.replaceState({ idx: 1 }, '')
+    const view = renderAtRoute(<SubscriptionPlanPage />, {
+      entries: ['/other', '/subscription'],
+    })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Назад' }))
+
+    expect(view.getLocation().pathname).toBe('/other')
+    window.history.replaceState({ idx: 0 }, '')
+  })
+
+  it('при прямом открытии подписки сохраняет fallback на главную', async () => {
+    window.history.replaceState({ idx: 0 }, '')
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Назад' }))
+
+    expect(view.getLocation().pathname).toBe('/')
+  })
+
   it('в триале: month plan → «Подключить» открывает оплату в том же WebView', async () => {
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
     await screen.findByText('3')

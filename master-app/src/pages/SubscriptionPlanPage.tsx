@@ -44,6 +44,12 @@ export default function SubscriptionPlanPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
 
+  const handleBack = () => {
+    const historyIndex = (window.history.state as { idx?: number } | null)?.idx
+    if (typeof historyIndex === 'number' && historyIndex > 0) navigate(-1)
+    else navigate('/', { replace: true })
+  }
+
   useEffect(() => {
     subscriptionApi.getMe()
       .then(setSub)
@@ -92,7 +98,7 @@ export default function SubscriptionPlanPage() {
   if (subscriptionLoading) {
     return (
       <div style={{ minHeight: '100dvh' }}>
-        <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+        <HeroHeader title="Подписка" onBack={handleBack} />
       </div>
     )
   }
@@ -117,7 +123,7 @@ export default function SubscriptionPlanPage() {
         }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+          <HeroHeader title="Подписка" onBack={handleBack} />
         </div>
 
         {/* Плитка + заголовок (Figma top 196 → 32 от тулбара; gap 36, текст gap 2). */}
@@ -213,7 +219,7 @@ export default function SubscriptionPlanPage() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+      <HeroHeader title="Подписка" onBack={handleBack} />
 
       <div style={{ flex: 1, padding: '40px 16px 24px', display: 'flex', flexDirection: 'column', gap: 60 }}>
         {/* Плитка дней триала (макеты 10256-55033…55098) */}
