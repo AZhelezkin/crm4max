@@ -12,7 +12,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: { getMe: api.getMe, rebindCard: api.rebindCard },
 }))
-const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn() }))
+const paymentForm = vi.hoisted(() => ({ openCardBindingForm: vi.fn() }))
 vi.mock('@/lib/paymentForm', () => paymentForm)
 
 import PaymentMethodsPage from './PaymentMethodsPage'
@@ -28,7 +28,7 @@ describe('PaymentMethodsPage', () => {
     sessionStorage.clear()
     api.getMe.mockReset()
     api.rebindCard.mockReset()
-    paymentForm.openPaymentForm.mockReset()
+    paymentForm.openCardBindingForm.mockReset()
     api.getMe.mockResolvedValue(createSubscriptionState({ cardPan: '430000******0777' }))
     api.rebindCard.mockResolvedValue({ paymentURL: 'https://pay.test/rebind' })
     vi.spyOn(window, 'open').mockImplementation(() => null)
@@ -54,7 +54,7 @@ describe('PaymentMethodsPage', () => {
 
     expect(edit).toBeDisabled()
     fireEvent.click(edit)
-    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).not.toHaveBeenCalled()
     expect(api.rebindCard).not.toHaveBeenCalled()
     expect(sessionStorage.getItem('subscription.pendingCardBinding')).toBeNull()
 
@@ -69,14 +69,14 @@ describe('PaymentMethodsPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Изменить карту' }))
     expect(screen.getByText(/привязать новую карту для оплаты подписки/)).toBeInTheDocument()
     // Форма ещё не открыта — только диалог.
-    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).not.toHaveBeenCalled()
 
     // В диалоге две кнопки: подтверждение тоже называется «Изменить карту».
     const buttons = screen.getAllByRole('button', { name: 'Изменить карту' })
     const confirm = buttons[buttons.length - 1]
     await view.user.click(confirm)
 
-    await waitFor(() => expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/rebind'))
+    await waitFor(() => expect(paymentForm.openCardBindingForm).toHaveBeenCalledWith('https://pay.test/rebind'))
     expect(api.rebindCard).toHaveBeenCalledOnce()
   })
 
@@ -87,7 +87,7 @@ describe('PaymentMethodsPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Изменить карту' }))
     await view.user.click(screen.getByRole('button', { name: 'Отмена' }))
 
-    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).not.toHaveBeenCalled()
     expect(screen.queryByText(/привязать новую карту/)).not.toBeInTheDocument()
   })
 
@@ -102,7 +102,7 @@ describe('PaymentMethodsPage', () => {
 
     // Подтверждать нечего — форма привязки открывается сразу, без диалога.
     expect(screen.queryByText(/привязать новую карту/)).not.toBeInTheDocument()
-    await waitFor(() => expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/rebind'))
+    await waitFor(() => expect(paymentForm.openCardBindingForm).toHaveBeenCalledWith('https://pay.test/rebind'))
     expect(api.rebindCard).toHaveBeenCalledOnce()
   })
 
@@ -173,7 +173,7 @@ describe('PaymentMethodsPage', () => {
     vi.useFakeTimers()
     fireEvent.click(screen.getByRole('button', { name: 'Изменить карту' }))
     await act(async () => { await Promise.resolve() })
-    expect(paymentForm.openPaymentForm).toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).toHaveBeenCalled()
     await act(async () => {
       vi.advanceTimersByTime(3 * 60_000 + 1)
       await Promise.resolve()
@@ -201,6 +201,6 @@ describe('PaymentMethodsPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Изменить карту' }))
 
     await waitFor(() => expect(api.rebindCard).toHaveBeenCalledTimes(2))
-    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/retry')
+    expect(paymentForm.openCardBindingForm).toHaveBeenCalledWith('https://pay.test/retry')
   })
 })

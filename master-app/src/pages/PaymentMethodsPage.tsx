@@ -5,15 +5,15 @@ import { HeroHeader } from '@/components/onboardingShared'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
-import { openPaymentForm } from '@/lib/paymentForm'
+import { openCardBindingForm } from '@/lib/paymentForm'
 
 /**
  * «Способы оплаты» (макет 10352-44457) — открывается из «Другое». Карта, с
  * которой списывается подписка; карандаш → диалог «Изменить карту»
  * (макет 10352-44653) → hosted-форма перепривязки T-Bank (AddCard, 0 ₽ + 3DS).
  *
- * AddCard создаётся по клику и открывается в том же WebView. После возврата
- * назад из формы карта сверяется по lifecycle-событиям и ограниченному polling.
+ * AddCard создаётся по клику и открывается внешней ссылкой, чтобы mini-app
+ * оставался под формой. Карта сверяется ограниченным polling.
  */
 export default function PaymentMethodsPage() {
   const navigate = useNavigate()
@@ -40,7 +40,7 @@ export default function PaymentMethodsPage() {
     try {
       const result = await subscriptionApi.rebindCard()
       beginReconciliation(sub)
-      openPaymentForm(result.paymentURL)
+      openCardBindingForm(result.paymentURL)
     } catch {
       setRebindError('Не удалось подготовить привязку карты. Нажмите ещё раз.')
     } finally {

@@ -21,7 +21,7 @@ vi.mock('@/api/subscription.api', () => ({
     cancel: api.cancel,
   },
 }))
-const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn() }))
+const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn(), openCardBindingForm: vi.fn() }))
 vi.mock('@/lib/paymentForm', () => paymentForm)
 
 vi.mock('qrcode.react', async () => {
@@ -56,6 +56,8 @@ describe('master onboarding subscription screens', () => {
     api.pay.mockReset()
     api.startTrial.mockReset()
     api.cancel.mockReset()
+    paymentForm.openPaymentForm.mockReset()
+    paymentForm.openCardBindingForm.mockReset()
     localStorage.clear()
     sessionStorage.clear()
     api.getMe.mockResolvedValue(createSubscriptionState({
@@ -244,6 +246,28 @@ describe('master onboarding subscription screens', () => {
 
     expect(screen.queryByText(/Для годовой подписки проверим сумму возврата за неиспользованные месяцы/)).not.toBeInTheDocument()
     expect(screen.getByText(/Доступ к сервису сохранится до конца текущего оплаченного месяца/)).toBeInTheDocument()
+  })
+
+  it('для отменённой подписки показывает тарифы и открывает AddCard вне WebView', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      currentPeriodEnd: '2026-08-20T12:00:00.000Z',
+      plannedPeriod: 'YEAR',
+      autoRenewEnabled: false,
+      cardPan: null,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(await screen.findByText('Подписка отменена')).toBeInTheDocument()
+    expect(screen.getByText('Подписка активна до 20.08.2026')).toBeInTheDocument()
+    expect(screen.getByText('Выберите период подписки')).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+
+    expect(api.startTrial).toHaveBeenCalledWith('MONTH')
+    expect(api.pay).not.toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).toHaveBeenCalledWith('https://trial.test/month')
+    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
   })
 
   it('показывает expired trial transition как Далее', async () => {
