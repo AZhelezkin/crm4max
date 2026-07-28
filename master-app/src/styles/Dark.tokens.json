@@ -14,6 +14,7 @@
   "onSurfaceMuted":           { "$type": "color", "$value": "#6E6F71" },
 
   "primarySurface":           { "$type": "color", "$value": "#409BFE" },
+  "profileEditIcon":          { "$type": "color", "$value": "#80BCFF" },
   "onPrimarySurface":         { "$type": "color", "$value": "#FFFFFF" },
 
   "secondarySurface":         { "$type": "color", "$value": "#3C3F4D" },
