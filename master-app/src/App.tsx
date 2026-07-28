@@ -54,6 +54,26 @@ function resolveStartParam(): string {
   }
   return ''
 }
+
+// T-Bank может отбросить URL fragment при возврате с hosted-формы. Backend
+// передаёт результат обычным query-параметром, а HashRouter получает маршрут
+// до первого render. Остальные query-параметры сохраняются.
+function normalizePaymentResultRoute(): void {
+  if (typeof window === 'undefined') return
+  const query = new URLSearchParams(window.location.search)
+  const result = query.get('payResult')
+  if (result !== 'success' && result !== 'fail') return
+
+  query.delete('payResult')
+  const search = query.toString()
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${search ? `?${search}` : ''}#/pay-result/${result}`,
+  )
+}
+
+normalizePaymentResultRoute()
 export const startParam = resolveStartParam()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 
@@ -198,8 +218,8 @@ function MasterApp() {
   // только клиентская онлайн-запись (плашка на главной + пейволл на создании записи).
   //
   // Результат оплаты: UI и данные разделены. Экран успеха/неуспеха рисуется
-  // МАРШРУТОМ — T-Bank возвращает WebView на #/pay-result/success|fail
-  // (SuccessURL/FailURL формы). Само состояние подписки — на бэке, источник
+  // МАРШРУТОМ — T-Bank возвращает WebView с ?payResult=success|fail, который
+  // при запуске нормализуется в #/pay-result/success|fail. Состояние — на бэке, источник
   // истины — нотификация T-Bank (+ GetState-синк как подстраховка); фронт
   // просто читает getMe, детект-эвристик здесь больше нет.
 
@@ -244,8 +264,8 @@ function MasterApp() {
             <Route path="other" element={<OtherPage />} />
           </Route>
 
-          {/* Возврат из hosted-формы оплаты T-Bank: SuccessURL/FailURL ведут на
-              эти маршруты в том же WebView — экран результата рисуется по URL.
+          {/* Возврат из hosted-формы оплаты T-Bank: query из SuccessURL/FailURL
+              преобразуется в эти маршруты — экран результата рисуется по URL.
               Состояние подписки при этом обновляет бэкенд (нотификация T-Bank). */}
           <Route path="/pay-result/success" element={<PaySuccessRoute />} />
           <Route path="/pay-result/fail" element={<PayFailRoute />} />

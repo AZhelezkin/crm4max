@@ -12,6 +12,7 @@ interface GuardAppSetup {
   master?: Master | null
   isLoading?: boolean
   hash?: string
+  search?: string
   subscription?: SubscriptionState | null
 }
 
@@ -19,10 +20,11 @@ async function loadGuardApp({
   master = createMasterProfile(),
   isLoading = false,
   hash = '#/',
+  search = '',
   subscription = createSubscriptionState(),
 }: GuardAppSetup = {}) {
   vi.resetModules()
-  window.history.replaceState(null, '', `/${hash}`)
+  window.history.replaceState(null, '', `/${search}${hash}`)
   installWebApp({
     initData: 'signed-master-init',
     initDataUnsafe: { start_param: 'mmode' },
@@ -120,27 +122,31 @@ describe.sequential('App master guards', () => {
   })
 
   // ── Результат оплаты — по URL возврата из hosted-формы T-Bank ──────────────
-  // (SuccessURL/FailURL ведут на #/pay-result/success|fail; состояние подписки
-  // обновляет бэкенд по нотификации — фронт-детекта больше нет.)
+  // (SuccessURL/FailURL передают ?payResult=success|fail; приложение преобразует
+  // query в hash-маршрут, состояние обновляет бэкенд по нотификации.)
 
-  it('возврат на #/pay-result/success рисует экран успеха; кнопка → главная', async () => {
+  it('возврат с ?payResult=success рисует экран успеха; кнопка → главная', async () => {
     const user = userEvent.setup()
-    const { App } = await loadGuardApp({ hash: '#/pay-result/success' })
+    const { App } = await loadGuardApp({ search: '?payResult=success' })
 
     render(<App />)
 
     expect(await screen.findByTestId('subscription-success')).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+    expect(window.location.hash).toBe('#/pay-result/success')
     await user.click(screen.getByTestId('subscription-success'))
     expect(await screen.findByTestId('master-home')).toBeInTheDocument()
   })
 
-  it('возврат на #/pay-result/fail рисует экран неуспеха; retry → «Подписка», назад → главная', async () => {
+  it('возврат с ?payResult=fail рисует экран неуспеха; retry → «Подписка»', async () => {
     const user = userEvent.setup()
-    const { App } = await loadGuardApp({ hash: '#/pay-result/fail' })
+    const { App } = await loadGuardApp({ search: '?payResult=fail' })
 
     render(<App />)
 
     expect(await screen.findByTestId('subscription-failed')).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+    expect(window.location.hash).toBe('#/pay-result/fail')
     await user.click(screen.getByText('Повторить'))
     expect(await screen.findByTestId('subscription-plan')).toBeInTheDocument()
   })
