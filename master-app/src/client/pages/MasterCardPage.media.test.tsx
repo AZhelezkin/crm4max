@@ -50,6 +50,20 @@ describe('MasterCardPage contact and media effects', () => {
     seedStore()
   })
 
+  it('показывает блокировку записи с телефоном мастера и заданной типографикой', async () => {
+    api.getMaster.mockResolvedValue(createClientMaster({
+      blocked: true,
+      phone: '+7 (953) 888-22-44',
+    }))
+
+    renderAtRoute(<MasterCardPage />, { route: '/' })
+
+    const title = await screen.findByText('Онлайн-запись недоступна')
+    const explanation = screen.getByText(/Напомните мастеру.*\+7 \(953\) 888-22-44\./)
+    expect(title).toHaveStyle({ fontSize: '24px', lineHeight: '30px', fontWeight: '700' })
+    expect(explanation).toHaveStyle({ fontSize: '13px', lineHeight: '18px', fontWeight: '400' })
+  })
+
   it('передаёт exact phone, MAX profile и shared contact', async () => {
     const webApp = installWebApp()
     api.getMaster.mockResolvedValue(createClientMaster({

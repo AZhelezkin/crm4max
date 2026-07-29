@@ -252,11 +252,11 @@ export default function MasterCardPage() {
   // У мастера нет онлайн-записи (истёк триал / не оплачено) — вместо карточки заглушка.
   if (master.blocked) return (
     <>
-      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px 95px', textAlign: 'center', gap: 12 }}>
-        <div style={{ ...text.titleSmall, color: 'var(--color-on-surface)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 31px 95px', textAlign: 'center', gap: 12 }}>
+        <div style={{ ...text.title, color: 'var(--color-on-surface)' }}>
           Онлайн-запись недоступна
         </div>
-        <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)' }}>
+        <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)' }}>
           Напомните мастеру, чтобы подключил онлайн-запись{master.phone ? `, а пока можно связаться по телефону ${master.phone}` : ''}.
         </div>
       </div>
