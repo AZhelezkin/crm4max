@@ -257,11 +257,12 @@ export default function MasterCardPage() {
   if (master.blocked) return (
     <>
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 31px 95px', textAlign: 'center', gap: 12 }}>
-        <div style={{ ...text.title, color: 'var(--color-on-surface)' }}>
+        <div style={{ ...text.title, color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
           Онлайн-запись недоступна
         </div>
         <div style={{ ...text.footnote, color: 'var(--color-on-surface-secondary)' }}>
-          Напомните мастеру, чтобы подключил онлайн-запись{master.phone ? `, а пока можно связаться по телефону ${master.phone}` : ''}.
+          Напомните мастеру, чтобы подключил онлайн-запись{master.phone ? ', а пока можно связаться по телефону' : ''}.
+          {master.phone && <span style={{ display: 'block' }}>{master.phone}</span>}
         </div>
       </div>
       <BottomNav />

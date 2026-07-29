@@ -61,9 +61,11 @@ describe('MasterCardPage contact and media effects', () => {
     renderAtRoute(<MasterCardPage />, { route: '/' })
 
     const title = await screen.findByText('Онлайн-запись недоступна')
-    const explanation = screen.getByText(/Напомните мастеру.*\+7 \(953\) 888-22-44\./)
-    expect(title).toHaveStyle({ fontSize: '24px', lineHeight: '30px', fontWeight: '700' })
+    const explanation = screen.getByText(/Напомните мастеру/)
+    const phone = screen.getByText('+7 (953) 888-22-44')
+    expect(title).toHaveStyle({ fontSize: '24px', lineHeight: '30px', fontWeight: '700', whiteSpace: 'nowrap' })
     expect(explanation).toHaveStyle({ fontSize: '13px', lineHeight: '18px', fontWeight: '400' })
+    expect(phone).toHaveStyle({ display: 'block' })
   })
 
   it('передаёт exact phone, MAX profile и shared contact', async () => {
