@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
+import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -86,9 +87,14 @@ export default function BookingDetailPage() {
 
   const handleOpenAddress = () => {
     if (!addressText) return
-    const url = !booking.clientAddress && booking.master.lat && booking.master.lng
-      ? `geo:${booking.master.lat},${booking.master.lng}?q=${booking.master.lat},${booking.master.lng}(${encodeURIComponent(booking.master.name)})`
-      : `geo:0,0?q=${encodeURIComponent(addressText)}`
+    const url = booking.clientAddress
+      ? yandexRouteUrl(
+          { lat: booking.master.lat, lng: booking.master.lng, address: booking.master.location },
+          bookingRouteAddress(booking.clientAddress),
+        )
+      : booking.master.lat && booking.master.lng
+        ? `geo:${booking.master.lat},${booking.master.lng}?q=${booking.master.lat},${booking.master.lng}(${encodeURIComponent(booking.master.name)})`
+        : `geo:0,0?q=${encodeURIComponent(addressText)}`
     window.WebApp?.openLink?.(url)
   }
 
@@ -167,9 +173,9 @@ export default function BookingDetailPage() {
 
         {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
         {booking.clientAddress && (
-          <button type="button" onClick={handleOpenAddress} aria-label="Открыть на карте" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'break-word' }}>{addressText}</div>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{addressText}</div>
               <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{addressSubtitle}</div>
             </div>
             <LocationIcon />

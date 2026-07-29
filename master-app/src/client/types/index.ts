@@ -183,4 +183,7 @@ export interface BookingDraft {
   remind: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд мастера). Null — у мастера. */
   clientAddress: string | null
+  clientApartment: string
+  clientFloor: string
+  clientIntercom: string
 }

@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
+import { formatClientAddress } from '@client/lib/clientAddress'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
@@ -98,7 +99,12 @@ function IcoCalendarEdit() {
 
 export default function ConfirmPage() {
   const navigate = useNavigate()
-  const { masterId, service, categoryName, date, time, remind, clientAddress, setClientAddress, reset, rescheduleId } = useBookingStore()
+  const {
+    masterId, service, categoryName, date, time, remind, clientAddress,
+    clientApartment, clientFloor, clientIntercom,
+    setClientAddress, setClientApartment, setClientFloor, setClientIntercom,
+    reset, rescheduleId,
+  } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -125,7 +131,9 @@ export default function ConfirmPage() {
       } else {
         const booking = await bookingsApi.create({
           masterId, serviceId: service.id, date, time, remind,
-          clientAddress: master?.homeVisit ? clientAddress : null,
+          clientAddress: master?.homeVisit
+            ? formatClientAddress(clientAddress, clientApartment, clientFloor, clientIntercom)
+            : null,
         })
         navigate('/book/success', { state: { bookingId: booking.id } })
       }
@@ -320,7 +328,15 @@ export default function ConfirmPage() {
             value={clientAddress ?? ''}
             onChange={(v) => setClientAddress(v || null)}
             label="Ваш адрес"
-            placeholder="Город, улица, дом, квартира..."
+            placeholder="Город, улица, дом..."
+            details={{
+              apartment: clientApartment,
+              floor: clientFloor,
+              intercom: clientIntercom,
+              onApartmentChange: setClientApartment,
+              onFloorChange: setClientFloor,
+              onIntercomChange: setClientIntercom,
+            }}
           />
         )}
 

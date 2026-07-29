@@ -18,6 +18,9 @@ interface BookingState extends BookingDraft {
   clearSlots: () => void
   setRemind: (remind: boolean) => void
   setClientAddress: (addr: string | null) => void
+  setClientApartment: (apartment: string) => void
+  setClientFloor: (floor: string) => void
+  setClientIntercom: (intercom: string) => void
   reset: () => void
 }
 
@@ -34,6 +37,9 @@ export const useBookingStore = create<BookingState>()(
       slots: [],
       remind: true,
       clientAddress: null,
+      clientApartment: '',
+      clientFloor: '',
+      clientIntercom: '',
 
       setMasterId: (masterId) => set({ masterId }),
       setMasterProfileLink: (masterProfileLink) => set({ masterProfileLink }),
@@ -51,7 +57,10 @@ export const useBookingStore = create<BookingState>()(
       clearSlots: () => set({ slots: [] }),
       setRemind: (remind) => set({ remind }),
       setClientAddress: (clientAddress) => set({ clientAddress }),
-      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, rescheduleId: null, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, clientAddress: null })),
+      setClientApartment: (clientApartment) => set({ clientApartment }),
+      setClientFloor: (clientFloor) => set({ clientFloor }),
+      setClientIntercom: (clientIntercom) => set({ clientIntercom }),
+      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, rescheduleId: null, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, clientAddress: null, clientApartment: '', clientFloor: '', clientIntercom: '' })),
     }),
     {
       name: 'booking-draft',

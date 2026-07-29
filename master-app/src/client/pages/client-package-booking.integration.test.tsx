@@ -60,6 +60,9 @@ function seedPackage(slots = orderedSlots) {
     slots,
     remind: false,
     clientAddress: 'Москва, Дом 1',
+    clientApartment: '15',
+    clientFloor: '7',
+    clientIntercom: '123#',
   })
 }
 
@@ -117,7 +120,7 @@ describe('client package booking', () => {
       serviceId: SERVICE_ID,
       slots: orderedSlots,
       remind: false,
-      clientAddress: 'Москва, Дом 1',
+      clientAddress: 'Москва, Дом 1, кв. 15, этаж 7, домофон 123#',
     })
     expect(submit).toBeDisabled()
     await view.user.click(submit)

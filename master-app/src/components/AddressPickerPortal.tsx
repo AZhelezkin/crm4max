@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import AddressSuggestInput from '@/components/AddressSuggestInput'
 import { text } from '@/styles/typography'
+import type { BookingAddressDetails } from '@/lib/bookingAddress'
 
 export interface AddressPickerCoords {
   lat: number
@@ -12,20 +13,23 @@ interface Props {
   open: boolean
   value: string
   onClose: () => void
-  onConfirm: (address: string, coords: AddressPickerCoords | null) => void
+  details?: BookingAddressDetails
+  onConfirm: (address: string, coords: AddressPickerCoords | null, details?: BookingAddressDetails) => void
 }
 
-export default function AddressPickerPortal({ open, value, onClose, onConfirm }: Props) {
+export default function AddressPickerPortal({ open, value, details, onClose, onConfirm }: Props) {
   const [draft, setDraft] = useState(value)
   const [coords, setCoords] = useState<AddressPickerCoords | null>(null)
+  const [detailDraft, setDetailDraft] = useState<BookingAddressDetails>(details ?? { floor: '', apartment: '', intercom: '' })
 
   // При каждом открытии синкаем draft с текущим value, сбрасываем координаты
   useEffect(() => {
     if (open) {
       setDraft(value)
       setCoords(null)
+      setDetailDraft(details ?? { floor: '', apartment: '', intercom: '' })
     }
-  }, [open, value])
+  }, [open, value, details])
 
   // iOS: при открытии клавиатуры ужимается только visual viewport, а layout
   // viewport (по которому fixed-оверлей растянут на весь экран и центрируется
@@ -77,6 +81,17 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
         />
       </div>
 
+      {details && (
+        <div style={{
+          position: 'absolute', left: 12, right: 12, bottom: 'calc(116px + env(safe-area-inset-bottom))',
+          zIndex: 5, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8,
+        }}>
+          <CompactMapField label="Этаж" value={detailDraft.floor} onChange={(floor) => setDetailDraft((current) => ({ ...current, floor }))} />
+          <CompactMapField label="Квартира/Офис" value={detailDraft.apartment} onChange={(apartment) => setDetailDraft((current) => ({ ...current, apartment }))} />
+          <CompactMapField label="Домофон" value={detailDraft.intercom} onChange={(intercom) => setDetailDraft((current) => ({ ...current, intercom }))} />
+        </div>
+      )}
+
       {/* «Готово» — плавающая кнопка снизу поверх карты (макет: x12 w366 h60 rx20, низ 48) */}
       <div
         style={{
@@ -91,7 +106,8 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
         <button
           type="button"
           onClick={() => {
-            onConfirm(draft.trim(), coords)
+            if (details) onConfirm(draft.trim(), coords, detailDraft)
+            else onConfirm(draft.trim(), coords)
             onClose()
           }}
           style={{
@@ -111,5 +127,22 @@ export default function AddressPickerPortal({ open, value, onClose, onConfirm }:
       </div>
     </div>,
     document.body,
+  )
+}
+
+function CompactMapField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label style={{
+      height: 56, boxSizing: 'border-box', borderRadius: 16, padding: '10px 12px',
+      background: 'var(--color-background)', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+    }}>
+      <span style={{ ...text.overline, textTransform: 'none', color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={label}
+        style={{ ...text.bodyStrong, minWidth: 0, width: '100%', padding: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--color-on-surface)', fontFamily: 'inherit' }}
+      />
+    </label>
   )
 }
