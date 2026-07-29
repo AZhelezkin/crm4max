@@ -1,11 +1,10 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterProfile } from '@/test/fixtures/masters'
 import { createSubscriptionState } from '@/test/fixtures/subscriptions'
 import { installBrowserFixture } from '@/test/browser-fixture'
 import { renderAtRoute } from '@/test/render'
-import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
   getMe: vi.fn(),
@@ -22,7 +21,7 @@ vi.mock('@/api/subscription.api', () => ({
     cancel: api.cancel,
   },
 }))
-const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn() }))
+const paymentForm = vi.hoisted(() => ({ openPaymentForm: vi.fn(), openCardBindingForm: vi.fn() }))
 vi.mock('@/lib/paymentForm', () => paymentForm)
 
 vi.mock('qrcode.react', async () => {
@@ -45,13 +44,22 @@ function setMaster(master = createMasterProfile()) {
   return master
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((next) => { resolve = next })
+  return { promise, resolve }
+}
+
 describe('master onboarding subscription screens', () => {
   beforeEach(() => {
     api.getMe.mockReset()
     api.pay.mockReset()
     api.startTrial.mockReset()
     api.cancel.mockReset()
+    paymentForm.openPaymentForm.mockReset()
+    paymentForm.openCardBindingForm.mockReset()
     localStorage.clear()
+    sessionStorage.clear()
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',
       trialEndsAt: new Date(Date.now() + 2.1 * 86_400_000).toISOString(),
@@ -66,7 +74,7 @@ describe('master onboarding subscription screens', () => {
     vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
-  it('показывает trial days и prefetch привязки карты (без списания) на default yearly', async () => {
+  it('показывает trial days и не создаёт платёж до нажатия', async () => {
     renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
 
     expect(await screen.findByText('3')).toBeInTheDocument()
@@ -74,27 +82,74 @@ describe('master onboarding subscription screens', () => {
     expect(screen.getByRole('button', { name: /Ежегодно/ })).toHaveStyle({
       border: '1px solid var(--color-selected-surface)',
     })
-    // В триале «Подключить» — привязка карты без списания (startTrial), не оплата.
-    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
     expect(api.pay).not.toHaveBeenCalled()
+    expect(api.startTrial).not.toHaveBeenCalled()
     expect(api.getMe).toHaveBeenCalledOnce()
   })
 
-  it('в триале: month plan → «Подключить» сразу открывает привязку карты, в кабинет', async () => {
-    const webApp = installWebApp()
+  it('не показывает выбор тарифа до загрузки состояния подписки', async () => {
+    const subscription = deferred<ReturnType<typeof createSubscriptionState>>()
+    api.getMe.mockReturnValue(subscription.promise)
+    renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(screen.queryByText('Выберите период подписки')).not.toBeInTheDocument()
+
+    await act(async () => subscription.resolve(createSubscriptionState({ status: 'ACTIVE' })))
+    expect(await screen.findByText('Подписка оформлена 🎉')).toBeInTheDocument()
+  })
+
+  it('возвращается с подписки на предыдущий внутренний экран', async () => {
+    window.history.replaceState({ idx: 1 }, '')
+    const view = renderAtRoute(<SubscriptionPlanPage />, {
+      entries: ['/other', '/subscription'],
+    })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Назад' }))
+
+    expect(view.getLocation().pathname).toBe('/other')
+    window.history.replaceState({ idx: 0 }, '')
+  })
+
+  it('при прямом открытии подписки сохраняет fallback на главную', async () => {
+    window.history.replaceState({ idx: 0 }, '')
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('YEAR'))
+
+    await view.user.click(await screen.findByRole('button', { name: 'Назад' }))
+
+    expect(view.getLocation().pathname).toBe('/')
+  })
+
+  it('в триале: month plan → «Подключить» открывает оплату в том же WebView', async () => {
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+    await screen.findByText('3')
 
     await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
-    await waitFor(() => expect(api.startTrial).toHaveBeenCalledWith('MONTH'))
-    // Согласия даны на онбординге — шага согласий здесь больше нет.
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
-    // Форма привязки карты (не оплаты); флаги результата оплаты не ставятся; → кабинет.
     expect(screen.queryByText('Необходимые согласия')).not.toBeInTheDocument()
-    expect(webApp.openLink).toHaveBeenCalledWith('https://trial.test/month')
-    expect(api.pay).not.toHaveBeenCalled()
-    expect(view.getLocation().pathname).toBe('/')
+    await waitFor(() => expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/month'))
+    expect(api.pay).toHaveBeenCalledOnce()
+    expect(api.pay).toHaveBeenCalledWith('MONTH')
+    expect(api.startTrial).not.toHaveBeenCalled()
+    expect(view.getLocation().pathname).toBe('/subscription')
+    expect(sessionStorage.getItem('subscription.pendingCardBinding')).toBeNull()
+  })
+
+  it('не создаёт дублирующий Init при повторном клике во время запроса', async () => {
+    const monthly = deferred<{ paymentURL: string }>()
+    api.pay.mockReturnValue(monthly.promise)
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+    await screen.findByText('3')
+
+    await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+    await view.user.click(screen.getByRole('button', { name: 'Подготавливаем...' }))
+    expect(api.pay).toHaveBeenCalledOnce()
+    expect(api.pay).toHaveBeenCalledWith('MONTH')
+
+    await act(async () => monthly.resolve({ paymentURL: 'https://pay.test/month-deferred' }))
+
+    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/month-deferred')
   })
 
   it('вне триала (GRACE) открывает оплату в том же WebView (openPaymentForm)', async () => {
@@ -104,13 +159,13 @@ describe('master onboarding subscription screens', () => {
     }))
     const open = vi.mocked(window.open)
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    await waitFor(() => expect(api.pay).toHaveBeenCalledWith('YEAR'))
+    await screen.findByText('пробный период закончился')
 
     await view.user.click(screen.getByRole('button', { name: /Подключить|Далее/ }))
 
-    // Оплата — навигация того же WebView (SuccessURL вернёт на #/pay-result),
+    // Оплата — навигация того же WebView (SuccessURL вернёт через payResult),
     // НЕ внешний браузер.
-    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year')
+    await waitFor(() => expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year'))
     expect(open).not.toHaveBeenCalled()
     expect(api.pay.mock.calls.filter(([period]) => period === 'YEAR')).toHaveLength(1)
     // Остаёмся на месте — WebView уходит на форму сам.
@@ -123,7 +178,8 @@ describe('master onboarding subscription screens', () => {
       // Полдень UTC — локальная дата одинакова в любом поясе тестовой машины.
       currentPeriodEnd: '2027-07-28T12:00:00.000Z',
       plannedPeriod: 'YEAR',
-      cardPan: '430000******0777',
+      autoRenewEnabled: true,
+      cardPan: null,
     }))
     renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
 
@@ -146,6 +202,7 @@ describe('master onboarding subscription screens', () => {
         status: 'ACTIVE',
         currentPeriodEnd: '2027-07-28T12:00:00.000Z',
         plannedPeriod: 'YEAR',
+        autoRenewEnabled: true,
         cardPan: '430000******0777',
       }))
       // Перечитка после cancel: карта отвязана.
@@ -153,6 +210,7 @@ describe('master onboarding subscription screens', () => {
         status: 'ACTIVE',
         currentPeriodEnd: '2027-07-28T12:00:00.000Z',
         plannedPeriod: 'YEAR',
+        autoRenewEnabled: false,
         cardPan: null,
       }))
     api.cancel.mockResolvedValue({ ok: true })
@@ -160,16 +218,76 @@ describe('master onboarding subscription screens', () => {
 
     await view.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
     expect(screen.getByText(/Новые списания производиться не будут/)).toBeInTheDocument()
+    expect(screen.getByText(/Для годовой подписки проверим сумму возврата за неиспользованные месяцы/)).toBeInTheDocument()
     // «Закрыть» — отказ от отмены.
     expect(api.cancel).not.toHaveBeenCalled()
 
     // Подтверждение — вторая кнопка «Отменить подписку» (в диалоге).
-    await view.user.click(screen.getAllByRole('button', { name: 'Отменить подписку' }).at(-1)!)
+    const cancelButtons = screen.getAllByRole('button', { name: 'Отменить подписку' })
+    await view.user.click(cancelButtons[cancelButtons.length - 1])
 
     expect(api.cancel).toHaveBeenCalledOnce()
+    expect(await screen.findByText('Подписка отменена')).toBeInTheDocument()
     expect(await screen.findByText('Подписка активна до 28.07.2027')).toBeInTheDocument()
+    expect(screen.queryByText('Подписка оформлена 🎉')).not.toBeInTheDocument()
     // Кнопка отмены исчезла — подписка уже отменена.
     expect(screen.queryByRole('button', { name: 'Отменить подписку' })).not.toBeInTheDocument()
+  })
+
+  it('не обещает возврат для месячной подписки', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      plannedPeriod: 'MONTH',
+      autoRenewEnabled: true,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Отменить подписку' }))
+
+    expect(screen.queryByText(/Для годовой подписки проверим сумму возврата за неиспользованные месяцы/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Доступ к сервису сохранится до конца текущего оплаченного месяца/)).toBeInTheDocument()
+  })
+
+  it('для отменённой подписки показывает тарифы и открывает AddCard вне WebView', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      currentPeriodEnd: '2026-08-20T12:00:00.000Z',
+      plannedPeriod: 'YEAR',
+      autoRenewEnabled: false,
+      cardPan: null,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(await screen.findByText('Подписка отменена')).toBeInTheDocument()
+    expect(screen.getByText('Подписка активна до 20.08.2026')).toBeInTheDocument()
+    expect(screen.getByText('Выберите период подписки')).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: /Ежемесячно/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+
+    expect(api.startTrial).toHaveBeenCalledWith('MONTH')
+    expect(api.pay).not.toHaveBeenCalled()
+    expect(paymentForm.openCardBindingForm).toHaveBeenCalledWith('https://trial.test/month')
+    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
+  })
+
+  it('для уже истёкшего оплаченного периода проводит новую оплату, а не AddCard', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      currentPeriodEnd: new Date(Date.now() - 86_400_000).toISOString(),
+      plannedPeriod: 'YEAR',
+      autoRenewEnabled: false,
+      onlineBookingAvailable: false,
+      cardPan: null,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(await screen.findByText('Выберите период подписки')).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Далее' }))
+
+    expect(api.pay).toHaveBeenCalledWith('YEAR')
+    expect(api.startTrial).not.toHaveBeenCalled()
+    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year')
+    expect(paymentForm.openCardBindingForm).not.toHaveBeenCalled()
   })
 
   it('показывает expired trial transition как Далее', async () => {
@@ -184,17 +302,35 @@ describe('master onboarding subscription screens', () => {
     expect(screen.getByRole('button', { name: 'Далее' })).toBeInTheDocument()
   })
 
-  it('остаётся failure-safe если subscription/payment reads недоступны', async () => {
-    api.getMe.mockRejectedValue(new Error('subscription unavailable'))
-    api.pay.mockRejectedValue(new Error('payment unavailable'))
-    api.startTrial.mockRejectedValue(new Error('trial unavailable'))
-    const webApp = installWebApp()
+  it('после ошибки оплаты повторяет запрос и открывает форму', async () => {
+    api.pay
+      .mockRejectedValueOnce(new Error('payment unavailable'))
+      .mockResolvedValueOnce({ paymentURL: 'https://pay.test/retry' })
     const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
-    // sub не загрузился → URL не префетчится; тап «Подключить» — ничего вредного.
+
+    await screen.findByText('3')
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось подготовить оплату')
+    await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
+    await waitFor(() => expect(api.pay).toHaveBeenCalledTimes(2))
+
+    await waitFor(() => expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/retry'))
+    expect(view.getLocation().pathname).toBe('/subscription')
+  })
+
+  it('объясняет необходимость телефона для чека', async () => {
+    api.pay.mockRejectedValue({
+      response: { data: { error: 'SUBSCRIPTION_CONTACT_REQUIRED' } },
+    })
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    await screen.findByText('3')
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
 
-    expect(webApp.openLink).not.toHaveBeenCalled()
-    expect(view.getLocation().pathname).toBe('/subscription')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Для оплаты укажите номер телефона в разделе «Обо мне».',
+    )
+    expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
   })
 
   it('SubscriptionSuccessPage строит QR/share contract и ведёт в профиль', async () => {

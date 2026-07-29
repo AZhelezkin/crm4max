@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import { screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
 import { createMasterClient } from '@/test/fixtures/clients'
@@ -17,6 +17,7 @@ const api = vi.hoisted(() => ({
   paySubscription: vi.fn(),
   getMaster: vi.fn(),
   getReviews: vi.fn(),
+  markGuideStep: vi.fn(),
 }))
 
 vi.mock('@/api/bookings.api', () => ({ bookingsApi: { list: api.listBookings } }))
@@ -25,7 +26,7 @@ vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: { getMe: api.getSubscription, pay: api.paySubscription },
 }))
 vi.mock('@/api/masters.api', () => ({
-  mastersApi: { getMe: api.getMaster, getReviews: api.getReviews },
+  mastersApi: { getMe: api.getMaster, getReviews: api.getReviews, markGuideStep: api.markGuideStep },
 }))
 
 import { useAuthStore } from '@/store/auth.store'
@@ -45,6 +46,13 @@ function primeSuccessfulReads(master = createMasterProfile()) {
   api.paySubscription.mockResolvedValue({ paymentURL: 'https://pay.test/subscription' })
   api.getMaster.mockResolvedValue(master)
   api.getReviews.mockResolvedValue([])
+  api.markGuideStep.mockResolvedValue({ guideProgress: { edited: true } })
+}
+
+function deferred<T>() {
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((_, fail) => { reject = fail })
+  return { promise, reject }
 }
 
 describe('master HomePage', () => {
@@ -55,6 +63,51 @@ describe('master HomePage', () => {
     sessionStorage.clear()
     primeSuccessfulReads()
     setMaster(null)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('считает знакомство с режимом редактирования по нажатию на карандаш', async () => {
+    setMaster(createMasterProfile({ guideProgress: null }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click((await screen.findAllByRole('button', { name: 'Редактировать' }))[0])
+
+    expect(view.getLocation().pathname).toBe('/about')
+    await waitFor(() => expect(api.markGuideStep).toHaveBeenCalledWith('edited'))
+  })
+
+  it('после TTL pending marker делает обычный getMe, если reconciliation не ответил', async () => {
+    vi.useFakeTimers()
+    const initiatedAt = Date.now()
+    sessionStorage.setItem('subscription.pendingCardBinding', JSON.stringify({
+      baselineCardPan: null,
+      baselineUpdatedAt: '2026-07-01T00:00:00.000Z',
+      initiatedAt,
+    }))
+    const reconciliation = deferred<ReturnType<typeof createSubscriptionState>>()
+    const fallback = createSubscriptionState({ status: 'ACTIVE' })
+    api.getSubscription
+      .mockReturnValueOnce(reconciliation.promise)
+      .mockResolvedValueOnce(fallback)
+    setMaster(createMasterProfile())
+    renderAtRoute(<HomePage />)
+    await act(async () => { await Promise.resolve() })
+    expect(api.getSubscription).toHaveBeenCalledOnce()
+
+    await act(async () => {
+      vi.advanceTimersByTime(3 * 60_000)
+      reconciliation.reject(new Error('reconciliation unavailable'))
+      await Promise.resolve()
+      vi.advanceTimersByTime(17 * 60_000 + 1)
+      await Promise.resolve()
+    })
+
+    expect(api.getSubscription).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('Подписка активна')).toBeInTheDocument()
+    expect(sessionStorage.getItem('subscription.pendingCardBinding')).toBeNull()
   })
 
   it('показывает skeleton пока master не загружен', () => {

@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { HeroHeader } from '@/components/onboardingShared'
 import { Radio44 } from '@/components/ConsentsStep'
-import { openPaymentForm } from '@/lib/paymentForm'
+import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
+import { openCardBindingForm, openPaymentForm } from '@/lib/paymentForm'
+import { abandonSubscriptionReturn, clearSubscriptionReturn, readSubscriptionReturn } from '@/lib/subscriptionReturn'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
 
 // «Переход в подписку» (макет 10256-54945): плитка оставшихся дней триала
 // (варианты 10256-55033…55098), выбор периода (месяц 499 ₽ / год 4 790 ₽ со
 // скидкой 20%), список преимуществ и «Подключить» → hosted-форма T-Bank.
 // Открывается из «Другое» → «Подписка» и по плашке триала на главной; согласия
-// даны на онбординге, поэтому «Подключить» сразу открывает привязку/оплату.
+// даны на онбординге, поэтому «Подключить» сразу открывает оплату.
 
 type Period = 'MONTH' | 'YEAR'
 
@@ -36,15 +38,36 @@ export default function SubscriptionPlanPage() {
   const navigate = useNavigate()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   const [period, setPeriod] = useState<Period>('YEAR')
-  // paymentURL префетчим по выбранному периоду: openLink требует синхронного
-  // user-gesture (await его рвёт), поэтому по тапу открываем уже готовый URL.
-  const [payUrls, setPayUrls] = useState<Partial<Record<Period, string>>>({})
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const paymentInFlight = useRef(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   // «Отменить подписку» (макеты 10352-43925 / диалог 10352-44386).
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const { begin: beginCardBinding } = useCardBindingReconciliation(setSub)
+
+  const handleBack = () => {
+    const returnTo = readSubscriptionReturn()
+    if (returnTo) {
+      clearSubscriptionReturn()
+      navigate(returnTo, { replace: true, state: { subscriptionReturn: true } })
+      return
+    }
+    const historyIndex = (window.history.state as { idx?: number } | null)?.idx
+    if (typeof historyIndex === 'number' && historyIndex > 0) {
+      navigate(-1)
+    } else {
+      abandonSubscriptionReturn()
+      navigate('/', { replace: true })
+    }
+  }
 
   useEffect(() => {
-    subscriptionApi.getMe().then(setSub).catch(() => {})
+    subscriptionApi.getMe()
+      .then(setSub)
+      .catch(() => setPaymentError('Не удалось загрузить подписку. Нажмите ещё раз.'))
+      .finally(() => setSubscriptionLoading(false))
   }, [])
 
   const handleCancelSubscription = async () => {
@@ -60,44 +83,53 @@ export default function SubscriptionPlanPage() {
   }
 
   const trialDays = sub?.status === 'TRIALING' ? daysLeft(sub.trialEndsAt) : 0
-  // Онбординг-триал (дни ещё есть): «Подключить» = привязка карты БЕЗ списания
-  // (startTrial), период сохраняется и спишется после триала. Иначе (истёкший
-  // триал / grace / blocked) — обычная оплата сразу (pay).
-  const isTrial = sub?.status === 'TRIALING' && trialDays > 0
   // Оплаченная подписка: ни плитки триала, ни выбора периода, ни «Подключить» —
   // иначе экран выглядел как «пробный период закончился» и предлагал платить снова.
   const isActive = sub?.status === 'ACTIVE'
+  const hasRemainingAccess = !!sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd).getTime() > Date.now()
+  const isPaidActive = isActive && hasRemainingAccess
+  const isCancelledActive = isPaidActive && sub?.autoRenewEnabled === false
 
-  useEffect(() => {
-    // Ждём загрузки sub — иначе не знаем, триал это или оплата (кэшировали бы не
-    // тот URL). При ACTIVE не префетчим вовсе: pay() создаёт NEW-платёж на бэке.
-    if (!sub || isActive || payUrls[period]) return
-    const req = isTrial ? subscriptionApi.startTrial(period) : subscriptionApi.pay(period)
-    req.then((r) => setPayUrls((prev) => ({ ...prev, [period]: r.paymentURL }))).catch(() => {})
-  }, [period, payUrls, sub, isTrial, isActive])
-
-  const handleConnect = () => {
-    const url = payUrls[period]
-    if (!url) return
-    if (!isTrial) {
-      // Оплата — форма в том же WebView: T-Bank вернёт на #/pay-result/success
-      // или /fail (экран результата рисуется по URL), состояние подписки
-      // обновит бэкенд по нотификации.
-      openPaymentForm(url)
-      return
+  const handleConnect = async () => {
+    if (paymentInFlight.current || subscriptionLoading || !sub) return
+    paymentInFlight.current = true
+    setPaymentLoading(true)
+    setPaymentError(null)
+    try {
+      if (isCancelledActive) {
+        // Уже оплаченный остаток не списываем повторно: выбираем будущий период
+        // и заново привязываем карту для списания после currentPeriodEnd.
+        const result = await subscriptionApi.startTrial(period)
+        beginCardBinding(sub)
+        openCardBindingForm(result.paymentURL)
+      } else {
+        const result = await subscriptionApi.pay(period)
+        openPaymentForm(result.paymentURL)
+      }
+    } catch (error) {
+      const code = (error as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setPaymentError(code === 'SUBSCRIPTION_CONTACT_REQUIRED'
+        ? 'Для оплаты укажите номер телефона в разделе «Обо мне».'
+        : 'Не удалось подготовить оплату. Нажмите ещё раз.')
+    } finally {
+      paymentInFlight.current = false
+      setPaymentLoading(false)
     }
-    // Привязка карты в триале (AddCard, без списания): SuccessURL форма не
-    // принимает — открываем во внешнем браузере, мастер вернётся сам.
-    if (window.WebApp?.openLink) window.WebApp.openLink(url)
-    else window.open(url, '_blank')
-    navigate('/', { replace: true })
+  }
+
+  if (subscriptionLoading) {
+    return (
+      <div style={{ minHeight: '100dvh' }}>
+        <HeroHeader title="Подписка" onBack={handleBack} />
+      </div>
+    )
   }
 
   // ── Оплаченная подписка (макет 10352-43925): зелёный hero + плитка-лого,
   //    «Подписка оформлена 🎉», карточка оплаченного плана, «Отменить подписку».
-  if (isActive && sub) {
+  if (isPaidActive && sub && !isCancelledActive) {
     // Автопродление живо, пока привязана карта; после отмены — «активна до…».
-    const autoRenew = !!sub.cardPan
+    const autoRenew = sub.autoRenewEnabled
     const isYear = sub.plannedPeriod === 'YEAR'
     return (
       <div style={{ minHeight: '100dvh', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -113,14 +145,16 @@ export default function SubscriptionPlanPage() {
         }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+          <HeroHeader title="Подписка" onBack={handleBack} />
         </div>
 
         {/* Плитка + заголовок (Figma top 196 → 32 от тулбара; gap 36, текст gap 2). */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32, gap: 36 }}>
           <img src={logoTileSvg} alt="" style={{ width: 75, height: 77, display: 'block' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center', padding: '0 16px' }}>
-            <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка оформлена 🎉</span>
+            <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>
+              {autoRenew ? 'Подписка оформлена 🎉' : 'Подписка отменена'}
+            </span>
             <span style={{ ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>
               {sub.currentPeriodEnd
                 ? autoRenew
@@ -196,6 +230,7 @@ export default function SubscriptionPlanPage() {
         {confirmCancel && (
           <CancelSubscriptionDialog
             busy={cancelling}
+            refundable={isYear}
             onClose={() => setConfirmCancel(false)}
             onConfirm={() => { void handleCancelSubscription() }}
           />
@@ -206,11 +241,20 @@ export default function SubscriptionPlanPage() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <HeroHeader title="Подписка" onBack={() => navigate('/', { replace: true })} />
+      <HeroHeader title="Подписка" onBack={handleBack} />
 
       <div style={{ flex: 1, padding: '40px 16px 24px', display: 'flex', flexDirection: 'column', gap: 60 }}>
+        {isCancelledActive && sub.currentPeriodEnd && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ ...text.h4, color: 'var(--color-on-surface)' }}>Подписка отменена</span>
+            <span style={{ ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>
+              Подписка активна до {formatDate(sub.currentPeriodEnd)}
+            </span>
+          </div>
+        )}
+
         {/* Плитка дней триала (макеты 10256-55033…55098) */}
-        {sub && !isActive && (
+        {sub && !isPaidActive && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <DaysTile value={trialDays} expired={trialDays <= 0} />
             <span style={{ ...text.body1, color: 'var(--color-on-surface)', width: 167, whiteSpace: 'pre-wrap' }}>
@@ -220,7 +264,7 @@ export default function SubscriptionPlanPage() {
         )}
 
         {/* Выбор периода — только пока не оплачено. */}
-        {!isActive && (
+        {(!isPaidActive || isCancelledActive) && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)', textAlign: 'center' }}>Выберите период подписки</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
@@ -263,24 +307,26 @@ export default function SubscriptionPlanPage() {
         </div>
       </div>
 
-      {/* Подключить — скрыта при оплаченной подписке (иначе повторное списание). */}
-      {!isActive && (
+      {/* Для отменённой подписки AddCard включает будущее продление без списания. */}
+      {(!isPaidActive || isCancelledActive) && (
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
         <button
           type="button"
-          onClick={handleConnect}
+          disabled={subscriptionLoading || paymentLoading}
+          onClick={() => { void handleConnect() }}
           style={{
             width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18,
             display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.callout1,
-            cursor: 'pointer',
-            background: 'var(--color-primary-surface)',
-            color: 'var(--color-on-primary-surface)',
+            cursor: subscriptionLoading || paymentLoading ? 'default' : 'pointer',
+            background: subscriptionLoading || paymentLoading ? 'var(--color-secondary-surface-muted)' : 'var(--color-primary-surface)',
+            color: subscriptionLoading || paymentLoading ? 'var(--color-interactive-element-muted)' : 'var(--color-on-primary-surface)',
           }}
         >
-          {/* Согласия даны на онбординге — сразу привязка карты (триал) или оплата.
+          {/* Согласия даны на онбординге — сразу оплата выбранного тарифа.
               «Далее» — вариант закончившегося триала (макет 10256-55751). */}
-          {sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
+          {subscriptionLoading || paymentLoading ? 'Подготавливаем...' : isCancelledActive ? 'Подключить' : sub && trialDays <= 0 ? 'Далее' : 'Подключить'}
         </button>
+        {paymentError && <div role="alert" style={{ paddingTop: 8, ...text.caption2, color: 'var(--color-error-surface-accented)', textAlign: 'center' }}>{paymentError}</div>}
       </div>
       )}
     </div>
@@ -343,8 +389,9 @@ function PlanCard({ selected, onSelect, title, children }: {
 // ConfirmDialog — primary-кнопка «Закрыть» (отказ), подтверждение отмены —
 // вторичная. Клик по подложке = закрыть (не отмена!), поэтому общий
 // ConfirmDialog с переставленными колбэками не подходит.
-function CancelSubscriptionDialog({ busy, onClose, onConfirm }: {
+function CancelSubscriptionDialog({ busy, refundable, onClose, onConfirm }: {
   busy: boolean
+  refundable: boolean
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -366,7 +413,9 @@ function CancelSubscriptionDialog({ busy, onClose, onConfirm }: {
       >
         <div style={{ padding: '0 8px 8px', ...text.h4, color: 'var(--color-on-surface)' }}>Отмена подписки</div>
         <div style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>
-          Новые списания производиться не будут. Доступ к сервису сохранится до конца оплаченного периода
+          Новые списания производиться не будут.<br />
+          {refundable && <>Для годовой подписки проверим сумму возврата за неиспользованные месяцы.<br /></>}
+          Доступ к сервису сохранится до конца текущего оплаченного месяца.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
           <button

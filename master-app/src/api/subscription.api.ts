@@ -5,6 +5,7 @@ export interface SubscriptionState {
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   graceEndsAt: string | null
+  autoRenewEnabled: boolean
   cardPan: string | null
   lastChargeError: string | null
   hasAccess: boolean

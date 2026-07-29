@@ -78,6 +78,7 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
 
       {/* Карточка: QR + текст + кнопки */}
       <div style={{
+        position: 'relative', zIndex: 1,
         margin: '0 16px', marginBottom: 'calc(clamp(16px, 5dvh, 48px) + env(safe-area-inset-bottom))',
         background: 'var(--color-surface)', borderRadius: 12, padding: 24,
         display: 'flex', flexDirection: 'column', gap: 'clamp(16px, 2.5dvh, 24px)',

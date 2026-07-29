@@ -14,6 +14,7 @@ import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, book
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
+import { clearBookingDraft, readBookingDraft, rememberBookingReturn } from '@/lib/subscriptionReturn'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
 import { FloatingField } from '@/components/onboardingShared'
@@ -32,6 +33,31 @@ const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 // Палитра цвета записи (hex) — выбирается мастером, показывается в расписании.
 // Первый — дефолт (зелёный, как в макете 10111-37975).
 const BOOKING_COLORS = ['#1F9432', '#007AFE', '#F0AF2D', '#CE4259', '#8E5BE8', '#00B3A4', '#FF667F', '#6E6F71'] as const
+
+type BookingSubscriptionDraft = {
+  step: 'confirm' | 'package'
+  serviceId: string
+  selectedServiceIds: string[]
+  date: string
+  time: string
+  remind: boolean
+  color: string
+  durationOverride: number | null
+  totalOverride: string | null
+  serviceOverrides: Record<string, { duration?: number; price?: number }>
+  selectedClient: Client | null
+  outbound: boolean
+  address: string
+  addressDetails: BookingAddressDetails
+  addressComment: string
+  miscPrices: Record<string, string>
+  rescheduleId: string | null
+  timeOnly: boolean
+  packageMode: 'days' | 'weeks'
+  packageSlots: { date: string; time: string }[]
+  weekdays: number[]
+  weekTime: string
+}
 
 // Шаг сетки свободного времени мастера (минуты).
 const TIME_STEP_MIN = 15
@@ -133,6 +159,13 @@ export default function CreateBookingPage() {
   const master = useAuthStore((s) => s.master)
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
+  const returningFromSubscription = (location.state as { subscriptionReturn?: boolean } | null)?.subscriptionReturn === true
+  const [restoredDraft] = useState(() => returningFromSubscription
+    ? readBookingDraft<BookingSubscriptionDraft>(master?.id)
+    : null)
+  useEffect(() => {
+    if (!returningFromSubscription) clearBookingDraft()
+  }, [returningFromSubscription])
 
   // Вход во флоу через navigation state:
   //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
@@ -142,9 +175,9 @@ export default function CreateBookingPage() {
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
   const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'success' | 'color'>(
-    rescheduleInit?.rescheduleId
+    restoredDraft?.step ?? (rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
-      : 'confirm',
+      : 'confirm'),
   )
   const [allServices, setAllServices] = useState<Service[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -174,34 +207,34 @@ export default function CreateBookingPage() {
   const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
 
   // Первичная услуга (services[0] / услуга абонемента / услуга при переносе).
-  const [serviceId, setServiceId] = useState(rescheduleInit?.serviceId ?? '')
+  const [serviceId, setServiceId] = useState(restoredDraft?.serviceId ?? rescheduleInit?.serviceId ?? '')
   // Услуги обычной записи (мультиуслуги). Абонемент/перенос — одиночная (serviceId).
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(rescheduleInit?.serviceId ? [rescheduleInit.serviceId] : [])
-  const [date, setDate] = useState(rescheduleInit?.date ?? '')
-  const [time, setTime] = useState('')
-  const [remind, setRemind] = useState(true)
-  const [color, setColor] = useState<string>(BOOKING_COLORS[0])
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(restoredDraft?.selectedServiceIds ?? (rescheduleInit?.serviceId ? [rescheduleInit.serviceId] : []))
+  const [date, setDate] = useState(restoredDraft?.date ?? rescheduleInit?.date ?? '')
+  const [time, setTime] = useState(restoredDraft?.time ?? '')
+  const [remind, setRemind] = useState(restoredDraft?.remind ?? true)
+  const [color, setColor] = useState<string>(restoredDraft?.color ?? BOOKING_COLORS[0])
   // Ручная длительность записи (null → сумма длительностей услуг). Мастер может выбрать
   // любое значение из колеса (шаг 5 мин, макет 10302-42986). Сбрасывается при смене услуг.
-  const [durationOverride, setDurationOverride] = useState<number | null>(null)
+  const [durationOverride, setDurationOverride] = useState<number | null>(restoredDraft?.durationOverride ?? null)
   const [durationPickerOpen, setDurationPickerOpen] = useState(false)
   // Ручной итог записи (строка рублей; пусто = считаем сумму по услугам). Мастер может
   // задать любую стоимость заказа — она не обязана равняться сумме услуг.
-  const [totalOverride, setTotalOverride] = useState<string | null>(null)
+  const [totalOverride, setTotalOverride] = useState<string | null>(restoredDraft?.totalOverride ?? null)
   // Правки услуги «для этого заказа» (макет 10138-40554): длительность (мин) и цена
   // (копейки) конкретной услуги в этой записи. Каталог услуг мастера не меняется.
-  const [serviceOverrides, setServiceOverrides] = useState<Record<string, { duration?: number; price?: number }>>({})
+  const [serviceOverrides, setServiceOverrides] = useState<Record<string, { duration?: number; price?: number }>>(restoredDraft?.serviceOverrides ?? {})
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(rescheduleInit?.client ?? null)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(restoredDraft?.selectedClient ?? rescheduleInit?.client ?? null)
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
-  const [outbound, setOutbound] = useState(false)
-  const [address, setAddress] = useState('')
-  const [addressDetails, setAddressDetails] = useState<BookingAddressDetails>({ floor: '', apartment: '', intercom: '' })
-  const [addressComment, setAddressComment] = useState('')
+  const [outbound, setOutbound] = useState(restoredDraft?.outbound ?? false)
+  const [address, setAddress] = useState(restoredDraft?.address ?? '')
+  const [addressDetails, setAddressDetails] = useState<BookingAddressDetails>(restoredDraft?.addressDetails ?? { floor: '', apartment: '', intercom: '' })
+  const [addressComment, setAddressComment] = useState(restoredDraft?.addressComment ?? '')
   const [addressPickerOpen, setAddressPickerOpen] = useState(false)
   const [addressReturnStep, setAddressReturnStep] = useState<'confirm' | 'package'>('confirm')
   // Суммы для услуг «Прочее» (isMisc) — рубли-строки по serviceId, вводятся в форме-сводке.
-  const [miscPrices, setMiscPrices] = useState<Record<string, string>>({})
+  const [miscPrices, setMiscPrices] = useState<Record<string, string>>(restoredDraft?.miscPrices ?? {})
   // Слоты нужны только для сеансов абонемента (обычная запись — свободное время).
   const [slots, setSlots] = useState<string[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
@@ -210,9 +243,9 @@ export default function CreateBookingPage() {
   const [overlapWarn, setOverlapWarn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
-  const [rescheduleId, setRescheduleId] = useState<string | null>(rescheduleInit?.rescheduleId ?? null)
+  const [rescheduleId, setRescheduleId] = useState<string | null>(restoredDraft?.rescheduleId ?? rescheduleInit?.rescheduleId ?? null)
   // true — вход «изменить только время»: стартуем на шаге времени, back минует шаг даты.
-  const [timeOnly, setTimeOnly] = useState(!!rescheduleInit?.editTime)
+  const [timeOnly, setTimeOnly] = useState(restoredDraft?.timeOnly ?? !!rescheduleInit?.editTime)
   const [pendingReschedule, setPendingReschedule] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
   // Пейволл: при истёкшем триале/неоплате подтверждение записи ведёт на экран
@@ -223,16 +256,20 @@ export default function CreateBookingPage() {
   }, [])
 
   // Абонемент (Service.sessionsCount > 1): режим выбора слотов и сами слоты.
-  const [packageMode, setPackageMode] = useState<'days' | 'weeks'>('days')
-  const [packageSlots, setPackageSlots] = useState<{ date: string; time: string }[]>([])
+  const [packageMode, setPackageMode] = useState<'days' | 'weeks'>(restoredDraft?.packageMode ?? 'days')
+  const [packageSlots, setPackageSlots] = useState<{ date: string; time: string }[]>(restoredDraft?.packageSlots ?? [])
   const [packageSessionIndex, setPackageSessionIndex] = useState<number | null>(null)
-  const [weekdays, setWeekdays] = useState<number[]>([])
-  const [weekTime, setWeekTime] = useState('')
+  const [weekdays, setWeekdays] = useState<number[]>(restoredDraft?.weekdays ?? [])
+  const [weekTime, setWeekTime] = useState(restoredDraft?.weekTime ?? '')
   const [weekTimeOptions, setWeekTimeOptions] = useState<string[]>([])
 
   const reloadServices = () =>
     servicesApi.list()
-      .then((svcs) => { setAllServices(svcs); setLoaded(true) })
+      .then((svcs) => {
+        setAllServices(svcs)
+        setLoaded(true)
+        if (restoredDraft) clearBookingDraft()
+      })
       .catch(() => setLoaded(true))
 
   useEffect(() => {
@@ -460,7 +497,13 @@ export default function CreateBookingPage() {
   const durationMin = durationOverride ?? durationSum
   // При смене набора услуг ручные длительность и итог сбрасываются (снова = по услугам).
   const serviceKey = selectedServiceIds.slice().sort().join(',')
-  useEffect(() => { setDurationOverride(null); setTotalOverride(null) }, [serviceKey])
+  const previousServiceKey = useRef(serviceKey)
+  useEffect(() => {
+    if (previousServiceKey.current === serviceKey) return
+    previousServiceKey.current = serviceKey
+    setDurationOverride(null)
+    setTotalOverride(null)
+  }, [serviceKey])
   // Значения колеса: шаг 5 мин (5…480), плюс текущее значение (вдруг сумма не кратна 5).
   const durationOptions: WheelPickerOption[] = useMemo(() => {
     const set = new Set<number>()
@@ -484,12 +527,41 @@ export default function CreateBookingPage() {
 
   const canSave = selectedServices.length > 0 && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && allMiscValid && !saving
 
+  const openSubscriptionForDraft = (draftStep: BookingSubscriptionDraft['step']) => {
+    if (!master) return
+    rememberBookingReturn<BookingSubscriptionDraft>(master.id, {
+      step: draftStep,
+      serviceId,
+      selectedServiceIds,
+      date,
+      time,
+      remind,
+      color,
+      durationOverride,
+      totalOverride,
+      serviceOverrides,
+      selectedClient,
+      outbound,
+      address,
+      addressDetails,
+      addressComment,
+      miscPrices,
+      rescheduleId,
+      timeOnly,
+      packageMode,
+      packageSlots,
+      weekdays,
+      weekTime,
+    })
+    navigate('/subscription')
+  }
+
   const handleSave = async (force = false) => {
     if (!master || selectedServices.length === 0 || !date || !time || !selectedClient) return
     if (outbound && !address.trim()) return
     if (!allMiscValid) return
     // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
-    if (subState && !subState.onlineBookingAvailable) { navigate('/subscription'); return }
+    if (subState && !subState.onlineBookingAvailable) { openSubscriptionForDraft('confirm'); return }
     // Пересечение — предупреждаем один раз, затем разрешаем (allowOverlap на бэке).
     if (!force && hasOverlap) { setOverlapWarn(true); return }
     setOverlapWarn(false)
@@ -536,7 +608,7 @@ export default function CreateBookingPage() {
     if (!master || !selectedService || !selectedClient) return
     if (homeVisit && !address.trim()) return
     // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
-    if (subState && !subState.onlineBookingAvailable) { navigate('/subscription'); return }
+    if (subState && !subState.onlineBookingAvailable) { openSubscriptionForDraft('package'); return }
     const slots = packageMode === 'days'
       ? packageSlots.filter((s) => s && s.date && s.time)
       : generateWeeklySlots(weekdays, weekTime, selectedService.sessionsCount)

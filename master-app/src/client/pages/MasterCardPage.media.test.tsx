@@ -9,13 +9,14 @@ import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
   getMaster: vi.fn(),
+  rememberVisit: vi.fn(),
   listBookings: vi.fn(),
   createReview: vi.fn(),
 }))
 
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster },
+  mastersApi: { getById: api.getMaster, rememberVisit: api.rememberVisit },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: { list: api.listBookings },
@@ -46,8 +47,25 @@ describe('MasterCardPage contact and media effects', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     api.listBookings.mockResolvedValue([])
+    api.rememberVisit.mockResolvedValue(undefined)
     api.createReview.mockResolvedValue(undefined)
     seedStore()
+  })
+
+  it('показывает блокировку записи с телефоном мастера и заданной типографикой', async () => {
+    api.getMaster.mockResolvedValue(createClientMaster({
+      blocked: true,
+      phone: '+7 (953) 888-22-44',
+    }))
+
+    renderAtRoute(<MasterCardPage />, { route: '/' })
+
+    const title = await screen.findByText('Онлайн-запись недоступна')
+    const explanation = screen.getByText(/Напомните мастеру/)
+    const phone = screen.getByText('+7 (953) 888-22-44')
+    expect(title).toHaveStyle({ fontSize: '24px', lineHeight: '30px', fontWeight: '700', whiteSpace: 'nowrap' })
+    expect(explanation).toHaveStyle({ fontSize: '13px', lineHeight: '18px', fontWeight: '400' })
+    expect(phone).toHaveStyle({ display: 'block' })
   })
 
   it('передаёт exact phone, MAX profile и shared contact', async () => {

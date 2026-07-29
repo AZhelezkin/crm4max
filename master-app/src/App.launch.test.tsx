@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,6 +41,9 @@ async function loadApp({ webAppStart, initData, search = '', hash = '#/' }: AppS
   }))
   vi.doMock('@/pages/BookingDetailPage', () => ({
     default: () => <div data-testid="master-booking">booking</div>,
+  }))
+  vi.doMock('@/pages/SubscriptionPlanPage', () => ({
+    default: () => <div data-testid="subscription-plan">subscription</div>,
   }))
   vi.doMock('@/pages/MapTestPage', () => ({
     default: () => <div data-testid="map-test">map</div>,
@@ -92,6 +96,15 @@ describe.sequential('App launch routing', () => {
     expect(getMasterBookingDeepLinkId()).toBe(BOOKING_ID)
     expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
     expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
+  })
+
+  it('открывает подписку мастера по start_param msubscription', async () => {
+    const { default: App } = await loadApp({ webAppStart: 'msubscription', hash: '#/other' })
+
+    render(<StrictMode><App /></StrictMode>)
+
+    expect(await screen.findByTestId('subscription-plan')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/subscription')
   })
 
   it('предпочитает MAX start_param browser query', async () => {

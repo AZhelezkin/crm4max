@@ -8,6 +8,7 @@ import { renderAtRoute } from '@/test/render'
 
 const api = vi.hoisted(() => ({
   getById: vi.fn(),
+  rememberVisit: vi.fn(),
   getRecentMasters: vi.fn(),
   listBookings: vi.fn(),
   createReview: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
   mastersApi: {
     getById: api.getById,
+    rememberVisit: api.rememberVisit,
     getRecentMasters: api.getRecentMasters,
   },
 }))
@@ -58,6 +60,7 @@ describe('client discovery journeys', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     api.listBookings.mockResolvedValue([])
+    api.rememberVisit.mockResolvedValue(undefined)
     api.createReview.mockResolvedValue(undefined)
     resetBookingStore()
   })
@@ -107,6 +110,7 @@ describe('client discovery journeys', () => {
     expect(await screen.findByText('Анна Авторитетная')).toBeInTheDocument()
     expect(screen.getByText('Стрижка')).toBeInTheDocument()
     expect(api.getById).toHaveBeenCalledWith(MASTER_ID)
+    expect(api.rememberVisit).toHaveBeenCalledWith(MASTER_ID)
     await waitFor(() => {
       expect(useBookingStore.getState().masterProfileLink).toBe('https://max.ru/authoritative-master')
     })

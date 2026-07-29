@@ -47,11 +47,23 @@ export default function OnboardingPage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [showAddressPortal, setShowAddressPortal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
+  const [, setPhotoUrl] = useState<string | null>(null)       // S3 URL аватара
   const [photoUploading, setPhotoUploading] = useState(false)
   const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null)  // object URL для экрана обрезки
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const photoUrlRef = useRef<string | null>(null)
+  const uploadRequestIdRef = useRef(0)
+  const uploadPreviewUrlsRef = useRef(new Set<string>())
   const [homeVisit, setHomeVisit] = useState(false)
+
+  useEffect(() => () => {
+    if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
+  }, [avatarCropSrc])
+  useEffect(() => () => {
+    uploadRequestIdRef.current += 1
+    uploadPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    uploadPreviewUrlsRef.current.clear()
+  }, [])
 
   // ── Шаг 1: График ──
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5])
@@ -105,21 +117,35 @@ export default function OnboardingPage() {
     const file = e.target.files?.[0]
     e.target.value = ''                      // позволяет выбрать тот же файл повторно
     if (!file) return
+    setSubmitError(null)
     setAvatarCropSrc(URL.createObjectURL(file))
   }
 
   const uploadAvatar = async (file: File) => {
-    setPhotoPreview(URL.createObjectURL(file))
+    const requestId = ++uploadRequestIdRef.current
+    const previousPhotoUrl = photoUrlRef.current
+    const previewUrl = URL.createObjectURL(file)
+    uploadPreviewUrlsRef.current.add(previewUrl)
+    setPhotoPreview(previewUrl)
     setPhotoUploading(true)
+    setSubmitError(null)
     try {
       const url = await uploadPhoto(file, 'masters')
+      if (requestId !== uploadRequestIdRef.current) return
+      photoUrlRef.current = url
       setPhotoUrl(url)
+      setPhotoPreview(url)
     } catch (err: unknown) {
+      if (requestId !== uploadRequestIdRef.current) return
       const msg = err instanceof Error ? err.message : String(err)
       console.error('Ошибка загрузки фото:', msg)
+      photoUrlRef.current = previousPhotoUrl
+      setPhotoUrl(previousPhotoUrl)
+      setPhotoPreview(previousPhotoUrl)
       setSubmitError(`Не удалось загрузить фото: ${msg}`)
     } finally {
-      setPhotoUploading(false)
+      if (uploadPreviewUrlsRef.current.delete(previewUrl)) URL.revokeObjectURL(previewUrl)
+      if (requestId === uploadRequestIdRef.current) setPhotoUploading(false)
     }
   }
 
@@ -159,7 +185,7 @@ export default function OnboardingPage() {
           location,
           ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
           contacts: undefined,
-          photo: photoUrl ?? undefined,
+          photo: photoUrlRef.current ?? undefined,
           homeVisit,
           isOnboarded: false,
         })
@@ -318,11 +344,9 @@ export default function OnboardingPage() {
         open={!!avatarCropSrc}
         src={avatarCropSrc ?? ''}
         onCancel={() => {
-          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
           setAvatarCropSrc(null)
         }}
         onConfirm={(file) => {
-          if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
           setAvatarCropSrc(null)
           void uploadAvatar(file)
         }}
@@ -1112,8 +1136,4 @@ function ChevronRightIcon() {
     </svg>
   )
 }
-
-
-
-
 

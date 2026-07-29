@@ -26,18 +26,16 @@ const WEB_APP_ALLOWLIST = [
   'src/client/pages/QRScanPage.tsx',
   'src/client/pages/ServiceDetailPage.tsx',
   'src/client/store/auth.store.ts',
-  // Шаг согласий (онбординг): openDoc открывает оферту/политику через openLink.
-  'src/components/ConsentsStep.tsx',
   'src/hooks/usePaymentsExport.ts',
   'src/lib/bridge.ts',
   'src/lib/calendar.ts',
+  // Централизованные открытия документов и hosted-формы AddCard.
+  'src/lib/legalDocuments.ts',
+  'src/lib/paymentForm.ts',
   'src/pages/BlockedSubscriptionPage.tsx',
   'src/pages/BookingDetailPage.tsx',
   // Поддержка переехала из навбара на экран «Другое» (макет 10302-42755).
   'src/pages/OtherPage.tsx',
-  // «Способы оплаты»: открывает hosted-форму перепривязки карты через openLink.
-  'src/pages/PaymentMethodsPage.tsx',
-  'src/pages/SubscriptionPlanPage.tsx',
   'src/standalone-pages/handoff/destination-selector/DestinationSelectorPage.tsx',
   'src/standalone-pages/handoff/destination-selector/useDestinationSelector.ts',
   'src/store/auth.store.ts',
@@ -284,7 +282,7 @@ describe('platform provider boundary architecture', () => {
     const actual = filesWithProviderWebAppAccess()
 
     assertExactLocations('provider WebApp access', actual, WEB_APP_ALLOWLIST)
-    expect(actual).toHaveLength(21)
+    expect(actual).toHaveLength(20)
   })
 
   it('изолирует tracked legacy JavaScript shadows от production imports', () => {

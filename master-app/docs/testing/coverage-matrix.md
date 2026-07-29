@@ -83,6 +83,7 @@
 | `/about` | `AboutMePage` | P1 |
 | `/about-platform` | `AboutPlatformPage` (из «Другое») | P1 |
 | `/payment-methods` | `PaymentMethodsPage` — карта подписки, перепривязка (из «Другое») | P1 |
+| `/consents` | `ConsentsPage` | P1 |
 | `/address` | `AddressEditPage` | P0 |
 | `/subscription` | `SubscriptionPlanPage` | P0 |
 | `/pay-result/success` | возврат из hosted-формы T-Bank → `SubscriptionSuccessPage` (экран по URL) | P0 |
@@ -178,6 +179,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/masters.api.ts#mastersApi.getAvailability`
 - `src/client/api/masters.api.ts#mastersApi.getById`
 - `src/client/api/masters.api.ts#mastersApi.getRecentMasters`
+- `src/client/api/masters.api.ts#mastersApi.rememberVisit`
 - `src/client/api/masters.api.ts#mastersApi.getSlots`
 - `src/client/api/reviews.api.ts#reviewsApi.create`
 - `src/client/api/support.api.ts#startSupport`

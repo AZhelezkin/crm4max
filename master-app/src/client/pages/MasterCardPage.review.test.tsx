@@ -8,13 +8,14 @@ import { renderAtRoute } from '@/test/render'
 
 const api = vi.hoisted(() => ({
   getMaster: vi.fn(),
+  rememberVisit: vi.fn(),
   listBookings: vi.fn(),
   createReview: vi.fn(),
 }))
 
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster },
+  mastersApi: { getById: api.getMaster, rememberVisit: api.rememberVisit },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: { list: api.listBookings },
@@ -76,6 +77,7 @@ describe('MasterCardPage review mutation', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     api.getMaster.mockResolvedValue(createClientMaster())
+    api.rememberVisit.mockResolvedValue(undefined)
     mockBookingLists()
     seedStore()
   })

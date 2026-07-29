@@ -16,6 +16,17 @@ describe('client masters API', () => {
     await expect(mastersApi.getById(MASTER_ID)).resolves.toEqual(master)
   })
 
+  it('сохраняет просмотр мастера', async () => {
+    let called = false
+    server.use(http.post(`*/api/masters/${MASTER_ID}/view`, () => {
+      called = true
+      return new HttpResponse(null, { status: 204 })
+    }))
+
+    await expect(mastersApi.rememberVisit(MASTER_ID)).resolves.toBeUndefined()
+    expect(called).toBe(true)
+  })
+
   it('получает список последних мастеров', async () => {
     const recent = [{
       id: MASTER_ID,

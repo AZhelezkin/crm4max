@@ -3,6 +3,7 @@ import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useNaviga
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
 import { installHorizontalOverscrollGuard } from '@/lib/topOverscrollGuard'
+import { abandonSubscriptionReturn, clearSubscriptionReturn, readSubscriptionReturn } from '@/lib/subscriptionReturn'
 import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
@@ -54,6 +55,26 @@ function resolveStartParam(): string {
   }
   return ''
 }
+
+// T-Bank может отбросить URL fragment при возврате с hosted-формы. Backend
+// передаёт результат обычным query-параметром, а HashRouter получает маршрут
+// до первого render. Остальные query-параметры сохраняются.
+function normalizePaymentResultRoute(): void {
+  if (typeof window === 'undefined') return
+  const query = new URLSearchParams(window.location.search)
+  const result = query.get('payResult')
+  if (result !== 'success' && result !== 'fail') return
+
+  query.delete('payResult')
+  const search = query.toString()
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${search ? `?${search}` : ''}#/pay-result/${result}`,
+  )
+}
+
+normalizePaymentResultRoute()
 export const startParam = resolveStartParam()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 
@@ -72,7 +93,7 @@ export function getMasterBookingDeepLinkId(): string | null {
 }
 
 function resolveInitialMode(): 'master' | 'client' | null {
-  if (startParam === 'mmode') return 'master'
+  if (startParam === 'mmode' || startParam === 'msubscription') return 'master'
   if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
   // Список последних мастеров (открывается из клиент-бота).
   if (startParam === 'cmasters') return 'client'
@@ -161,24 +182,32 @@ export default function App() {
   return mode === 'client' ? <ClientApp /> : <MasterApp />
 }
 
-// Одноразовый deep-link редирект: при первом заходе на «/» в master-режиме
-// проверяем startparam=mb-<id> → /bookings/<id>. Флаг гарантирует, что
-// последующие переходы на «/» (например через нав-таб) уже не редиректят.
-let masterDeepLinkConsumed = false
+function MasterDeepLinkRedirect() {
+  const navigate = useNavigate()
+  const [target, setTarget] = useState(() => {
+    if (startParam === 'msubscription') return '/subscription'
+    const bookingId = getMasterBookingDeepLinkId()
+    return bookingId ? `/bookings/${bookingId}` : null
+  })
 
-function MasterIndexRoute() {
-  if (!masterDeepLinkConsumed) {
-    masterDeepLinkConsumed = true
-    const id = getMasterBookingDeepLinkId()
-    if (id) return <Navigate to={`/bookings/${id}`} replace />
-  }
-  return <HomePage />
+  useEffect(() => {
+    if (!target) return
+    navigate(target, { replace: true })
+    setTarget(null)
+  }, [navigate, target])
+
+  return null
 }
 
 // Экраны результата оплаты — по URL возврата из hosted-формы T-Bank
 // (макеты 10256-55423 / 10256-55004). Кнопки уводят обычной навигацией.
 function PaySuccessRoute() {
   const navigate = useNavigate()
+  const [returnTo] = useState(readSubscriptionReturn)
+  useEffect(() => {
+    if (returnTo) clearSubscriptionReturn()
+  }, [returnTo])
+  if (returnTo) return <Navigate to={returnTo} replace state={{ subscriptionReturn: true }} />
   return <SubscriptionSuccessPage onGoProfile={() => navigate('/', { replace: true })} />
 }
 
@@ -187,7 +216,10 @@ function PayFailRoute() {
   return (
     <SubscriptionFailedPage
       onRetry={() => navigate('/subscription', { replace: true })}
-      onBack={() => navigate('/', { replace: true })}
+      onBack={() => {
+        abandonSubscriptionReturn()
+        navigate('/', { replace: true })
+      }}
     />
   )
 }
@@ -198,8 +230,8 @@ function MasterApp() {
   // только клиентская онлайн-запись (плашка на главной + пейволл на создании записи).
   //
   // Результат оплаты: UI и данные разделены. Экран успеха/неуспеха рисуется
-  // МАРШРУТОМ — T-Bank возвращает WebView на #/pay-result/success|fail
-  // (SuccessURL/FailURL формы). Само состояние подписки — на бэке, источник
+  // МАРШРУТОМ — T-Bank возвращает WebView с ?payResult=success|fail, который
+  // при запуске нормализуется в #/pay-result/success|fail. Состояние — на бэке, источник
   // истины — нотификация T-Bank (+ GetState-синк как подстраховка); фронт
   // просто читает getMe, детект-эвристик здесь больше нет.
 
@@ -226,6 +258,7 @@ function MasterApp() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <MasterDeepLinkRedirect />
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}
         <Route
@@ -236,7 +269,7 @@ function MasterApp() {
         {/* Все остальные роуты — только после привязки карты (isOnboarded) */}
         <Route element={needsOnboarding ? <Navigate to="/welcome" replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
-            <Route index element={<MasterIndexRoute />} />
+            <Route index element={<HomePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />
@@ -244,8 +277,8 @@ function MasterApp() {
             <Route path="other" element={<OtherPage />} />
           </Route>
 
-          {/* Возврат из hosted-формы оплаты T-Bank: SuccessURL/FailURL ведут на
-              эти маршруты в том же WebView — экран результата рисуется по URL.
+          {/* Возврат из hosted-формы оплаты T-Bank: query из SuccessURL/FailURL
+              преобразуется в эти маршруты — экран результата рисуется по URL.
               Состояние подписки при этом обновляет бэкенд (нотификация T-Bank). */}
           <Route path="/pay-result/success" element={<PaySuccessRoute />} />
           <Route path="/pay-result/fail" element={<PayFailRoute />} />
