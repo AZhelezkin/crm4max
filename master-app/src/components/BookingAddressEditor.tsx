@@ -42,7 +42,7 @@ export default function BookingAddressEditor({
           <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес клиента</span>
             <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {address || 'Где оказывается услуга'}
+              {address || 'Выбрать'}
             </span>
           </span>
           <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}>
