@@ -133,7 +133,11 @@ export default function MasterCardPage() {
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId)
-      .then((m) => { setMaster(m); setMasterProfileLink(m.maxProfileLink) })
+      .then((m) => {
+        setMaster(m)
+        setMasterProfileLink(m.maxProfileLink)
+        void mastersApi.rememberVisit(masterId).catch(() => {})
+      })
       .catch(() => {})
   }, [masterId, setMasterProfileLink])
 

@@ -93,7 +93,7 @@ export function getMasterBookingDeepLinkId(): string | null {
 }
 
 function resolveInitialMode(): 'master' | 'client' | null {
-  if (startParam === 'mmode') return 'master'
+  if (startParam === 'mmode' || startParam === 'msubscription') return 'master'
   if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
   // Список последних мастеров (открывается из клиент-бота).
   if (startParam === 'cmasters') return 'client'
@@ -182,18 +182,21 @@ export default function App() {
   return mode === 'client' ? <ClientApp /> : <MasterApp />
 }
 
-// Одноразовый deep-link редирект: при первом заходе на «/» в master-режиме
-// проверяем startparam=mb-<id> → /bookings/<id>. Флаг гарантирует, что
-// последующие переходы на «/» (например через нав-таб) уже не редиректят.
-let masterDeepLinkConsumed = false
+function MasterDeepLinkRedirect() {
+  const navigate = useNavigate()
+  const [target, setTarget] = useState(() => {
+    if (startParam === 'msubscription') return '/subscription'
+    const bookingId = getMasterBookingDeepLinkId()
+    return bookingId ? `/bookings/${bookingId}` : null
+  })
 
-function MasterIndexRoute() {
-  if (!masterDeepLinkConsumed) {
-    masterDeepLinkConsumed = true
-    const id = getMasterBookingDeepLinkId()
-    if (id) return <Navigate to={`/bookings/${id}`} replace />
-  }
-  return <HomePage />
+  useEffect(() => {
+    if (!target) return
+    navigate(target, { replace: true })
+    setTarget(null)
+  }, [navigate, target])
+
+  return null
 }
 
 // Экраны результата оплаты — по URL возврата из hosted-формы T-Bank
@@ -255,6 +258,7 @@ function MasterApp() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <MasterDeepLinkRedirect />
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}
         <Route
@@ -265,7 +269,7 @@ function MasterApp() {
         {/* Все остальные роуты — только после привязки карты (isOnboarded) */}
         <Route element={needsOnboarding ? <Navigate to="/welcome" replace /> : <Outlet />}>
           <Route element={<MainLayout />}>
-            <Route index element={<MasterIndexRoute />} />
+            <Route index element={<HomePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="income" element={<PaymentsPage />} />

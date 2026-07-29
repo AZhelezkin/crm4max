@@ -22,7 +22,10 @@ export const mastersApi = {
   getById: (id: string) =>
     api.get<Master>(`/masters/${id}`).then((r) => r.data),
 
-  // Последние мастера клиента (по его записям) — для RecentMastersPage.
+  rememberVisit: (id: string) =>
+    api.post(`/masters/${id}/view`).then(() => undefined),
+
+  // Последние открытые мастера клиента — для RecentMastersPage.
   getRecentMasters: () =>
     api.get<RecentMaster[]>('/masters/recent').then((r) => r.data),
 

@@ -9,13 +9,14 @@ import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
   getMaster: vi.fn(),
+  rememberVisit: vi.fn(),
   listBookings: vi.fn(),
   createReview: vi.fn(),
 }))
 
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster },
+  mastersApi: { getById: api.getMaster, rememberVisit: api.rememberVisit },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: { list: api.listBookings },
@@ -46,6 +47,7 @@ describe('MasterCardPage contact and media effects', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     api.listBookings.mockResolvedValue([])
+    api.rememberVisit.mockResolvedValue(undefined)
     api.createReview.mockResolvedValue(undefined)
     seedStore()
   })
