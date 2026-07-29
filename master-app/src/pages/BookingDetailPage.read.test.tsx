@@ -112,7 +112,7 @@ describe('master BookingDetailPage read state', () => {
     const route = new URL(webApp.openLink.mock.calls[0]?.[0] as string)
     expect(route.origin + route.pathname).toBe('https://yandex.ru/maps/')
     expect(route.searchParams.get('mode')).toBe('routes')
-    expect(route.searchParams.get('rtext')).toBe('55.7558,37.6176~Москва, Клиентская улица, 10')
+    expect(route.searchParams.get('rtext')).toBe('Москва, Тестовая улица, 1~Москва, Клиентская улица, 10')
     expect(route.searchParams.get('rtt')).toBe('auto')
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()

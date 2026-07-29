@@ -28,7 +28,7 @@ describe('bookingAddress', () => {
     })
   })
 
-  it('строит автомобильный маршрут от координат мастера', () => {
+  it('строит автомобильный маршрут от адреса мастера, если он заполнен', () => {
     const url = new URL(yandexRouteUrl(
       { lat: 55.7558, lng: 37.6176, address: 'Адрес мастера' },
       'Москва, Дом 1',
@@ -36,7 +36,16 @@ describe('bookingAddress', () => {
 
     expect(url.origin + url.pathname).toBe('https://yandex.ru/maps/')
     expect(url.searchParams.get('mode')).toBe('routes')
-    expect(url.searchParams.get('rtext')).toBe('55.7558,37.6176~Москва, Дом 1')
+    expect(url.searchParams.get('rtext')).toBe('Адрес мастера~Москва, Дом 1')
     expect(url.searchParams.get('rtt')).toBe('auto')
+  })
+
+  it('использует координаты мастера, если адрес не заполнен', () => {
+    const url = new URL(yandexRouteUrl(
+      { lat: 55.7558, lng: 37.6176, address: null },
+      'Москва, Дом 1',
+    ))
+
+    expect(url.searchParams.get('rtext')).toBe('55.7558,37.6176~Москва, Дом 1')
   })
 })

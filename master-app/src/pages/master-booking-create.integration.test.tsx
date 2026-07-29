@@ -320,6 +320,8 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     const dateCard = formCard('Дата и время')
+    expect(dateCard.getByText('Адрес')).toBeInTheDocument()
+    expect(dateCard.queryByText('Адрес клиента')).not.toBeInTheDocument()
     expect(dateCard.getByText('Москва, Серебряническая набережная, 29')).toBeInTheDocument()
     expect(dateCard.getByText('кв. 104')).toBeInTheDocument()
     expect(dateCard.getByText('Слева от входа')).toBeInTheDocument()
