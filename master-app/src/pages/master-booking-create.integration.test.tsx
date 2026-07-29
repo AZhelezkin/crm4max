@@ -190,6 +190,7 @@ function nextWeekdaySlots(isoWeekday: number, count: number, time: string) {
 
 describe('master CreateBookingPage', () => {
   beforeEach(() => {
+    sessionStorage.clear()
     Object.values(api).forEach((mock) => mock.mockReset())
     api.listServices.mockResolvedValue([regularService, packageService])
     api.listClients.mockResolvedValue([existingClient])
@@ -241,6 +242,17 @@ describe('master CreateBookingPage', () => {
 
     expect(api.createBooking).not.toHaveBeenCalled()
     expect(view.getLocation().pathname).toBe('/subscription')
+    expect(sessionStorage.getItem('subscription.returnTo')).not.toBeNull()
+    expect(sessionStorage.getItem('subscription.bookingDraft')).not.toBeNull()
+
+    view.unmount()
+    api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
+    renderPage({ subscriptionReturn: true })
+
+    expect(await screen.findByText('Ирина Клиентова')).toBeInTheDocument()
+    expect(screen.getByText('Обычная услуга')).toBeInTheDocument()
+    expect(screen.getByText('10:00')).toBeInTheDocument()
+    expect(sessionStorage.getItem('subscription.bookingDraft')).toBeNull()
   })
 
   it('проходит все шаги обычной записи, не пишет раньше submit и блокирует duplicate', async () => {

@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -14,6 +15,7 @@ interface GuardAppSetup {
   hash?: string
   search?: string
   subscription?: SubscriptionState | null
+  returnToBooking?: boolean
 }
 
 async function loadGuardApp({
@@ -22,8 +24,16 @@ async function loadGuardApp({
   hash = '#/',
   search = '',
   subscription = createSubscriptionState(),
+  returnToBooking = false,
 }: GuardAppSetup = {}) {
   vi.resetModules()
+  sessionStorage.clear()
+  if (returnToBooking) {
+    sessionStorage.setItem('subscription.returnTo', JSON.stringify({
+      createdAt: Date.now(),
+      value: '/bookings/new',
+    }))
+  }
   window.history.replaceState(null, '', `/${search}${hash}`)
   installWebApp({
     initData: 'signed-master-init',
@@ -44,6 +54,9 @@ async function loadGuardApp({
   vi.doMock('@/pages/WelcomePage', () => ({ default: () => <div data-testid="welcome" /> }))
   vi.doMock('@/pages/SubscriptionPlanPage', () => ({
     default: () => <div data-testid="subscription-plan" />,
+  }))
+  vi.doMock('@/pages/CreateBookingPage', () => ({
+    default: () => <div data-testid="booking-create" />,
   }))
   vi.doMock('@/pages/SubscriptionSuccessPage', () => ({
     default: ({ onGoProfile }: { onGoProfile: () => void }) => (
@@ -136,6 +149,17 @@ describe.sequential('App master guards', () => {
     expect(window.location.hash).toBe('#/pay-result/success')
     await user.click(screen.getByTestId('subscription-success'))
     expect(await screen.findByTestId('master-home')).toBeInTheDocument()
+  })
+
+  it('после оплаты из создания записи возвращает к сохранённому черновику', async () => {
+    const { App } = await loadGuardApp({ search: '?payResult=success', returnToBooking: true })
+
+    render(<StrictMode><App /></StrictMode>)
+
+    expect(await screen.findByTestId('booking-create')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/bookings/new')
+    expect(sessionStorage.getItem('subscription.returnTo')).toBeNull()
+    expect(screen.queryByTestId('subscription-success')).not.toBeInTheDocument()
   })
 
   it('возврат с ?payResult=fail рисует экран неуспеха; retry → «Подписка»', async () => {

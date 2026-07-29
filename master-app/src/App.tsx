@@ -3,6 +3,7 @@ import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useNaviga
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
 import { installHorizontalOverscrollGuard } from '@/lib/topOverscrollGuard'
+import { abandonSubscriptionReturn, clearSubscriptionReturn, readSubscriptionReturn } from '@/lib/subscriptionReturn'
 import ClientApp from '@client/ClientApp'
 
 import MainLayout from '@/components/MainLayout'
@@ -199,6 +200,11 @@ function MasterIndexRoute() {
 // (макеты 10256-55423 / 10256-55004). Кнопки уводят обычной навигацией.
 function PaySuccessRoute() {
   const navigate = useNavigate()
+  const [returnTo] = useState(readSubscriptionReturn)
+  useEffect(() => {
+    if (returnTo) clearSubscriptionReturn()
+  }, [returnTo])
+  if (returnTo) return <Navigate to={returnTo} replace state={{ subscriptionReturn: true }} />
   return <SubscriptionSuccessPage onGoProfile={() => navigate('/', { replace: true })} />
 }
 
@@ -207,7 +213,10 @@ function PayFailRoute() {
   return (
     <SubscriptionFailedPage
       onRetry={() => navigate('/subscription', { replace: true })}
-      onBack={() => navigate('/', { replace: true })}
+      onBack={() => {
+        abandonSubscriptionReturn()
+        navigate('/', { replace: true })
+      }}
     />
   )
 }

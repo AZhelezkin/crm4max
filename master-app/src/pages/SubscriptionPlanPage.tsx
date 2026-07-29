@@ -7,6 +7,7 @@ import { HeroHeader } from '@/components/onboardingShared'
 import { Radio44 } from '@/components/ConsentsStep'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 import { openCardBindingForm, openPaymentForm } from '@/lib/paymentForm'
+import { abandonSubscriptionReturn, clearSubscriptionReturn, readSubscriptionReturn } from '@/lib/subscriptionReturn'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
 
 // «Переход в подписку» (макет 10256-54945): плитка оставшихся дней триала
@@ -47,9 +48,19 @@ export default function SubscriptionPlanPage() {
   const { begin: beginCardBinding } = useCardBindingReconciliation(setSub)
 
   const handleBack = () => {
+    const returnTo = readSubscriptionReturn()
+    if (returnTo) {
+      clearSubscriptionReturn()
+      navigate(returnTo, { replace: true, state: { subscriptionReturn: true } })
+      return
+    }
     const historyIndex = (window.history.state as { idx?: number } | null)?.idx
-    if (typeof historyIndex === 'number' && historyIndex > 0) navigate(-1)
-    else navigate('/', { replace: true })
+    if (typeof historyIndex === 'number' && historyIndex > 0) {
+      navigate(-1)
+    } else {
+      abandonSubscriptionReturn()
+      navigate('/', { replace: true })
+    }
   }
 
   useEffect(() => {
@@ -75,7 +86,9 @@ export default function SubscriptionPlanPage() {
   // Оплаченная подписка: ни плитки триала, ни выбора периода, ни «Подключить» —
   // иначе экран выглядел как «пробный период закончился» и предлагал платить снова.
   const isActive = sub?.status === 'ACTIVE'
-  const isCancelledActive = isActive && sub?.autoRenewEnabled === false
+  const hasRemainingAccess = !!sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd).getTime() > Date.now()
+  const isPaidActive = isActive && hasRemainingAccess
+  const isCancelledActive = isPaidActive && sub?.autoRenewEnabled === false
 
   const handleConnect = async () => {
     if (paymentInFlight.current || subscriptionLoading || !sub) return
@@ -114,7 +127,7 @@ export default function SubscriptionPlanPage() {
 
   // ── Оплаченная подписка (макет 10352-43925): зелёный hero + плитка-лого,
   //    «Подписка оформлена 🎉», карточка оплаченного плана, «Отменить подписку».
-  if (isActive && sub && !isCancelledActive) {
+  if (isPaidActive && sub && !isCancelledActive) {
     // Автопродление живо, пока привязана карта; после отмены — «активна до…».
     const autoRenew = sub.autoRenewEnabled
     const isYear = sub.plannedPeriod === 'YEAR'
@@ -241,7 +254,7 @@ export default function SubscriptionPlanPage() {
         )}
 
         {/* Плитка дней триала (макеты 10256-55033…55098) */}
-        {sub && !isActive && (
+        {sub && !isPaidActive && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <DaysTile value={trialDays} expired={trialDays <= 0} />
             <span style={{ ...text.body1, color: 'var(--color-on-surface)', width: 167, whiteSpace: 'pre-wrap' }}>
@@ -251,7 +264,7 @@ export default function SubscriptionPlanPage() {
         )}
 
         {/* Выбор периода — только пока не оплачено. */}
-        {(!isActive || isCancelledActive) && (
+        {(!isPaidActive || isCancelledActive) && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <span style={{ ...text.h4, color: 'var(--color-on-surface)', textAlign: 'center' }}>Выберите период подписки</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
@@ -295,7 +308,7 @@ export default function SubscriptionPlanPage() {
       </div>
 
       {/* Для отменённой подписки AddCard включает будущее продление без списания. */}
-      {(!isActive || isCancelledActive) && (
+      {(!isPaidActive || isCancelledActive) && (
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
         <button
           type="button"

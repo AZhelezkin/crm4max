@@ -270,6 +270,26 @@ describe('master onboarding subscription screens', () => {
     expect(paymentForm.openPaymentForm).not.toHaveBeenCalled()
   })
 
+  it('для уже истёкшего оплаченного периода проводит новую оплату, а не AddCard', async () => {
+    api.getMe.mockResolvedValue(createSubscriptionState({
+      status: 'ACTIVE',
+      currentPeriodEnd: new Date(Date.now() - 86_400_000).toISOString(),
+      plannedPeriod: 'YEAR',
+      autoRenewEnabled: false,
+      onlineBookingAvailable: false,
+      cardPan: null,
+    }))
+    const view = renderAtRoute(<SubscriptionPlanPage />, { route: '/subscription' })
+
+    expect(await screen.findByText('Выберите период подписки')).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Далее' }))
+
+    expect(api.pay).toHaveBeenCalledWith('YEAR')
+    expect(api.startTrial).not.toHaveBeenCalled()
+    expect(paymentForm.openPaymentForm).toHaveBeenCalledWith('https://pay.test/year')
+    expect(paymentForm.openCardBindingForm).not.toHaveBeenCalled()
+  })
+
   it('показывает expired trial transition как Далее', async () => {
     api.getMe.mockResolvedValue(createSubscriptionState({
       status: 'TRIALING',
