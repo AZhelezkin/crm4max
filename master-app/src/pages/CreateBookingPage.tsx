@@ -1547,11 +1547,11 @@ export default function CreateBookingPage() {
 
         {/* Дата и время */}
         <FormCard title="Дата и время">
-          {/* Где: у себя / выезд (переключение доступно, только если мастер работает на выезде). */}
+          {/* В ручной записи мастер может выбрать место независимо от режима онлайн-записи профиля. */}
           <FormRow
             label="Где"
             value={outbound ? 'Выезд' : 'Принимаю у себя'}
-            onClick={master?.homeVisit ? () => setOutbound((value) => !value) : undefined}
+            onClick={() => setOutbound((value) => !value)}
           />
           {outbound && (
             <FormRow

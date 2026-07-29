@@ -294,6 +294,15 @@ describe('master CreateBookingPage', () => {
     expect(view.getLocation().pathname).toBe('/bookings/new')
   })
 
+  it('разрешает мастеру выбрать выезд независимо от режима онлайн-записи профиля', async () => {
+    const view = renderPage()
+
+    expect(useAuthStore.getState().master?.homeVisit).toBe(false)
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Где/ }))
+
+    expect(formCard('Дата и время').getByRole('button', { name: /Адрес клиента/ })).toBeInTheDocument()
+  })
+
   it('для выезда выбирает адрес на карте и сохраняет реквизиты помещения с комментарием', async () => {
     const currentMaster = useAuthStore.getState().master!
     useAuthStore.setState({ master: { ...currentMaster, homeVisit: true } })
