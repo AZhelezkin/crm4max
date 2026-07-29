@@ -1053,7 +1053,7 @@ export default function CreateBookingPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес клиента</div>
                 <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {address || 'Где оказывается услуга'}
+                  {address || 'Выбрать'}
                 </div>
               </div>
               <LocationIcon />
@@ -1562,7 +1562,7 @@ export default function CreateBookingPage() {
                   <BookingAddressText value={formatBookingAddress(address, addressDetails, addressComment)} />
                 </div>
               ) : undefined}
-              value="Где оказывается услуга"
+              value="Выбрать"
               onClick={() => { setAddressReturnStep('confirm'); setStep('address') }}
             />
           )}
