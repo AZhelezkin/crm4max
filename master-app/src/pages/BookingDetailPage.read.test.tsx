@@ -118,6 +118,18 @@ describe('master BookingDetailPage read state', () => {
     expect(mocks.cancel).not.toHaveBeenCalled()
   })
 
+  it('показывает адрес, квартиру, комментарий, этаж и домофон отдельными строками', async () => {
+    mocks.getById.mockResolvedValue(createMasterBooking({
+      clientAddress: 'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева у входа есть подвал. Там справа будет окно',
+    }))
+    renderPage()
+
+    expect(await screen.findByText('Москва, Серебряническая набережная, 29')).toBeInTheDocument()
+    expect(screen.getByText('кв. 104')).toBeInTheDocument()
+    expect(screen.getByText('Слева у входа есть подвал. Там справа будет окно')).toBeInTheDocument()
+    expect(screen.getByText('7 этаж, домофон 123#')).toBeInTheDocument()
+  })
+
   it('передаёт exact reschedule и edit-time route state', async () => {
     const booking = createMasterBooking({ id: 'booking-route', date: '2026-08-05' })
     mocks.getById.mockResolvedValue(booking)

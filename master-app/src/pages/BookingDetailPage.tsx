@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
 import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import BookingAddressText from '@/components/BookingAddressText'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -83,7 +84,6 @@ export default function BookingDetailPage() {
   const price = bookingTotal(booking)
   const serviceItems = bookingServiceItems(booking)
   const addressText = booking.clientAddress || booking.master.location || ''
-  const addressSubtitle = booking.clientAddress ? 'Адрес выезда' : 'Адрес мастера'
 
   const handleOpenAddress = () => {
     if (!addressText) return
@@ -175,8 +175,7 @@ export default function BookingDetailPage() {
         {booking.clientAddress && (
           <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{addressText}</div>
-              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{addressSubtitle}</div>
+              <BookingAddressText value={booking.clientAddress} />
             </div>
             <LocationIcon />
           </button>

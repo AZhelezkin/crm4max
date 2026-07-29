@@ -24,6 +24,7 @@ import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } fr
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
 import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type BookingAddressDetails } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
+import BookingAddressText from '@/components/BookingAddressText'
 
 dayjs.locale('ru')
 
@@ -1376,8 +1377,7 @@ export default function CreateBookingPage() {
           {outbound && addressText && (
             <button type="button" onClick={handleOpenRoute} aria-label="Построить маршрут" style={{ ...listItemStyle, width: '100%', border: 'none', textAlign: 'left' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{addressText}</div>
-                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Адрес выезда</div>
+                <BookingAddressText value={addressText} />
               </div>
               <LocationIcon />
             </button>
