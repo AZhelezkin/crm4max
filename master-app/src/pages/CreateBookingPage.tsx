@@ -1051,10 +1051,12 @@ export default function CreateBookingPage() {
               style={{ ...listItemStyle, width: '100%', border: 'none', textAlign: 'left' }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес клиента</div>
-                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {address || 'Выбрать'}
-                </div>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{address ? 'Адрес' : 'Адрес клиента'}</div>
+                {address ? (
+                  <BookingAddressText value={formatBookingAddress(address, addressDetails, addressComment)} />
+                ) : (
+                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Выбрать</div>
+                )}
               </div>
               <LocationIcon />
             </button>
@@ -1555,10 +1557,11 @@ export default function CreateBookingPage() {
           />
           {outbound && (
             <FormRow
-              label="Адрес клиента"
+              label={address.trim() ? 'Адрес' : 'Адрес клиента'}
               prompt={!address.trim()}
+              stacked={!!address.trim()}
               right={address.trim() ? (
-                <div style={{ minWidth: 0, textAlign: 'right' }}>
+                <div style={{ minWidth: 0 }}>
                   <BookingAddressText value={formatBookingAddress(address, addressDetails, addressComment)} />
                 </div>
               ) : undefined}
@@ -1676,7 +1679,7 @@ function FormCard({ title, children }: { title: string; children: React.ReactNod
 // Строка карточки: лейбл слева (Body2, onSurfaceSecondary), значение справа
 // (Body2; «Выбрать» → primarySurface, иначе onSurface) + стрелка. В макете стрелка
 // у всех строк, кроме «Стоимости» (noArrow). Последняя строка карточки — без разделителя.
-function FormRow({ label, value, prompt, right, onClick, noArrow, last }: {
+function FormRow({ label, value, prompt, right, onClick, noArrow, last, stacked }: {
   label: string
   value?: string
   prompt?: boolean
@@ -1684,16 +1687,17 @@ function FormRow({ label, value, prompt, right, onClick, noArrow, last }: {
   onClick?: () => void
   noArrow?: boolean
   last?: boolean
+  stacked?: boolean
 }) {
   const rowStyle: React.CSSProperties = {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+    width: '100%', display: 'flex', flexDirection: stacked ? 'column' : 'row', alignItems: stacked ? 'stretch' : 'center', justifyContent: 'space-between', gap: 8,
     padding: 16, background: 'none', border: 'none',
     borderBottom: last ? 'none' : '1px solid var(--color-secondary-surface-muted)',
     cursor: onClick ? 'pointer' : 'default', textAlign: 'left',
   }
   const inner = (
     <>
-      <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: stacked ? undefined : 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flex: 1, minWidth: 0 }}>
         {right ?? (
           <span style={{ ...text.body2, color: prompt ? 'var(--color-primary-surface)' : 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>{value}</span>

@@ -46,9 +46,8 @@ export function yandexRouteUrl(
   origin: { lat: number | null; lng: number | null; address: string | null },
   destination: string,
 ): string {
-  const from = origin.lat != null && origin.lng != null
-    ? `${origin.lat},${origin.lng}`
-    : origin.address?.trim() ?? ''
+  const from = origin.address?.trim()
+    || (origin.lat != null && origin.lng != null ? `${origin.lat},${origin.lng}` : '')
   const params = new URLSearchParams({ mode: 'routes', rtext: `${from}~${destination}`, rtt: 'auto' })
   return `https://yandex.ru/maps/?${params}`
 }
