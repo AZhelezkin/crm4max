@@ -318,6 +318,13 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
     await view.user.type(screen.getByPlaceholderText('Комментарий'), 'Слева от входа')
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    const dateCard = formCard('Дата и время')
+    expect(dateCard.getByText('Москва, Серебряническая набережная, 29')).toBeInTheDocument()
+    expect(dateCard.getByText('кв. 104')).toBeInTheDocument()
+    expect(dateCard.getByText('Слева от входа')).toBeInTheDocument()
+    expect(dateCard.getByText('7 этаж, домофон 123#')).toBeInTheDocument()
+
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
 
     expect(api.createBooking).toHaveBeenCalledWith(expect.objectContaining({
