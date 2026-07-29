@@ -21,6 +21,9 @@ describe.sequential('client booking store', () => {
     state.setDateTime('2026-07-21', '10:00')
     state.setRemind(false)
     state.setClientAddress('Москва, Тестовая улица, 2')
+    state.setClientApartment('15')
+    state.setClientFloor('7')
+    state.setClientIntercom('123#')
 
     expect(useBookingStore.getState()).toMatchObject({
       masterId: 'master-1',
@@ -32,6 +35,9 @@ describe.sequential('client booking store', () => {
       time: '10:00',
       remind: false,
       clientAddress: 'Москва, Тестовая улица, 2',
+      clientApartment: '15',
+      clientFloor: '7',
+      clientIntercom: '123#',
     })
   })
 
@@ -69,6 +75,9 @@ describe.sequential('client booking store', () => {
       slots: [{ date: '2026-07-21', time: '10:00' }],
       remind: false,
       clientAddress: 'Адрес клиента',
+      clientApartment: '15',
+      clientFloor: '7',
+      clientIntercom: '123#',
     })
 
     useBookingStore.getState().reset()
@@ -84,6 +93,9 @@ describe.sequential('client booking store', () => {
       slots: [],
       remind: true,
       clientAddress: null,
+      clientApartment: '',
+      clientFloor: '',
+      clientIntercom: '',
     })
   })
 

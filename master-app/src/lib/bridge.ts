@@ -109,6 +109,10 @@ export async function setVerticalSwipes(allow: boolean): Promise<VerticalSwipesR
   }
 }
 
+export function openExternalLink(url: string): void {
+  window.WebApp?.openLink?.(url)
+}
+
 /**
  * Ставит блокировку свайпов и восстанавливает её при возврате из фона
  * (клиент Max может сбросить поведение, пока приложение свёрнуто).

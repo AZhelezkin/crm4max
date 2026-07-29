@@ -50,16 +50,19 @@ vi.mock('@/api/subscription.api', () => ({
 vi.mock('@/lib/calendar', () => ({ openAddToCalendar: api.openAddToCalendar }))
 vi.mock('@/lib/scroll', () => ({ scrollPageTop: api.scrollPageTop }))
 vi.mock('@/components/ServiceEditorPortal', () => ({ default: () => null }))
-vi.mock('@client/components/AddressSuggestField', () => ({
-  default: ({
-    value,
-    onChange,
-    placeholder,
-  }: {
-    value: string
-    onChange: (value: string) => void
-    placeholder?: string
-  }) => <input aria-label="Адрес выезда" placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />,
+vi.mock('@/components/AddressPickerPortal', () => ({
+  default: ({ open, onClose, onConfirm }: {
+    open: boolean
+    onClose: () => void
+    onConfirm: (address: string, coords: { lat: number; lng: number }, details: { floor: string; apartment: string; intercom: string }) => void
+  }) => open ? (
+    <button type="button" onClick={() => {
+      onConfirm('Москва, Серебряническая набережная, 29', { lat: 55.75, lng: 37.65 }, { floor: '7', apartment: '104', intercom: '123#' })
+      onClose()
+    }}>
+      Выбрать адрес на карте
+    </button>
+  ) : null,
 }))
 
 import { useAuthStore } from '@/store/auth.store'
@@ -277,6 +280,28 @@ describe('master CreateBookingPage', () => {
     await act(async () => pending.resolve(bookingResult(selectedDate.format('YYYY-MM-DD'))))
     expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
     expect(view.getLocation().pathname).toBe('/bookings/new')
+  })
+
+  it('для выезда выбирает адрес на карте и сохраняет реквизиты помещения с комментарием', async () => {
+    const currentMaster = useAuthStore.getState().master!
+    useAuthStore.setState({ master: { ...currentMaster, homeVisit: true } })
+    const selectedDate = nextBookableDate()
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Где/ }))
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Адрес клиента/ }))
+    expect(screen.getByText('Адрес, куда нужно выехать')).toBeInTheDocument()
+
+    await view.user.click(screen.getByRole('button', { name: /Адрес клиента/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await view.user.type(screen.getByPlaceholderText('Комментарий'), 'Слева от входа')
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    expect(api.createBooking).toHaveBeenCalledWith(expect.objectContaining({
+      clientAddress: 'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева от входа',
+    }))
   })
 
   it('сохраняет draft и позволяет retry после create failure', async () => {

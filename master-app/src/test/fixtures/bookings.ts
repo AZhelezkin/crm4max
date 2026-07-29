@@ -41,6 +41,7 @@ export function createMasterBooking(overrides: Partial<MasterBooking> = {}): Mas
     services: [],
     payments: [],
     ...overrides,
+    totalPrice: overrides.totalPrice ?? null,
   }
 }
 

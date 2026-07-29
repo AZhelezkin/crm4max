@@ -61,6 +61,9 @@ function seedDraft(overrides: Partial<ReturnType<typeof useBookingStore.getState
     slots: [],
     remind: false,
     clientAddress: null,
+    clientApartment: '',
+    clientFloor: '',
+    clientIntercom: '',
     ...overrides,
   })
 }
@@ -96,9 +99,10 @@ describe('client standard booking create and reschedule', () => {
 
     expect(submit).toBeDisabled()
     expect(api.create).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByPlaceholderText('Город, улица, дом, квартира...'), {
+    fireEvent.change(screen.getByPlaceholderText('Город, улица, дом...'), {
       target: { value: 'Москва, Дом 1' },
     })
+    act(() => useBookingStore.setState({ clientApartment: '15', clientFloor: '7', clientIntercom: '123#' }))
     expect(submit).toBeEnabled()
 
     await view.user.click(submit)
@@ -108,7 +112,7 @@ describe('client standard booking create and reschedule', () => {
       date: '2030-01-10',
       time: '10:30',
       remind: false,
-      clientAddress: 'Москва, Дом 1',
+      clientAddress: 'Москва, Дом 1, кв. 15, этаж 7, домофон 123#',
     })
     expect(submit).toBeDisabled()
     await view.user.click(submit)
@@ -133,6 +137,9 @@ describe('client standard booking create and reschedule', () => {
       slots: [],
       remind: true,
       clientAddress: null,
+      clientApartment: '',
+      clientFloor: '',
+      clientIntercom: '',
     })
   })
 
@@ -209,6 +216,9 @@ describe('client standard booking create and reschedule', () => {
       time: '',
       remind: true,
       clientAddress: null,
+      clientApartment: '',
+      clientFloor: '',
+      clientIntercom: '',
     })
   })
 })

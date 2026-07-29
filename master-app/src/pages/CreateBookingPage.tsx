@@ -17,10 +17,12 @@ import { scrollPageTop } from '@/lib/scroll'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
 import { FloatingField } from '@/components/onboardingShared'
-import AddressSuggestField from '@client/components/AddressSuggestField'
+import BookingAddressEditor from '@/components/BookingAddressEditor'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
+import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type BookingAddressDetails } from '@/lib/bookingAddress'
+import { openExternalLink } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -139,7 +141,7 @@ export default function CreateBookingPage() {
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'success' | 'color'>(
+  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'success' | 'color'>(
     rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
       : 'confirm',
@@ -194,6 +196,10 @@ export default function CreateBookingPage() {
   // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
   const [outbound, setOutbound] = useState(false)
   const [address, setAddress] = useState('')
+  const [addressDetails, setAddressDetails] = useState<BookingAddressDetails>({ floor: '', apartment: '', intercom: '' })
+  const [addressComment, setAddressComment] = useState('')
+  const [addressPickerOpen, setAddressPickerOpen] = useState(false)
+  const [addressReturnStep, setAddressReturnStep] = useState<'confirm' | 'package'>('confirm')
   // Суммы для услуг «Прочее» (isMisc) — рубли-строки по serviceId, вводятся в форме-сводке.
   const [miscPrices, setMiscPrices] = useState<Record<string, string>>({})
   // Слоты нужны только для сеансов абонемента (обычная запись — свободное время).
@@ -504,7 +510,7 @@ export default function CreateBookingPage() {
         // в т.ч. для ручного клиента без Max (создаст синтетического, без уведомления).
         masterClientId: selectedClient.id,
         remind,
-        clientAddress: outbound ? address.trim() : undefined,
+        clientAddress: outbound ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
         // Первичная цена (для «Прочее») дублирует services[0].price.
         price: services[0].price,
         color,
@@ -544,7 +550,7 @@ export default function CreateBookingPage() {
         slots,
         masterClientId: selectedClient.id,
         remind,
-        clientAddress: homeVisit ? address.trim() : undefined,
+        clientAddress: homeVisit ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
       })
       navigate('/bookings')
     } catch (e) {
@@ -966,7 +972,19 @@ export default function CreateBookingPage() {
 
           {/* Адрес выезда */}
           {homeVisit && (
-            <AddressSuggestField value={address} onChange={setAddress} label="Адрес выезда" placeholder="Город, улица, дом, квартира…" />
+            <button
+              type="button"
+              onClick={() => { setAddressReturnStep('package'); setStep('address') }}
+              style={{ ...listItemStyle, width: '100%', border: 'none', textAlign: 'left' }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Адрес клиента</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {address || 'Где оказывается услуга'}
+                </div>
+              </div>
+              <LocationIcon />
+            </button>
           )}
 
           {/* Услуга + стоимость абонемента (цена × N) */}
@@ -1219,10 +1237,34 @@ export default function CreateBookingPage() {
     )
   }
 
+  if (step === 'address') {
+    return (
+      <BookingAddressEditor
+        address={address}
+        details={addressDetails}
+        comment={addressComment}
+        pickerOpen={addressPickerOpen}
+        onAddressChange={setAddress}
+        onDetailsChange={setAddressDetails}
+        onCommentChange={setAddressComment}
+        onPickerOpenChange={setAddressPickerOpen}
+        onBack={() => setStep(addressReturnStep)}
+        onSave={() => setStep(addressReturnStep)}
+      />
+    )
+  }
+
   // ─── Шаг 7: успех «Запись создана!» (макет 8746-41315) ──────────────────────
   if (step === 'success') {
     const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
-    const addressText = homeVisit ? address.trim() : master?.location ?? ''
+    const addressText = outbound ? formatBookingAddress(address, addressDetails, addressComment) : master?.location ?? ''
+    const handleOpenRoute = () => {
+      if (!outbound || !addressText || !master) return
+      openExternalLink(yandexRouteUrl(
+        { lat: master.lat, lng: master.lng, address: master.location },
+        bookingRouteAddress(addressText),
+      ))
+    }
     // Итог по всем услугам записи (мультиуслуги) из созданной записи.
     const succItems = createdBooking ? bookingServiceItems(createdBooking) : []
     const succPrice = createdBooking ? bookingTotal(createdBooking) : 0
@@ -1259,14 +1301,14 @@ export default function CreateBookingPage() {
           )}
 
           {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
-          {homeVisit && addressText && (
-            <div style={{ ...listItemStyle, cursor: 'default' }}>
+          {outbound && addressText && (
+            <button type="button" onClick={handleOpenRoute} aria-label="Построить маршрут" style={{ ...listItemStyle, width: '100%', border: 'none', textAlign: 'left' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'break-word' }}>{addressText}</div>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{addressText}</div>
                 <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Адрес выезда</div>
               </div>
               <LocationIcon />
-            </div>
+            </button>
           )}
 
           {/* Услуги + статус оплаты (мультиуслуги: список + итог) */}
@@ -1436,13 +1478,16 @@ export default function CreateBookingPage() {
           {/* Где: у себя / выезд (переключение доступно, только если мастер работает на выезде). */}
           <FormRow
             label="Где"
-            value={outbound ? (address.trim() || 'Выезд к клиенту') : 'Принимаю у себя'}
-            onClick={master?.homeVisit ? () => setOutbound((v) => !v) : undefined}
+            value={outbound ? 'Выезд' : 'Принимаю у себя'}
+            onClick={master?.homeVisit ? () => setOutbound((value) => !value) : undefined}
           />
           {outbound && (
-            <div style={{ padding: '0 16px 12px' }}>
-              <AddressSuggestField value={address} onChange={setAddress} label="Адрес выезда" placeholder="Город, улица, дом, квартира…" />
-            </div>
+            <FormRow
+              label="Адрес клиента"
+              value={address.trim() || 'Где оказывается услуга'}
+              prompt={!address.trim()}
+              onClick={() => { setAddressReturnStep('confirm'); setStep('address') }}
+            />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
           <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />

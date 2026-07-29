@@ -11,6 +11,14 @@ interface FieldProps {
   onChange: (value: string) => void
   label?: string
   placeholder?: string
+  details?: {
+    apartment: string
+    floor: string
+    intercom: string
+    onApartmentChange: (value: string) => void
+    onFloorChange: (value: string) => void
+    onIntercomChange: (value: string) => void
+  }
 }
 
 let AddressSuggestField: ComponentType<FieldProps>
@@ -22,12 +30,23 @@ beforeAll(async () => {
 
 function FieldHarness({ initial = '' }: { initial?: string }) {
   const [value, setValue] = useState(initial)
+  const [apartment, setApartment] = useState('')
+  const [floor, setFloor] = useState('')
+  const [intercom, setIntercom] = useState('')
   return (
     <AddressSuggestField
       value={value}
       onChange={setValue}
       label="Ваш адрес"
       placeholder="Введите адрес"
+      details={{
+        apartment,
+        floor,
+        intercom,
+        onApartmentChange: setApartment,
+        onFloorChange: setFloor,
+        onIntercomChange: setIntercom,
+      }}
     />
   )
 }
@@ -67,6 +86,19 @@ describe('AddressSuggestField', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Очистить' }))
 
     expect(screen.getByPlaceholderText('Введите адрес')).toHaveValue('')
+  })
+
+  it('редактирует квартиру, этаж и домофон отдельно от адреса', () => {
+    render(<FieldHarness initial="Тверская улица, 7" />)
+
+    fireEvent.change(screen.getByPlaceholderText('Квартира'), { target: { value: '15' } })
+    fireEvent.change(screen.getByPlaceholderText('Этаж'), { target: { value: '7' } })
+    fireEvent.change(screen.getByPlaceholderText('Домофон'), { target: { value: '123#' } })
+
+    expect(screen.getByDisplayValue('15')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('7')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('123#')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Введите адрес')).toHaveValue('Тверская улица, 7')
   })
 
   it('закрывает suggestions после blur delay', async () => {

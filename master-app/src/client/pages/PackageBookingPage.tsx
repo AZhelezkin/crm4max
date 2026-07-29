@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
+import { formatClientAddress } from '@client/lib/clientAddress'
 import { useBookingStore } from '@client/store/booking.store'
 import type { Master } from '@client/types'
 import { discountedPrice, formatPrice } from '@client/types'
@@ -127,7 +128,12 @@ function WeeksSectionTitle({ children }: { children: React.ReactNode }) {
 // Figma «check» 8703:35427 (по дням) / 8703:39902 + 8703:40085 (по неделям).
 export default function PackageBookingPage() {
   const navigate = useNavigate()
-  const { masterId, service, slots, remind, clientAddress, setClientAddress, reset } = useBookingStore()
+  const {
+    masterId, service, slots, remind, clientAddress,
+    clientApartment, clientFloor, clientIntercom,
+    setClientAddress, setClientApartment, setClientFloor, setClientIntercom,
+    reset,
+  } = useBookingStore()
 
   const [master, setMaster] = useState<Master | null>(null)
   const [mode, setMode] = useState<'days' | 'weeks'>('days')
@@ -208,7 +214,9 @@ export default function PackageBookingPage() {
     try {
       const pkg = await bookingsApi.createPackage({
         masterId, serviceId: service.id, slots: finalSlots, remind,
-        clientAddress: master?.homeVisit ? clientAddress : null,
+        clientAddress: master?.homeVisit
+          ? formatClientAddress(clientAddress, clientApartment, clientFloor, clientIntercom)
+          : null,
       })
       navigate('/book/success', { state: { bookingId: pkg.bookings[0]?.id } })
     } catch (e) {
@@ -290,7 +298,20 @@ export default function PackageBookingPage() {
             </button>
           )}
           {master?.homeVisit && (
-            <AddressSuggestField value={clientAddress ?? ''} onChange={(v) => setClientAddress(v || null)} label="Ваш адрес" placeholder="Город, улица, дом, квартира..." />
+            <AddressSuggestField
+              value={clientAddress ?? ''}
+              onChange={(v) => setClientAddress(v || null)}
+              label="Ваш адрес"
+              placeholder="Город, улица, дом..."
+              details={{
+                apartment: clientApartment,
+                floor: clientFloor,
+                intercom: clientIntercom,
+                onApartmentChange: setClientApartment,
+                onFloorChange: setClientFloor,
+                onIntercomChange: setClientIntercom,
+              }}
+            />
           )}
 
           {/* Услуга: название + описание + цена курса (цена × N) */}

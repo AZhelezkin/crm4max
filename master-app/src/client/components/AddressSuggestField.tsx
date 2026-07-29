@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { text } from '@/styles/typography'
+import { FloatingField } from '@/components/onboardingShared'
 
 const SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest'
 const API_KEY = import.meta.env.VITE_YANDEX_SUGGEST_KEY as string
@@ -12,6 +13,14 @@ interface Props {
   /** Плавающий лейбл над input-ом. Figma «Ваш адрес», caption2 secondary. */
   label?: string
   placeholder?: string
+  details?: {
+    apartment: string
+    floor: string
+    intercom: string
+    onApartmentChange: (value: string) => void
+    onFloorChange: (value: string) => void
+    onIntercomChange: (value: string) => void
+  }
 }
 
 /**
@@ -27,6 +36,7 @@ export default function AddressSuggestField({
   onChange,
   label,
   placeholder = 'Адрес',
+  details,
 }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
@@ -163,6 +173,14 @@ export default function AddressSuggestField({
             </button>
           ))}
         </div>
+      )}
+
+      {details && (
+        <>
+          <FloatingField label="Квартира" value={details.apartment} onChange={details.onApartmentChange} valueBold />
+          <FloatingField label="Этаж" value={details.floor} onChange={details.onFloorChange} valueBold />
+          <FloatingField label="Домофон" value={details.intercom} onChange={details.onIntercomChange} valueBold />
+        </>
       )}
     </div>
   )

@@ -87,6 +87,32 @@ describe('AddressPickerPortal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('возвращает этаж, квартиру или офис и домофон вместе с адресом', async () => {
+    installBrowserFixture()
+    const user = userEvent.setup()
+    const onConfirm = vi.fn()
+    render(
+      <AddressPickerPortal
+        open
+        value="Исходный адрес"
+        details={{ floor: '', apartment: '', intercom: '' }}
+        onClose={() => {}}
+        onConfirm={onConfirm}
+      />,
+    )
+
+    await user.type(screen.getByRole('textbox', { name: 'Этаж' }), '7')
+    await user.type(screen.getByRole('textbox', { name: 'Квартира/Офис' }), '104')
+    await user.type(screen.getByRole('textbox', { name: 'Домофон' }), '123#')
+    await user.click(screen.getByRole('button', { name: 'Готово' }))
+
+    expect(onConfirm).toHaveBeenCalledWith('Исходный адрес', null, {
+      floor: '7',
+      apartment: '104',
+      intercom: '123#',
+    })
+  })
+
   it('сбрасывает draft и coordinates при повторном открытии', async () => {
     installBrowserFixture()
     const user = userEvent.setup()
