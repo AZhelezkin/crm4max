@@ -1556,8 +1556,13 @@ export default function CreateBookingPage() {
           {outbound && (
             <FormRow
               label="Адрес клиента"
-              value={address.trim() || 'Где оказывается услуга'}
               prompt={!address.trim()}
+              right={address.trim() ? (
+                <div style={{ minWidth: 0, textAlign: 'right' }}>
+                  <BookingAddressText value={formatBookingAddress(address, addressDetails, addressComment)} />
+                </div>
+              ) : undefined}
+              value="Где оказывается услуга"
               onClick={() => { setAddressReturnStep('confirm'); setStep('address') }}
             />
           )}
@@ -1689,7 +1694,7 @@ function FormRow({ label, value, prompt, right, onClick, noArrow, last }: {
   const inner = (
     <>
       <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flex: 1, minWidth: 0 }}>
         {right ?? (
           <span style={{ ...text.body2, color: prompt ? 'var(--color-primary-surface)' : 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>{value}</span>
         )}
