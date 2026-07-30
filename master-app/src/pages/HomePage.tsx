@@ -12,9 +12,12 @@ import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, 
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
+import Button from '@/components/Button'
 import WeekStrip from '@/components/WeekStrip'
 import GuideCard from '@/components/GuideCard'
 import { markGuideStep } from '@/lib/guide'
+import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import { openExternalLink } from '@/lib/bridge'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
 dayjs.locale('ru')
@@ -234,6 +237,17 @@ export default function HomePage() {
   // иначе счётчик и сумма считались бы по разным наборам («3 записи на 5 000 ₽»).
   const dayActive = dayBookings.filter((b) => b.status !== 'CANCELLED')
   const daySum = dayActive.reduce((acc, b) => acc + bookingAmount(b), 0)
+  const dayRouteStops = dayActive
+    .map((b) => b.clientAddress ? bookingRouteAddress(b.clientAddress) : '')
+    .filter(Boolean)
+  const hasRouteOrigin = Boolean(master.location?.trim()) || (master.lat != null && master.lng != null)
+  const handleOpenDayRoute = () => {
+    if (!hasRouteOrigin || dayRouteStops.length === 0) return
+    openExternalLink(yandexRouteUrl(
+      { address: master.location, lat: master.lat, lng: master.lng },
+      dayRouteStops.join('~'),
+    ))
+  }
 
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95, overflowX: 'hidden' }}>
@@ -416,6 +430,13 @@ export default function HomePage() {
             </div>
           )}
         </div>
+
+        {hasRouteOrigin && dayRouteStops.length > 0 && (
+          <Button variant="secondary" fullWidth onClick={handleOpenDayRoute} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: 'none', cursor: 'pointer' }}>
+            <span style={{ display: 'inline-flex' }}><LocationIcon /></span>
+            <span style={text.callout1}>Построить маршрут</span>
+          </Button>
+        )}
 
         {/* Кнопка «Создать запись» */}
         <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}

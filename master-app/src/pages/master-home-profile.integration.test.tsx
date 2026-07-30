@@ -209,6 +209,41 @@ describe('master HomePage', () => {
     expect(view.getLocation().state).toEqual({ date: TODAY })
   })
 
+  it('строит маршрут от мастера через адреса выездных записей по времени', async () => {
+    const webApp = installWebApp()
+    api.listBookings.mockResolvedValue([
+      createMasterBooking({
+        id: 'booking-late-route',
+        date: TODAY,
+        time: '15:00',
+        clientAddress: 'Москва, Поздняя улица, 2\nэтаж 4, кв./офис 20',
+      }),
+      createMasterBooking({
+        id: 'booking-cancelled-route',
+        date: TODAY,
+        time: '12:00',
+        status: 'CANCELLED',
+        clientAddress: 'Москва, Отменённая улица, 3',
+      }),
+      createMasterBooking({
+        id: 'booking-early-route',
+        date: TODAY,
+        time: '10:00',
+        clientAddress: 'Москва, Ранняя улица, 1\nдомофон 123#',
+      }),
+    ])
+    setMaster(createMasterProfile({ location: 'Москва, Адрес мастера, 10' }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Построить маршрут' }))
+
+    const route = new URL(webApp.openLink.mock.calls[0]?.[0] as string)
+    expect(route.searchParams.get('rtext')).toBe(
+      'Москва, Адрес мастера, 10~Москва, Ранняя улица, 1~Москва, Поздняя улица, 2',
+    )
+    expect(route.searchParams.get('rtt')).toBe('auto')
+  })
+
   it('HomePage открывает authoritative booking detail', async () => {
     api.listBookings.mockResolvedValue([
       createMasterBooking({
