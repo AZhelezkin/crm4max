@@ -12,7 +12,6 @@ import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, 
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
-import Button from '@/components/Button'
 import WeekStrip from '@/components/WeekStrip'
 import GuideCard from '@/components/GuideCard'
 import { markGuideStep } from '@/lib/guide'
@@ -431,12 +430,21 @@ export default function HomePage() {
           )}
         </div>
 
-        {hasRouteOrigin && dayRouteStops.length > 0 && (
-          <Button variant="secondary" fullWidth onClick={handleOpenDayRoute} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: 'none', cursor: 'pointer' }}>
-            <span style={{ display: 'inline-flex' }}><LocationIcon /></span>
-            <span style={text.callout1}>Построить маршрут</span>
-          </Button>
-        )}
+        <button
+          type="button"
+          disabled={!hasRouteOrigin || dayRouteStops.length === 0}
+          onClick={handleOpenDayRoute}
+          style={{
+            display: 'flex', width: '100%', height: 36, padding: 10,
+            justifyContent: 'center', alignItems: 'center', gap: 8, alignSelf: 'stretch',
+            boxSizing: 'border-box', borderRadius: 12, border: 'none',
+            background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)',
+            cursor: hasRouteOrigin && dayRouteStops.length > 0 ? 'pointer' : 'default',
+          }}
+        >
+          <RoutingIcon />
+          <span style={text.caption2}>Построить маршрут</span>
+        </button>
 
         {/* Кнопка «Создать запись» */}
         <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}
@@ -999,6 +1007,18 @@ function LocationIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M12 13.43a3.12 3.12 0 1 0 0-6.24 3.12 3.12 0 0 0 0 6.24Z" stroke="currentColor" strokeWidth="1.5" />
       <path d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 0 1-7.21 0c-2.77-2.66-5.93-6.97-4.77-12.05Z" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+function RoutingIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M3.64583 6.00065C4.9345 6.00065 5.97917 4.95598 5.97917 3.66732C5.97917 2.37865 4.9345 1.33398 3.64583 1.33398C2.35717 1.33398 1.3125 2.37865 1.3125 3.66732C1.3125 4.95598 2.35717 6.00065 3.64583 6.00065Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M11.3099 10H13.3099C14.0432 10 14.6432 10.6 14.6432 11.3333V13.3333C14.6432 14.0667 14.0432 14.6667 13.3099 14.6667H11.3099C10.5766 14.6667 9.97656 14.0667 9.97656 13.3333V11.3333C9.97656 10.6 10.5766 10 11.3099 10Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8.0011 3.33398H9.78777C11.0211 3.33398 11.5944 4.86065 10.6678 5.67398L5.3411 10.334C4.41444 11.1407 4.98777 12.6673 6.21444 12.6673H8.0011" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.65845 3.66732H3.66616" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12.3225 12.3333H12.3302" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
