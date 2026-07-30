@@ -18,8 +18,7 @@ interface MonthSummary {
 
 interface DayEntry {
   date: string
-  day: number
-  monthShort: string
+  label: string
   total: number
   paymentCount: number
   hasUnpaid: boolean
@@ -38,6 +37,12 @@ function formatRub(kop: number, fractionDigits = 0): string {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function formatDayLabel(date: dayjs.Dayjs): string {
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' })
+    .format(date.toDate())
+    .replace('.', '')
 }
 
 // «1 запись» / «2 записи» / «5 записей» — русская плюрализация по count.
@@ -99,8 +104,7 @@ export default function PaymentsPage() {
       if (!entry) {
         entry = {
           date: dateKey,
-          day: d.date(),
-          monthShort: d.format('MMM').replace('.', ''),
+          label: formatDayLabel(d),
           total: 0,
           paymentCount: 0,
           hasUnpaid: false,
@@ -112,7 +116,7 @@ export default function PaymentsPage() {
       entry.paymentCount += 1
       if (p.status === 'UNPAID') entry.hasUnpaid = true
     }
-    return Array.from(map.values()).sort((a, b) => a.day - b.day)
+    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date))
   }, [payments, selectedMonth])
 
   return (
@@ -230,10 +234,10 @@ export default function PaymentsPage() {
               cursor: 'pointer',
             }}
           >
-            {/* Дата — колонка 50px, текст центрируется по строке суммы (pt 12 против pt 8). */}
-            <div style={{ width: 50, flexShrink: 0, paddingTop: 12 }}>
+            {/* Дата — колонка 71px, текст центрируется по строке суммы (pt 12 против pt 8). */}
+            <div style={{ width: 71, flexShrink: 0, paddingTop: 12 }}>
               <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>
-                {d.day} {d.monthShort}
+                {d.label}
               </span>
             </div>
             {/* Значение — flex-1, левый разделитель 3px Plate. */}

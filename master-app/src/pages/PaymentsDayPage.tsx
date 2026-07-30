@@ -121,7 +121,7 @@ export default function PaymentsDayPage() {
         }}
       >
         {dayPayments.map((p) => (
-          <DayCard key={p.id} payment={p} />
+          <DayCard key={p.id} payment={p} onOpen={() => navigate(`/bookings/${p.bookingId}`)} />
         ))}
         {dayPayments.length === 0 && (
           <div style={{ textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
@@ -135,7 +135,7 @@ export default function PaymentsDayPage() {
   )
 }
 
-function DayCard({ payment }: { payment: Payment }) {
+function DayCard({ payment, onOpen }: { payment: Payment; onOpen: () => void }) {
   const isUnpaid = payment.status === 'UNPAID'
   const tagBg = isUnpaid ? 'var(--color-error-surface-lite)' : 'var(--color-success-surface-lite)'
   const tagColor = isUnpaid ? 'var(--color-on-error-surface-lite)' : 'var(--color-on-success-surface-lite)'
@@ -147,14 +147,20 @@ function DayCard({ payment }: { payment: Payment }) {
   const time = payment.booking?.time ?? ''
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onOpen}
       style={{
         background: 'var(--color-surface-transparent)',
+        border: 'none',
         borderRadius: 20,
         padding: 16,
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
+        color: 'inherit',
+        textAlign: 'left',
+        cursor: 'pointer',
       }}
     >
       {/* Строка 1: название услуги. */}
@@ -214,7 +220,7 @@ function DayCard({ payment }: { payment: Payment }) {
           {statusLabel}
         </span>
       </div>
-    </div>
+    </button>
   )
 }
 

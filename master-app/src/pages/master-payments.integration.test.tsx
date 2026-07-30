@@ -39,6 +39,7 @@ function payment({
   const base = createPayment()
   return createPayment({
     id,
+    bookingId: `booking-${id}`,
     amount,
     status,
     booking: {
@@ -77,6 +78,7 @@ function renderDay(date = '2026-07-21', entries?: string[]) {
     <Routes>
       <Route path="/income" element={<div>Income</div>} />
       <Route path="/income/:date" element={<PaymentsDayPage />} />
+      <Route path="/bookings/:id" element={<div>Booking detail</div>} />
     </Routes>,
     entries ? { entries } : { route: `/income/${date}` },
   )
@@ -103,7 +105,7 @@ describe('master payments pages', () => {
     expect(await screen.findByText(/3.?500 ₽/)).toBeInTheDocument()
     expect(screen.getByText('2 записи')).toBeInTheDocument()
     expect(screen.getByText('Есть неоплаты')).toBeInTheDocument()
-    expect(screen.getByText('22 июль')).toBeInTheDocument()
+    expect(screen.getByText('22 июл').parentElement).toHaveStyle({ width: '71px' })
   })
 
   it('переключает month summary и показывает соответствующие дни', async () => {
@@ -112,15 +114,15 @@ describe('master payments pages', () => {
 
     await view.user.click(screen.getByText('Июнь ’26'))
 
-    expect(screen.getByText('5 июнь')).toBeInTheDocument()
+    expect(screen.getByText('5 июн')).toBeInTheDocument()
     expect(screen.getByText(/1.?000 ₽/)).toBeInTheDocument()
-    expect(screen.queryByText('22 июль')).not.toBeInTheDocument()
+    expect(screen.queryByText('22 июл')).not.toBeInTheDocument()
   })
 
   it('открывает exact day route из income list', async () => {
     const view = renderAtRoute(<PaymentsPage />)
 
-    await view.user.click(await screen.findByText('21 июль'))
+    await view.user.click(await screen.findByText('21 июл'))
 
     expect(view.getLocation().pathname).toBe('/income/2026-07-21')
   })
@@ -148,6 +150,14 @@ describe('master payments pages', () => {
     const day = renderDay('2026-07-21')
     await day.user.click(screen.getByRole('button', { name: 'Экспорт' }))
     expect(mocks.exportAction).toHaveBeenCalledWith('2026-07-21')
+  })
+
+  it('открывает запись из карточки оплаты за день', async () => {
+    const view = renderDay()
+
+    await view.user.click(await screen.findByRole('button', { name: /Ранняя услуга/ }))
+
+    expect(view.getLocation().pathname).toBe('/bookings/booking-july-early-unpaid')
   })
 
   it('показывает empty states', async () => {
