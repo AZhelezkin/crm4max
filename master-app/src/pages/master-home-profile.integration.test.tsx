@@ -203,6 +203,7 @@ describe('master HomePage', () => {
     setMaster(createMasterProfile())
     const view = renderAtRoute(<HomePage />)
 
+    expect(await screen.findByRole('button', { name: 'Построить маршрут' })).toBeDisabled()
     await view.user.click(screen.getByRole('button', { name: 'Создать запись' }))
 
     expect(view.getLocation().pathname).toBe('/bookings/new')
