@@ -24,6 +24,7 @@ dayjs.locale('ru')
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
 const CARD_SHADOW = '0px 1px 2px 0px rgba(0,0,0,0.1)' // Figma «Card Soft»
 const WEEK_LETTERS = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'] as const // Пн..Вс
+const SHOW_DAY_ROUTE = false
 
 // Figma «Card Soft»-карточка (surface-transparent, rounded 20, тень).
 const cardStyle: CSSProperties = {
@@ -430,21 +431,23 @@ export default function HomePage() {
           )}
         </div>
 
-        <button
-          type="button"
-          disabled={!hasRouteOrigin || dayRouteStops.length === 0}
-          onClick={handleOpenDayRoute}
-          style={{
-            display: 'flex', width: '100%', height: 36, padding: 10,
-            justifyContent: 'center', alignItems: 'center', gap: 8, alignSelf: 'stretch',
-            boxSizing: 'border-box', borderRadius: 12, border: 'none',
-            background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)',
-            cursor: hasRouteOrigin && dayRouteStops.length > 0 ? 'pointer' : 'default',
-          }}
-        >
-          <RoutingIcon />
-          <span style={text.caption2}>Построить маршрут</span>
-        </button>
+        {SHOW_DAY_ROUTE && (
+          <button
+            type="button"
+            disabled={!hasRouteOrigin || dayRouteStops.length === 0}
+            onClick={handleOpenDayRoute}
+            style={{
+              display: 'flex', width: '100%', height: 36, padding: 10,
+              justifyContent: 'center', alignItems: 'center', gap: 8, alignSelf: 'stretch',
+              boxSizing: 'border-box', borderRadius: 12, border: 'none',
+              background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)',
+              cursor: hasRouteOrigin && dayRouteStops.length > 0 ? 'pointer' : 'default',
+            }}
+          >
+            <RoutingIcon />
+            <span style={text.caption2}>Построить маршрут</span>
+          </button>
+        )}
 
         {/* Кнопка «Создать запись» */}
         <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}
