@@ -105,7 +105,7 @@ describe('master payments pages', () => {
     expect(await screen.findByText(/3.?500 ₽/)).toBeInTheDocument()
     expect(screen.getByText('2 записи')).toBeInTheDocument()
     expect(screen.getByText('Есть неоплаты')).toBeInTheDocument()
-    expect(screen.getByText('22 июл')).toBeInTheDocument()
+    expect(screen.getByText('22 июл').parentElement).toHaveStyle({ width: '71px' })
   })
 
   it('переключает month summary и показывает соответствующие дни', async () => {

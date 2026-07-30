@@ -234,8 +234,8 @@ export default function PaymentsPage() {
               cursor: 'pointer',
             }}
           >
-            {/* Дата — колонка 50px, текст центрируется по строке суммы (pt 12 против pt 8). */}
-            <div style={{ width: 50, flexShrink: 0, paddingTop: 12 }}>
+            {/* Дата — колонка 71px, текст центрируется по строке суммы (pt 12 против pt 8). */}
+            <div style={{ width: 71, flexShrink: 0, paddingTop: 12 }}>
               <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap' }}>
                 {d.label}
               </span>
