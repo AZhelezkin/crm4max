@@ -13,6 +13,7 @@ import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 import AddressSuggestField from '@client/components/AddressSuggestField'
+import { metricErrorType, trackEvent } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -126,6 +127,7 @@ export default function ConfirmPage() {
       if (rescheduleId) {
         // Перенос существующей записи: меняем только дату/время (адрес/услуга не трогаются).
         await bookingsApi.reschedule(rescheduleId, { date, time })
+        trackEvent('client_booking_rescheduled', {})
         reset()
         navigate('/my-bookings')
       } else {
@@ -135,8 +137,16 @@ export default function ConfirmPage() {
             ? formatClientAddress(clientAddress, clientApartment, clientFloor, clientIntercom)
             : null,
         })
+        trackEvent('client_booking_confirmed', {
+          has_address: Boolean(master?.homeVisit && clientAddress?.trim()),
+          remind,
+          has_deposit: false,
+        })
         navigate('/book/success', { state: { bookingId: booking.id } })
       }
+    } catch (error) {
+      if (!rescheduleId) trackEvent('client_booking_create_failed', { booking_type: 'regular', error_type: metricErrorType(error) })
+      throw error
     } finally {
       setLoading(false)
     }

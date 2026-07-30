@@ -14,7 +14,7 @@ function initials(name: string): string {
 
 export default function RecentMastersPage() {
   const navigate = useNavigate()
-  const setMasterId = useBookingStore((s) => s.setMasterId)
+  const { setMasterId, setMasterSource } = useBookingStore()
   const [masters, setMasters] = useState<RecentMaster[] | null>(null)
 
   useEffect(() => {
@@ -23,6 +23,7 @@ export default function RecentMastersPage() {
 
   const pick = (m: RecentMaster) => {
     setMasterId(m.id)
+    setMasterSource('recent')
     navigate('/')
   }
 

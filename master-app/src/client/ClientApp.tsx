@@ -18,6 +18,8 @@ import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 import RecentMastersPage from '@client/pages/RecentMastersPage'
+import MetricsPageTracker from '@/components/MetricsPageTracker'
+import { resolveLaunchSource, setMetricsConsent, trackEventOnce } from '@/lib/metrics'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -73,9 +75,17 @@ function HomeRoute() {
 }
 
 export default function ClientApp() {
-  const { init, isLoading } = useAuthStore()
+  const { init, isLoading, metricsConsent } = useAuthStore()
 
   useEffect(() => { init() }, [init])
+
+  useEffect(() => {
+    const consentGranted = !isLoading && metricsConsent
+    setMetricsConsent(consentGranted)
+    if (consentGranted) {
+      trackEventOnce('app_opened:client', 'app_opened', { app_mode: 'client', launch_source: resolveLaunchSource(startParam) })
+    }
+  }, [isLoading, metricsConsent])
 
   if (isLoading) {
     // Skeleton-карточка мастера уместен только когда после auth откроется
@@ -92,6 +102,7 @@ export default function ClientApp() {
   return (
     <HashRouter>
       <ScrollToTop />
+      <MetricsPageTracker appMode="client" enabled={metricsConsent} />
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/masters"         element={<RecentMastersPage />} />

@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuthStore } from '@/store/auth.store'
 import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
+import { trackEvent, trackEventOnce } from '@/lib/metrics'
 
 function BackArrowIcon() {
   return (
@@ -45,6 +46,7 @@ function DownloadIcon() {
 
 export default function ShareLinkPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { master } = useAuthStore()
   const [copied, setCopied] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -58,10 +60,15 @@ export default function ShareLinkPage() {
   const deepLink = `https://max.ru/${clientBotName}?start=${masterId}`
   const hasLink = masterId.length > 0
 
-  const handleCopy = async () => {
+  useEffect(() => {
+    trackEventOnce(`share-page:${location.key}`, 'share_page_opened', {})
+  }, [location.key])
+
+  const handleCopy = async (source: 'button' | 'fallback' = 'button') => {
     try {
       await navigator.clipboard.writeText(deepLink)
       markGuideStep('shared')
+      trackEvent('share_link_copied', { source })
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -78,11 +85,12 @@ export default function ShareLinkPage() {
           url: deepLink,
         })
         markGuideStep('shared')
+        trackEvent('share_link_sent', { provider: 'system' })
       } catch {
         // пользователь отменил
       }
     } else {
-      handleCopy()
+      void handleCopy('fallback')
     }
   }
 
@@ -94,6 +102,7 @@ export default function ShareLinkPage() {
     a.href = url
     a.download = 'qr-code.png'
     a.click()
+    trackEvent('share_qr_downloaded', {})
   }
 
   return (
@@ -163,7 +172,7 @@ export default function ShareLinkPage() {
 
         {/* Кнопка копирования */}
         <button
-          onClick={handleCopy}
+          onClick={() => { void handleCopy('button') }}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             background: copied ? 'var(--color-secondary-surface)' : 'var(--color-surface)',

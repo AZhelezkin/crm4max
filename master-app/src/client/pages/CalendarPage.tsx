@@ -9,6 +9,7 @@ import ToggleSwitch from '@/components/ToggleSwitch'
 import { text } from '@/styles/typography'
 import CalendarDateSkeleton from '@client/components/CalendarDateSkeleton'
 import SlotsGridSkeleton from '@client/components/SlotsGridSkeleton'
+import { daysAheadBucket, timeBucket, trackEvent } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -125,6 +126,7 @@ export default function CalendarPage() {
   }, [step, masterId, service, selectedDate])
 
   const handleSelectDate = (d: dayjs.Dayjs) => {
+    trackEvent('client_booking_date_selected', { days_ahead_bucket: daysAheadBucket(d.startOf('day').diff(today, 'day')) })
     const val = d.format('YYYY-MM-DD')
     setSelectedDate(val)
     setStep('time')
@@ -133,6 +135,7 @@ export default function CalendarPage() {
   // Слот несёт client-local time (для UI) + master-дату/время (каноника для записи).
   // В store кладём master-дату/время, чтобы запись ушла в правильный слот мастера.
   const handleSelectTime = (s: ClientSlot) => {
+    trackEvent('client_booking_time_selected', { time_bucket: timeBucket(s.time) })
     if (isSession) {
       // Абонемент: записываем слот выбранного приёма и возвращаемся к списку приёмов.
       setSlot(sessionIndex, s.masterDate, s.masterTime)

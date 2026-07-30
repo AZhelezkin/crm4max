@@ -6,6 +6,7 @@ import type { Master, Service } from '@client/types'
 import { discountedPrice, formatPrice, masterServiceList } from '@client/types'
 import { text } from '@/styles/typography'
 import ServiceListSkeleton from '@client/components/ServiceListSkeleton'
+import { trackEvent } from '@/lib/metrics'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -177,6 +178,10 @@ export default function ServiceSelectPage() {
   }, [isSearchMode, master])
 
   const handleSelect = (service: Service) => {
+    trackEvent('client_service_selected', {
+      has_discount: Boolean(service.discountPercent && service.discountPercent > 0),
+      is_package: service.sessionsCount > 1,
+    })
     setService(service)
     navigate('/book/service')
   }

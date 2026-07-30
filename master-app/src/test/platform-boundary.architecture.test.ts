@@ -66,6 +66,9 @@ const PROVIDER_LOCATIONS = {
     'src/components/onboardingShared.tsx',
     'src/main.tsx',
   ],
+  metrikaRuntime: [
+    'src/lib/metrics.ts',
+  ],
 } as const
 
 function collectSourceFiles(
@@ -304,6 +307,7 @@ describe('platform provider boundary architecture', () => {
     assertExactLocations('client token', filesContaining(/clientToken/), PROVIDER_LOCATIONS.clientToken)
     assertExactLocations('MAX deep link', filesContaining(/https:\/\/max\.ru/), PROVIDER_LOCATIONS.maxDeepLink)
     assertExactLocations('MaxUI import', filesContaining(/@maxhub\/max-ui/), PROVIDER_LOCATIONS.maxUiImport)
+    assertExactLocations('Yandex Metrika runtime', filesContaining(/window\.ym|mc\.yandex\.ru\/metrika/), PROVIDER_LOCATIONS.metrikaRuntime)
   })
 
   it('фиксирует единственный MAX SDK bootstrap и package dependency', () => {

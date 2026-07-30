@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { HeroHeader } from '@/components/onboardingShared'
@@ -9,6 +9,7 @@ import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliati
 import { openCardBindingForm, openPaymentForm } from '@/lib/paymentForm'
 import { abandonSubscriptionReturn, clearSubscriptionReturn, readSubscriptionReturn } from '@/lib/subscriptionReturn'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
+import { trackEvent, trackEventOnce } from '@/lib/metrics'
 
 // «Переход в подписку» (макет 10256-54945): плитка оставшихся дней триала
 // (варианты 10256-55033…55098), выбор периода (месяц 499 ₽ / год 4 790 ₽ со
@@ -36,6 +37,7 @@ function formatDate(iso: string): string {
 
 export default function SubscriptionPlanPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [sub, setSub] = useState<SubscriptionState | null>(null)
   const [period, setPeriod] = useState<Period>('YEAR')
   const [paymentLoading, setPaymentLoading] = useState(false)
@@ -70,11 +72,16 @@ export default function SubscriptionPlanPage() {
       .finally(() => setSubscriptionLoading(false))
   }, [])
 
+  useEffect(() => {
+    if (!subscriptionLoading) trackEventOnce(`subscription-viewed:${location.key}`, 'subscription_viewed', {})
+  }, [location.key, subscriptionLoading])
+
   const handleCancelSubscription = async () => {
     if (cancelling) return
     setCancelling(true)
     try {
       await subscriptionApi.cancel()
+      trackEvent('subscription_cancelled', {})
       setSub(await subscriptionApi.getMe())
       setConfirmCancel(false)
     } catch { /* остаёмся в диалоге — можно повторить */ } finally {
@@ -95,15 +102,19 @@ export default function SubscriptionPlanPage() {
     paymentInFlight.current = true
     setPaymentLoading(true)
     setPaymentError(null)
+    const metricPeriod = period === 'YEAR' ? 'year' : 'month'
+    trackEvent('subscription_checkout_started', { period: metricPeriod })
     try {
       if (isCancelledActive) {
         // Уже оплаченный остаток не списываем повторно: выбираем будущий период
         // и заново привязываем карту для списания после currentPeriodEnd.
         const result = await subscriptionApi.startTrial(period)
+        trackEvent('subscription_payment_redirected', { period: metricPeriod, form: 'card_binding' })
         beginCardBinding(sub)
         openCardBindingForm(result.paymentURL)
       } else {
         const result = await subscriptionApi.pay(period)
+        trackEvent('subscription_payment_redirected', { period: metricPeriod, form: 'payment' })
         openPaymentForm(result.paymentURL)
       }
     } catch (error) {

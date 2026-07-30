@@ -26,7 +26,7 @@ function extractMasterId(raw: ScanResult): string | null {
 
 export default function QRScanPage() {
   const navigate = useNavigate()
-  const setMasterId = useBookingStore((s) => s.setMasterId)
+  const { setMasterId, setMasterSource } = useBookingStore()
   const [scanning, setScanning] = useState(false)
 
   const handleScan = () => {
@@ -36,6 +36,7 @@ export default function QRScanPage() {
       const masterId = extractMasterId(result)
       if (masterId) {
         setMasterId(masterId)
+        setMasterSource('qr')
         navigate(`/?masterId=${masterId}`, { replace: true })
       } else {
         setScanning(false)

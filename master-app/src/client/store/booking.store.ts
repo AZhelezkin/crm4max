@@ -1,13 +1,16 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { BookingDraft, Service } from '@client/types'
+import type { ClientMasterSource } from '@/lib/metrics'
 
 interface BookingState extends BookingDraft {
   /** Ссылка на профиль текущего мастера в MAX (для гейта раздела «Сообщения»). */
   masterProfileLink: string | null
   /** Если задан — флоу не создаёт новую запись, а переносит существующую (date/time). */
   rescheduleId: string | null
+  masterSource: ClientMasterSource
   setMasterId: (id: string) => void
+  setMasterSource: (source: ClientMasterSource) => void
   setMasterProfileLink: (link: string | null) => void
   setRescheduleId: (id: string | null) => void
   setService: (service: Service, categoryName?: string | null) => void
@@ -30,6 +33,7 @@ export const useBookingStore = create<BookingState>()(
       masterId: '',
       masterProfileLink: null,
       rescheduleId: null,
+      masterSource: 'stored',
       service: null,
       categoryName: null,
       date: '',
@@ -42,6 +46,7 @@ export const useBookingStore = create<BookingState>()(
       clientIntercom: '',
 
       setMasterId: (masterId) => set({ masterId }),
+      setMasterSource: (masterSource) => set({ masterSource }),
       setMasterProfileLink: (masterProfileLink) => set({ masterProfileLink }),
       setRescheduleId: (rescheduleId) => set({ rescheduleId }),
       // Выбор услуги = старт новой записи → сбрасываем reschedule-режим (persisted store

@@ -11,6 +11,7 @@ import { discountedPrice, formatPrice } from '@client/types'
 import { toClientLocal, toMasterLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import AddressSuggestField from '@client/components/AddressSuggestField'
+import { metricErrorType, trackEvent } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -218,8 +219,14 @@ export default function PackageBookingPage() {
           ? formatClientAddress(clientAddress, clientApartment, clientFloor, clientIntercom)
           : null,
       })
+      trackEvent('client_package_confirmed', {
+        sessions_count: finalSlots.length,
+        has_address: Boolean(master?.homeVisit && clientAddress?.trim()),
+        remind,
+      })
       navigate('/book/success', { state: { bookingId: pkg.bookings[0]?.id } })
     } catch (e) {
+      trackEvent('client_booking_create_failed', { booking_type: 'package', error_type: metricErrorType(e) })
       const slot = (e as { response?: { data?: { slot?: { date: string; time: string } } } })?.response?.data?.slot
       const ds = slot ? toClientLocal(slot.date, slot.time, master?.timezone) : null
       setError(ds

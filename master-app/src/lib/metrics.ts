@@ -1,0 +1,214 @@
+export type AppMode = 'master' | 'client'
+export type LaunchSource = 'bot' | 'deeplink' | 'qr' | 'direct'
+export type ClientMasterSource = 'deeplink' | 'qr' | 'recent' | 'stored'
+
+type MetricValue = string | number | boolean
+
+export type MetricEventMap = {
+  app_opened: { app_mode: AppMode; launch_source: LaunchSource }
+  master_welcome_viewed: Record<string, never>
+  subscription_viewed: Record<string, never>
+  subscription_checkout_started: { period: 'month' | 'year' }
+  subscription_payment_redirected: { period: 'month' | 'year'; form: 'payment' | 'card_binding' }
+  subscription_cancelled: Record<string, never>
+  subscription_payment_returned: { result: 'success' | 'fail' }
+  master_booking_created: { booking_type: 'regular'; services_count: number; has_address: boolean; remind: boolean; has_overlap: boolean }
+  master_package_created: { sessions_count: number; has_address: boolean; remind: boolean }
+  master_booking_create_failed: { booking_type: 'regular' | 'package'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
+  client_master_opened: { source: ClientMasterSource }
+  client_booking_started: { entry: 'master' | 'service' }
+  client_service_selected: { has_discount: boolean; is_package: boolean }
+  client_booking_date_selected: { days_ahead_bucket: 'today' | '1_3' | '4_7' | '8_30' | 'gt_30' }
+  client_booking_time_selected: { time_bucket: 'morning' | 'day' | 'evening' }
+  client_booking_confirmed: { has_address: boolean; remind: boolean; has_deposit: boolean }
+  client_package_confirmed: { sessions_count: number; has_address: boolean; remind: boolean }
+  client_booking_create_failed: { booking_type: 'regular' | 'package'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
+  client_booking_rescheduled: Record<string, never>
+  share_page_opened: Record<string, never>
+  share_link_copied: { source: 'button' | 'fallback' }
+  share_link_sent: { provider: 'system' }
+  share_qr_downloaded: Record<string, never>
+}
+
+export type MetricEventName = keyof MetricEventMap
+
+type YmFunction = ((counterId: number, method: string, ...args: unknown[]) => void) & {
+  a?: unknown[][]
+  l?: number
+}
+
+declare global {
+  interface Window {
+    ym?: YmFunction
+  }
+}
+
+const COUNTER_ID = parseCounterId(import.meta.env.VITE_YANDEX_METRICA_ID)
+const QUEUE_LIMIT = 50
+const ONCE_LIMIT = 200
+const SCRIPT_ID = 'yandex-metrika-tag'
+const IS_LOCAL = import.meta.env.DEV || import.meta.env.MODE === 'test'
+
+const EVENT_KEYS: { [Name in MetricEventName]: readonly (keyof MetricEventMap[Name])[] } = {
+  app_opened: ['app_mode', 'launch_source'],
+  master_welcome_viewed: [],
+  subscription_viewed: [],
+  subscription_checkout_started: ['period'],
+  subscription_payment_redirected: ['period', 'form'],
+  subscription_cancelled: [],
+  subscription_payment_returned: ['result'],
+  master_booking_created: ['booking_type', 'services_count', 'has_address', 'remind', 'has_overlap'],
+  master_package_created: ['sessions_count', 'has_address', 'remind'],
+  master_booking_create_failed: ['booking_type', 'error_type'],
+  client_master_opened: ['source'],
+  client_booking_started: ['entry'],
+  client_service_selected: ['has_discount', 'is_package'],
+  client_booking_date_selected: ['days_ahead_bucket'],
+  client_booking_time_selected: ['time_bucket'],
+  client_booking_confirmed: ['has_address', 'remind', 'has_deposit'],
+  client_package_confirmed: ['sessions_count', 'has_address', 'remind'],
+  client_booking_create_failed: ['booking_type', 'error_type'],
+  client_booking_rescheduled: [],
+  share_page_opened: [],
+  share_link_copied: ['source'],
+  share_link_sent: ['provider'],
+  share_qr_downloaded: [],
+}
+
+let consentGranted = false
+let initialized = false
+let lastPageNavigation = ''
+const sentOnce = new Set<string>()
+
+export function setMetricsConsent(granted: boolean): void {
+  consentGranted = granted
+  if (granted) initializeMetrics()
+}
+
+export function trackEvent<Name extends MetricEventName>(name: Name, params: MetricEventMap[Name]): void {
+  if (!consentGranted) return
+  const safeParams = sanitizeParams(params, EVENT_KEYS[name] as readonly string[])
+  if (IS_LOCAL) {
+    console.info('[metrics]', name, safeParams)
+    return
+  }
+  initializeMetrics()
+  safelyCallYm('reachGoal', name, safeParams)
+}
+
+export function trackEventOnce<Name extends MetricEventName>(key: string, name: Name, params: MetricEventMap[Name]): void {
+  if (!consentGranted) return
+  if (sentOnce.has(key)) return
+  sentOnce.add(key)
+  if (sentOnce.size > ONCE_LIMIT) sentOnce.delete(sentOnce.values().next().value!)
+  trackEvent(name, params)
+}
+
+export function trackPageView(path: string, appMode: AppMode, navigationKey = path): void {
+  if (!consentGranted) return
+  const page = normalizeMetricPath(path)
+  const dedupeKey = `${appMode}:${navigationKey}:${page}`
+  if (dedupeKey === lastPageNavigation) return
+  lastPageNavigation = dedupeKey
+  const params = { app_mode: appMode, page }
+  if (IS_LOCAL) {
+    console.info('[metrics]', 'page_viewed', params)
+    return
+  }
+  initializeMetrics()
+  safelyCallYm('hit', page, { params })
+}
+
+export function normalizeMetricPath(value: string): string {
+  const path = value.split(/[?#]/, 1)[0] || '/'
+  if (/^\/bookings\/[^/]+$/.test(path)) return '/bookings/:id'
+  if (/^\/income\/[^/]+$/.test(path)) return '/income/:date'
+  if (/^\/my-bookings\/[^/]+$/.test(path)) return '/my-bookings/:id'
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+export function resolveLaunchSource(startParam: string): LaunchSource {
+  if (!startParam) return 'direct'
+  if (startParam === 'qr') return 'qr'
+  if (startParam === 'mmode' || startParam === 'msubscription' || startParam === 'cmasters' || startParam.startsWith('m-')) return 'bot'
+  return 'deeplink'
+}
+
+export function metricErrorType(error: unknown): 'conflict' | 'validation' | 'network' | 'unknown' {
+  const response = (error as { response?: { status?: number; data?: { slot?: unknown } } } | null)?.response
+  if (response?.status === 409 || response?.data?.slot) return 'conflict'
+  if (response?.status === 400 || response?.status === 422) return 'validation'
+  if (!response?.status) return 'network'
+  return 'unknown'
+}
+
+export function daysAheadBucket(days: number): 'today' | '1_3' | '4_7' | '8_30' | 'gt_30' {
+  if (days <= 0) return 'today'
+  if (days <= 3) return '1_3'
+  if (days <= 7) return '4_7'
+  if (days <= 30) return '8_30'
+  return 'gt_30'
+}
+
+export function timeBucket(time: string): 'morning' | 'day' | 'evening' {
+  const hour = Number(time.slice(0, 2))
+  if (Number.isFinite(hour) && hour < 12) return 'morning'
+  if (Number.isFinite(hour) && hour < 18) return 'day'
+  return 'evening'
+}
+
+function initializeMetrics(): void {
+  if (initialized || !consentGranted || !COUNTER_ID || typeof document === 'undefined' || IS_LOCAL) return
+  initialized = true
+  installBoundedYmQueue()
+  safelyCallYm('init', {
+    // Automatic click/link capture can include deep-link IDs and full URLs.
+    clickmap: false,
+    trackLinks: false,
+    accurateTrackBounce: true,
+    webvisor: false,
+    defer: true,
+  })
+  if (!document.getElementById(SCRIPT_ID)) {
+    const script = document.createElement('script')
+    script.id = SCRIPT_ID
+    script.async = true
+    script.src = 'https://mc.yandex.ru/metrika/tag.js'
+    document.head.appendChild(script)
+  }
+}
+
+function installBoundedYmQueue(): void {
+  if (window.ym) return
+  const queued: YmFunction = (...args: unknown[]) => {
+    const queue = queued.a ?? (queued.a = [])
+    queue.push(args)
+    if (queue.length > QUEUE_LIMIT) queue.shift()
+  }
+  queued.l = Date.now()
+  window.ym = queued
+}
+
+function safelyCallYm(method: string, ...args: unknown[]): void {
+  if (!COUNTER_ID || !window.ym) return
+  try {
+    window.ym(COUNTER_ID, method, ...args)
+  } catch {
+    // Analytics must never affect application behavior.
+  }
+}
+
+function sanitizeParams(value: object, allowedKeys: readonly string[]): Record<string, MetricValue> {
+  const source = value as Record<string, unknown>
+  return Object.fromEntries(allowedKeys.flatMap((key) => {
+    const item = source[key]
+    return typeof item === 'string' || typeof item === 'boolean' || (typeof item === 'number' && Number.isSafeInteger(item) && item >= 0)
+      ? [[key, item]]
+      : []
+  }))
+}
+
+function parseCounterId(value: unknown): number | null {
+  const parsed = typeof value === 'string' ? Number(value) : NaN
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
+}

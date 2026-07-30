@@ -25,6 +25,7 @@ import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/Serv
 import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type BookingAddressDetails } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import BookingAddressText from '@/components/BookingAddressText'
+import { metricErrorType, trackEvent } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -594,9 +595,17 @@ export default function CreateBookingPage() {
         // Мастер выбирает любое время в рабочем дне — пересечения разрешены.
         allowOverlap: true,
       })
+      trackEvent('master_booking_created', {
+        booking_type: 'regular',
+        services_count: selectedServices.length,
+        has_address: outbound && Boolean(address.trim()),
+        remind,
+        has_overlap: hasOverlap,
+      })
       setCreatedBooking(booking)
       setStep('success')
     } catch (e) {
+      trackEvent('master_booking_create_failed', { booking_type: 'regular', error_type: metricErrorType(e) })
       console.error('[booking] create failed', e)
       setError('Не удалось создать запись. Попробуйте ещё раз.')
     } finally {
@@ -625,8 +634,14 @@ export default function CreateBookingPage() {
         remind,
         clientAddress: homeVisit ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
       })
+      trackEvent('master_package_created', {
+        sessions_count: slots.length,
+        has_address: homeVisit && Boolean(address.trim()),
+        remind,
+      })
       navigate('/bookings')
     } catch (e) {
+      trackEvent('master_booking_create_failed', { booking_type: 'package', error_type: metricErrorType(e) })
       const slot = (e as { response?: { data?: { slot?: { date: string; time: string } } } })?.response?.data?.slot
       setError(slot
         ? `Слот ${dayjs(slot.date).format('D MMMM')} ${slot.time} уже занят — выберите другой`

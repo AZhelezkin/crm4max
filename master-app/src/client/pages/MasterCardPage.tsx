@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { mastersApi } from '@client/api/masters.api'
@@ -13,6 +13,7 @@ import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 import { startParam } from '@/App'
 import { text } from '@/styles/typography'
 import capybaraBookingImg from '@/assets/capybara-booking.png'
+import { trackEvent, trackEventOnce } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -100,8 +101,9 @@ const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фо
 
 export default function MasterCardPage() {
   const [params] = useSearchParams()
+  const location = useLocation()
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const { setMasterId, setService, setDateTime, setMasterProfileLink, masterId: storeMasterId } = useBookingStore()
+  const { setMasterId, setService, setDateTime, setMasterProfileLink, masterId: storeMasterId, masterSource } = useBookingStore()
   const masterId = (UUID_REGEX.test(startParam) ? startParam : null)
     ?? params.get('masterId')
     ?? storeMasterId
@@ -134,12 +136,15 @@ export default function MasterCardPage() {
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId)
       .then((m) => {
+        trackEventOnce(`client-master-opened:${location.key}`, 'client_master_opened', {
+          source: UUID_REGEX.test(startParam) ? 'deeplink' : masterSource,
+        })
         setMaster(m)
         setMasterProfileLink(m.maxProfileLink)
         void mastersApi.rememberVisit(masterId).catch(() => {})
       })
       .catch(() => {})
-  }, [masterId, setMasterProfileLink])
+  }, [location.key, masterId, masterSource, setMasterProfileLink])
 
   useEffect(() => {
     if (!masterId) return
@@ -171,6 +176,13 @@ export default function MasterCardPage() {
     .sort((a: any, b: any) => a.order - b.order)
 
   const handleBook = (service?: Service) => {
+    trackEvent('client_booking_started', { entry: service ? 'service' : 'master' })
+    if (service) {
+      trackEvent('client_service_selected', {
+        has_discount: Boolean(service.discountPercent && service.discountPercent > 0),
+        is_package: service.sessionsCount > 1,
+      })
+    }
     setMasterId(masterId)
     if (service) {
       setService(service)
@@ -740,6 +752,11 @@ export default function MasterCardPage() {
 
         {tab === 'services' && (
           <ServicesList services={masterServiceList(master)} onServiceClick={(service) => {
+            trackEvent('client_booking_started', { entry: 'service' })
+            trackEvent('client_service_selected', {
+              has_discount: Boolean(service.discountPercent && service.discountPercent > 0),
+              is_package: service.sessionsCount > 1,
+            })
             setMasterId(masterId)
             setService(service)
             navigate('/book/service')

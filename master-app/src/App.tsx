@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
 import { installHorizontalOverscrollGuard } from '@/lib/topOverscrollGuard'
@@ -35,6 +35,8 @@ import MapTestPage from '@/pages/MapTestPage'
 import SwipeTestPage from '@/pages/SwipeTestPage'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
+import MetricsPageTracker from '@/components/MetricsPageTracker'
+import { resolveLaunchSource, setMetricsConsent, trackEventOnce } from '@/lib/metrics'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -203,16 +205,22 @@ function MasterDeepLinkRedirect() {
 // (макеты 10256-55423 / 10256-55004). Кнопки уводят обычной навигацией.
 function PaySuccessRoute() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [returnTo] = useState(readSubscriptionReturn)
   useEffect(() => {
+    trackEventOnce(`subscription-return:success:${location.key}`, 'subscription_payment_returned', { result: 'success' })
     if (returnTo) clearSubscriptionReturn()
-  }, [returnTo])
+  }, [location.key, returnTo])
   if (returnTo) return <Navigate to={returnTo} replace state={{ subscriptionReturn: true }} />
   return <SubscriptionSuccessPage onGoProfile={() => navigate('/', { replace: true })} />
 }
 
 function PayFailRoute() {
   const navigate = useNavigate()
+  const location = useLocation()
+  useEffect(() => {
+    trackEventOnce(`subscription-return:fail:${location.key}`, 'subscription_payment_returned', { result: 'fail' })
+  }, [location.key])
   return (
     <SubscriptionFailedPage
       onRetry={() => navigate('/subscription', { replace: true })}
@@ -239,6 +247,14 @@ function MasterApp() {
     init()
   }, [init])
 
+  useEffect(() => {
+    const consentGranted = !isLoading && Boolean(master?.isOnboarded)
+    setMetricsConsent(consentGranted)
+    if (consentGranted) {
+      trackEventOnce('app_opened:master', 'app_opened', { app_mode: 'master', launch_source: resolveLaunchSource(startParam) })
+    }
+  }, [isLoading, master?.isOnboarded])
+
   if (isLoading) {
     return (
       <div style={{
@@ -258,6 +274,7 @@ function MasterApp() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <MetricsPageTracker appMode="master" enabled={Boolean(master?.isOnboarded)} />
       <MasterDeepLinkRedirect />
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}
