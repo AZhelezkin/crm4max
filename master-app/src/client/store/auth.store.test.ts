@@ -31,7 +31,6 @@ describe.sequential('client auth store', () => {
       token: CLIENT_TOKEN,
       clientId: CLIENT_ID,
       isLoading: false,
-      metricsConsent: true,
     })
   })
 
@@ -47,7 +46,6 @@ describe.sequential('client auth store', () => {
       token: CLIENT_TOKEN,
       clientId: CLIENT_ID,
       isLoading: false,
-      metricsConsent: false,
     })
   })
 
@@ -66,7 +64,6 @@ describe.sequential('client auth store', () => {
       token: CLIENT_TOKEN,
       clientId: CLIENT_ID,
       isLoading: false,
-      metricsConsent: false,
     })
   })
 

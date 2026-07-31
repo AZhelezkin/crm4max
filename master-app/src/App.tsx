@@ -36,7 +36,7 @@ import SwipeTestPage from '@/pages/SwipeTestPage'
 import DestinationSelectorPage from '@/standalone-pages/handoff/destination-selector/DestinationSelectorPage'
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
 import MetricsPageTracker from '@/components/MetricsPageTracker'
-import { resolveLaunchSource, setMetricsConsent, trackEventOnce } from '@/lib/metrics'
+import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -248,12 +248,10 @@ function MasterApp() {
   }, [init])
 
   useEffect(() => {
-    const consentGranted = !isLoading && Boolean(master?.isOnboarded)
-    setMetricsConsent(consentGranted)
-    if (consentGranted) {
+    if (!isLoading) {
       trackEventOnce('app_opened:master', 'app_opened', { app_mode: 'master', launch_source: resolveLaunchSource(startParam) })
     }
-  }, [isLoading, master?.isOnboarded])
+  }, [isLoading])
 
   if (isLoading) {
     return (
@@ -274,7 +272,7 @@ function MasterApp() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <MetricsPageTracker appMode="master" enabled={Boolean(master?.isOnboarded)} />
+      <MetricsPageTracker appMode="master" />
       <MasterDeepLinkRedirect />
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}

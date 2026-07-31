@@ -5,14 +5,10 @@ describe('metrics', () => {
     vi.resetModules()
   })
 
-  test('does not emit events before consent and filters undeclared parameters', async () => {
+  test('emits events without a consent gate and filters undeclared parameters', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     const metrics = await import('./metrics')
 
-    metrics.trackEvent('app_opened', { app_mode: 'master', launch_source: 'bot' })
-    expect(info).not.toHaveBeenCalled()
-
-    metrics.setMetricsConsent(true)
     metrics.trackEvent('app_opened', {
       app_mode: 'master',
       launch_source: 'bot',
@@ -29,7 +25,6 @@ describe('metrics', () => {
   test('deduplicates one-time events and StrictMode route effects', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     const metrics = await import('./metrics')
-    metrics.setMetricsConsent(true)
 
     metrics.trackEventOnce('welcome', 'master_welcome_viewed', {})
     metrics.trackEventOnce('welcome', 'master_welcome_viewed', {})

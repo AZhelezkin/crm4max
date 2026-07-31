@@ -75,18 +75,11 @@ const EVENT_KEYS: { [Name in MetricEventName]: readonly (keyof MetricEventMap[Na
   share_qr_downloaded: [],
 }
 
-let consentGranted = false
 let initialized = false
 let lastPageNavigation = ''
 const sentOnce = new Set<string>()
 
-export function setMetricsConsent(granted: boolean): void {
-  consentGranted = granted
-  if (granted) initializeMetrics()
-}
-
 export function trackEvent<Name extends MetricEventName>(name: Name, params: MetricEventMap[Name]): void {
-  if (!consentGranted) return
   const safeParams = sanitizeParams(params, EVENT_KEYS[name] as readonly string[])
   if (IS_LOCAL) {
     console.info('[metrics]', name, safeParams)
@@ -97,7 +90,6 @@ export function trackEvent<Name extends MetricEventName>(name: Name, params: Met
 }
 
 export function trackEventOnce<Name extends MetricEventName>(key: string, name: Name, params: MetricEventMap[Name]): void {
-  if (!consentGranted) return
   if (sentOnce.has(key)) return
   sentOnce.add(key)
   if (sentOnce.size > ONCE_LIMIT) sentOnce.delete(sentOnce.values().next().value!)
@@ -105,7 +97,6 @@ export function trackEventOnce<Name extends MetricEventName>(key: string, name: 
 }
 
 export function trackPageView(path: string, appMode: AppMode, navigationKey = path): void {
-  if (!consentGranted) return
   const page = normalizeMetricPath(path)
   const dedupeKey = `${appMode}:${navigationKey}:${page}`
   if (dedupeKey === lastPageNavigation) return
@@ -158,7 +149,7 @@ export function timeBucket(time: string): 'morning' | 'day' | 'evening' {
 }
 
 function initializeMetrics(): void {
-  if (initialized || !consentGranted || !COUNTER_ID || typeof document === 'undefined' || IS_LOCAL) return
+  if (initialized || !COUNTER_ID || typeof document === 'undefined' || IS_LOCAL) return
   initialized = true
   installBoundedYmQueue()
   safelyCallYm('init', {
