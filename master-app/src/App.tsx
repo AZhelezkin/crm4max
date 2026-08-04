@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HashRouter as BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { keepVerticalSwipesDisabled } from '@/lib/bridge'
@@ -94,6 +94,27 @@ export function getMasterBookingDeepLinkId(): string | null {
   return m ? m[2] : null
 }
 
+type MasterBookingLaunch = { param: string; bookingId: string; source: 'query' | 'bridge' }
+
+function resolveMasterBookingLaunch(): MasterBookingLaunch | null {
+  const queryParam = new URLSearchParams(window.location.search).get('startapp') ?? ''
+  const bridgeParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
+
+  for (const [param, source] of [[queryParam, 'query'], [bridgeParam, 'bridge']] as const) {
+    const match = MASTER_BOOKING_DEEPLINK_RE.exec(param)
+    if (match) return { param, bookingId: match[2], source }
+  }
+  return null
+}
+
+function consumeMasterBookingQuery(param: string): void {
+  const query = new URLSearchParams(window.location.search)
+  if (query.get('startapp') !== param) return
+  query.delete('startapp')
+  const search = query.toString()
+  window.history.replaceState(null, '', `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`)
+}
+
 function resolveInitialMode(): 'master' | 'client' | null {
   if (startParam === 'mmode' || startParam === 'msubscription') return 'master'
   if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
@@ -186,11 +207,34 @@ export default function App() {
 
 function MasterDeepLinkRedirect() {
   const navigate = useNavigate()
+  const handledBookingParam = useRef<string | null>(null)
   const [target, setTarget] = useState(() => {
     if (startParam === 'msubscription') return '/subscription'
-    const bookingId = getMasterBookingDeepLinkId()
-    return bookingId ? `/bookings/${bookingId}` : null
+    return null
   })
+
+  useEffect(() => {
+    const syncBookingLaunch = () => {
+      const launch = resolveMasterBookingLaunch()
+      if (!launch || handledBookingParam.current === launch.param) return
+      handledBookingParam.current = launch.param
+      navigate(`/bookings/${launch.bookingId}`, { replace: true })
+      if (launch.source === 'query') consumeMasterBookingQuery(launch.param)
+    }
+
+    syncBookingLaunch()
+    const syncVisibleBookingLaunch = () => {
+      if (document.visibilityState === 'visible') syncBookingLaunch()
+    }
+    window.addEventListener('focus', syncBookingLaunch)
+    window.addEventListener('pageshow', syncBookingLaunch)
+    document.addEventListener('visibilitychange', syncVisibleBookingLaunch)
+    return () => {
+      window.removeEventListener('focus', syncBookingLaunch)
+      window.removeEventListener('pageshow', syncBookingLaunch)
+      document.removeEventListener('visibilitychange', syncVisibleBookingLaunch)
+    }
+  }, [navigate])
 
   useEffect(() => {
     if (!target) return

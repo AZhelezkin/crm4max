@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -94,6 +94,34 @@ describe.sequential('App launch routing', () => {
     render(<App />)
 
     expect(getMasterBookingDeepLinkId()).toBe(BOOKING_ID)
+    expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
+  })
+
+  it('обрабатывает master booking query отдельно от старого MAX mmode', async () => {
+    const { default: App } = await loadApp({
+      webAppStart: 'mmode',
+      search: `?startapp=m-${MASTER_ID}-${BOOKING_ID}`,
+    })
+
+    render(<App />)
+
+    expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
+    expect(window.location.search).toBe('')
+  })
+
+  it('обрабатывает новый master booking launch при возврате в существующий WebView', async () => {
+    const { default: App } = await loadApp({ webAppStart: 'mmode' })
+
+    render(<App />)
+    expect(await screen.findByTestId('master-home')).toBeInTheDocument()
+
+    act(() => {
+      window.WebApp!.initDataUnsafe!.start_param = `m-${MASTER_ID}-${BOOKING_ID}`
+      window.dispatchEvent(new Event('focus'))
+    })
+
     expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
     expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
   })
