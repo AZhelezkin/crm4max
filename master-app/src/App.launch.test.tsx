@@ -98,6 +98,18 @@ describe.sequential('App launch routing', () => {
     expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
   })
 
+  it('маршрутизирует master booking deep link из реального MAX launch fragment', async () => {
+    const { default: App } = await loadApp({
+      webAppStart: `m-${MASTER_ID}-${BOOKING_ID}`,
+      hash: '#WebAppData=signed-data&WebAppPlatform=android&WebAppVersion=26.19.2',
+    })
+
+    render(<App />)
+
+    expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
+  })
+
   it('обрабатывает master booking query отдельно от старого MAX mmode', async () => {
     const { default: App } = await loadApp({
       webAppStart: 'mmode',
@@ -127,7 +139,10 @@ describe.sequential('App launch routing', () => {
   })
 
   it('открывает подписку мастера по start_param msubscription', async () => {
-    const { default: App } = await loadApp({ webAppStart: 'msubscription', hash: '#/other' })
+    const { default: App } = await loadApp({
+      webAppStart: 'msubscription',
+      hash: '#WebAppData=signed-data&WebAppPlatform=android&WebAppVersion=26.19.2',
+    })
 
     render(<StrictMode><App /></StrictMode>)
 

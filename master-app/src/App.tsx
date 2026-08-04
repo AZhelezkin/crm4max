@@ -76,8 +76,19 @@ function normalizePaymentResultRoute(): void {
   )
 }
 
+// MAX передаёт WebAppData в URL fragment. Библиотека Bridge уже прочитала его
+// до запуска module script, поэтому служебный fragment нужно убрать, прежде чем
+// HashRouter примет его за маршрут и wildcard-редирект перезапишет deep link.
+function normalizeMaxLaunchFragment(): void {
+  if (typeof window === 'undefined') return
+  const hash = window.location.hash.replace(/^#/, '')
+  if (!new URLSearchParams(hash).has('WebAppData')) return
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/`)
+}
+
 normalizePaymentResultRoute()
 export const startParam = resolveStartParam()
+normalizeMaxLaunchFragment()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
