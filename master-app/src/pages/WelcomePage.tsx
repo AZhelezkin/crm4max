@@ -239,8 +239,9 @@ export function Slider() {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {/* Вьюпорт с горизонтальным треком */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      {/* Вьюпорт шире слайда на page-padding: glow не режется, соседние слайды
+          остаются скрыты, потому что каждый шаг трека равен ширине viewport. */}
+      <div data-testid="feature-slider-viewport" style={{ position: 'absolute', top: 0, bottom: 0, left: -16, right: -16, overflow: 'hidden' }}>
         <div
           style={{
             display: 'flex',
@@ -253,11 +254,13 @@ export function Slider() {
         >
           {SLIDES.map((slide) => (
             <div key={slide.key} style={{ flex: '0 0 100%', position: 'relative', height: '100%' }}>
-              {slide.layers.map((l, i) => <LayerImg key={i} {...l} />)}
-              {/* Текст: Figma top 260, w 325, gap 2, центр */}
-              <div style={{ position: 'absolute', top: 260, left: '50%', transform: 'translateX(-50%)', width: 325, display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
-                <div style={{ ...slideTitleStyle, color: 'var(--color-on-surface)', width: '100%' }}>{slide.title}</div>
-                <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', width: '100%' }}>{slide.subtitle}</div>
+              <div style={{ position: 'absolute', left: 16, width: SLIDE_W, height: '100%' }}>
+                {slide.layers.map((l, i) => <LayerImg key={i} {...l} />)}
+                {/* Текст: Figma top 260, w 325, gap 2, центр */}
+                <div style={{ position: 'absolute', top: 260, left: '50%', transform: 'translateX(-50%)', width: 325, display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
+                  <div style={{ ...slideTitleStyle, color: 'var(--color-on-surface)', width: '100%' }}>{slide.title}</div>
+                  <div style={{ ...captionStyle, color: 'var(--color-on-surface-secondary)', width: '100%' }}>{slide.subtitle}</div>
+                </div>
               </div>
             </div>
           ))}

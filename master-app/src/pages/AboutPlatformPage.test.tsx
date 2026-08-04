@@ -24,6 +24,7 @@ describe('AboutPlatformPage', () => {
     expect(screen.getByText('Управляй бизнесом грамотно!')).toBeInTheDocument()
     expect(screen.getByText('ООО «Система», 2026 год')).toBeInTheDocument()
     expect(screen.getByText('ИНН 9706002253, ОГРН 1197746529640')).toBeInTheDocument()
+    expect(screen.getByTestId('feature-slider-viewport')).toHaveStyle({ left: '-16px', right: '-16px' })
   })
 
   it('кнопка «Назад» возвращает на предыдущий экран', async () => {

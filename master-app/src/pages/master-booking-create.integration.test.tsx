@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { act, screen, waitFor, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
 import { createSubscriptionState } from '@/test/fixtures/subscriptions'
@@ -209,6 +209,31 @@ describe('master CreateBookingPage', () => {
     api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     setMaster()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('блокирует прошедшие слоты сегодняшнего дня в часовом поясе мастера', async () => {
+    vi.useFakeTimers({ now: new Date('2026-08-04T13:00:30Z'), toFake: ['Date'] })
+    const currentMaster = useAuthStore.getState().master!
+    useAuthStore.setState({
+      master: {
+        ...currentMaster,
+        timezone: 'Europe/Moscow',
+        schedule: { ...currentMaster.schedule!, endTime: '18:00' },
+      },
+    })
+    const view = renderPage()
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Дата/ }))
+    await selectDate(view, dayjs())
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
+
+    expect(screen.getByRole('button', { name: '12:30' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '16:00' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '16:15' })).toBeEnabled()
   })
 
   it('сразу после создания на success-экране есть «Отметить как оплачено»', async () => {

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import 'dayjs/locale/ru'
 import { servicesApi } from '@/api/services.api'
 import { bookingsApi } from '@/api/bookings.api'
@@ -28,6 +30,8 @@ import BookingAddressText from '@/components/BookingAddressText'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
 
 dayjs.locale('ru')
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const VIOLET_GRADIENT = 'linear-gradient(239.74deg, var(--color-grad-violet-100) 5.83%, var(--color-grad-violet-0) 90.48%)'
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -63,6 +67,7 @@ type BookingSubscriptionDraft = {
 
 // Шаг сетки свободного времени мастера (минуты).
 const TIME_STEP_MIN = 15
+const DEFAULT_TZ = 'Europe/Moscow'
 
 const hhmmToMin = (t: string): number => {
   const [h, m] = t.split(':').map(Number)
@@ -84,6 +89,15 @@ function buildDayTimes(schedule: Schedule | null): string[] {
     times.push(minToHhmm(m))
   }
   return times
+}
+
+function currentMasterWall(masterTimezone: string | null | undefined): dayjs.Dayjs {
+  try {
+    const now = dayjs().tz(masterTimezone || DEFAULT_TZ)
+    return now.isValid() ? now : dayjs().tz(DEFAULT_TZ)
+  } catch {
+    return dayjs().tz(DEFAULT_TZ)
+  }
 }
 
 // Дни недели (ISO 1=Пн … 7=Вс) для режима абонемента «По неделям».
@@ -929,6 +943,11 @@ export default function CreateBookingPage() {
     const visibleSlots = slots.filter((s) => !takenTimes.has(s))
     // Обычная запись/перенос — любое время в рабочем дне (кроме обеда). Занятые — приглушены.
     const dayTimes = isPackageTime ? [] : buildDayTimes(schedule)
+    const masterNow = currentMasterWall(master?.timezone)
+    const currentMinute = masterNow.hour() * 60 + masterNow.minute() + (masterNow.second() || masterNow.millisecond() ? 1 : 0)
+    const pastTimes = date === masterNow.format('YYYY-MM-DD')
+      ? new Set(dayTimes.filter((t) => hhmmToMin(t) < currentMinute))
+      : new Set<string>()
     const busyTimes = new Set<string>()
     if (!isPackageTime) {
       for (const b of masterBookings) {
@@ -988,7 +1007,7 @@ export default function CreateBookingPage() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                 {dayTimes.map((t) => (
-                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} onClick={() => onSlotTap(t)} />
+                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} disabled={pastTimes.has(t)} onClick={() => onSlotTap(t)} />
                 ))}
               </div>
             )}
@@ -1990,18 +2009,19 @@ function OrderServiceRow({ title, subtitle, onClick }: { title: string; subtitle
 }
 
 // Чип времени (шаг «Время»): выбранный — active-surface; занятый — приглушён (но кликабелен).
-function TimeChip({ label, selected, busy, onClick }: { label: string; selected: boolean; busy?: boolean; onClick: () => void }) {
+function TimeChip({ label, selected, busy, disabled, onClick }: { label: string; selected: boolean; busy?: boolean; disabled?: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         height: 69, padding: '12px 0', borderRadius: 18,
         background: selected ? 'var(--color-active-surface)' : 'var(--color-surface-transparent)',
         color: selected ? 'var(--color-interactive-element-accented)' : 'var(--color-on-surface)',
-        ...text.callout1, border: 'none', cursor: 'pointer',
+        ...text.callout1, border: 'none', cursor: disabled ? 'default' : 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: busy && !selected ? 0.4 : 1,
+        opacity: (busy || disabled) && !selected ? 0.4 : 1,
       }}
     >
       {label}

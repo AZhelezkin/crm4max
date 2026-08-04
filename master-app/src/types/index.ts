@@ -14,6 +14,7 @@ export interface Master {
   cardNumber: string | null
   vkPayLinked: boolean
   homeVisit: boolean
+  timezone?: string | null
   isOnboarded: boolean
   /** Гид «Добро пожаловать!» на главной. Шаг «бот» выполнен всегда (регистрация через бот). */
   guideProgress?: { edited?: boolean; shared?: boolean; openedBooking?: boolean; dismissed?: boolean } | null
