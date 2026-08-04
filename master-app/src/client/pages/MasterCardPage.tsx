@@ -13,7 +13,7 @@ import MasterCardSkeleton from '@client/components/MasterCardSkeleton'
 import { startParam } from '@/App'
 import { text } from '@/styles/typography'
 import capybaraBookingImg from '@/assets/capybara-booking.png'
-import { trackEvent, trackEventOnce } from '@/lib/metrics'
+import { priceBucket, trackEvent, trackEventOnce } from '@/lib/metrics'
 
 dayjs.locale('ru')
 
@@ -181,6 +181,7 @@ export default function MasterCardPage() {
       trackEvent('client_service_selected', {
         has_discount: Boolean(service.discountPercent && service.discountPercent > 0),
         is_package: service.sessionsCount > 1,
+        price_bucket: priceBucket(service.price),
       })
     }
     setMasterId(masterId)
@@ -756,6 +757,7 @@ export default function MasterCardPage() {
             trackEvent('client_service_selected', {
               has_discount: Boolean(service.discountPercent && service.discountPercent > 0),
               is_package: service.sessionsCount > 1,
+              price_bucket: priceBucket(service.price),
             })
             setMasterId(masterId)
             setService(service)

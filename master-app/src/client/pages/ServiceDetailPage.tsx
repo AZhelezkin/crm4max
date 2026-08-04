@@ -4,6 +4,7 @@ import { useBookingStore } from '@client/store/booking.store'
 import { discountedPrice, formatDuration, formatPrice } from '@client/types'
 import { text } from '@/styles/typography'
 import capybaraNoPhotoImg from '@/assets/capybara-no-photo.png'
+import { trackEventOnce } from '@/lib/metrics'
 
 /* ── Иконки toolbar (vuesax/linear, 24×24, stroke=onSurfaceSoften) ─────────── */
 
@@ -67,6 +68,14 @@ export default function ServiceDetailPage() {
   useEffect(() => {
     if (!masterId || !service) navigate('/')
   }, [masterId, service, navigate])
+
+  useEffect(() => {
+    if (!service) return
+    trackEventOnce(`client-service-details:${service.id}`, 'client_service_details_viewed', {
+      is_package: service.sessionsCount > 1,
+      has_photos: service.workPhotos.length > 0,
+    })
+  }, [service])
 
   if (!service) return null
 

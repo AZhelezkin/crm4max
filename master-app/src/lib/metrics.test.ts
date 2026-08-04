@@ -36,15 +36,19 @@ describe('metrics', () => {
   })
 
   test('normalizes dynamic routes and strips URL parameters', async () => {
-    const { daysAheadBucket, normalizeMetricPath, resolveLaunchSource, timeBucket } = await import('./metrics')
+    const { daysAheadBucket, metricAuthErrorType, metricPageUrl, normalizeMetricPath, priceBucket, resolveLaunchSource, timeBucket } = await import('./metrics')
 
     expect(normalizeMetricPath('/bookings/secret-id?token=secret')).toBe('/bookings/:id')
     expect(normalizeMetricPath('/income/2026-07-30')).toBe('/income/:date')
     expect(normalizeMetricPath('/my-bookings/secret-id#details')).toBe('/my-bookings/:id')
+    expect(metricPageUrl('/', '/crm4max/', 'https://azhelezkin.github.io')).toBe('https://azhelezkin.github.io/crm4max/')
+    expect(metricPageUrl('/bookings/:id', '/crm4max/', 'https://azhelezkin.github.io')).toBe('https://azhelezkin.github.io/crm4max/bookings/:id')
     expect(resolveLaunchSource('mmode')).toBe('bot')
     expect(resolveLaunchSource('qr')).toBe('qr')
     expect(resolveLaunchSource('private-id')).toBe('deeplink')
     expect(daysAheadBucket(5)).toBe('4_7')
     expect(timeBucket('19:30')).toBe('evening')
+    expect(priceBucket(250_000)).toBe('1000_2999')
+    expect(metricAuthErrorType({ response: { status: 401 } })).toBe('unauthorized')
   })
 })

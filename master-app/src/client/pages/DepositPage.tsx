@@ -5,6 +5,7 @@ import PageHeader from '@client/components/PageHeader'
 import Card from '@client/components/Card'
 import Button from '@client/components/Button'
 import { text } from '@/styles/typography'
+import { priceBucket, trackEvent } from '@/lib/metrics'
 
 export default function DepositPage() {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ export default function DepositPage() {
   const depositAmount = Number(searchParams.get('amount') ?? 0)
 
   const handlePay = async () => {
+    trackEvent('client_deposit_started', { amount_bucket: priceBucket(depositAmount) })
     try {
       await bridge.send('VKWebAppOpenPayForm', {
         app_id: Number(import.meta.env.VITE_VK_APP_ID),

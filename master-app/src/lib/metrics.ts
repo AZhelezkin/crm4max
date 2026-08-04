@@ -1,11 +1,14 @@
 export type AppMode = 'master' | 'client'
 export type LaunchSource = 'bot' | 'deeplink' | 'qr' | 'direct'
 export type ClientMasterSource = 'deeplink' | 'qr' | 'recent' | 'stored'
+export type PriceBucket = 'lt_1000' | '1000_2999' | '3000_4999' | 'gte_5000'
 
 type MetricValue = string | number | boolean
 
 export type MetricEventMap = {
   app_opened: { app_mode: AppMode; launch_source: LaunchSource }
+  auth_completed: { app_mode: AppMode; is_new_user: boolean }
+  auth_failed: { app_mode: AppMode; error_type: 'max_unavailable' | 'unauthorized' | 'network' | 'unknown' }
   master_welcome_viewed: Record<string, never>
   subscription_viewed: Record<string, never>
   subscription_checkout_started: { period: 'month' | 'year' }
@@ -16,14 +19,18 @@ export type MetricEventMap = {
   master_package_created: { sessions_count: number; has_address: boolean; remind: boolean }
   master_booking_create_failed: { booking_type: 'regular' | 'package'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
   client_master_opened: { source: ClientMasterSource }
+  client_qr_scan_started: Record<string, never>
+  client_qr_scan_completed: { result: 'valid' | 'invalid' | 'cancelled' }
   client_booking_started: { entry: 'master' | 'service' }
-  client_service_selected: { has_discount: boolean; is_package: boolean }
+  client_service_selected: { has_discount: boolean; is_package: boolean; price_bucket: PriceBucket }
+  client_service_details_viewed: { is_package: boolean; has_photos: boolean }
   client_booking_date_selected: { days_ahead_bucket: 'today' | '1_3' | '4_7' | '8_30' | 'gt_30' }
   client_booking_time_selected: { time_bucket: 'morning' | 'day' | 'evening' }
   client_booking_confirmed: { has_address: boolean; remind: boolean; has_deposit: boolean }
   client_package_confirmed: { sessions_count: number; has_address: boolean; remind: boolean }
   client_booking_create_failed: { booking_type: 'regular' | 'package'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
   client_booking_rescheduled: Record<string, never>
+  client_deposit_started: { amount_bucket: PriceBucket }
   share_page_opened: Record<string, never>
   share_link_copied: { source: 'button' | 'fallback' }
   share_link_sent: { provider: 'system' }
@@ -51,6 +58,8 @@ const IS_LOCAL = import.meta.env.DEV || import.meta.env.MODE === 'test'
 
 const EVENT_KEYS: { [Name in MetricEventName]: readonly (keyof MetricEventMap[Name])[] } = {
   app_opened: ['app_mode', 'launch_source'],
+  auth_completed: ['app_mode', 'is_new_user'],
+  auth_failed: ['app_mode', 'error_type'],
   master_welcome_viewed: [],
   subscription_viewed: [],
   subscription_checkout_started: ['period'],
@@ -61,14 +70,18 @@ const EVENT_KEYS: { [Name in MetricEventName]: readonly (keyof MetricEventMap[Na
   master_package_created: ['sessions_count', 'has_address', 'remind'],
   master_booking_create_failed: ['booking_type', 'error_type'],
   client_master_opened: ['source'],
+  client_qr_scan_started: [],
+  client_qr_scan_completed: ['result'],
   client_booking_started: ['entry'],
-  client_service_selected: ['has_discount', 'is_package'],
+  client_service_selected: ['has_discount', 'is_package', 'price_bucket'],
+  client_service_details_viewed: ['is_package', 'has_photos'],
   client_booking_date_selected: ['days_ahead_bucket'],
   client_booking_time_selected: ['time_bucket'],
   client_booking_confirmed: ['has_address', 'remind', 'has_deposit'],
   client_package_confirmed: ['sessions_count', 'has_address', 'remind'],
   client_booking_create_failed: ['booking_type', 'error_type'],
   client_booking_rescheduled: [],
+  client_deposit_started: ['amount_bucket'],
   share_page_opened: [],
   share_link_copied: ['source'],
   share_link_sent: ['provider'],
@@ -107,7 +120,12 @@ export function trackPageView(path: string, appMode: AppMode, navigationKey = pa
     return
   }
   initializeMetrics()
-  safelyCallYm('hit', page, { params })
+  safelyCallYm('hit', metricPageUrl(page), { params })
+}
+
+export function metricPageUrl(path: string, basePath = import.meta.env.BASE_URL, origin = window.location.origin): string {
+  const baseUrl = new URL(basePath.endsWith('/') ? basePath : `${basePath}/`, origin)
+  return new URL(path.replace(/^\/+/, ''), baseUrl).href
 }
 
 export function normalizeMetricPath(value: string): string {
@@ -146,6 +164,21 @@ export function timeBucket(time: string): 'morning' | 'day' | 'evening' {
   if (Number.isFinite(hour) && hour < 12) return 'morning'
   if (Number.isFinite(hour) && hour < 18) return 'day'
   return 'evening'
+}
+
+export function priceBucket(amountKopecks: number): PriceBucket {
+  if (amountKopecks < 100_000) return 'lt_1000'
+  if (amountKopecks < 300_000) return '1000_2999'
+  if (amountKopecks < 500_000) return '3000_4999'
+  return 'gte_5000'
+}
+
+export function metricAuthErrorType(error: unknown): 'max_unavailable' | 'unauthorized' | 'network' | 'unknown' {
+  if (error instanceof Error && error.message === 'MAX WebApp unavailable') return 'max_unavailable'
+  const status = (error as { response?: { status?: number } } | null)?.response?.status
+  if (status === 401 || status === 403) return 'unauthorized'
+  if (!status) return 'network'
+  return 'unknown'
 }
 
 function initializeMetrics(): void {

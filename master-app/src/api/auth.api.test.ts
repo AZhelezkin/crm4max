@@ -12,7 +12,7 @@ describe.sequential('master auth API', () => {
     server.use(
       http.post('*/api/auth/max', async ({ request }) => {
         body = await request.json() as Record<string, string>
-        return HttpResponse.json({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master' })
+        return HttpResponse.json({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true })
       }),
     )
     vi.resetModules()
@@ -25,7 +25,7 @@ describe.sequential('master auth API', () => {
       role: 'master',
       timezone: 'Asia/Vladivostok',
     })
-    expect(result).toEqual({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master' })
+    expect(result).toEqual({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true })
   })
 
   it('не придумывает timezone при ошибке Intl', async () => {

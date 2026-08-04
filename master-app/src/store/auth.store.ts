@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { authApi } from '@/api/auth.api'
 import { mastersApi } from '@/api/masters.api'
 import type { Master } from '@/types'
+import { metricAuthErrorType, trackEventOnce } from '@/lib/metrics'
 
 interface AuthState {
   token: string | null
@@ -25,24 +26,27 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       window.WebApp?.ready()
 
-      const { token } = await authApi.loginWithMax({ init_data: initData })
+      const { token, isNewUser } = await authApi.loginWithMax({ init_data: initData })
       localStorage.setItem('masterToken', token)
 
       const master = await mastersApi.getMe()
       set({ token, master, isLoading: false })
-    } catch {
+      trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: isNewUser })
+    } catch (error) {
       // Вне Max — используем сохранённый токен
       const token = localStorage.getItem('masterToken')
       if (token) {
         try {
           const master = await mastersApi.getMe()
           set({ token, master, isLoading: false })
+          trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: false })
           return
         } catch {
           localStorage.removeItem('masterToken')
         }
       }
       set({ isLoading: false })
+      trackEventOnce('auth-failed:master', 'auth_failed', { app_mode: 'master', error_type: metricAuthErrorType(error) })
     }
   },
 

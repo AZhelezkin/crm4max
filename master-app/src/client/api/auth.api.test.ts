@@ -12,7 +12,7 @@ describe.sequential('client auth API', () => {
     server.use(
       http.post('*/api/auth/max', async ({ request }) => {
         body = await request.json() as Record<string, string>
-        return HttpResponse.json({ token: CLIENT_TOKEN, userId: CLIENT_ID, role: 'client' })
+        return HttpResponse.json({ token: CLIENT_TOKEN, userId: CLIENT_ID, role: 'client', isNewUser: true })
       }),
     )
     vi.resetModules()
@@ -25,7 +25,7 @@ describe.sequential('client auth API', () => {
       role: 'client',
       timezone: 'Europe/Kaliningrad',
     })
-    expect(result).toEqual({ token: CLIENT_TOKEN, userId: CLIENT_ID, role: 'client' })
+    expect(result).toEqual({ token: CLIENT_TOKEN, userId: CLIENT_ID, role: 'client', isNewUser: true })
   })
 
   it('не читает master token для auth request', async () => {

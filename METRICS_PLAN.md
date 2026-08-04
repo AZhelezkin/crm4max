@@ -4,7 +4,7 @@
 
 Добавить сбор продуктовых событий в мастерский и клиентский режимы mini-app, клиентский Max-бот и мастерский Max-бот с canonical Rasa runtime, не связывая прикладной код напрямую с конкретным транспортом Метрики и не отправляя персональные данные.
 
-Этот документ фиксирует места подключения. Сам счётчик и отправка событий пока не реализуются.
+Этот документ фиксирует места подключения и реализованный baseline продуктовой аналитики для фокус-группы.
 
 ## Базовая архитектура
 
@@ -16,11 +16,30 @@
 - [x] Добавить dev-режим, который пишет события в консоль без отправки.
 - [ ] Перед включением счётчика проверить требования к согласию и обновить тексты в `ConsentsPage` и юридических документах.
 - [x] Выбрать один счётчик для обоих режимов и передавать параметр `app_mode: master | client`. Разные счётчики использовать только если отчёты должны быть полностью изолированы.
-- [ ] Для server-side событий ботов в `../max-bot` создать отдельный типизированный адаптер и надёжную очередь. Не вызывать HTTP API Метрики непосредственно из webhook, Rasa action или CRM write boundary.
-- [ ] Для ботов использовать `surface: master_bot | client_bot`, для mini-app — `surface: master_app | client_app`.
-- [ ] Определить способ server-side отправки в Яндекс Метрику: Measurement Protocol либо импорт офлайн-конверсий. Выбор и доступные обязательные идентификаторы проверить на тестовом счётчике до реализации.
-- [ ] Создавать случайный непрозрачный analytics visitor ID. Не использовать `maxUserId`, `chatId`, `masterId` или их обычный hash как `ClientID` Метрики.
+- [x] Для server-side событий ботов и backend outcomes создан типизированный адаптер с outbox/worker. HTTP API Метрики не вызывается непосредственно из webhook или CRM write boundary.
+- [x] Для server-side событий используются закрытые `surface`: `master_app | client_app | backend`; существующие bot-события разделены по `bot_role`.
+- [x] Server-side доставка реализована через Measurement Protocol с retry и идемпотентным outbox.
+- [x] Для server-side событий создаётся случайный непрозрачный analytics visitor ID. `maxUserId`, `chatId`, `masterId` и CRM UUID не отправляются как параметры Метрики.
 - [ ] Если потребуется сквозная воронка «бот → mini-app», связывать bot visitor ID с browser ClientID только после согласия пользователя и хранить связь на сервере; не передавать исходные provider/CRM ID в Метрику.
+
+### Baseline фокус-группы
+
+Источники рекламного привлечения, UTM и кампании на этом этапе не собираются. Сквозная воронка строится агрегатно по безопасным frontend-этапам и подтверждённым backend outcomes:
+
+| Этап | Источник истины | Событие |
+|---|---|---|
+| Запуск и вход | frontend | `app_opened`, `auth_completed`, `auth_failed` |
+| Регистрация мастера | backend | `master_registered` |
+| Welcome и завершение онбординга | frontend/backend | `master_welcome_viewed`, `master_onboarding_completed` |
+| Создание услуги или клиента | backend | `entity_create_result` |
+| Выбор мастера, услуги, даты и времени | frontend | `client_master_opened`, `client_service_selected`, `client_booking_date_selected`, `client_booking_time_selected` |
+| Создание обычной или пакетной записи | frontend/backend | frontend intent/result UI + `booking_create_result` |
+| Перенос или отмена записи | backend | `booking_status_change_result` |
+| Подтверждение оплаты записи | backend | `booking_payment_result` |
+| Привязка карты | backend после `COMPLETED` | `subscription_card_binding_result` |
+| Подтверждённая оплата подписки | backend | `subscription_payment_result` |
+
+Browser ClientID и server-side visitor ID намеренно не связываются до отдельного решения по согласию. Поэтому baseline измеряет агрегатные конверсии и подтверждённые outcomes, но не рекламную атрибуцию по конкретному человеку.
 
 ## Правила данных
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { authApi } from '@client/api/auth.api'
+import { metricAuthErrorType, trackEventOnce } from '@/lib/metrics'
 
 interface AuthState {
   token: string | null
@@ -21,15 +22,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       window.WebApp?.ready()
 
-      const { token, userId } = await authApi.loginWithMax({ init_data: initData })
+      const { token, userId, isNewUser } = await authApi.loginWithMax({ init_data: initData })
       localStorage.setItem('clientToken', token)
       localStorage.setItem('clientId', userId)
       set({ token, clientId: userId, isLoading: false })
-    } catch {
+      trackEventOnce('auth-completed:client', 'auth_completed', { app_mode: 'client', is_new_user: isNewUser })
+    } catch (error) {
       // Вне Max — используем сохранённый токен
       const token = localStorage.getItem('clientToken')
       const clientId = localStorage.getItem('clientId')
       set({ token, clientId, isLoading: false })
+      if (token && clientId) {
+        trackEventOnce('auth-completed:client', 'auth_completed', { app_mode: 'client', is_new_user: false })
+      } else {
+        trackEventOnce('auth-failed:client', 'auth_failed', { app_mode: 'client', error_type: metricAuthErrorType(error) })
+      }
     }
   },
 }))

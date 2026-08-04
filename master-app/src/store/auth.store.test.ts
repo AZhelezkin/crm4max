@@ -17,9 +17,10 @@ describe.sequential('master auth store', () => {
     const master = createMasterProfile()
     server.use(
       http.post('*/api/auth/max', () => HttpResponse.json({
-        token: MASTER_TOKEN,
-        userId: master.id,
-        role: 'master',
+         token: MASTER_TOKEN,
+         userId: master.id,
+         role: 'master',
+         isNewUser: true,
       })),
       http.get('*/api/masters/me', () => HttpResponse.json(master)),
     )

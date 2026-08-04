@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '@client/store/booking.store'
 import { text } from '@/styles/typography'
+import { trackEvent } from '@/lib/metrics'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -32,16 +33,21 @@ export default function QRScanPage() {
   const handleScan = () => {
     if (!window.WebApp?.openCodeReader || scanning) return
     setScanning(true)
+    trackEvent('client_qr_scan_started', {})
     window.WebApp.openCodeReader(true).then((result) => {
       const masterId = extractMasterId(result)
       if (masterId) {
+        trackEvent('client_qr_scan_completed', { result: 'valid' })
         setMasterId(masterId)
         setMasterSource('qr')
         navigate(`/?masterId=${masterId}`, { replace: true })
       } else {
+        const scanned = typeof result === 'string' ? result : (result.data ?? result.result ?? result.text ?? '')
+        trackEvent('client_qr_scan_completed', { result: scanned ? 'invalid' : 'cancelled' })
         setScanning(false)
       }
     }).catch(() => {
+      trackEvent('client_qr_scan_completed', { result: 'cancelled' })
       setScanning(false)
     })
   }

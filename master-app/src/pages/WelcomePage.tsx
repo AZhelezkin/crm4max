@@ -4,6 +4,7 @@ import { text } from '@/styles/typography'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
 import ConsentsStep from '@/components/ConsentsStep'
+import { trackEventOnce } from '@/lib/metrics'
 
 // ─── Ассеты слайдера (Figma 10084-40089): глоу-подложки (SVG) + мокапы (PNG 2x) ──
 import profilePhoneLeft from '@/assets/welcome-v2/profile-phone-left.png'
@@ -117,6 +118,10 @@ export default function WelcomePage() {
   const [finishing, setFinishing] = useState(false)
   // Шаг согласий (макет 10261-55965) — между стартовым экраном и кабинетом.
   const [step, setStep] = useState<'start' | 'consents'>('start')
+
+  useEffect(() => {
+    trackEventOnce('master-welcome-viewed', 'master_welcome_viewed', {})
+  }, [])
 
   // Согласия приняты → завершаем онбординг и ведём в кабинет. Карта на онбординге
   // не привязывается: триал стартует на бэке автоматически (getOrCreate подписки),

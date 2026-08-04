@@ -15,9 +15,10 @@ describe.sequential('client auth store', () => {
     const webApp = installWebApp({ initData: 'client-init-data' })
     server.use(
       http.post('*/api/auth/max', () => HttpResponse.json({
-        token: CLIENT_TOKEN,
-        userId: CLIENT_ID,
-        role: 'client',
+         token: CLIENT_TOKEN,
+         userId: CLIENT_ID,
+         role: 'client',
+         isNewUser: true,
       })),
     )
     const { useAuthStore } = await loadStore()
