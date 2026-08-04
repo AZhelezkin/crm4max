@@ -6,14 +6,12 @@ import { useAuthStore } from '@/store/auth.store'
 import ConsentsStep from '@/components/ConsentsStep'
 
 // ─── Ассеты слайдера (Figma 10084-40089): глоу-подложки (SVG) + мокапы (PNG 2x) ──
-import profileGlow from '@/assets/welcome-v2/profile-glow.svg'
 import profilePhoneLeft from '@/assets/welcome-v2/profile-phone-left.png'
 import profilePhoneRight from '@/assets/welcome-v2/profile-phone-right.png'
 import calendGlow from '@/assets/welcome-v2/calend-glow.svg'
 import calendCard from '@/assets/welcome-v2/calend-card.png'
 import moneyGlow from '@/assets/welcome-v2/money-glow.svg'
 import moneyCards from '@/assets/welcome-v2/money-cards.png'
-import notifyGlow from '@/assets/welcome-v2/notify-glow.svg'
 import notifyShot from '@/assets/welcome-v2/notify-shot.png'
 import agentGlow from '@/assets/welcome-v2/agent-glow.svg'
 import agentArt from '@/assets/welcome-v2/agent-art.png'
@@ -63,7 +61,7 @@ const SLIDES: SlideDef[] = [
     title: 'Личная страница',
     subtitle: 'Клиенты смогут записываться самостоятельно',
     layers: [
-      { src: profileGlow, soften: true, offsetX: -9.57, top: 11, w: 337.925, h: 192.325, rot: 180, flipY: true, iw: 337.925, ih: 192.325, inset: [-14.56, -8.29, -14.56, -8.29] },
+      { src: calendGlow, soften: true, offsetX: 0.04, top: 56.5, w: 357.082, h: 175.826, iw: 357.082, ih: 175.826, inset: [-15.92, -7.84, -15.92, -7.84] },
       { src: profilePhoneLeft, left: 36.84, top: -0.5, w: 176.425, h: 246.168, rot: -16.04, iw: 119.825, ih: 221.687, inset: [-1.16, -3.95, -2.94, -3.7] },
       { src: profilePhoneRight, left: 147, top: -4, w: 155.486, h: 253.477, rot: 5.09, iw: 134.5, ih: 242.5, inset: [-6.43, -14.63, -9.82, -14.33] },
     ],
@@ -91,7 +89,7 @@ const SLIDES: SlideDef[] = [
     title: 'Уведомления',
     subtitle: 'ИИ-ассистент отправит уведомления о записях и изменениях прямо в Max',
     layers: [
-      { src: notifyGlow, soften: true, offsetX: -10.26, top: -39.1, w: 390.992, h: 309.904, rot: 148.72, flipY: true, iw: 375.949, ih: 134.218, inset: [-20.86, -7.45, -20.86, -7.45] },
+      { src: calendGlow, soften: true, offsetX: 0.04, top: 56.5, w: 357.082, h: 175.826, iw: 357.082, ih: 175.826, inset: [-15.92, -7.84, -15.92, -7.84] },
       { src: notifyShot, left: 27, top: 49, w: 307, h: 162, iw: 307, ih: 162, inset: [-6.17, -6.51, -18.52, -6.51] },
     ],
   },
