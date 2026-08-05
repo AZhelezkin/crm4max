@@ -3,6 +3,41 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 describe('metrics', () => {
   beforeEach(() => {
     vi.resetModules()
+    delete window.ym
+  })
+
+  test('sets only a non-empty opaque backend user ID in Yandex Metrica', async () => {
+    vi.stubEnv('VITE_YANDEX_METRICA_ID', '111073756')
+    const ym = vi.fn()
+    window.ym = ym
+    const { setAnalyticsUserId } = await import('./metrics')
+
+    setAnalyticsUserId('  opaque-backend-id  ')
+    setAnalyticsUserId('')
+    setAnalyticsUserId('   ')
+    setAnalyticsUserId(null)
+    setAnalyticsUserId(undefined)
+
+    expect(ym).toHaveBeenCalledOnce()
+    expect(ym).toHaveBeenCalledWith(111073756, 'setUserID', 'opaque-backend-id')
+  })
+
+  test('does not throw when ym is unavailable or throws', async () => {
+    vi.stubEnv('VITE_YANDEX_METRICA_ID', '111073756')
+    const { setAnalyticsUserId } = await import('./metrics')
+
+    expect(() => setAnalyticsUserId('opaque-without-ym')).not.toThrow()
+
+    window.ym = vi.fn(() => {
+      throw new Error('blocked')
+    })
+    expect(() => setAnalyticsUserId('opaque-with-failing-ym')).not.toThrow()
+
+    Object.defineProperty(window, 'ym', {
+      configurable: true,
+      get: () => { throw new Error('blocked getter') },
+    })
+    expect(() => setAnalyticsUserId('opaque-with-failing-getter')).not.toThrow()
   })
 
   test('emits events without a consent gate and filters undeclared parameters', async () => {

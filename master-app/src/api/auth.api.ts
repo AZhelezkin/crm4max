@@ -2,7 +2,7 @@ import { api } from './client'
 
 export const authApi = {
   loginWithMax: (params: { init_data: string }) =>
-    api.post<{ token: string; userId: string; role: string; isNewUser: boolean }>('/auth/max', {
+    api.post<{ token: string; userId: string; role: string; isNewUser: boolean; analyticsUserId: string | null }>('/auth/max', {
       ...params,
       role: 'master',
       // Часовой пояс устройства мастера → бэкенд хранит его и считает по нему

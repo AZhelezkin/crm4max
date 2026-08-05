@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MASTER_ID, MASTER_TOKEN } from '@/test/fixtures/auth'
+import { ANALYTICS_USER_ID, MASTER_ID, MASTER_TOKEN } from '@/test/fixtures/auth'
 import { server } from '@/test/msw/server'
 import { mockDeviceTimezone } from '@/test/time'
 
@@ -12,7 +12,7 @@ describe.sequential('master auth API', () => {
     server.use(
       http.post('*/api/auth/max', async ({ request }) => {
         body = await request.json() as Record<string, string>
-        return HttpResponse.json({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true })
+        return HttpResponse.json({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true, analyticsUserId: ANALYTICS_USER_ID })
       }),
     )
     vi.resetModules()
@@ -25,7 +25,7 @@ describe.sequential('master auth API', () => {
       role: 'master',
       timezone: 'Asia/Vladivostok',
     })
-    expect(result).toEqual({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true })
+    expect(result).toEqual({ token: MASTER_TOKEN, userId: MASTER_ID, role: 'master', isNewUser: true, analyticsUserId: ANALYTICS_USER_ID })
   })
 
   it('не придумывает timezone при ошибке Intl', async () => {

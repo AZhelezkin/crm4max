@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { CLIENT_ID, CLIENT_TOKEN, MASTER_TOKEN } from '@/test/fixtures/auth'
+import { ANALYTICS_USER_ID, CLIENT_ID, CLIENT_TOKEN, MASTER_TOKEN } from '@/test/fixtures/auth'
 import { server } from '@/test/msw/server'
 import { installWebApp, removeWebApp } from '@/test/web-app-fixture'
 
@@ -10,15 +10,23 @@ async function loadStore() {
   return import('./auth.store')
 }
 
+afterEach(() => {
+  delete window.ym
+})
+
 describe.sequential('client auth store', () => {
   it('авторизуется через MAX и сохраняет client credentials', async () => {
     const webApp = installWebApp({ initData: 'client-init-data' })
+    const ym = vi.fn()
+    vi.stubEnv('VITE_YANDEX_METRICA_ID', '111073756')
+    window.ym = ym
     server.use(
       http.post('*/api/auth/max', () => HttpResponse.json({
          token: CLIENT_TOKEN,
          userId: CLIENT_ID,
          role: 'client',
          isNewUser: true,
+         analyticsUserId: ANALYTICS_USER_ID,
       })),
     )
     const { useAuthStore } = await loadStore()
@@ -26,6 +34,7 @@ describe.sequential('client auth store', () => {
     await useAuthStore.getState().init()
 
     expect(webApp.ready).toHaveBeenCalledOnce()
+    expect(ym).toHaveBeenCalledWith(111073756, 'setUserID', ANALYTICS_USER_ID)
     expect(localStorage.getItem('clientToken')).toBe(CLIENT_TOKEN)
     expect(localStorage.getItem('clientId')).toBe(CLIENT_ID)
     expect(useAuthStore.getState()).toMatchObject({

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { authApi } from '@client/api/auth.api'
-import { metricAuthErrorType, trackEventOnce } from '@/lib/metrics'
+import { metricAuthErrorType, setAnalyticsUserId, trackEventOnce } from '@/lib/metrics'
 
 interface AuthState {
   token: string | null
@@ -22,7 +22,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       window.WebApp?.ready()
 
-      const { token, userId, isNewUser } = await authApi.loginWithMax({ init_data: initData })
+      const { token, userId, isNewUser, analyticsUserId } = await authApi.loginWithMax({ init_data: initData })
+      setAnalyticsUserId(analyticsUserId)
       localStorage.setItem('clientToken', token)
       localStorage.setItem('clientId', userId)
       set({ token, clientId: userId, isLoading: false })

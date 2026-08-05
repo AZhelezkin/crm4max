@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { MASTER_TOKEN } from '@/test/fixtures/auth'
+import { ANALYTICS_USER_ID, MASTER_TOKEN } from '@/test/fixtures/auth'
 import { createMasterProfile } from '@/test/fixtures/masters'
 import { server } from '@/test/msw/server'
 import { installWebApp, removeWebApp } from '@/test/web-app-fixture'
@@ -11,16 +11,24 @@ async function loadStore() {
   return import('./auth.store')
 }
 
+afterEach(() => {
+  delete window.ym
+})
+
 describe.sequential('master auth store', () => {
   it('авторизуется через MAX, сохраняет token и загружает профиль', async () => {
     const webApp = installWebApp({ initData: 'master-init-data' })
     const master = createMasterProfile()
+    const ym = vi.fn()
+    vi.stubEnv('VITE_YANDEX_METRICA_ID', '111073756')
+    window.ym = ym
     server.use(
       http.post('*/api/auth/max', () => HttpResponse.json({
          token: MASTER_TOKEN,
          userId: master.id,
          role: 'master',
          isNewUser: true,
+         analyticsUserId: ANALYTICS_USER_ID,
       })),
       http.get('*/api/masters/me', () => HttpResponse.json(master)),
     )
@@ -29,6 +37,7 @@ describe.sequential('master auth store', () => {
     await useAuthStore.getState().init()
 
     expect(webApp.ready).toHaveBeenCalledOnce()
+    expect(ym).toHaveBeenCalledWith(111073756, 'setUserID', ANALYTICS_USER_ID)
     expect(localStorage.getItem('masterToken')).toBe(MASTER_TOKEN)
     expect(useAuthStore.getState()).toMatchObject({
       token: MASTER_TOKEN,

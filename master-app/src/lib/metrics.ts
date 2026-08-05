@@ -102,6 +102,13 @@ export function trackEvent<Name extends MetricEventName>(name: Name, params: Met
   safelyCallYm('reachGoal', name, safeParams)
 }
 
+export function setAnalyticsUserId(analyticsUserId: string | null | undefined): void {
+  if (typeof analyticsUserId !== 'string' || !analyticsUserId.trim()) return
+  const normalizedUserId = analyticsUserId.trim()
+  initializeMetrics()
+  safelyCallYm('setUserID', normalizedUserId)
+}
+
 export function trackEventOnce<Name extends MetricEventName>(key: string, name: Name, params: MetricEventMap[Name]): void {
   if (sentOnce.has(key)) return
   sentOnce.add(key)
@@ -183,22 +190,26 @@ export function metricAuthErrorType(error: unknown): 'max_unavailable' | 'unauth
 
 function initializeMetrics(): void {
   if (initialized || !COUNTER_ID || typeof document === 'undefined' || IS_LOCAL) return
-  initialized = true
-  installBoundedYmQueue()
-  safelyCallYm('init', {
-    // Automatic click/link capture can include deep-link IDs and full URLs.
-    clickmap: false,
-    trackLinks: false,
-    accurateTrackBounce: true,
-    webvisor: false,
-    defer: true,
-  })
-  if (!document.getElementById(SCRIPT_ID)) {
-    const script = document.createElement('script')
-    script.id = SCRIPT_ID
-    script.async = true
-    script.src = 'https://mc.yandex.ru/metrika/tag.js'
-    document.head.appendChild(script)
+  try {
+    initialized = true
+    installBoundedYmQueue()
+    safelyCallYm('init', {
+      // Automatic click/link capture can include deep-link IDs and full URLs.
+      clickmap: false,
+      trackLinks: false,
+      accurateTrackBounce: true,
+      webvisor: false,
+      defer: true,
+    })
+    if (!document.getElementById(SCRIPT_ID)) {
+      const script = document.createElement('script')
+      script.id = SCRIPT_ID
+      script.async = true
+      script.src = 'https://mc.yandex.ru/metrika/tag.js'
+      document.head.appendChild(script)
+    }
+  } catch {
+    initialized = false
   }
 }
 
@@ -214,8 +225,9 @@ function installBoundedYmQueue(): void {
 }
 
 function safelyCallYm(method: string, ...args: unknown[]): void {
-  if (!COUNTER_ID || !window.ym) return
+  if (!COUNTER_ID) return
   try {
+    if (!window.ym) return
     window.ym(COUNTER_ID, method, ...args)
   } catch {
     // Analytics must never affect application behavior.
