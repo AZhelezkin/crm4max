@@ -85,6 +85,15 @@ describe('client discovery journeys', () => {
     expect(view.getLocation().pathname).toBe('/')
   })
 
+  it('RecentMastersPage открывает QR-сканер по кнопке', async () => {
+    api.getRecentMasters.mockResolvedValue([])
+    const view = renderAtRoute(<RecentMastersPage />, { route: '/masters' })
+
+    await view.user.click(await screen.findByRole('button', { name: 'Сканировать QR-код' }))
+
+    expect(view.getLocation().pathname).toBe('/qr')
+  })
+
   it('RecentMastersPage сводит empty и request failure к одной подсказке', async () => {
     api.getRecentMasters.mockRejectedValue(new Error('recent unavailable'))
     renderAtRoute(<RecentMastersPage />, { route: '/recent-masters' })

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { mastersApi, type RecentMaster } from '@client/api/masters.api'
 import { useBookingStore } from '@client/store/booking.store'
 import { text } from '@/styles/typography'
+import Button from '@client/components/Button'
 
 // Список последних мастеров клиента (открывается из бота: startapp=cmasters).
 // Тап по мастеру → старт флоу записи к нему: кладём masterId в booking-store и
@@ -32,7 +33,7 @@ export default function RecentMastersPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 16px 24px' }}>
         {masters === null ? null : masters.length === 0 ? (
           <div style={{ ...text.body, color: 'var(--color-on-surface-secondary)', textAlign: 'center', marginTop: 40 }}>
-            Пока нет мастеров. Чтобы записаться в первый раз, попросите у мастера ссылку.
+            Пока нет мастеров. Чтобы записаться в первый раз, отсканируйте QR-код мастера.
           </div>
         ) : (
           masters.map((m) => (
@@ -70,6 +71,11 @@ export default function RecentMastersPage() {
               </div>
             </button>
           ))
+        )}
+        {masters !== null && (
+          <Button fullWidth onClick={() => navigate('/qr')}>
+            Сканировать QR-код
+          </Button>
         )}
       </div>
     </div>

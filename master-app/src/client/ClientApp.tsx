@@ -31,9 +31,11 @@ const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`,
 // может вернуться на «/» через нав-таб (иначе HomeRoute бесконечно
 // редиректил бы обратно на BookingDetailPage).
 let clientDeepLinkConsumed = false
-// Однократный редирект на список последних мастеров (startapp=cmasters из бота).
+// Однократный редирект на список последних мастеров (пустой запуск или cmasters).
 // После consume тап по мастеру уходит на «/» → карточка мастера (не зациклится).
 let clientMastersRedirectConsumed = false
+// После сканирования startParam остаётся `qr`, поэтому редирект тоже одноразовый.
+let clientQrRedirectConsumed = false
 
 // Если startParam — UUID, пришли от мастера напрямую → карточка мастера
 // Иначе fallback: storeMasterId (сохраняется при просмотре любой записи)
@@ -58,18 +60,25 @@ function HomeRoute() {
     }
   }
 
-  // Открыт из бота со списком мастеров (startapp=cmasters) → страница выбора.
-  if (!clientMastersRedirectConsumed && startParam === 'cmasters') {
+  // Если startParam — deep-link на запись (<masterId>-<bookingId>), достаём masterId из него
+  const deepLinkMasterId = CLIENT_BOOKING_DEEPLINK_RE.exec(startParam ?? '')?.[1] ?? null
+  const explicitMasterId = (UUID_REGEX.test(startParam) ? startParam : null)
+    ?? params.get('masterId')
+    ?? deepLinkMasterId
+  if (explicitMasterId) return <MasterCardPage />
+
+  if (!clientQrRedirectConsumed && startParam === 'qr') {
+    clientQrRedirectConsumed = true
+    return <Navigate to="/qr" replace />
+  }
+
+  // Системная кнопка клиент-бота открывает список мастеров. QR доступен явно.
+  if (!clientMastersRedirectConsumed && (startParam === '' || startParam === 'cmasters')) {
     clientMastersRedirectConsumed = true
     return <Navigate to="/masters" replace />
   }
 
-  // Если startParam — deep-link на запись (<masterId>-<bookingId>), достаём masterId из него
-  const deepLinkMasterId = CLIENT_BOOKING_DEEPLINK_RE.exec(startParam ?? '')?.[1] ?? null
-  const masterId = (UUID_REGEX.test(startParam) ? startParam : null)
-    ?? params.get('masterId')
-    ?? deepLinkMasterId
-    ?? storeMasterId
+  const masterId = storeMasterId
   if (!masterId) return <QRScanPage />
   return <MasterCardPage />
 }
@@ -104,6 +113,7 @@ export default function ClientApp() {
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/masters"         element={<RecentMastersPage />} />
+        <Route path="/qr"              element={<QRScanPage />} />
         {/* Категории убраны — старый deep-link/back ведём на плоский список услуг. */}
         <Route path="/book/categories" element={<Navigate to="/book/services" replace />} />
         <Route path="/book/services"   element={<ServiceSelectPage />} />

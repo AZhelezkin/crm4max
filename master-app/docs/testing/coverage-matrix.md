@@ -101,8 +101,9 @@
 
 | Route | Owner | Priority |
 |---|---|---:|
-| `/` | `HomeRoute` → QR or master profile | P0 |
+| `/` | `HomeRoute` → recent masters, QR or master profile | P0 |
 | `/masters` | `RecentMastersPage` | P1 |
+| `/qr` | `QRScanPage` | P0 |
 | `/book/categories` | compatibility redirect to `/book/services` | P1 |
 | `/book/services` | `ServiceSelectPage` | P0 |
 | `/book/service` | `ServiceDetailPage` | P0 |

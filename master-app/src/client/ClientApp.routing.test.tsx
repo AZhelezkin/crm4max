@@ -112,12 +112,28 @@ describe.sequential('ClientApp routing', () => {
     sessionStorage.clear()
   })
 
-  it('показывает QR scanner без master identity', async () => {
+  it('показывает список мастеров при пустом запуске', async () => {
     const { ClientApp } = await loadClientApp()
 
     render(<ClientApp />)
 
-    expect(screen.getByTestId('qr-scan')).toBeInTheDocument()
+    expect(await screen.findByTestId('recent-masters')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/masters')
+  })
+
+  it('показывает QR scanner по явному start_param', async () => {
+    const { ClientApp, getById } = await loadClientApp({ startParam: 'qr' })
+
+    render(<ClientApp />)
+
+    expect(await screen.findByTestId('qr-scan')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/qr')
+
+    act(() => {
+      window.location.hash = `#/?masterId=${MASTER_ID}`
+    })
+
+    await waitFor(() => expect(getById).toHaveBeenCalledWith(MASTER_ID))
   })
 
   it('использует UUID start_param раньше query и persisted master', async () => {
@@ -143,12 +159,12 @@ describe.sequential('ClientApp routing', () => {
     await waitFor(() => expect(getById).toHaveBeenCalledWith(MASTER_ID))
   })
 
-  it('использует persisted master как последний fallback', async () => {
-    const { ClientApp, getById } = await loadClientApp({ storedMasterId: MASTER_ID })
+  it('пустой запуск показывает список даже при сохранённом мастере', async () => {
+    const { ClientApp } = await loadClientApp({ storedMasterId: MASTER_ID })
 
     render(<ClientApp />)
 
-    await waitFor(() => expect(getById).toHaveBeenCalledWith(MASTER_ID))
+    expect(await screen.findByTestId('recent-masters')).toBeInTheDocument()
   })
 
   it('после одноразового booking redirect использует persisted master на root', async () => {
@@ -200,8 +216,8 @@ describe.sequential('ClientApp routing', () => {
 
     render(<ClientApp />)
 
-    expect(await screen.findByTestId('qr-scan')).toBeInTheDocument()
-    expect(window.location.hash).toBe('#/')
+    expect(await screen.findByTestId('recent-masters')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/masters')
   })
 })
 
