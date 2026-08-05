@@ -49,6 +49,13 @@ describe('GuideCard', () => {
     expect(screen.queryByText(/Синьёры Капибары/)).not.toBeInTheDocument()
   })
 
+  it('уменьшает счётчик после выполнения шагов', () => {
+    setMaster({ edited: true, shared: true })
+    renderAtRoute(<GuideCard />)
+
+    expect(screen.getByText(/Осталось всего 1 шаг/)).toBeInTheDocument()
+  })
+
   it('крестик скрывает карточку и шлёт dismissed', async () => {
     setMaster(null)
     const view = renderAtRoute(<GuideCard />)

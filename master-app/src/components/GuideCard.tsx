@@ -23,6 +23,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
   const progress = master?.guideProgress ?? {}
   if (hidden || progress.dismissed) return null
 
+  const remainingSteps = [progress.edited, progress.shared, progress.openedBooking].filter(Boolean).length
   const allDone = !!progress.edited && !!progress.shared && !!progress.openedBooking
 
   const dismiss = () => {
@@ -45,7 +46,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
           <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'pre-line' }}>
             {allDone
               ? 'Кабинет готов к работе.\nУдачных записей!'
-              : 'Мы уже подготовили пример кабинета. Осталось всего 3 шага, чтобы начать работу'}
+              : `Мы уже подготовили пример кабинета. Осталось всего ${3 - remainingSteps} ${3 - remainingSteps === 1 ? 'шаг' : 'шага'}, чтобы начать работу`}
           </span>
         </div>
         <button
