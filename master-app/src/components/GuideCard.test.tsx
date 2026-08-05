@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterProfile } from '@/test/fixtures/masters'
 import { renderAtRoute } from '@/test/render'
+import helloImg from '@/assets/guide-hello.png'
+import confettiImg from '@/assets/guide-confetti.png'
 
 const api = vi.hoisted(() => ({ markGuideStep: vi.fn() }))
 vi.mock('@/api/masters.api', () => ({ mastersApi: { markGuideStep: api.markGuideStep } }))
@@ -27,8 +29,9 @@ describe('GuideCard', () => {
 
   it('новый мастер: чек-лист, шаг «бот» выполнен всегда', () => {
     setMaster(null)
-    renderAtRoute(<GuideCard firstBookingId="booking-1" />)
+    const view = renderAtRoute(<GuideCard firstBookingId="booking-1" />)
 
+    expect(view.container.querySelector('img')).toHaveAttribute('src', helloImg)
     expect(screen.getByText('Добро пожаловать!')).toBeInTheDocument()
     expect(screen.getByText(/Осталось всего 3 шага/)).toBeInTheDocument()
     // Первый шаг зачёркнут (выполнен), остальные — нет.
@@ -38,8 +41,9 @@ describe('GuideCard', () => {
 
   it('выполненные шаги отмечаются, все три → «Отлично!» без списка', () => {
     setMaster({ edited: true, shared: true, openedBooking: true })
-    renderAtRoute(<GuideCard />)
+    const view = renderAtRoute(<GuideCard />)
 
+    expect(view.container.querySelector('img')).toHaveAttribute('src', confettiImg)
     expect(screen.getByText('Отлично!')).toBeInTheDocument()
     expect(screen.getByText(/Кабинет готов к работе/)).toBeInTheDocument()
     expect(screen.queryByText(/Синьёры Капибары/)).not.toBeInTheDocument()

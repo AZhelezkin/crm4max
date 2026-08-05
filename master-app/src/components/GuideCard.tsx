@@ -4,6 +4,7 @@ import { text } from '@/styles/typography'
 import { useAuthStore } from '@/store/auth.store'
 import { markGuideStep } from '@/lib/guide'
 import helloImg from '@/assets/guide-hello.png'
+import confettiImg from '@/assets/guide-confetti.png'
 
 /**
  * Гид «Добро пожаловать!» на главной мастера (макет 10053-50054): чек-лист
@@ -36,7 +37,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
     }}>
       {/* Заголовок: картинка 41×38 + тексты + крестик */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <img src={helloImg} alt="" style={{ width: 41, height: 38, objectFit: 'contain', flexShrink: 0 }} />
+        <img src={allDone ? confettiImg : helloImg} alt="" style={{ width: 41, height: 38, objectFit: 'contain', flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
           <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {allDone ? 'Отлично!' : 'Добро пожаловать!'}
