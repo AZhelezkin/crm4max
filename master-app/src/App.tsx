@@ -332,7 +332,7 @@ function MasterApp() {
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}
         <Route
-          path="/welcome"
+          path="/welcome/*"
           element={needsOnboarding ? <WelcomePage /> : <Navigate to="/" replace />}
         />
 

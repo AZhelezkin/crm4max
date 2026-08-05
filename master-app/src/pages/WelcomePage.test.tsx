@@ -22,13 +22,13 @@ import { useAuthStore } from '@/store/auth.store'
 
 import WelcomePage from './WelcomePage'
 
-function renderPage() {
+function renderPage(route = '/welcome') {
   return renderAtRoute(
     <Routes>
-      <Route path="/welcome" element={<WelcomePage />} />
+      <Route path="/welcome/*" element={<WelcomePage />} />
       <Route path="/" element={<div>Кабинет</div>} />
     </Routes>,
-    { route: '/welcome' },
+    { route },
   )
 }
 
@@ -57,6 +57,7 @@ describe('WelcomePage', () => {
 
     await view.user.click(screen.getByRole('button', { name: 'Попробовать бесплатно 7 дней' }))
     expect(screen.getByText('Необходимые согласия')).toBeInTheDocument()
+    expect(view.getLocation().pathname).toBe('/welcome/consents')
     // Онбординг ещё не завершён — только показан шаг согласий.
     expect(api.updateProfile).not.toHaveBeenCalled()
 
@@ -81,7 +82,14 @@ describe('WelcomePage', () => {
     await view.user.click(screen.getByRole('button', { name: /Я принимаю условия/ }))
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
     expect(api.updateProfile).not.toHaveBeenCalled()
-    expect(view.getLocation().pathname).toBe('/welcome')
+    expect(view.getLocation().pathname).toBe('/welcome/consents')
+  })
+
+  it('восстанавливает шаг согласий из URL после reload', () => {
+    const view = renderPage('/welcome/consents')
+
+    expect(screen.getByText('Необходимые согласия')).toBeInTheDocument()
+    expect(view.getLocation().pathname).toBe('/welcome/consents')
   })
 
   it('назад с шага согласий возвращает на стартовый экран', async () => {
@@ -91,6 +99,7 @@ describe('WelcomePage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Назад' }))
 
     expect(screen.getByText('499 ₽/мес.')).toBeInTheDocument()
+    expect(view.getLocation().pathname).toBe('/welcome')
     expect(api.updateProfile).not.toHaveBeenCalled()
   })
 
@@ -122,7 +131,7 @@ describe('WelcomePage', () => {
 
     await acceptConsents(view.user)
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(1))
-    expect(view.getLocation().pathname).toBe('/welcome')
+    expect(view.getLocation().pathname).toBe('/welcome/consents')
 
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(2))

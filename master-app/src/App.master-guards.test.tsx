@@ -112,6 +112,18 @@ describe.sequential('App master guards', () => {
     expect(window.location.hash).toBe('#/welcome')
   })
 
+  it('сохраняет страницу согласий незавершённого мастера после reload', async () => {
+    const { App } = await loadGuardApp({
+      master: createMasterProfile({ isOnboarded: false }),
+      hash: '#/welcome/consents',
+    })
+
+    render(<App />)
+
+    expect(await screen.findByTestId('welcome')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/welcome/consents')
+  })
+
   it('не возвращает onboarded мастера на welcome', async () => {
     const { App } = await loadGuardApp({ hash: '#/welcome' })
 

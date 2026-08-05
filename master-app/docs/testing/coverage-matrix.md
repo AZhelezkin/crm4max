@@ -72,7 +72,7 @@
 |---|---|---:|
 | `#/map-test` | `MapTestPage` standalone override | P2 |
 | `m-dest-<token>` | `DestinationSelectorPage` standalone override | P0 |
-| `/welcome` | `WelcomePage` | P0 |
+| `/welcome/*` | `WelcomePage` — старт и сохраняемый при reload шаг согласий | P0 |
 | `/` | `MasterIndexRoute` → `HomePage` | P0 |
 | `/bookings` | `BookingsPage` | P0 |
 | `/clients` | `ClientsPage` | P0 |

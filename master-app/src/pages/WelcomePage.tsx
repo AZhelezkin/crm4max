@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { mastersApi } from '@/api/masters.api'
 import { useAuthStore } from '@/store/auth.store'
@@ -114,10 +114,11 @@ const SLIDE_H = 381
 
 export default function WelcomePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const setMaster = useAuthStore((s) => s.setMaster)
   const [finishing, setFinishing] = useState(false)
-  // Шаг согласий (макет 10261-55965) — между стартовым экраном и кабинетом.
-  const [step, setStep] = useState<'start' | 'consents'>('start')
+  // URL сохраняет шаг согласий при reload WebView.
+  const step = location.pathname === '/welcome/consents' ? 'consents' : 'start'
 
   useEffect(() => {
     trackEventOnce('master-welcome-viewed', 'master_welcome_viewed', {})
@@ -142,7 +143,7 @@ export default function WelcomePage() {
   if (step === 'consents') {
     return (
       <ConsentsStep
-        onBack={() => setStep('start')}
+        onBack={() => navigate('/welcome', { replace: true })}
         onConfirm={() => { void finishToCabinet() }}
         busy={finishing}
       />
@@ -187,7 +188,7 @@ export default function WelcomePage() {
       {/* Кнопка (Figma top 728 → gap 24) */}
       <div style={{ width: '100%', maxWidth: 393, padding: '0 16px', marginTop: 24, boxSizing: 'border-box' }}>
         {/* → шаг «Необходимые согласия» (10261-55965), после него — кабинет. */}
-        <PrimaryButton onClick={() => setStep('consents')}>Попробовать бесплатно 7 дней</PrimaryButton>
+        <PrimaryButton onClick={() => navigate('/welcome/consents')}>Попробовать бесплатно 7 дней</PrimaryButton>
       </div>
 
       {/* Блок «Никаких списаний» (Figma top 825 → gap 37; shield 153×107, gap 12) */}
