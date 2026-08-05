@@ -203,10 +203,10 @@ export default function HomePage() {
   const activeDate = selectedDate || today
   const activeD = dayjs(activeDate)
   const isTodayActive = activeDate === today
-  // Записи активного дня (включая отменённые — показываем красной линией).
+  // Записи активного дня без отменённых.
   const dayBookings = useMemo(
     () => bookings
-      .filter((b) => b.date === activeDate)
+      .filter((b) => b.date === activeDate && b.status !== 'CANCELLED')
       .sort((a, b) => a.time.localeCompare(b.time)),
     [bookings, activeDate],
   )
@@ -233,9 +233,7 @@ export default function HomePage() {
 
   const servicesCount = masterServiceList(master).length
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
-  // Отменённые показываем в списке (красной линией), но из сводки дня исключаем —
-  // иначе счётчик и сумма считались бы по разным наборам («3 записи на 5 000 ₽»).
-  const dayActive = dayBookings.filter((b) => b.status !== 'CANCELLED')
+  const dayActive = dayBookings
   const daySum = dayActive.reduce((acc, b) => acc + bookingAmount(b), 0)
   const dayRouteStops = dayActive
     .map((b) => b.clientAddress ? bookingRouteAddress(b.clientAddress) : '')
@@ -353,11 +351,8 @@ export default function HomePage() {
             <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
               {dayBookings.map((b) => {
                 const end = dayjs(`${b.date}T${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
-                const cancelled = b.status === 'CANCELLED'
                 const confirmed = b.status === 'CONFIRMED' || b.status === 'COMPLETED'
-                // Отменённая — красная; иначе цвет мастера важнее статусного (зелёный/оранжевый).
-                const lineColor = cancelled ? 'var(--color-error-element-muted)'
-                  : b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)')
+                const lineColor = b.color ?? (confirmed ? 'var(--color-on-success-surface-lite)' : 'var(--color-warning-surface-accented)')
                 return (
                   // Строка: кликабельная часть → карточка записи; кебаб «⋮» — отдельная
                   // кнопка (меню действий), поэтому строка не <button>, а контейнер.

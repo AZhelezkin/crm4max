@@ -190,9 +190,7 @@ describe('master HomePage', () => {
     const early = await screen.findByText('Ранний клиент')
     const late = screen.getByText('Поздний клиент')
     expect(early.compareDocumentPosition(late) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    // Отменённую показываем в списке дня (красная линия статуса), но в сводку
-    // дня она не входит — иначе счётчик и сумма считались бы по разным наборам.
-    expect(screen.getByText('Отменённый клиент')).toBeInTheDocument()
+    expect(screen.queryByText('Отменённый клиент')).not.toBeInTheDocument()
     expect(screen.getByText(/2 записи на 5.?000 ₽/)).toBeInTheDocument()
     expect(screen.getByText('ходят 2, не ходят 0')).toBeInTheDocument()
     expect(screen.getByText('Подписка активна')).toBeInTheDocument()
