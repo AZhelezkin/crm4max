@@ -79,6 +79,19 @@ describe('master HomePage', () => {
     await waitFor(() => expect(api.markGuideStep).toHaveBeenCalledWith('edited'))
   })
 
+  it.each([
+    ['Клиенты', '/clients'],
+    ['Услуги', '/services'],
+  ])('открывает раздел %s по нажатию на всю карточку', async (section, pathname) => {
+    setMaster(createMasterProfile())
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: `Открыть раздел «${section}»` }))
+
+    expect(view.getLocation().pathname).toBe(pathname)
+    await waitFor(() => expect(api.markGuideStep).toHaveBeenCalledWith('edited'))
+  })
+
   it('после TTL pending marker делает обычный getMe, если reconciliation не ответил', async () => {
     vi.useFakeTimers()
     const initiatedAt = Date.now()

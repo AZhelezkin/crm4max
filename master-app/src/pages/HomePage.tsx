@@ -453,10 +453,15 @@ export default function HomePage() {
 
         {/* Статистика: Клиенты + Услуги */}
         <div style={{ display: 'flex', gap: 20 }}>
-          <div style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <button
+            type="button"
+            aria-label="Открыть раздел «Клиенты»"
+            onClick={() => { markGuideStep('edited'); navigate('/clients') }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 24, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Клиенты</span>
-              <EditButton onClick={() => navigate('/clients')} />
+              <EditIndicator />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -494,17 +499,22 @@ export default function HomePage() {
                 </span>
               )}
             </div>
-          </div>
+          </button>
 
-          <div style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <button
+            type="button"
+            aria-label="Открыть раздел «Услуги»"
+            onClick={() => { markGuideStep('edited'); navigate('/services') }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 24, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги</span>
-              <EditButton onClick={() => navigate('/services')} />
+              <EditIndicator />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
               <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{servicesCount}</span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* График работы */}
@@ -845,6 +855,14 @@ function EditButton({ onClick }: { onClick: () => void }) {
       style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-profile-edit-icon)' }}>
       <Edit2Icon />
     </button>
+  )
+}
+
+function EditIndicator() {
+  return (
+    <span aria-hidden="true" style={{ width: 24, height: 24, display: 'inline-flex', flexShrink: 0, color: 'var(--color-profile-edit-icon)' }}>
+      <Edit2Icon />
+    </span>
   )
 }
 
