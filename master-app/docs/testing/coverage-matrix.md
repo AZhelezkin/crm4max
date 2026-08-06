@@ -54,7 +54,7 @@
 | Master application/onboarding/subscription gates | P0 | `src/App.tsx`, welcome/subscription pages | route integration + browser | `App.master-guards.test.tsx`, onboarding/subscription integration, `e2e/master-critical.spec.ts` | Covered |
 | Master booking create/package/reschedule/cancel/payment | P0 | master booking pages and API | UI integration + HTTP contract + browser | master booking suites, `e2e/master-critical.spec.ts` | Covered automated baseline |
 | Master client/service/schedule/profile mutations | P0 | corresponding pages/components/APIs | UI integration + HTTP contract | master domain suites | Covered with documented direct-rejection debt |
-| Client discovery and service/slot selection | P0 | client profile/service/calendar pages | UI integration + browser | client discovery/calendar suites, `e2e/client-booking.spec.ts` | Covered |
+| Client discovery, access gate and service/slot selection | P0 | client profile/service/calendar pages | UI integration + browser | client discovery/calendar suites, `e2e/client-booking.spec.ts` | Covered |
 | Client create/package/reschedule/cancel/review | P0 | client booking/profile pages and APIs | UI integration + HTTP contract + browser | client booking lifecycle suites, `e2e/client-booking.spec.ts` | Covered automated baseline |
 | Payments/export/subscription external return | P0 | payment APIs/pages/export hook/App | hook + UI integration + browser/native | payment/export suites, `e2e/master-critical.spec.ts` | Automated covered; native release-blocked |
 | Destination selector handoff | P0 | standalone destination-selector modules | unit + hook/page integration + browser | destination-selector suites, `e2e/platform-fallbacks.spec.ts` | Covered frontend boundary |
@@ -121,8 +121,8 @@
 
 All methods below are P0 frontend-owned HTTP contracts.
 
-- Master: auth login; booking list/get/create/createPackage/confirmPayment/reschedule/cancel; client list/create/update/remove; master getMe/getReviews/updateProfile/updatePayment/getSlots/getAvailability; payment list/export; schedule get/upsert; service list/create/update/remove/addWorkPhoto/removeWorkPhoto/getPopular; subscription startTrial/pay/getMe; support start; photo compress/upload.
-- Client: auth login; booking create/createPackage/list/get/getPackage/reschedule/cancel/cancelPackage; master get/getRecent/getSlots/getAvailability; review create; support start.
+- Master: auth login; booking list/get/create/createPackage/confirmPayment/reschedule/cancel; client list/create/update/setBlocked/remove; master getMe/getReviews/updateProfile/updatePayment/getSlots/getAvailability; payment list/export; schedule get/upsert; service list/create/update/remove/addWorkPhoto/removeWorkPhoto/getPopular; subscription startTrial/pay/getMe; support start; photo compress/upload.
+- Client: auth login; booking create/createPackage/list/get/getPackage/reschedule/cancel/cancelPackage; master client-access/get/getRecent/getSlots/getAvailability; review create; support start.
 - Standalone: destination context GET and address POST.
 
 ### Machine-checked API method inventory
@@ -141,6 +141,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/clients.api.ts#clientsApi.create`
 - `src/api/clients.api.ts#clientsApi.list`
 - `src/api/clients.api.ts#clientsApi.remove`
+- `src/api/clients.api.ts#clientsApi.setBlocked`
 - `src/api/clients.api.ts#clientsApi.update`
 - `src/api/masters.api.ts#mastersApi.getAvailability`
 - `src/api/masters.api.ts#mastersApi.getMe`
@@ -178,6 +179,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/bookings.api.ts#bookingsApi.list`
 - `src/client/api/bookings.api.ts#bookingsApi.reschedule`
 - `src/client/api/masters.api.ts#mastersApi.getAvailability`
+- `src/client/api/masters.api.ts#mastersApi.checkClientAccess`
 - `src/client/api/masters.api.ts#mastersApi.getById`
 - `src/client/api/masters.api.ts#mastersApi.getRecentMasters`
 - `src/client/api/masters.api.ts#mastersApi.rememberVisit`
@@ -189,7 +191,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 
 ## Production source partition
 
-The following non-overlapping groups cover all 113 baseline TS/TSX files. A future static inventory test must fail if a file no longer belongs to a reviewed group.
+The following non-overlapping groups cover all 114 baseline TS/TSX files. A future static inventory test must fail if a file no longer belongs to a reviewed group.
 
 | Exact path set | Count | Priority/status | Planned owner |
 |---|---:|---|---|
@@ -199,7 +201,7 @@ The following non-overlapping groups cover all 113 baseline TS/TSX files. A futu
 | `src/client/ClientApp.tsx` | 1 | P0 | client routing suite |
 | `src/client/components/{AddressSuggestField,BottomNav,Button,Card,PageHeader,SegmentControl}.tsx` | 6 | P1 | focused component/platform tests |
 | `src/client/components/{AddressListItemSkeleton,CalendarDateSkeleton,MasterCardSkeleton,MasterListItemSkeleton,MyBookingsListSkeleton,ServiceListSkeleton,SlotsGridSkeleton}.tsx` | 7 | P2 | consumer smoke/build; no SVG/markup padding |
-| `src/client/lib/timezone.ts` | 1 | P0 | timezone unit suite |
+| `src/client/lib/{clientAccess,timezone}.ts` | 2 | P0 | client access and timezone unit suites |
 | `src/client/pages/{BookingDetailPage,CalendarPage,ConfirmPage,MasterCardPage,MyBookingsPage,PackageBookingPage,QRScanPage,ServiceDetailPage,ServiceSelectPage}.tsx` | 9 | P0 | client domain suites |
 | `src/client/pages/{DepositPage,MessagesPage,RecentMastersPage}.tsx` | 3 | P1 | client navigation/read suites |
 | `src/client/store/{auth.store,booking.store}.ts` | 2 | P0 | store unit suites |
@@ -222,7 +224,7 @@ The following non-overlapping groups cover all 113 baseline TS/TSX files. A futu
 | `src/test/setup.ts` | 1 | Infrastructure | harness self-tests |
 | `src/types/index.ts`, `src/vite-env.d.ts` | 2 | P2 | typecheck |
 
-Total: **113**.
+Total: **114**.
 
 ## Confirmed unreachable/debt surfaces
 

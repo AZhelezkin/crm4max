@@ -9,6 +9,18 @@ import { mockDeviceTimezone } from '@/test/time'
 import { mastersApi } from './masters.api'
 
 describe('client masters API', () => {
+  it('проверяет client access авторизованным POST', async () => {
+    const access = { access: 'blocked' as const, delivery: 'sent' as const }
+    let method = ''
+    server.use(http.post(`*/api/masters/${MASTER_ID}/client-access`, ({ request }) => {
+      method = request.method
+      return HttpResponse.json(access)
+    }))
+
+    await expect(mastersApi.checkClientAccess(MASTER_ID)).resolves.toEqual(access)
+    expect(method).toBe('POST')
+  })
+
   it('получает профиль мастера по id', async () => {
     const master = createClientMaster()
     server.use(http.get(`*/api/masters/${MASTER_ID}`, () => HttpResponse.json(master)))

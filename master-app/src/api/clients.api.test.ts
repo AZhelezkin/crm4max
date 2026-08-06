@@ -42,4 +42,24 @@ describe('master clients API', () => {
 
     await expect(clientsApi.remove(MASTER_CLIENT_ID)).resolves.toEqual({ ok: true })
   })
+
+  it.each([
+    [true, 'PUT'],
+    [false, 'DELETE'],
+  ] as const)('setBlocked=%s использует %s и возвращает authoritative DTO', async (isBlocked, expectedMethod) => {
+    const client = createMasterClient({
+      isBlocked,
+      blockedAt: isBlocked ? '2026-08-06T10:00:00.000Z' : null,
+    })
+    let method = ''
+    server.use(
+      http.all(`*/api/clients/${MASTER_CLIENT_ID}/block`, ({ request }) => {
+        method = request.method
+        return HttpResponse.json(client)
+      }),
+    )
+
+    await expect(clientsApi.setBlocked(MASTER_CLIENT_ID, isBlocked)).resolves.toEqual(client)
+    expect(method).toBe(expectedMethod)
+  })
 })

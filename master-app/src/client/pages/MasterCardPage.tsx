@@ -14,6 +14,8 @@ import { startParam } from '@/App'
 import { text } from '@/styles/typography'
 import capybaraBookingImg from '@/assets/capybara-booking.png'
 import { priceBucket, trackEvent, trackEventOnce } from '@/lib/metrics'
+import { checkClientAccess, type ClientAccessOutcome } from '@client/lib/clientAccess'
+import { closeWebApp } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -97,6 +99,35 @@ const TABS = ['services', 'photo', 'reviews'] as const
 type Tab = typeof TABS[number]
 const TAB_LABELS: Record<Tab, string> = { services: 'Услуги', photo: 'Фото', reviews: 'Отзывы' }
 
+function MasterAccessUnavailable({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <>
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 31px 95px', textAlign: 'center', gap: 12 }}>
+        <div style={{ ...text.h4, color: 'var(--color-on-surface)' }}>
+          Профиль недоступен
+        </div>
+        <div style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>
+          {onRetry ? 'Не удалось проверить доступ. Попробуйте ещё раз' : 'Продолжите в чате MAX'}
+        </div>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            style={{
+              height: 44, padding: '0 16px', borderRadius: 22, border: 'none', cursor: 'pointer',
+              background: 'var(--color-primary-surface)', ...text.callout1,
+              color: 'var(--color-on-primary-surface)',
+            }}
+          >
+            Повторить
+          </button>
+        )}
+      </div>
+      <BottomNav />
+    </>
+  )
+}
+
 /* ── Страница ──────────────────────────────────────────────────────────────── */
 
 export default function MasterCardPage() {
@@ -110,7 +141,14 @@ export default function MasterCardPage() {
     ?? ''
   const navigate = useNavigate()
 
-  const [master, setMaster] = useState<Master | null>(null)
+  const [loadedMaster, setLoadedMaster] = useState<{ masterId: string; value: Master } | null>(null)
+  const [accessState, setAccessState] = useState<{
+    masterId: string
+    status: Exclude<ClientAccessOutcome, 'blocked'> | 'checking' | 'closed'
+  } | null>(null)
+  const [accessAttempt, setAccessAttempt] = useState(0)
+  const master = loadedMaster?.masterId === masterId ? loadedMaster.value : null
+  const accessStatus = accessState?.masterId === masterId ? accessState.status : 'checking'
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
   const [bookingsExpanded, setBookingsExpanded] = useState(false)
   const [tab, setTab] = useState<Tab>('services')
@@ -134,20 +172,45 @@ export default function MasterCardPage() {
   const [reviewToast, setReviewToast] = useState(false)
 
   useEffect(() => {
-    if (masterId) mastersApi.getById(masterId)
-      .then((m) => {
+    if (!masterId) return
+    let active = true
+    setLoadedMaster(null)
+    setUpcomingBookings([])
+    setReviewBooking(null)
+    setAccessState({ masterId, status: 'checking' })
+
+    void (async () => {
+      const access = await checkClientAccess(masterId)
+      if (!active) return
+      if (access === 'blocked') {
+        setAccessState({ masterId, status: closeWebApp() ? 'closed' : 'unavailable' })
+        return
+      }
+      if (access !== 'allowed') {
+        setAccessState({ masterId, status: access })
+        return
+      }
+
+      setAccessState({ masterId, status: 'allowed' })
+      try {
+        const m = await mastersApi.getById(masterId)
+        if (!active) return
         trackEventOnce(`client-master-opened:${location.key}`, 'client_master_opened', {
           source: UUID_REGEX.test(startParam) ? 'deeplink' : masterSource,
         })
-        setMaster(m)
+        setLoadedMaster({ masterId, value: m })
         setMasterProfileLink(m.maxProfileLink)
         void mastersApi.rememberVisit(masterId).catch(() => {})
-      })
-      .catch(() => {})
-  }, [location.key, masterId, masterSource, setMasterProfileLink])
+      } catch {
+        // Сохраняем прежнее поведение загрузки профиля: skeleton остаётся на экране.
+      }
+    })()
+
+    return () => { active = false }
+  }, [accessAttempt, location.key, masterId, masterSource, setMasterProfileLink])
 
   useEffect(() => {
-    if (!masterId) return
+    if (!masterId || accessStatus !== 'allowed') return
     const now = dayjs()
     const today = now.format('YYYY-MM-DD')
     bookingsApi.list({ status: 'CONFIRMED', from: today }).then((bookings) => {
@@ -157,18 +220,18 @@ export default function MasterCardPage() {
         .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
       setUpcomingBookings(forMaster)
     }).catch(() => {})
-  }, [masterId])
+  }, [accessStatus, masterId])
 
   // Последняя завершённая запись этого мастера без отзыва — для промо-блока «Оцените услуги».
   useEffect(() => {
-    if (!masterId) return
+    if (!masterId || accessStatus !== 'allowed') return
     bookingsApi.list({ status: 'COMPLETED' }).then((bookings) => {
       const latest = bookings
         .filter((b) => b.master.id === masterId && !b.review)
         .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))[0]
       setReviewBooking(latest ?? null)
     }).catch(() => {})
-  }, [masterId])
+  }, [accessStatus, masterId])
 
   // Каждое фото несёт ссылку на свою услугу — нужно для подписи в лайтбоксе.
   const workPhotos = (master ? masterServiceList(master) : [])
@@ -259,6 +322,10 @@ export default function MasterCardPage() {
       <span style={{ color: 'var(--color-on-surface-secondary)' }}>Откройте приложение через бота</span>
     </div>
   )
+  if (accessStatus === 'closed') return <MasterAccessUnavailable />
+  if (accessStatus === 'unavailable') return (
+    <MasterAccessUnavailable onRetry={() => setAccessAttempt((attempt) => attempt + 1)} />
+  )
   if (!master) return (
     <>
       <MasterCardSkeleton />
@@ -313,7 +380,9 @@ export default function MasterCardPage() {
       setReviewToast(true)
       setTimeout(() => setReviewToast(false), 2500)
       // Обновляем карточку — рейтинг и список отзывов пересчитаны на бэкенде.
-      mastersApi.getById(masterId).then(setMaster).catch(() => {})
+      mastersApi.getById(masterId)
+        .then((value) => setLoadedMaster({ masterId, value }))
+        .catch(() => {})
     } catch {
       /* ignore */
     } finally {

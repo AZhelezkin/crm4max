@@ -71,6 +71,9 @@ export interface Client {
   photo: string | null
   /** true — клиент есть в Max (записывался); false — добавлен мастером вручную. */
   isMaxUser: boolean
+  /** Блокировка самостоятельной записи этого Max-клиента у текущего мастера. */
+  isBlocked: boolean
+  blockedAt: string | null
 }
 
 /** Услуга в записи (мультиуслуги). Запись мастером может содержать несколько. */

@@ -10,6 +10,8 @@ export function createMasterClient(overrides: Partial<Client> = {}): Client {
     phone: '+79990000002',
     photo: null,
     isMaxUser: true,
+    isBlocked: false,
+    blockedAt: null,
     ...overrides,
   }
 }

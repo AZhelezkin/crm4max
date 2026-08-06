@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -14,6 +14,8 @@ import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
+import { checkClientAccess, isClientBlockedByMasterError } from '@client/lib/clientAccess'
+import { closeWebApp } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -100,6 +102,7 @@ function IcoCalendarEdit() {
 
 export default function ConfirmPage() {
   const navigate = useNavigate()
+  const mountedRef = useRef(true)
   const {
     masterId, service, categoryName, date, time, remind, clientAddress,
     clientApartment, clientFloor, clientIntercom,
@@ -108,6 +111,11 @@ export default function ConfirmPage() {
   } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   useEffect(() => {
     if (masterId) mastersApi.getById(masterId).then(setMaster).catch(() => {})
@@ -146,6 +154,16 @@ export default function ConfirmPage() {
       }
     } catch (error) {
       if (!rescheduleId) trackEvent('client_booking_create_failed', { booking_type: 'regular', error_type: metricErrorType(error) })
+      if (isClientBlockedByMasterError(error)) {
+        const access = await checkClientAccess(masterId)
+        if (!mountedRef.current || useBookingStore.getState().masterId !== masterId) return
+        if (access === 'blocked') {
+          if (!closeWebApp()) navigate('/', { replace: true })
+        } else if (access === 'unavailable') {
+          navigate('/', { replace: true })
+        }
+        return
+      }
       throw error
     } finally {
       setLoading(false)

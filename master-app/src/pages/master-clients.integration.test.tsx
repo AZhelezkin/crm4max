@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   list: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
+  setBlocked: vi.fn(),
   remove: vi.fn(),
 }))
 const scrollPageTop = vi.hoisted(() => vi.fn())
@@ -67,6 +68,7 @@ describe('ClientsPage', () => {
     expect(screen.getByRole('button', { name: 'Поиск' })).toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()
     expect(api.update).not.toHaveBeenCalled()
+    expect(api.setBlocked).not.toHaveBeenCalled()
     expect(api.remove).not.toHaveBeenCalled()
   })
 
@@ -96,6 +98,7 @@ describe('ClientsPage', () => {
     await view.user.click(await screen.findByRole('button', { name: /Борис Сидоров/ }))
     expect(screen.getByRole('button', { name: 'Править' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Написать в MAX' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Заблокировать' })).not.toBeInTheDocument()
 
     await view.user.click(screen.getByRole('button', { name: 'Записать на приём' }))
 
@@ -204,6 +207,114 @@ describe('ClientsPage', () => {
     expect(api.remove).toHaveBeenCalledOnce()
     expect(await screen.findByText('Борис Сидоров')).toBeInTheDocument()
     expect(screen.queryByText('Анна Петрова')).not.toBeInTheDocument()
+  })
+
+  it('открывает block modal с exact copy и отменяет без mutation', async () => {
+    const view = renderAtRoute(<ClientsPage />)
+    await view.user.click(await screen.findByRole('button', { name: /Анна Петрова/ }))
+
+    expect(screen.getByRole('button', { name: 'Записать на приём' })).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Заблокировать' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Заблокировать клиента' })
+    expect(within(dialog).getByText('Клиент не сможет записываться на услуги и не будет получать уведомления')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Заблокировать' })).toHaveStyle({
+      background: 'var(--color-error-surface-accented)',
+    })
+    await view.user.click(within(dialog).getByRole('button', { name: 'Отмена' }))
+
+    expect(api.setBlocked).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('блокирует один раз и синхронизирует selected и строку списка только trusted response', async () => {
+    const request = deferred<ReturnType<typeof createMasterClient>>()
+    const blocked = createMasterClient({
+      ...clients[0],
+      name: 'Анна из ответа API',
+      isBlocked: true,
+      blockedAt: '2026-08-06T10:00:00.000Z',
+    })
+    api.setBlocked.mockReturnValue(request.promise)
+    const view = renderAtRoute(<ClientsPage />)
+    await view.user.click(await screen.findByRole('button', { name: /Анна Петрова/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Заблокировать' }))
+    const dialog = screen.getByRole('dialog', { name: 'Заблокировать клиента' })
+    const confirm = within(dialog).getByRole('button', { name: 'Заблокировать' })
+
+    await view.user.click(confirm)
+    expect(api.setBlocked).toHaveBeenCalledWith('master-client-1', true)
+    expect(confirm).toBeDisabled()
+    await view.user.click(confirm)
+    expect(api.setBlocked).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Записать на приём' })).toBeInTheDocument()
+    expect(screen.queryByText('Клиент заблокирован')).not.toBeInTheDocument()
+
+    await act(async () => request.resolve(blocked))
+
+    const blockedTitle = await screen.findByText('Клиент заблокирован')
+    expect(screen.getByText('Анна из ответа API')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Записать на приём' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Написать в MAX' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Разблокировать' })).toHaveStyle({
+      color: 'var(--color-interactive-element-accented)',
+    })
+    const icon = blockedTitle.parentElement!.querySelector('svg')!
+    expect(icon).toHaveAttribute('width', '32')
+    expect(icon).toHaveAttribute('height', '32')
+    expect(icon).toHaveStyle({ color: 'var(--color-error-surface-accented)' })
+    expect(icon.querySelectorAll('path')[0]).toHaveAttribute('d', 'M19.8641 2.66602H12.1307C11.2241 2.66602 9.94406 3.19936 9.30406 3.83936L3.8374 9.30603C3.1974 9.94603 2.66406 11.226 2.66406 12.1327V19.866C2.66406 20.7727 3.1974 22.0527 3.8374 22.6927L9.30406 28.1593C9.94406 28.7993 11.2241 29.3327 12.1307 29.3327H19.8641C20.7707 29.3327 22.0507 28.7993 22.6907 28.1593L28.1574 22.6927C28.7974 22.0527 29.3307 20.7727 29.3307 19.866V12.1327C29.3307 11.226 28.7974 9.94603 28.1574 9.30603L22.6907 3.83936C22.0507 3.19936 20.7707 2.66602 19.8641 2.66602Z')
+    expect(icon.querySelectorAll('path')[1]).toHaveAttribute('d', 'M6.58594 25.4392L25.4393 6.58594')
+    for (const path of icon.querySelectorAll('path')) {
+      expect(path).toHaveAttribute('stroke', 'currentColor')
+      expect(path).toHaveAttribute('stroke-width', '2')
+      expect(path).toHaveAttribute('stroke-linecap', 'round')
+      expect(path).toHaveAttribute('stroke-linejoin', 'round')
+    }
+
+    await view.user.click(screen.getByRole('button', { name: 'Назад' }))
+    await view.user.click(screen.getByRole('button', { name: /Анна из ответа API/ }))
+    expect(screen.getByText('Клиент заблокирован')).toBeInTheDocument()
+  })
+
+  it('показывает primary unblock modal, поддерживает cancel и возвращает action cards по trusted response', async () => {
+    const blocked = createMasterClient({
+      ...clients[0],
+      isBlocked: true,
+      blockedAt: '2026-08-06T10:00:00.000Z',
+    })
+    const unblocked = createMasterClient({ ...blocked, isBlocked: false, blockedAt: null })
+    api.list.mockResolvedValue([blocked, clients[1]])
+    api.setBlocked.mockResolvedValue(unblocked)
+    const view = renderAtRoute(<ClientsPage />)
+    await view.user.click(await screen.findByRole('button', { name: /Анна Петрова/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Разблокировать' }))
+
+    let dialog = screen.getByRole('dialog', { name: 'Разблокировать клиента' })
+    expect(within(dialog).getByText('Клиент сможет записываться на услуги и будет получать уведомления')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Разблокировать' })).toHaveStyle({
+      background: 'var(--color-primary-surface)',
+    })
+    await view.user.click(within(dialog).getByRole('button', { name: 'Отмена' }))
+    expect(api.setBlocked).not.toHaveBeenCalled()
+
+    await view.user.click(screen.getByRole('button', { name: 'Разблокировать' }))
+    dialog = screen.getByRole('dialog', { name: 'Разблокировать клиента' })
+    await view.user.click(within(dialog).getByRole('button', { name: 'Разблокировать' }))
+
+    await waitFor(() => expect(api.setBlocked).toHaveBeenCalledWith('master-client-1', false))
+    expect(await screen.findByRole('button', { name: 'Записать на приём' })).toBeInTheDocument()
+    expect(screen.queryByText('Клиент заблокирован')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Заблокировать' })).toBeInTheDocument()
+  })
+
+  it('не показывает block control для ручного клиента', async () => {
+    const view = renderAtRoute(<ClientsPage />)
+    await view.user.click(await screen.findByRole('button', { name: /Борис Сидоров/ }))
+
+    expect(screen.getByRole('button', { name: 'Записать на приём' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Заблокировать' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Разблокировать' })).not.toBeInTheDocument()
   })
 
   it('возвращается в usable list если reload после create завершился ошибкой', async () => {

@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { HashRouter, Routes, Route, Navigate, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@client/store/auth.store'
 import { useBookingStore } from '@client/store/booking.store'
 import { startParam } from '@/App'
@@ -20,6 +20,8 @@ import QRScanPage        from '@client/pages/QRScanPage'
 import RecentMastersPage from '@client/pages/RecentMastersPage'
 import MetricsPageTracker from '@/components/MetricsPageTracker'
 import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
+import { checkClientAccess } from '@client/lib/clientAccess'
+import { closeWebApp } from '@/lib/bridge'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -83,6 +85,38 @@ function HomeRoute() {
   return <MasterCardPage />
 }
 
+function ClientBookingAccessGuard() {
+  const masterId = useBookingStore((state) => state.masterId)
+  const [accessState, setAccessState] = useState<{
+    masterId: string
+    status: 'checking' | 'allowed' | 'redirect'
+  } | null>(null)
+
+  useEffect(() => {
+    if (!masterId) return
+    let active = true
+    setAccessState({ masterId, status: 'checking' })
+
+    void checkClientAccess(masterId).then((access) => {
+      if (!active) return
+      if (access === 'allowed') {
+        setAccessState({ masterId, status: 'allowed' })
+        return
+      }
+      if (access === 'blocked') closeWebApp()
+      setAccessState({ masterId, status: 'redirect' })
+    })
+
+    return () => { active = false }
+  }, [masterId])
+
+  if (!masterId) return <Navigate to="/" replace />
+  const status = accessState?.masterId === masterId ? accessState.status : 'checking'
+  if (status === 'redirect') return <Navigate to="/" replace />
+  if (status !== 'allowed') return null
+  return <Outlet />
+}
+
 export default function ClientApp() {
   const { init, isLoading } = useAuthStore()
 
@@ -114,14 +148,16 @@ export default function ClientApp() {
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/masters"         element={<RecentMastersPage />} />
         <Route path="/qr"              element={<QRScanPage />} />
-        {/* Категории убраны — старый deep-link/back ведём на плоский список услуг. */}
-        <Route path="/book/categories" element={<Navigate to="/book/services" replace />} />
-        <Route path="/book/services"   element={<ServiceSelectPage />} />
-        <Route path="/book/service"    element={<ServiceDetailPage />} />
-        <Route path="/book/calendar"   element={<CalendarPage />} />
-        <Route path="/book/package"    element={<PackageBookingPage />} />
-        <Route path="/book/confirm"    element={<ConfirmPage />} />
-        <Route path="/book/deposit"    element={<DepositPage />} />
+        <Route element={<ClientBookingAccessGuard />}>
+          {/* Категории убраны — старый deep-link/back ведём на плоский список услуг. */}
+          <Route path="/book/categories" element={<Navigate to="/book/services" replace />} />
+          <Route path="/book/services"   element={<ServiceSelectPage />} />
+          <Route path="/book/service"    element={<ServiceDetailPage />} />
+          <Route path="/book/calendar"   element={<CalendarPage />} />
+          <Route path="/book/package"    element={<PackageBookingPage />} />
+          <Route path="/book/confirm"    element={<ConfirmPage />} />
+          <Route path="/book/deposit"    element={<DepositPage />} />
+        </Route>
         <Route path="/book/success"    element={<BookingDetailPage />} />
         <Route path="/my-bookings"     element={<MyBookingsPage />} />
         {/* Карточка существующей записи — тот же компонент, данные по :id. */}

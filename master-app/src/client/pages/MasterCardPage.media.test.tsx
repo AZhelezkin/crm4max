@@ -8,6 +8,7 @@ import { renderAtRoute } from '@/test/render'
 import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
+  checkAccess: vi.fn(),
   getMaster: vi.fn(),
   rememberVisit: vi.fn(),
   listBookings: vi.fn(),
@@ -16,7 +17,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster, rememberVisit: api.rememberVisit },
+  mastersApi: { checkClientAccess: api.checkAccess, getById: api.getMaster, rememberVisit: api.rememberVisit },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: { list: api.listBookings },
@@ -46,6 +47,7 @@ function seedStore() {
 describe('MasterCardPage contact and media effects', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
+    api.checkAccess.mockResolvedValue({ access: 'allowed' })
     api.listBookings.mockResolvedValue([])
     api.rememberVisit.mockResolvedValue(undefined)
     api.createReview.mockResolvedValue(undefined)

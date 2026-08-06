@@ -2,6 +2,8 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createClientMaster } from '@/test/fixtures/masters'
+import { installWebApp } from '@/test/web-app-fixture'
+import type { ClientAccessResponse } from '@client/api/masters.api'
 
 const MASTER_ID = '10000000-0000-4000-8000-000000000001'
 const OTHER_MASTER_ID = '10000000-0000-4000-8000-000000000011'
@@ -13,6 +15,7 @@ interface ClientAppSetup {
   query?: string
   storedMasterId?: string
   isLoading?: boolean
+  accessResult?: ClientAccessResponse
 }
 
 async function loadClientApp({
@@ -21,11 +24,13 @@ async function loadClientApp({
   query = '',
   storedMasterId = '',
   isLoading = false,
+  accessResult = { access: 'allowed' },
 }: ClientAppSetup = {}) {
   vi.resetModules()
   window.history.replaceState(null, '', `/${query}${hash}`)
 
   const getById = vi.fn().mockResolvedValue(createClientMaster())
+  const checkClientAccess = vi.fn().mockResolvedValue(accessResult)
   const listBookings = vi.fn().mockResolvedValue([])
 
   vi.doMock('@/App', () => ({ startParam }))
@@ -69,6 +74,7 @@ async function loadClientApp({
   }))
   vi.doMock('@client/api/masters.api', () => ({
     mastersApi: {
+      checkClientAccess,
       getById,
       getRecentMasters: vi.fn().mockResolvedValue([]),
       getSlots: vi.fn().mockResolvedValue([]),
@@ -103,7 +109,7 @@ async function loadClientApp({
   useBookingStore.setState({ masterId: storedMasterId, masterProfileLink: null })
 
   const { default: ClientApp } = await import('./ClientApp')
-  return { ClientApp, getById }
+  return { ClientApp, checkClientAccess, getById }
 }
 
 describe.sequential('ClientApp routing', () => {
@@ -137,7 +143,7 @@ describe.sequential('ClientApp routing', () => {
   })
 
   it('использует UUID start_param раньше query и persisted master', async () => {
-    const { ClientApp, getById } = await loadClientApp({
+    const { ClientApp, checkClientAccess, getById } = await loadClientApp({
       startParam: MASTER_ID,
       query: `?masterId=${OTHER_MASTER_ID}`,
       storedMasterId: OTHER_MASTER_ID,
@@ -146,6 +152,23 @@ describe.sequential('ClientApp routing', () => {
     render(<ClientApp />)
 
     await waitFor(() => expect(getById).toHaveBeenCalledWith(MASTER_ID))
+    expect(checkClientAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(checkClientAccess.mock.invocationCallOrder[0]).toBeLessThan(getById.mock.invocationCallOrder[0])
+  })
+
+  it('UUID blocked launch закрывается после delivery и не загружает профиль', async () => {
+    const webApp = installWebApp()
+    const { ClientApp, checkClientAccess, getById } = await loadClientApp({
+      startParam: MASTER_ID,
+      accessResult: { access: 'blocked', delivery: 'sent' },
+    })
+
+    render(<ClientApp />)
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(checkClientAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(getById).not.toHaveBeenCalled()
+    expect(screen.getByText('Профиль недоступен')).toBeInTheDocument()
   })
 
   it('использует hash query masterId раньше persisted master', async () => {
@@ -203,12 +226,45 @@ describe.sequential('ClientApp routing', () => {
   })
 
   it('перенаправляет legacy categories route на плоский список услуг', async () => {
-    const { ClientApp } = await loadClientApp({ hash: '#/book/categories' })
+    const { ClientApp, checkClientAccess } = await loadClientApp({ hash: '#/book/categories', storedMasterId: MASTER_ID })
 
     render(<ClientApp />)
 
     expect(await screen.findByTestId('service-select')).toBeInTheDocument()
+    expect(checkClientAccess).toHaveBeenCalledWith(MASTER_ID)
     expect(window.location.hash).toBe('#/book/services')
+  })
+
+  it('не монтирует прямой booking route до authoritative allowed', async () => {
+    const { ClientApp, checkClientAccess } = await loadClientApp({ hash: '#/book/services', storedMasterId: MASTER_ID })
+
+    render(<ClientApp />)
+
+    expect(screen.queryByTestId('service-select')).not.toBeInTheDocument()
+    expect(await screen.findByTestId('service-select')).toBeInTheDocument()
+    expect(checkClientAccess).toHaveBeenCalledWith(MASTER_ID)
+  })
+
+  it.each([
+    ['/book/services', 'service-select'],
+    ['/book/service', 'service-detail'],
+    ['/book/calendar', 'calendar'],
+    ['/book/package', 'package'],
+    ['/book/confirm', 'confirm'],
+    ['/book/deposit', 'deposit'],
+  ])('blocked direct route %s не монтирует booking screen', async (path, testId) => {
+    const webApp = installWebApp()
+    const { ClientApp, checkClientAccess } = await loadClientApp({
+      hash: `#${path}`,
+      storedMasterId: MASTER_ID,
+      accessResult: { access: 'blocked', delivery: 'sent' },
+    })
+
+    render(<ClientApp />)
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(checkClientAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(screen.queryByTestId(testId)).not.toBeInTheDocument()
   })
 
   it('перенаправляет неизвестный route на root fallback', async () => {

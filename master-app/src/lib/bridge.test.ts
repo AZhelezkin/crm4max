@@ -2,9 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { installWebApp, removeWebApp } from '@/test/web-app-fixture'
 
-import bridge from './bridge'
+import bridge, { closeWebApp } from './bridge'
 
 describe('legacy VK bridge shim', () => {
+  it('закрывает MAX WebApp только при доступном provider method', () => {
+    const webApp = installWebApp()
+    expect(closeWebApp()).toBe(true)
+    expect(webApp.close).toHaveBeenCalledOnce()
+
+    removeWebApp()
+    expect(closeWebApp()).toBe(false)
+  })
+
   it('делегирует init в WebApp.ready', async () => {
     const webApp = installWebApp()
 

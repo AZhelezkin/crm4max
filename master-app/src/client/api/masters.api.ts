@@ -18,7 +18,17 @@ export interface RecentMaster {
   description: string | null
 }
 
+export type ClientAccessResponse =
+  | { access: 'allowed' }
+  | {
+      access: 'blocked'
+      delivery: 'sent' | 'already_sent' | 'pending'
+    }
+
 export const mastersApi = {
+  checkClientAccess: (id: string) =>
+    api.post<ClientAccessResponse>(`/masters/${id}/client-access`).then((r) => r.data),
+
   getById: (id: string) =>
     api.get<Master>(`/masters/${id}`).then((r) => r.data),
 

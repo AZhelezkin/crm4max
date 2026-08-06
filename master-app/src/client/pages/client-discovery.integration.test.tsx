@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MASTER_ID } from '@/test/fixtures/auth'
 import { createClientMaster } from '@/test/fixtures/masters'
 import { renderAtRoute } from '@/test/render'
+import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
+  checkAccess: vi.fn(),
   getById: vi.fn(),
   rememberVisit: vi.fn(),
   getRecentMasters: vi.fn(),
@@ -17,6 +19,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
   mastersApi: {
+    checkClientAccess: api.checkAccess,
     getById: api.getById,
     rememberVisit: api.rememberVisit,
     getRecentMasters: api.getRecentMasters,
@@ -59,6 +62,7 @@ function resetBookingStore() {
 describe('client discovery journeys', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
+    api.checkAccess.mockResolvedValue({ access: 'allowed' })
     api.listBookings.mockResolvedValue([])
     api.rememberVisit.mockResolvedValue(undefined)
     api.createReview.mockResolvedValue(undefined)
@@ -118,6 +122,7 @@ describe('client discovery journeys', () => {
     expect(document.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
     expect(await screen.findByText('Анна Авторитетная')).toBeInTheDocument()
     expect(screen.getByText('Стрижка')).toBeInTheDocument()
+    expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID)
     expect(api.getById).toHaveBeenCalledWith(MASTER_ID)
     expect(api.rememberVisit).toHaveBeenCalledWith(MASTER_ID)
     await waitFor(() => {
@@ -134,5 +139,83 @@ describe('client discovery journeys', () => {
     expect(document.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
     expect(screen.queryByText('Анна Мастерова')).not.toBeInTheDocument()
     expect(useBookingStore.getState().masterProfileLink).toBeNull()
+  })
+
+  it('не загружает профиль из списка до authoritative allowed access', async () => {
+    const access = deferred<{ access: 'allowed' }>()
+    const master = createClientMaster({ name: 'Мастер после gate' })
+    api.getRecentMasters.mockResolvedValue([{
+      id: MASTER_ID,
+      name: 'Мастер из списка',
+      photo: null,
+      description: 'Колорист',
+    }])
+    api.checkAccess.mockReturnValue(access.promise)
+    api.getById.mockResolvedValue(master)
+    const view = renderAtRoute(
+      <Routes>
+        <Route path="/masters" element={<RecentMastersPage />} />
+        <Route path="/" element={<MasterCardPage />} />
+      </Routes>,
+      { route: '/masters' },
+    )
+
+    await view.user.click(await screen.findByRole('button', { name: /Мастер из списка/ }))
+    await waitFor(() => expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID))
+    expect(api.getById).not.toHaveBeenCalled()
+    expect(screen.queryByText('Мастер после gate')).not.toBeInTheDocument()
+
+    await act(async () => access.resolve({ access: 'allowed' }))
+    expect(await screen.findByText('Мастер после gate')).toBeInTheDocument()
+  })
+
+  it.each(['sent', 'already_sent'] as const)('blocked delivery=%s закрывает miniapp без загрузки профиля', async (delivery) => {
+    const webApp = installWebApp()
+    useBookingStore.getState().setMasterId(MASTER_ID)
+    api.checkAccess.mockResolvedValue({ access: 'blocked', delivery })
+    api.getById.mockResolvedValue(createClientMaster({ name: 'Скрытый мастер' }))
+
+    renderAtRoute(<MasterCardPage />, { route: '/' })
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(api.getById).not.toHaveBeenCalled()
+    expect(screen.queryByText('Скрытый мастер')).not.toBeInTheDocument()
+    expect(screen.getByText('Профиль недоступен')).toBeInTheDocument()
+  })
+
+  it('не закрывает miniapp по stale blocked response после unmount', async () => {
+    const webApp = installWebApp()
+    const access = deferred<{ access: 'blocked'; delivery: 'sent' }>()
+    useBookingStore.getState().setMasterId(MASTER_ID)
+    api.checkAccess.mockReturnValue(access.promise)
+    const view = renderAtRoute(<MasterCardPage />, { route: '/' })
+    await waitFor(() => expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID))
+
+    view.unmount()
+    await act(async () => access.resolve({ access: 'blocked', delivery: 'sent' }))
+
+    expect(webApp.close).not.toHaveBeenCalled()
+    expect(api.getById).not.toHaveBeenCalled()
+  })
+
+  it('delivery failure оставляет neutral retry и не раскрывает профиль', async () => {
+    const webApp = installWebApp()
+    useBookingStore.getState().setMasterId(MASTER_ID)
+    api.checkAccess
+      .mockRejectedValueOnce({ response: { status: 503, data: { error: 'CLIENT_BLOCKED_NOTICE_DELIVERY_FAILED' } } })
+      .mockResolvedValueOnce({ access: 'allowed' })
+    api.getById.mockResolvedValue(createClientMaster({ name: 'Мастер после повтора' }))
+    const view = renderAtRoute(<MasterCardPage />, { route: '/' })
+
+    const retry = await screen.findByRole('button', { name: 'Повторить' })
+    expect(webApp.close).not.toHaveBeenCalled()
+    expect(api.getById).not.toHaveBeenCalled()
+    expect(screen.queryByText('Мастер после повтора')).not.toBeInTheDocument()
+
+    await view.user.click(retry)
+
+    expect(await screen.findByText('Мастер после повтора')).toBeInTheDocument()
+    expect(api.checkAccess).toHaveBeenCalledTimes(2)
+    expect(webApp.close).not.toHaveBeenCalled()
   })
 })

@@ -19,6 +19,7 @@ declare global {
       openMaxLink: (url: string) => void
       openCodeReader: (fileSelect: boolean) => Promise<string | { data?: string; result?: string; text?: string }>
       downloadFile: (url: string, fileName: string) => void | Promise<void>
+      close?: () => void
       /** Мост шлёт клиенту WebAppSetupSwipesBehavior { allowVerticalSwipes: false }. */
       disableVerticalSwipes?: () => Promise<{ allowVerticalSwipes: boolean }>
       enableVerticalSwipes?: () => Promise<{ allowVerticalSwipes: boolean }>
@@ -111,6 +112,18 @@ export async function setVerticalSwipes(allow: boolean): Promise<VerticalSwipesR
 
 export function openExternalLink(url: string): void {
   window.WebApp?.openLink?.(url)
+}
+
+/** Закрывает miniapp, если текущая версия MAX WebApp поддерживает этот метод. */
+export function closeWebApp(): boolean {
+  const webApp = window.WebApp
+  if (typeof webApp?.close !== 'function') return false
+  try {
+    webApp.close()
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**

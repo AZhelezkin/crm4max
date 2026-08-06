@@ -6,9 +6,11 @@ import { createClientBookingPackage } from '@/test/fixtures/bookings'
 import { createClientMaster } from '@/test/fixtures/masters'
 import { createClientService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
+import { installWebApp } from '@/test/web-app-fixture'
 import type { BookingPackage } from '@client/types'
 
 const api = vi.hoisted(() => ({
+  checkAccess: vi.fn(),
   getMaster: vi.fn(),
   getSlots: vi.fn(),
   createPackage: vi.fn(),
@@ -16,6 +18,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@client/api/masters.api', () => ({
   mastersApi: {
+    checkClientAccess: api.checkAccess,
     getById: api.getMaster,
     getSlots: api.getSlots,
   },
@@ -152,5 +155,57 @@ describe('client package booking', () => {
 
     await waitFor(() => expect(api.createPackage).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(view.getLocation().pathname).toBe('/book/success'))
+  })
+
+  it('blocked race закрывает miniapp после sent без generic error', async () => {
+    const webApp = installWebApp()
+    api.createPackage.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockResolvedValue({ access: 'blocked', delivery: 'sent' })
+    const view = renderAtRoute(<PackageBookingPage />, { route: '/book/package' })
+    await screen.findByText('Анна Мастерова')
+
+    await view.user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(screen.queryByText('Не удалось записаться, попробуйте ещё раз')).not.toBeInTheDocument()
+  })
+
+  it('delivery failure после blocked race не закрывает miniapp', async () => {
+    const webApp = installWebApp()
+    api.createPackage.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockRejectedValue({
+      response: { status: 503, data: { error: 'CLIENT_BLOCKED_NOTICE_DELIVERY_FAILED' } },
+    })
+    const view = renderAtRoute(<PackageBookingPage />, { route: '/book/package' })
+    await screen.findByText('Анна Мастерова')
+
+    await view.user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    await waitFor(() => expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID))
+    expect(webApp.close).not.toHaveBeenCalled()
+    expect(screen.queryByText('Не удалось записаться, попробуйте ещё раз')).not.toBeInTheDocument()
+    expect(view.getLocation().pathname).toBe('/')
+  })
+
+  it('оставляет пакетную форму доступной, если после 403 доступ уже разрешён', async () => {
+    const webApp = installWebApp()
+    api.createPackage.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockResolvedValue({ access: 'allowed' })
+    const view = renderAtRoute(<PackageBookingPage />, { route: '/book/package' })
+    await screen.findByText('Анна Мастерова')
+
+    await view.user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    await waitFor(() => expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID))
+    expect(webApp.close).not.toHaveBeenCalled()
+    expect(view.getLocation().pathname).toBe('/book/package')
+    expect(screen.getByRole('button', { name: 'Записаться' })).toBeEnabled()
   })
 })

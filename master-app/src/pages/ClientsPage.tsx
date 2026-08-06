@@ -5,6 +5,7 @@ import { text } from '@/styles/typography'
 import { clientsApi } from '@/api/clients.api'
 import type { Client } from '@/types'
 import { FloatingField } from '@/components/onboardingShared'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { scrollPageTop } from '@/lib/scroll'
 
 // Вкладка «Клиенты» кабинета мастера (макеты 8951-33973 / 35261 / 34677 / 37129 / 37277 / 8952-34672 / 8949-65614).
@@ -12,6 +13,7 @@ import { scrollPageTop } from '@/lib/scroll'
 // переключаются внутренним состоянием view.
 
 type View = 'list' | 'search' | 'add' | 'detail' | 'edit'
+type BlockChange = 'block' | 'unblock'
 
 // «+7 (913) 000-00-01» из 11 цифр; иначе — как есть.
 function formatPhone(phone: string | null): string {
@@ -65,6 +67,8 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false)
 
   const [deleting, setDeleting] = useState(false)
+  const [blockChange, setBlockChange] = useState<BlockChange | null>(null)
+  const [blockSaving, setBlockSaving] = useState(false)
 
   const load = () =>
     clientsApi.list().then((list) => { setClients(list); setLoaded(true) }).catch(() => setLoaded(true))
@@ -130,6 +134,21 @@ export default function ClientsPage() {
     setView('list')
   }
 
+  const confirmBlockChange = async () => {
+    if (!selected || !blockChange || blockSaving) return
+    setBlockSaving(true)
+    try {
+      const updated = await clientsApi.setBlocked(selected.id, blockChange === 'block')
+      setSelected(updated)
+      setClients((current) => current.map((client) => client.id === updated.id ? updated : client))
+      setBlockChange(null)
+    } catch {
+      // Диалог остаётся открытым, чтобы мастер мог повторить действие.
+    } finally {
+      setBlockSaving(false)
+    }
+  }
+
   // ─── Рендер ────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100dvh' }}>
@@ -187,6 +206,21 @@ export default function ClientsPage() {
           onEdit={openEdit}
           onDelete={() => setDeleting(true)}
           onBook={() => navigate('/bookings/new', { state: { client: selected } })}
+          onToggleBlock={() => setBlockChange(selected.isBlocked ? 'unblock' : 'block')}
+        />
+      )}
+
+      {blockChange && selected && (
+        <ConfirmDialog
+          title={blockChange === 'block' ? 'Заблокировать клиента' : 'Разблокировать клиента'}
+          message={blockChange === 'block'
+            ? 'Клиент не сможет записываться на услуги и не будет получать уведомления'
+            : 'Клиент сможет записываться на услуги и будет получать уведомления'}
+          confirmLabel={blockChange === 'block' ? 'Заблокировать' : 'Разблокировать'}
+          danger={blockChange === 'block'}
+          busy={blockSaving}
+          onCancel={() => setBlockChange(null)}
+          onConfirm={() => { void confirmBlockChange() }}
         />
       )}
 
@@ -447,8 +481,13 @@ function ClientForm({
 
 // ─── Карточка клиента ───────────────────────────────────────────────────────────
 
-function ClientDetail({ client, onBack, onEdit, onDelete, onBook }: {
-  client: Client; onBack: () => void; onEdit: () => void; onDelete: () => void; onBook: () => void
+function ClientDetail({ client, onBack, onEdit, onDelete, onBook, onToggleBlock }: {
+  client: Client
+  onBack: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onBook: () => void
+  onToggleBlock: () => void
 }) {
   return (
     <>
@@ -475,20 +514,51 @@ function ClientDetail({ client, onBack, onEdit, onDelete, onBook }: {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%' }}>
           <div style={{ ...text.h2, color: 'var(--color-on-surface)', textAlign: 'center' }}>{client.name}</div>
           {client.phone && (
-            <div style={{ fontSize: 15, lineHeight: '20px', fontWeight: 400, letterSpacing: -0.15, color: 'var(--color-on-surface-secondary)', textAlign: 'center' }}>
+            <div style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', textAlign: 'center' }}>
               {formatPhone(client.phone)}
             </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-          {/* «Записать на приём» → флоу записи мастером с предвыбранным клиентом.
-              Работает и для ручных клиентов без Max (их просто не уведомляют). */}
-          <ActionRow label="Записать на приём" onClick={onBook} />
-          {/* «Написать в MAX» — пока без навигации (нет инфраструктуры чата). */}
-          <ActionRow label="Написать в MAX" onClick={() => { /* TODO */ }} disabled />
-        </div>
+        {client.isBlocked ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', textAlign: 'center' }}>
+            <ForbiddenIcon />
+            <div style={{ marginTop: 12, ...text.h4, color: 'var(--color-on-surface)' }}>
+              Клиент заблокирован
+            </div>
+            <div style={{ marginTop: 4, ...text.body2, color: 'var(--color-on-surface-secondary)' }}>
+              Клиент не сможет записываться на услуги и не будет получать уведомления
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            {/* «Записать на приём» → флоу записи мастером с предвыбранным клиентом.
+                Работает и для ручных клиентов без Max (их просто не уведомляют). */}
+            <ActionRow label="Записать на приём" onClick={onBook} />
+            {/* «Написать в MAX» — пока без навигации (нет инфраструктуры чата). */}
+            <ActionRow label="Написать в MAX" onClick={() => { /* TODO */ }} disabled />
+          </div>
+        )}
       </div>
+
+      {client.isMaxUser && (
+        <button
+          type="button"
+          onClick={onToggleBlock}
+          style={{
+            position: 'fixed', left: 16, right: 16,
+            bottom: 'calc(104px + env(safe-area-inset-bottom))',
+            height: 44, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            ...text.callout1,
+            color: client.isBlocked
+              ? 'var(--color-interactive-element-accented)'
+              : 'var(--color-error-surface-accented)',
+          }}
+        >
+          {client.isBlocked ? 'Разблокировать' : 'Заблокировать'}
+        </button>
+      )}
     </>
   )
 }
@@ -614,6 +684,22 @@ function ClearIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ForbiddenIcon() {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden="true"
+      style={{ color: 'var(--color-error-surface-accented)' }}
+    >
+      <path d="M19.8641 2.66602H12.1307C11.2241 2.66602 9.94406 3.19936 9.30406 3.83936L3.8374 9.30603C3.1974 9.94603 2.66406 11.226 2.66406 12.1327V19.866C2.66406 20.7727 3.1974 22.0527 3.8374 22.6927L9.30406 28.1593C9.94406 28.7993 11.2241 29.3327 12.1307 29.3327H19.8641C20.7707 29.3327 22.0507 28.7993 22.6907 28.1593L28.1574 22.6927C28.7974 22.0527 29.3307 20.7727 29.3307 19.866V12.1327C29.3307 11.226 28.7974 9.94603 28.1574 9.30603L22.6907 3.83936C22.0507 3.19936 20.7707 2.66602 19.8641 2.66602Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.58594 25.4392L25.4393 6.58594" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

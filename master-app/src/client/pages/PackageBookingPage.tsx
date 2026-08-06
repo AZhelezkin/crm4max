@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -12,6 +12,8 @@ import { toClientLocal, toMasterLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
+import { checkClientAccess, isClientBlockedByMasterError } from '@client/lib/clientAccess'
+import { closeWebApp } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -129,6 +131,7 @@ function WeeksSectionTitle({ children }: { children: React.ReactNode }) {
 // Figma «check» 8703:35427 (по дням) / 8703:39902 + 8703:40085 (по неделям).
 export default function PackageBookingPage() {
   const navigate = useNavigate()
+  const mountedRef = useRef(true)
   const {
     masterId, service, slots, remind, clientAddress,
     clientApartment, clientFloor, clientIntercom,
@@ -140,6 +143,11 @@ export default function PackageBookingPage() {
   const [mode, setMode] = useState<'days' | 'weeks'>('days')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   // «По неделям»: выбранные дни недели (ISO) + время + сетка доступных времён.
   const [weekdays, setWeekdays] = useState<number[]>([])
@@ -227,6 +235,16 @@ export default function PackageBookingPage() {
       navigate('/book/success', { state: { bookingId: pkg.bookings[0]?.id } })
     } catch (e) {
       trackEvent('client_booking_create_failed', { booking_type: 'package', error_type: metricErrorType(e) })
+      if (isClientBlockedByMasterError(e)) {
+        const access = await checkClientAccess(masterId)
+        if (!mountedRef.current || useBookingStore.getState().masterId !== masterId) return
+        if (access === 'blocked') {
+          if (!closeWebApp()) navigate('/', { replace: true })
+        } else if (access === 'unavailable') {
+          navigate('/', { replace: true })
+        }
+        return
+      }
       const slot = (e as { response?: { data?: { slot?: { date: string; time: string } } } })?.response?.data?.slot
       const ds = slot ? toClientLocal(slot.date, slot.time, master?.timezone) : null
       setError(ds

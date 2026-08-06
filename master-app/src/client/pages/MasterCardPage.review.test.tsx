@@ -7,6 +7,7 @@ import { createClientMaster } from '@/test/fixtures/masters'
 import { renderAtRoute } from '@/test/render'
 
 const api = vi.hoisted(() => ({
+  checkAccess: vi.fn(),
   getMaster: vi.fn(),
   rememberVisit: vi.fn(),
   listBookings: vi.fn(),
@@ -15,7 +16,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/App', () => ({ startParam: '' }))
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster, rememberVisit: api.rememberVisit },
+  mastersApi: { checkClientAccess: api.checkAccess, getById: api.getMaster, rememberVisit: api.rememberVisit },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: { list: api.listBookings },
@@ -76,6 +77,7 @@ function mockBookingLists(completed = eligibleBookings()) {
 describe('MasterCardPage review mutation', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
+    api.checkAccess.mockResolvedValue({ access: 'allowed' })
     api.getMaster.mockResolvedValue(createClientMaster())
     api.rememberVisit.mockResolvedValue(undefined)
     mockBookingLists()
@@ -107,6 +109,7 @@ describe('MasterCardPage review mutation', () => {
     const request = deferred<{ id: string }>()
     api.createReview.mockReturnValue(request.promise)
     const view = renderAtRoute(<MasterCardPage />, { route: '/' })
+    await waitFor(() => expect(api.listBookings).toHaveBeenCalledTimes(2))
     await view.user.click(await screen.findByRole('button', { name: 'Оставить отзыв' }))
     const reviewButtons = screen.getAllByRole('button', { name: 'Оставить отзыв' })
     const submit = reviewButtons[reviewButtons.length - 1]
@@ -137,6 +140,7 @@ describe('MasterCardPage review mutation', () => {
       .mockRejectedValueOnce(new Error('review unavailable'))
       .mockResolvedValueOnce({ id: 'review-created' })
     const view = renderAtRoute(<MasterCardPage />, { route: '/' })
+    await waitFor(() => expect(api.listBookings).toHaveBeenCalledTimes(2))
     await view.user.click(await screen.findByRole('button', { name: 'Оставить отзыв' }))
     await view.user.click(screen.getByRole('button', { name: 'Оценка 5' }))
     await view.user.type(screen.getByRole('textbox'), 'Повторяемый отзыв')

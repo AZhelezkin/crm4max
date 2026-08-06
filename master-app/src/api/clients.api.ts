@@ -10,5 +10,11 @@ export const clientsApi = {
   update: (id: string, data: { name?: string; phone?: string | null }) =>
     api.patch<Client>(`/clients/${id}`, data).then((r) => r.data),
 
+  setBlocked: (id: string, isBlocked: boolean) =>
+    (isBlocked
+      ? api.put<Client>(`/clients/${id}/block`)
+      : api.delete<Client>(`/clients/${id}/block`)
+    ).then((r) => r.data),
+
   remove: (id: string) => api.delete(`/clients/${id}`).then((r) => r.data),
 }

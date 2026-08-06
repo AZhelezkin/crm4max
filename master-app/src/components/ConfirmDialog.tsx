@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { text } from '@/styles/typography'
 
@@ -8,6 +9,8 @@ interface Props {
   cancelLabel?: string
   /** true (по умолчанию) — деструктивное действие, кнопка красная; false — primary. */
   danger?: boolean
+  /** Блокирует повторное подтверждение и закрытие, пока действие выполняется. */
+  busy?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -19,12 +22,51 @@ export default function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Отмена',
   danger = true,
+  busy = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const titleId = useId()
+  const messageId = useId()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const confirmRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    cancelRef.current?.focus()
+    return () => { previousFocus?.focus() }
+  }, [])
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape' && !busy) {
+      event.preventDefault()
+      onCancel()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const buttons = [confirmRef.current, cancelRef.current].filter(
+      (button): button is HTMLButtonElement => button !== null && !button.disabled,
+    )
+    if (buttons.length === 0) {
+      event.preventDefault()
+      dialogRef.current?.focus()
+      return
+    }
+    const first = buttons[0]
+    const last = buttons[buttons.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
   return createPortal(
     <div
-      onClick={onCancel}
+      onClick={() => { if (!busy) onCancel() }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -37,6 +79,14 @@ export default function ConfirmDialog({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        tabIndex={-1}
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
+        aria-busy={busy || undefined}
+        onKeyDown={handleKeyDown}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -49,20 +99,22 @@ export default function ConfirmDialog({
           flexDirection: 'column',
         }}
       >
-        <div style={{ padding: '0 8px 8px', fontSize: 20, lineHeight: '24px', fontWeight: 700, letterSpacing: -0.4, color: 'var(--color-on-surface)' }}>
+        <div id={titleId} style={{ padding: '0 8px 8px', ...text.h4, color: 'var(--color-on-surface)' }}>
           {title}
         </div>
-        <div style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>{message}</div>
+        <div id={messageId} style={{ padding: '0 8px 8px', ...text.body2, color: 'var(--color-on-surface)' }}>{message}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
           <button
+            ref={confirmRef}
             type="button"
             onClick={onConfirm}
+            disabled={busy}
             style={{
               width: '100%',
               height: 44,
               borderRadius: 22,
               border: 'none',
-              cursor: 'pointer',
+              cursor: busy ? 'default' : 'pointer',
               background: danger ? 'var(--color-error-surface-accented)' : 'var(--color-primary-surface)',
               ...text.callout1,
               color: 'var(--color-on-primary-surface)',
@@ -71,14 +123,16 @@ export default function ConfirmDialog({
             {confirmLabel}
           </button>
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
+            disabled={busy}
             style={{
               width: '100%',
               height: 44,
               borderRadius: 22,
               border: 'none',
-              cursor: 'pointer',
+              cursor: busy ? 'default' : 'pointer',
               background: 'var(--color-background)',
               ...text.callout1,
               color: 'var(--color-on-surface)',

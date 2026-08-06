@@ -8,9 +8,11 @@ import { createClientMaster } from '@/test/fixtures/masters'
 import { createClientService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
 import { mockDeviceTimezone } from '@/test/time'
+import { installWebApp } from '@/test/web-app-fixture'
 import type { Booking } from '@client/types'
 
 const api = vi.hoisted(() => ({
+  checkAccess: vi.fn(),
   getMaster: vi.fn(),
   create: vi.fn(),
   reschedule: vi.fn(),
@@ -19,7 +21,7 @@ const api = vi.hoisted(() => ({
 }))
 
 vi.mock('@client/api/masters.api', () => ({
-  mastersApi: { getById: api.getMaster },
+  mastersApi: { checkClientAccess: api.checkAccess, getById: api.getMaster },
 }))
 vi.mock('@client/api/bookings.api', () => ({
   bookingsApi: {
@@ -220,5 +222,61 @@ describe('client standard booking create and reschedule', () => {
       clientFloor: '',
       clientIntercom: '',
     })
+  })
+
+  it('regular blocked race запускает delivery flow и закрывается только после sent', async () => {
+    const webApp = installWebApp()
+    api.create.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockResolvedValue({ access: 'blocked', delivery: 'sent' })
+    const view = renderFlow()
+    await screen.findByText('Анна Мастерова')
+    fireEvent.change(screen.getByPlaceholderText('Город, улица, дом...'), {
+      target: { value: 'Москва, Дом 1' },
+    })
+
+    await view.user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(view.getLocation().pathname).toBe('/book/confirm')
+  })
+
+  it('reschedule blocked race подтверждает already_sent перед закрытием', async () => {
+    const webApp = installWebApp()
+    seedDraft({ rescheduleId: BOOKING_ID, clientAddress: 'Сохранённый адрес' })
+    api.reschedule.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockResolvedValue({ access: 'blocked', delivery: 'already_sent' })
+    const view = renderFlow()
+
+    await view.user.click(await screen.findByRole('button', { name: 'Перенести' }))
+
+    await waitFor(() => expect(webApp.close).toHaveBeenCalledOnce())
+    expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID)
+    expect(api.create).not.toHaveBeenCalled()
+    expect(view.getLocation().pathname).toBe('/book/confirm')
+  })
+
+  it('оставляет форму доступной, если после booking 403 мастер уже разблокировал клиента', async () => {
+    const webApp = installWebApp()
+    api.create.mockRejectedValue({
+      response: { status: 403, data: { error: 'CLIENT_BLOCKED_BY_MASTER' } },
+    })
+    api.checkAccess.mockResolvedValue({ access: 'allowed' })
+    const view = renderFlow()
+    await screen.findByText('Анна Мастерова')
+    fireEvent.change(screen.getByPlaceholderText('Город, улица, дом...'), {
+      target: { value: 'Москва, Дом 1' },
+    })
+
+    await view.user.click(screen.getByRole('button', { name: 'Записаться' }))
+
+    await waitFor(() => expect(api.checkAccess).toHaveBeenCalledWith(MASTER_ID))
+    expect(webApp.close).not.toHaveBeenCalled()
+    expect(view.getLocation().pathname).toBe('/book/confirm')
+    expect(screen.getByRole('button', { name: 'Записаться' })).toBeEnabled()
   })
 })
