@@ -137,6 +137,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/bookings.api.ts#bookingsApi.getById`
 - `src/api/bookings.api.ts#bookingsApi.list`
 - `src/api/bookings.api.ts#bookingsApi.remind`
+- `src/api/bookings.api.ts#bookingsApi.remindPayment`
 - `src/api/bookings.api.ts#bookingsApi.reschedule`
 - `src/api/clients.api.ts#clientsApi.create`
 - `src/api/clients.api.ts#clientsApi.list`

@@ -89,6 +89,19 @@ describe('master bookings API', () => {
     expect(result).toEqual(bookingPackage)
   })
 
+  it('отправляет напоминание об оплате по exact endpoint', async () => {
+    let requested = false
+    server.use(
+      http.post(`*/api/bookings/${BOOKING_ID}/remind-payment`, () => {
+        requested = true
+        return HttpResponse.json({ sent: true })
+      }),
+    )
+
+    await expect(bookingsApi.remindPayment(BOOKING_ID)).resolves.toEqual({ sent: true })
+    expect(requested).toBe(true)
+  })
+
   it.each([
     ['confirmPayment', `/api/bookings/${BOOKING_ID}/confirm-payment`, undefined],
     ['reschedule', `/api/bookings/${BOOKING_ID}/reschedule`, { date: '2026-07-22', time: '12:00' }],

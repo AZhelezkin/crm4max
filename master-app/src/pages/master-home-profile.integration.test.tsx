@@ -12,6 +12,9 @@ import { installWebApp } from '@/test/web-app-fixture'
 
 const api = vi.hoisted(() => ({
   listBookings: vi.fn(),
+  remindBooking: vi.fn(),
+  remindPayment: vi.fn(),
+  cancelBooking: vi.fn(),
   listClients: vi.fn(),
   getSubscription: vi.fn(),
   paySubscription: vi.fn(),
@@ -20,7 +23,14 @@ const api = vi.hoisted(() => ({
   markGuideStep: vi.fn(),
 }))
 
-vi.mock('@/api/bookings.api', () => ({ bookingsApi: { list: api.listBookings } }))
+vi.mock('@/api/bookings.api', () => ({
+  bookingsApi: {
+    list: api.listBookings,
+    remind: api.remindBooking,
+    remindPayment: api.remindPayment,
+    cancel: api.cancelBooking,
+  },
+}))
 vi.mock('@/api/clients.api', () => ({ clientsApi: { list: api.listClients } }))
 vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: { getMe: api.getSubscription, pay: api.paySubscription },
@@ -41,6 +51,9 @@ function setMaster(master: ReturnType<typeof createMasterProfile> | null) {
 
 function primeSuccessfulReads(master = createMasterProfile()) {
   api.listBookings.mockResolvedValue([])
+  api.remindBooking.mockResolvedValue({ sent: true })
+  api.remindPayment.mockResolvedValue({ sent: true })
+  api.cancelBooking.mockResolvedValue(createMasterBooking({ status: 'CANCELLED' }))
   api.listClients.mockResolvedValue([])
   api.getSubscription.mockResolvedValue(createSubscriptionState())
   api.paySubscription.mockResolvedValue({ paymentURL: 'https://pay.test/subscription' })
@@ -393,6 +406,26 @@ describe('master HomePage', () => {
     // Строка статуса под именем есть, а красной плашки нет.
     expect(await screen.findByText(/Пробный период\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Пробный период заканчивается|Пробный период закончился/ })).not.toBeInTheDocument()
+  })
+
+  it('показывает money-time сразу после обычного напоминания и отправляет payment reminder', async () => {
+    const booking = createMasterBooking({ id: 'booking-payment', date: TODAY, paymentStatus: 'UNPAID' })
+    api.listBookings.mockResolvedValue([booking])
+    setMaster(createMasterProfile({ services: [booking.service] }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с записью' }))
+    const regularReminder = screen.getByRole('button', { name: 'Напомнить клиенту' })
+    const paymentReminder = screen.getByRole('button', { name: 'Напомнить об оплате' })
+    const buttons = screen.getAllByRole('button')
+
+    expect(buttons.indexOf(paymentReminder)).toBe(buttons.indexOf(regularReminder) + 1)
+    expect(paymentReminder.querySelector('path[d^="M10.0013 12.0827"]')).not.toBeNull()
+
+    await view.user.click(paymentReminder)
+
+    await waitFor(() => expect(api.remindPayment).toHaveBeenCalledWith('booking-payment'))
+    expect(screen.getByText('Напоминание об оплате отправлено клиенту')).toBeInTheDocument()
   })
 
 })

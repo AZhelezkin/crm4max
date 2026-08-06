@@ -147,6 +147,19 @@ export default function HomePage() {
     }
   }
 
+  const handlePaymentReminder = async (b: Booking) => {
+    if (menuBusy) return
+    setMenuBusy(true)
+    try {
+      const { sent } = await bookingsApi.remindPayment(b.id)
+      showToast(sent ? 'Напоминание об оплате отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
+    } catch {
+      showToast('Не удалось отправить напоминание об оплате')
+    } finally {
+      setMenuBusy(false); setMenu(null)
+    }
+  }
+
   // «Отменить» — подтверждение диалогом, затем отмена записи.
   const handleCancelBooking = async (b: Booking) => {
     if (menuBusy) return
@@ -602,6 +615,8 @@ export default function HomePage() {
           busy={menuBusy}
           onClose={() => setMenu(null)}
           onRemind={() => { void handleRemind(menu.booking) }}
+          onRemindPayment={() => { void handlePaymentReminder(menu.booking) }}
+          showPaymentReminder={menu.booking.paymentStatus !== 'PAID'}
           onEdit={() => { const id = menu.booking.id; setMenu(null); navigate(`/bookings/${id}`) }}
           onReschedule={() => {
             const b = menu.booking
@@ -640,17 +655,20 @@ export default function HomePage() {
 
 // Popover-меню действий по записи (макет 10265-79559): карточка surface rx16,
 // px20 py12, пункты Body 2 с иконкой 20 справа и 8px-разделителями; «Отменить» — красный.
-function BookingActionMenu({ pos, busy, onClose, onRemind, onEdit, onReschedule, onCancel }: {
+function BookingActionMenu({ pos, busy, onClose, onRemind, onRemindPayment, showPaymentReminder, onEdit, onReschedule, onCancel }: {
   pos: { right: number; top?: number; bottom?: number }
   busy: boolean
   onClose: () => void
   onRemind: () => void
+  onRemindPayment: () => void
+  showPaymentReminder: boolean
   onEdit: () => void
   onReschedule: () => void
   onCancel: () => void
 }) {
   const items: Array<{ label: string; icon: ReactNode; onClick: () => void; danger?: boolean }> = [
     { label: 'Напомнить клиенту', icon: <MessageNotifIcon />, onClick: onRemind },
+    ...(showPaymentReminder ? [{ label: 'Напомнить об оплате', icon: <MoneyTimeIcon />, onClick: onRemindPayment }] : []),
     { label: 'Изменить', icon: <Edit2SmallIcon />, onClick: onEdit },
     { label: 'Перенести', icon: <CalendarEditIcon />, onClick: onReschedule },
     { label: 'Отменить', icon: <CloseCircleIcon />, onClick: onCancel, danger: true },
@@ -718,6 +736,19 @@ function MessageNotifIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M17 18.43h-4l-4.45 2.96c-.66.44-1.55-.03-1.55-.83v-2.13c-3 0-5-2-5-5v-6c0-3 2-5 5-5h8c3 0 5 2 5 5v3" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="19" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+// money-time (20) — точные path из ~/Downloads/money-time.svg.
+function MoneyTimeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10.0013 12.0827C11.1519 12.0827 12.0846 11.1499 12.0846 9.99935C12.0846 8.84876 11.1519 7.91602 10.0013 7.91602C8.85071 7.91602 7.91797 8.84876 7.91797 9.99935C7.91797 11.1499 8.85071 12.0827 10.0013 12.0827Z" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.418 7.91602V12.0827" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4.16536 18.3327C6.00631 18.3327 7.4987 16.8403 7.4987 14.9993C7.4987 13.1584 6.00631 11.666 4.16536 11.666C2.32442 11.666 0.832031 13.1584 0.832031 14.9993C0.832031 16.8403 2.32442 18.3327 4.16536 18.3327Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4.3737 13.957V14.732C4.3737 15.0237 4.22371 15.2987 3.96537 15.4487L3.33203 15.832" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1.66797 12.6673V7.50065C1.66797 4.58398 3.33464 3.33398 5.83464 3.33398H14.168C16.668 3.33398 18.3346 4.58398 18.3346 7.50065V12.5007C18.3346 15.4173 16.668 16.6673 14.168 16.6673H7.08464" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
