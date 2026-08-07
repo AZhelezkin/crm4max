@@ -162,6 +162,11 @@ async function completeRegularDraft(view: ReturnType<typeof renderPage>, selecte
   await selectRegularDateAndTime(view, selected)
 }
 
+async function selectBookingPlace(view: ReturnType<typeof renderPage>, place: 'Принимаю у себя' | 'Выезд' | 'Онлайн') {
+  await view.user.click(formCard('Дата и время').getByRole('button', { name: /Где/ }))
+  await view.user.click(screen.getByRole('menuitemradio', { name: place }))
+}
+
 function bookingResult(date: string, client = existingClient): Booking {
   return createMasterBooking({
     id: 'booking-created',
@@ -304,6 +309,7 @@ describe('master CreateBookingPage', () => {
       masterClientId: existingClient.id,
       remind: true,
       clientAddress: undefined,
+      onlineMeetingLink: undefined,
       price: undefined,
       color: '#1F9432',
       services: [{ serviceId: regularService.id, price: undefined }],
@@ -319,13 +325,31 @@ describe('master CreateBookingPage', () => {
     expect(view.getLocation().pathname).toBe('/bookings/new')
   })
 
-  it('разрешает мастеру выбрать выезд независимо от режима онлайн-записи профиля', async () => {
+  it('показывает dropdown места и разрешает выбрать выезд независимо от режима профиля', async () => {
     const view = renderPage()
 
     expect(useAuthStore.getState().master?.homeVisit).toBe(false)
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Где/ }))
 
+    expect(screen.getByRole('menuitemradio', { name: 'Принимаю у себя' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('menuitemradio', { name: 'Выезд' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitemradio', { name: 'Онлайн' })).toBeInTheDocument()
+    await view.user.click(screen.getByRole('menuitemradio', { name: 'Выезд' }))
+
     expect(formCard('Дата и время').getByRole('button', { name: /Адрес клиента/ })).toBeInTheDocument()
+  })
+
+  it('управляет dropdown места с клавиатуры и возвращает фокус в trigger', async () => {
+    const view = renderPage()
+    const trigger = formCard('Дата и время').getByRole('button', { name: /Где/ })
+    await view.user.click(trigger)
+
+    const masterItem = screen.getByRole('menuitemradio', { name: 'Принимаю у себя' })
+    await waitFor(() => expect(masterItem).toHaveFocus())
+    await view.user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+
+    expect(formCard('Дата и время').getByRole('button', { name: /Где/ })).toHaveTextContent('Онлайн')
+    expect(trigger).toHaveFocus()
   })
 
   it('для выезда выбирает адрес на карте и сохраняет реквизиты помещения с комментарием', async () => {
@@ -335,7 +359,7 @@ describe('master CreateBookingPage', () => {
     const view = renderPage()
     await completeRegularDraft(view, selectedDate)
 
-    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Где/ }))
+    await selectBookingPlace(view, 'Выезд')
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Адрес клиента/ }))
     expect(screen.getByText('Адрес, куда нужно выехать')).toBeInTheDocument()
 
@@ -356,7 +380,41 @@ describe('master CreateBookingPage', () => {
 
     expect(api.createBooking).toHaveBeenCalledWith(expect.objectContaining({
       clientAddress: 'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева от входа',
+      onlineMeetingLink: undefined,
     }))
+  })
+
+  it('для онлайн-записи валидирует HTTPS-ссылку и отправляет её без адреса', async () => {
+    const selectedDate = nextBookableDate()
+    const link = 'https://meet.example.com/room'
+    api.createBooking.mockResolvedValue(createMasterBooking({
+      ...bookingResult(selectedDate.format('YYYY-MM-DD')),
+      onlineMeetingLink: link,
+    }))
+    const view = renderPage()
+    await completeRegularDraft(view, selectedDate)
+    await selectBookingPlace(view, 'Онлайн')
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Ссылка/ }))
+    expect(screen.getByText('Ссылка на онлайн-встречу')).toBeInTheDocument()
+    const input = screen.getByRole('textbox', { name: 'Ссылка в формате https://' })
+    const save = screen.getByRole('button', { name: 'Сохранить' })
+    await view.user.type(input, 'http://meet.example.com/room')
+    expect(save).toBeDisabled()
+    await view.user.clear(input)
+    await view.user.type(input, `  ${link}  `)
+    expect(save).toBeEnabled()
+    await view.user.click(save)
+
+    expect(formCard('Дата и время').getByText(link)).toBeInTheDocument()
+    expect(formCard('Дата и время').queryByText('Адрес клиента')).not.toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    expect(api.createBooking).toHaveBeenCalledWith(expect.objectContaining({
+      clientAddress: undefined,
+      onlineMeetingLink: link,
+    }))
+    expect(await screen.findByRole('button', { name: 'Открыть ссылку на онлайн-встречу' })).toHaveTextContent(link)
   })
 
   it('сохраняет draft и позволяет retry после create failure', async () => {

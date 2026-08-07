@@ -12,7 +12,7 @@ import { clientsApi } from '@/api/clients.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { useAuthStore } from '@/store/auth.store'
 import type { Booking, Client, Schedule, Service } from '@/types'
-import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, bookingDuration, bookingTotal, bookingServiceItems } from '@/types'
+import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, bookingDuration, bookingTotal, bookingServiceItems, bookingServiceNames } from '@/types'
 import { text } from '@/styles/typography'
 import { openAddToCalendar } from '@/lib/calendar'
 import { scrollPageTop } from '@/lib/scroll'
@@ -21,6 +21,7 @@ import ToggleSwitch from '@/components/ToggleSwitch'
 import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
 import { FloatingField } from '@/components/onboardingShared'
 import BookingAddressEditor from '@/components/BookingAddressEditor'
+import BookingOnlineLinkEditor from '@/components/BookingOnlineLinkEditor'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
@@ -28,6 +29,7 @@ import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type Booking
 import { openExternalLink } from '@/lib/bridge'
 import BookingAddressText from '@/components/BookingAddressText'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
+import { normalizeOnlineMeetingLink } from '@/lib/onlineMeetingLink'
 
 dayjs.locale('ru')
 dayjs.extend(utc)
@@ -39,6 +41,16 @@ const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 // Палитра цвета записи (hex) — выбирается мастером, показывается в расписании.
 // Первый — дефолт (зелёный, как в макете 10111-37975).
 const BOOKING_COLORS = ['#1F9432', '#007AFE', '#F0AF2D', '#CE4259', '#8E5BE8', '#00B3A4', '#FF667F', '#6E6F71'] as const
+
+type BookingPlace = 'master' | 'client' | 'online'
+
+const BOOKING_PLACE_LABELS: Record<BookingPlace, string> = {
+  master: 'Принимаю у себя',
+  client: 'Выезд',
+  online: 'Онлайн',
+}
+
+type PopoverPosition = { right: number; top?: number; bottom?: number }
 
 type BookingSubscriptionDraft = {
   step: 'confirm' | 'package'
@@ -52,10 +64,13 @@ type BookingSubscriptionDraft = {
   totalOverride: string | null
   serviceOverrides: Record<string, { duration?: number; price?: number }>
   selectedClient: Client | null
-  outbound: boolean
+  place?: BookingPlace
+  /** Draft старой версии, сохранённый до появления трёх вариантов места. */
+  outbound?: boolean
   address: string
   addressDetails: BookingAddressDetails
   addressComment: string
+  onlineMeetingLink?: string
   miscPrices: Record<string, string>
   rescheduleId: string | null
   timeOnly: boolean
@@ -190,7 +205,7 @@ export default function CreateBookingPage() {
   const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'success' | 'color'>(
+  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'onlineLink' | 'success' | 'color'>(
     restoredDraft?.step ?? (rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
       : 'confirm'),
@@ -242,13 +257,19 @@ export default function CreateBookingPage() {
   const [serviceOverrides, setServiceOverrides] = useState<Record<string, { duration?: number; price?: number }>>(restoredDraft?.serviceOverrides ?? {})
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(restoredDraft?.selectedClient ?? rescheduleInit?.client ?? null)
-  // Выезд к клиенту (доступно, только если мастер работает на выезде). false — «Принимаю у себя».
-  const [outbound, setOutbound] = useState(restoredDraft?.outbound ?? false)
+  // Место обычной записи мастер выбирает независимо от режима онлайн-записи профиля.
+  const [bookingPlace, setBookingPlace] = useState<BookingPlace>(
+    restoredDraft?.place ?? (restoredDraft?.outbound ? 'client' : 'master'),
+  )
+  const outbound = bookingPlace === 'client'
+  const online = bookingPlace === 'online'
+  const [placeMenu, setPlaceMenu] = useState<PopoverPosition | null>(null)
   const [address, setAddress] = useState(restoredDraft?.address ?? '')
   const [addressDetails, setAddressDetails] = useState<BookingAddressDetails>(restoredDraft?.addressDetails ?? { floor: '', apartment: '', intercom: '' })
   const [addressComment, setAddressComment] = useState(restoredDraft?.addressComment ?? '')
   const [addressPickerOpen, setAddressPickerOpen] = useState(false)
   const [addressReturnStep, setAddressReturnStep] = useState<'confirm' | 'package'>('confirm')
+  const [onlineMeetingLink, setOnlineMeetingLink] = useState(restoredDraft?.onlineMeetingLink ?? '')
   // Суммы для услуг «Прочее» (isMisc) — рубли-строки по serviceId, вводятся в форме-сводке.
   const [miscPrices, setMiscPrices] = useState<Record<string, string>>(restoredDraft?.miscPrices ?? {})
   // Слоты нужны только для сеансов абонемента (обычная запись — свободное время).
@@ -541,7 +562,16 @@ export default function CreateBookingPage() {
     })
   }, [date, time, durationMin, masterBookings, rescheduleId])
 
-  const canSave = selectedServices.length > 0 && !!date && !!time && !!selectedClient && (!outbound || !!address.trim()) && allMiscValid && !saving
+  const normalizedOnlineMeetingLink = normalizeOnlineMeetingLink(onlineMeetingLink)
+  const trimmedOnlineMeetingLink = onlineMeetingLink.trim()
+  const canSave = selectedServices.length > 0
+    && !!date
+    && !!time
+    && !!selectedClient
+    && (!outbound || !!address.trim())
+    && (!online || !!normalizedOnlineMeetingLink)
+    && allMiscValid
+    && !saving
 
   const openSubscriptionForDraft = (draftStep: BookingSubscriptionDraft['step']) => {
     if (!master) return
@@ -557,10 +587,11 @@ export default function CreateBookingPage() {
       totalOverride,
       serviceOverrides,
       selectedClient,
-      outbound,
+      place: bookingPlace,
       address,
       addressDetails,
       addressComment,
+      onlineMeetingLink,
       miscPrices,
       rescheduleId,
       timeOnly,
@@ -575,6 +606,7 @@ export default function CreateBookingPage() {
   const handleSave = async (force = false) => {
     if (!master || selectedServices.length === 0 || !date || !time || !selectedClient) return
     if (outbound && !address.trim()) return
+    if (online && !normalizedOnlineMeetingLink) return
     if (!allMiscValid) return
     // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
     if (subState && !subState.onlineBookingAvailable) { openSubscriptionForDraft('confirm'); return }
@@ -599,6 +631,7 @@ export default function CreateBookingPage() {
         masterClientId: selectedClient.id,
         remind,
         clientAddress: outbound ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
+        onlineMeetingLink: online ? normalizedOnlineMeetingLink : undefined,
         // Первичная цена (для «Прочее») дублирует services[0].price.
         price: services[0].price,
         color,
@@ -742,11 +775,14 @@ export default function CreateBookingPage() {
     if (!createdBooking || !selectedService) return
     openAddToCalendar({
       bookingId: createdBooking.id,
-      title: selectedService.name,
+      title: bookingServiceNames(createdBooking),
       date,
       time,
-      durationMin: selectedService.duration,
-      location: homeVisit ? address.trim() : master?.location ?? '',
+      durationMin: bookingDuration(createdBooking),
+      location: createdBooking.onlineMeetingLink
+        || createdBooking.clientAddress
+        || master?.location
+        || '',
     })
   }
 
@@ -1363,10 +1399,22 @@ export default function CreateBookingPage() {
     )
   }
 
+  if (step === 'onlineLink') {
+    return (
+      <BookingOnlineLinkEditor
+        value={onlineMeetingLink}
+        onChange={setOnlineMeetingLink}
+        onBack={() => setStep('confirm')}
+        onSave={() => setStep('confirm')}
+      />
+    )
+  }
+
   // ─── Шаг 7: успех «Запись создана!» (макет 8746-41315) ──────────────────────
   if (step === 'success') {
     const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
     const addressText = outbound ? formatBookingAddress(address, addressDetails, addressComment) : master?.location ?? ''
+    const successOnlineMeetingLink = createdBooking?.onlineMeetingLink
     const handleOpenRoute = () => {
       if (!outbound || !addressText || !master) return
       openExternalLink(yandexRouteUrl(
@@ -1416,6 +1464,22 @@ export default function CreateBookingPage() {
                 <BookingAddressText value={addressText} />
               </div>
               <LocationIcon />
+            </button>
+          )}
+
+          {successOnlineMeetingLink && (
+            <button
+              type="button"
+              onClick={() => openExternalLink(successOnlineMeetingLink)}
+              aria-label="Открыть ссылку на онлайн-встречу"
+              style={{ ...listItemStyle, width: '100%' }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {successOnlineMeetingLink}
+                </div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Онлайн</div>
+              </div>
             </button>
           )}
 
@@ -1586,8 +1650,15 @@ export default function CreateBookingPage() {
           {/* В ручной записи мастер может выбрать место независимо от режима онлайн-записи профиля. */}
           <FormRow
             label="Где"
-            value={outbound ? 'Выезд' : 'Принимаю у себя'}
-            onClick={() => setOutbound((value) => !value)}
+            value={BOOKING_PLACE_LABELS[bookingPlace]}
+            menuOpen={placeMenu !== null}
+            onClick={(event) => {
+              const bounds = event.currentTarget.getBoundingClientRect()
+              const right = Math.max(8, window.innerWidth - bounds.right)
+              setPlaceMenu(bounds.bottom > window.innerHeight - 240
+                ? { right, bottom: window.innerHeight - bounds.top + 6 }
+                : { right, top: bounds.bottom + 6 })
+            }}
           />
           {outbound && (
             <FormRow
@@ -1601,6 +1672,20 @@ export default function CreateBookingPage() {
               ) : undefined}
               value="Выбрать"
               onClick={() => { setAddressReturnStep('confirm'); setStep('address') }}
+            />
+          )}
+          {online && (
+            <FormRow
+              label="Ссылка"
+              prompt={!normalizedOnlineMeetingLink}
+              stacked={!!trimmedOnlineMeetingLink}
+              right={trimmedOnlineMeetingLink ? (
+                <div style={{ ...text.body2, color: 'var(--color-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {trimmedOnlineMeetingLink}
+                </div>
+              ) : undefined}
+              value="Добавить"
+              onClick={() => setStep('onlineLink')}
             />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
@@ -1693,6 +1778,15 @@ export default function CreateBookingPage() {
         onSelect={(v) => setDurationOverride(Number(v))}
         onClose={() => setDurationPickerOpen(false)}
       />
+
+      {placeMenu && (
+        <BookingPlaceMenu
+          pos={placeMenu}
+          value={bookingPlace}
+          onClose={() => setPlaceMenu(null)}
+          onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
+        />
+      )}
     </div>
   )
 }
@@ -1713,15 +1807,16 @@ function FormCard({ title, children }: { title: string; children: React.ReactNod
 // Строка карточки: лейбл слева (Body2, onSurfaceSecondary), значение справа
 // (Body2; «Выбрать» → primarySurface, иначе onSurface) + стрелка. В макете стрелка
 // у всех строк, кроме «Стоимости» (noArrow). Последняя строка карточки — без разделителя.
-function FormRow({ label, value, prompt, right, onClick, noArrow, last, stacked }: {
+function FormRow({ label, value, prompt, right, onClick, noArrow, last, stacked, menuOpen }: {
   label: string
   value?: string
   prompt?: boolean
   right?: React.ReactNode
-  onClick?: () => void
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   noArrow?: boolean
   last?: boolean
   stacked?: boolean
+  menuOpen?: boolean
 }) {
   const rowStyle: React.CSSProperties = {
     width: '100%', display: 'flex', flexDirection: stacked ? 'column' : 'row', alignItems: stacked ? 'stretch' : 'center', justifyContent: 'space-between', gap: 8,
@@ -1741,8 +1836,96 @@ function FormRow({ label, value, prompt, right, onClick, noArrow, last, stacked 
     </>
   )
   return onClick
-    ? <button type="button" onClick={onClick} style={rowStyle}>{inner}</button>
+    ? <button type="button" onClick={onClick} aria-haspopup={menuOpen === undefined ? undefined : 'menu'} aria-expanded={menuOpen} style={rowStyle}>{inner}</button>
     : <div style={rowStyle}>{inner}</div>
+}
+
+function BookingPlaceMenu({ pos, value, onClose, onSelect }: {
+  pos: PopoverPosition
+  value: BookingPlace
+  onClose: () => void
+  onSelect: (value: BookingPlace) => void
+}) {
+  const onCloseRef = useRef(onClose)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement ? document.activeElement : null)
+  onCloseRef.current = onClose
+  useEffect(() => {
+    const close = () => onCloseRef.current()
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') close() }
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('keydown', closeOnEscape)
+      triggerRef.current?.focus()
+    }
+  }, [])
+  useEffect(() => {
+    menuRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus()
+  }, [])
+
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const buttons = [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [])]
+    if (buttons.length === 0) return
+    const currentIndex = Math.max(0, buttons.indexOf(document.activeElement as HTMLButtonElement))
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % buttons.length
+    if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + buttons.length) % buttons.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = buttons.length - 1
+    if (event.key === 'Tab') nextIndex = event.shiftKey
+      ? (currentIndex - 1 + buttons.length) % buttons.length
+      : (currentIndex + 1) % buttons.length
+    if (nextIndex === null) return
+    event.preventDefault()
+    buttons[nextIndex]?.focus()
+  }
+
+  const items = Object.entries(BOOKING_PLACE_LABELS) as [BookingPlace, string][]
+  return createPortal(
+    <div onClick={onClose} onWheel={onClose} onTouchMove={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+      <div
+        ref={menuRef}
+        role="menu"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={handleMenuKeyDown}
+        style={{
+          position: 'fixed', right: pos.right,
+          ...(pos.top !== undefined ? { top: pos.top } : { bottom: pos.bottom }),
+          minWidth: 220, maxWidth: 'calc(100vw - 32px)',
+          background: 'var(--color-surface)', borderRadius: 16, padding: '12px 20px',
+          boxShadow: '0 16px 16px -4px rgba(12,12,13,0.10), 0 4px 2px -4px rgba(12,12,13,0.05)',
+        }}
+      >
+        {items.map(([itemValue, label], index) => (
+          <div key={itemValue}>
+            {index > 0 && (
+              <div style={{ height: 8, display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '100%', height: 1, background: 'var(--color-divider-low)' }} />
+              </div>
+            )}
+            <button
+              type="button"
+              role="menuitemradio"
+              aria-checked={itemValue === value}
+              onClick={() => onSelect(itemValue)}
+              style={{
+                width: '100%', padding: '6px 0', background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', ...text.body2,
+                color: itemValue === value ? 'var(--color-active-element)' : 'var(--color-on-surface)',
+              }}
+            >
+              {label}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>,
+    document.body,
+  )
 }
 
 const listItemStyle: React.CSSProperties = {

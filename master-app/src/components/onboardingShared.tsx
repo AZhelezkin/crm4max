@@ -101,7 +101,7 @@ export interface FloatingFieldProps {
   value: string
   onChange: (v: string) => void
   type?: string
-  inputMode?: 'text' | 'tel' | 'numeric' | 'email'
+  inputMode?: 'text' | 'tel' | 'numeric' | 'email' | 'url'
   maxLength?: number
   multiline?: boolean
   autoFocus?: boolean
@@ -211,6 +211,7 @@ export function FloatingField({
             onBlur={() => setFocused(false)}
             rows={autoGrow ? 1 : rows}
             maxLength={maxLength}
+            aria-label={label}
             aria-invalid={error || undefined}
             style={{ ...innerInputStyle, resize: 'none', overflowY: autoGrow ? 'hidden' : 'auto' }}
           />
@@ -226,6 +227,7 @@ export function FloatingField({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               maxLength={maxLength}
+              aria-label={label}
               aria-invalid={error || undefined}
               style={{ ...innerInputStyle, flex: 1, width: 'auto' }}
             />

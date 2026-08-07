@@ -42,6 +42,7 @@ describe('master bookings API', () => {
       masterClientId: 'master-client-1',
       remind: true,
       clientAddress: null,
+      onlineMeetingLink: 'https://meet.example.com/room',
       price: 250_000,
       color: '#58A6FF',
       services: [{ serviceId: SERVICE_ID, price: 250_000 }],

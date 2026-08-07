@@ -63,6 +63,7 @@ function seedDraft(overrides: Partial<ReturnType<typeof useBookingStore.getState
     slots: [],
     remind: false,
     clientAddress: null,
+    onlineMeetingLink: null,
     clientApartment: '',
     clientFloor: '',
     clientIntercom: '',
@@ -139,6 +140,7 @@ describe('client standard booking create and reschedule', () => {
       slots: [],
       remind: true,
       clientAddress: null,
+      onlineMeetingLink: null,
       clientApartment: '',
       clientFloor: '',
       clientIntercom: '',
@@ -222,6 +224,30 @@ describe('client standard booking create and reschedule', () => {
       clientFloor: '',
       clientIntercom: '',
     })
+  })
+
+  it('online reschedule не требует физический адрес и сохраняет ссылку записи', async () => {
+    const webApp = installWebApp()
+    const link = 'https://meet.example.com/room'
+    api.reschedule.mockResolvedValue(createClientBooking({ id: BOOKING_ID, onlineMeetingLink: link }))
+    seedDraft({
+      rescheduleId: BOOKING_ID,
+      onlineMeetingLink: link,
+      date: '2030-01-11',
+      time: '11:30',
+    })
+    const view = renderFlow()
+
+    await view.user.click(await screen.findByRole('button', { name: 'Открыть ссылку на онлайн-встречу' }))
+    expect(webApp.openLink).toHaveBeenCalledWith(link)
+    expect(screen.queryByPlaceholderText('Город, улица, дом...')).not.toBeInTheDocument()
+
+    const submit = screen.getByRole('button', { name: 'Перенести' })
+    expect(submit).toBeEnabled()
+    await view.user.click(submit)
+
+    expect(api.reschedule).toHaveBeenCalledWith(BOOKING_ID, { date: '2030-01-11', time: '11:30' })
+    expect(api.create).not.toHaveBeenCalled()
   })
 
   it('regular blocked race запускает delivery flow и закрывается только после sent', async () => {

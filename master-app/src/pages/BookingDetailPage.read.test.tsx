@@ -118,6 +118,19 @@ describe('master BookingDetailPage read state', () => {
     expect(mocks.cancel).not.toHaveBeenCalled()
   })
 
+  it('показывает и открывает ссылку онлайн-встречи', async () => {
+    const webApp = installWebApp()
+    const link = 'https://meet.example.com/room'
+    mocks.getById.mockResolvedValue(createMasterBooking({ onlineMeetingLink: link }))
+    const view = renderPage()
+
+    await view.user.click(await screen.findByRole('button', { name: 'Открыть ссылку на онлайн-встречу' }))
+
+    expect(screen.getByText(link)).toBeInTheDocument()
+    expect(screen.getByText('Онлайн')).toBeInTheDocument()
+    expect(webApp.openLink).toHaveBeenCalledWith(link)
+  })
+
   it('показывает адрес, квартиру, комментарий, этаж и домофон отдельными строками', async () => {
     mocks.getById.mockResolvedValue(createMasterBooking({
       clientAddress: 'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева у входа есть подвал. Там справа будет окно',
@@ -177,6 +190,20 @@ describe('master BookingDetailPage read state', () => {
     })
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()
+  })
+
+  it('передаёт онлайн-ссылку в календарь вместо физического адреса', async () => {
+    const link = 'https://meet.example.com/room'
+    mocks.getById.mockResolvedValue(createMasterBooking({
+      id: 'booking-online-calendar',
+      onlineMeetingLink: link,
+      clientAddress: null,
+    }))
+    const view = renderPage('booking-online-calendar')
+
+    await view.user.click(await screen.findByRole('button', { name: /Добавить в календарь/ }))
+
+    expect(mocks.openAddToCalendar).toHaveBeenCalledWith(expect.objectContaining({ location: link }))
   })
 
   it('для completed записи скрывает mutation actions и блокирует редактирование', async () => {

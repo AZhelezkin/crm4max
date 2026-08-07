@@ -8,6 +8,7 @@ import { createClientBooking } from '@/test/fixtures/bookings'
 import { createClientService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
 import type { Booking } from '@client/types'
+import { installWebApp } from '@/test/web-app-fixture'
 
 const OTHER_MASTER_ID = '20000000-0000-4000-8000-000000000002'
 
@@ -50,6 +51,7 @@ function resetBookingStore() {
     slots: [],
     remind: true,
     clientAddress: null,
+    onlineMeetingLink: null,
   })
 }
 
@@ -179,6 +181,7 @@ describe('client booking lifecycle', () => {
     const booking = futureBooking({
       id: 'booking-reschedule-entry',
       clientAddress: 'Москва, Дом 7',
+      onlineMeetingLink: null,
       service: createClientService({ id: 'service-reschedule', name: 'Переносимая услуга' }),
     })
     const view = renderDetail(booking)
@@ -192,9 +195,28 @@ describe('client booking lifecycle', () => {
       date: booking.date,
       time: booking.time,
       clientAddress: 'Москва, Дом 7',
+      onlineMeetingLink: null,
       rescheduleId: 'booking-reschedule-entry',
     })
     expect(api.cancel).not.toHaveBeenCalled()
+  })
+
+  it('показывает клиенту и открывает ссылку онлайн-встречи', async () => {
+    const webApp = installWebApp()
+    const link = 'https://meet.example.com/room'
+    const view = renderDetail(futureBooking({ onlineMeetingLink: link }))
+
+    await view.user.click(await screen.findByRole('button', { name: 'Открыть ссылку на онлайн-встречу' }))
+
+    expect(screen.getByText(link)).toBeInTheDocument()
+    expect(screen.getByText('Онлайн')).toBeInTheDocument()
+    expect(webApp.openLink).toHaveBeenCalledWith(link)
+
+    await view.user.click(screen.getByRole('button', { name: 'Перенести' }))
+    expect(useBookingStore.getState()).toMatchObject({
+      rescheduleId: BOOKING_ID,
+      onlineMeetingLink: link,
+    })
   })
 
   it('у клиента нет кнопки «Отметить как оплачено» — оплату подтверждает мастер', async () => {

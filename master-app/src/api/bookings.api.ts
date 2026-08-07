@@ -18,6 +18,8 @@ export const bookingsApi = {
     masterClientId?: string
     remind?: boolean
     clientAddress?: string | null
+    /** HTTPS-ссылка на онлайн-встречу; задаётся только мастером. */
+    onlineMeetingLink?: string | null
     /** Индивидуальная сумма (копейки) для услуги «Прочее». */
     price?: number
     /** Цвет записи (hex) — для расписания. */

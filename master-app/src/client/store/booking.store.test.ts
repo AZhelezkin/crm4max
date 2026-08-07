@@ -21,6 +21,7 @@ describe.sequential('client booking store', () => {
     state.setDateTime('2026-07-21', '10:00')
     state.setRemind(false)
     state.setClientAddress('Москва, Тестовая улица, 2')
+    state.setOnlineMeetingLink('https://meet.example.com/room')
     state.setClientApartment('15')
     state.setClientFloor('7')
     state.setClientIntercom('123#')
@@ -35,6 +36,7 @@ describe.sequential('client booking store', () => {
       time: '10:00',
       remind: false,
       clientAddress: 'Москва, Тестовая улица, 2',
+      onlineMeetingLink: 'https://meet.example.com/room',
       clientApartment: '15',
       clientFloor: '7',
       clientIntercom: '123#',
@@ -75,6 +77,7 @@ describe.sequential('client booking store', () => {
       slots: [{ date: '2026-07-21', time: '10:00' }],
       remind: false,
       clientAddress: 'Адрес клиента',
+      onlineMeetingLink: 'https://meet.example.com/room',
       clientApartment: '15',
       clientFloor: '7',
       clientIntercom: '123#',
@@ -93,6 +96,7 @@ describe.sequential('client booking store', () => {
       slots: [],
       remind: true,
       clientAddress: null,
+      onlineMeetingLink: null,
       clientApartment: '',
       clientFloor: '',
       clientIntercom: '',
@@ -128,6 +132,7 @@ describe.sequential('client booking store', () => {
         slots: [],
         remind: false,
         clientAddress: 'Сохранённый адрес',
+        onlineMeetingLink: 'https://meet.example.com/room',
       },
       version: 0,
     }))
@@ -141,6 +146,7 @@ describe.sequential('client booking store', () => {
       time: '15:00',
       remind: false,
       clientAddress: 'Сохранённый адрес',
+      onlineMeetingLink: 'https://meet.example.com/room',
     })
   })
 

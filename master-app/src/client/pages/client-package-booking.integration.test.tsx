@@ -103,6 +103,7 @@ describe('client package booking', () => {
         sessionIndex: 0,
         remind: false,
         clientAddress: 'Москва, Дом 1',
+        onlineMeetingLink: null,
       }],
     })
     const request = deferred<BookingPackage>()

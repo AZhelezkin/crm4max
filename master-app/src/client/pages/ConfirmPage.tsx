@@ -12,6 +12,7 @@ import { toClientLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
+import { openExternalLink } from '@/lib/bridge'
 import AddressSuggestField from '@client/components/AddressSuggestField'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
 import { checkClientAccess, isClientBlockedByMasterError } from '@client/lib/clientAccess'
@@ -104,7 +105,7 @@ export default function ConfirmPage() {
   const navigate = useNavigate()
   const mountedRef = useRef(true)
   const {
-    masterId, service, categoryName, date, time, remind, clientAddress,
+    masterId, service, categoryName, date, time, remind, clientAddress, onlineMeetingLink,
     clientApartment, clientFloor, clientIntercom,
     setClientAddress, setClientApartment, setClientFloor, setClientIntercom,
     reset, rescheduleId,
@@ -189,9 +190,10 @@ export default function ConfirmPage() {
   // В store дата/время — в поясе мастера (каноника). Показываем клиенту в его поясе.
   const local = toClientLocal(date, time, master?.timezone)
   const formattedDate = dayjs(local.date).format('D MMMM, dd')
+  const isOnlineReschedule = !!rescheduleId && !!onlineMeetingLink
 
   // Если мастер выезжает к клиенту — нужен непустой адрес перед submit.
-  const submitDisabled = loading || (master?.homeVisit === true && !clientAddress?.trim())
+  const submitDisabled = loading || (!isOnlineReschedule && master?.homeVisit === true && !clientAddress?.trim())
 
   const headerSubtitle = categoryName || service.name
 
@@ -318,7 +320,33 @@ export default function ConfirmPage() {
                                 + location pin справа, клик открывает geo:// (Figma 8700:33418).
               homeVisit=true  → AddressSuggestField со своей карточкой (label «Ваш адрес»
                                 + outline + input), Figma 8557:23640 / 8746:54653. */}
-        {master && !master.homeVisit && master.location && (
+        {master && isOnlineReschedule && (
+          <button
+            type="button"
+            onClick={() => openExternalLink(onlineMeetingLink)}
+            style={{
+              background: 'var(--color-surface-transparent)',
+              borderRadius: 20,
+              padding: '16px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              border: 'none', cursor: 'pointer',
+              width: '100%', textAlign: 'left',
+            }}
+            aria-label="Открыть ссылку на онлайн-встречу"
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                ...text.callout1, color: 'var(--color-on-surface)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {onlineMeetingLink}
+              </div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Онлайн</div>
+            </div>
+          </button>
+        )}
+
+        {master && !isOnlineReschedule && !master.homeVisit && master.location && (
           <button
             type="button"
             onClick={handleOpenMasterLocation}
@@ -351,7 +379,7 @@ export default function ConfirmPage() {
           </button>
         )}
 
-        {master?.homeVisit && (
+        {master?.homeVisit && !isOnlineReschedule && (
           <AddressSuggestField
             value={clientAddress ?? ''}
             onChange={(v) => setClientAddress(v || null)}

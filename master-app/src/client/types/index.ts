@@ -82,6 +82,8 @@ export interface Booking {
   remind?: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
   clientAddress: string | null
+  /** HTTPS-ссылка для онлайн-записи, созданной мастером. */
+  onlineMeetingLink: string | null
   master: {
     id: string
     name: string
@@ -157,6 +159,7 @@ export interface PackageSession {
   sessionIndex: number | null
   remind: boolean
   clientAddress: string | null
+  onlineMeetingLink: string | null
 }
 
 /** Пакет записей (курс из N сеансов одной услуги). */
@@ -183,6 +186,8 @@ export interface BookingDraft {
   remind: boolean
   /** Если задан — клиент выбрал «Мой адрес» (выезд мастера). Null — у мастера. */
   clientAddress: string | null
+  /** Только для переноса записи, которую мастер создал как онлайн. */
+  onlineMeetingLink: string | null
   clientApartment: string
   clientFloor: string
   clientIntercom: string

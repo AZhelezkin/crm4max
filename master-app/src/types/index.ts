@@ -99,6 +99,8 @@ export interface Booking {
   totalPrice: number | null
   /** Адрес выезда мастера (если задан); null — услуга у мастера. */
   clientAddress: string | null
+  /** HTTPS-ссылка для онлайн-записи; null — очный формат. */
+  onlineMeetingLink: string | null
   remind: boolean
   /** Цвет записи (hex), выбранный мастером; null — цвет по статусу. */
   color: string | null
@@ -121,6 +123,7 @@ export interface PackageSession {
   sessionIndex: number | null
   remind: boolean
   clientAddress: string | null
+  onlineMeetingLink: string | null
 }
 
 /** Пакет записей (курс из N сеансов одной услуги). */

@@ -11,6 +11,7 @@ import { openAddToCalendar } from '@/lib/calendar'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
+import { openExternalLink } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -123,6 +124,7 @@ export default function BookingDetailPage() {
   const setService = useBookingStore((s) => s.setService)
   const setDateTime = useBookingStore((s) => s.setDateTime)
   const setClientAddress = useBookingStore((s) => s.setClientAddress)
+  const setOnlineMeetingLink = useBookingStore((s) => s.setOnlineMeetingLink)
   const setRescheduleId = useBookingStore((s) => s.setRescheduleId)
   const resetStore = useBookingStore((s) => s.reset)
 
@@ -164,6 +166,7 @@ export default function BookingDetailPage() {
       // Адрес выезда переносим из записи в store — иначе на шаге подтверждения
       // поле «Ваш адрес» окажется пустым (в view-режиме store не заполнен).
       setClientAddress(booking.clientAddress)
+      setOnlineMeetingLink(booking.onlineMeetingLink)
       // Режим переноса: ConfirmPage обновит эту запись (date/time), а не создаст новую.
       setRescheduleId(booking.id)
     }
@@ -209,7 +212,7 @@ export default function BookingDetailPage() {
     )
   }
 
-  const { master, date, time, clientAddress, paymentStatus } = booking
+  const { master, date, time, clientAddress, onlineMeetingLink, paymentStatus } = booking
   const remind = booking.remind ?? true
   // Итог по всем услугам записи (мастер мог добавить несколько; «Прочее» — сумма мастера).
   const price = bookingTotal(booking)
@@ -235,7 +238,7 @@ export default function BookingDetailPage() {
       date: local.date,
       time: local.time,
       durationMin: bookingDuration(booking),
-      location: clientAddress || master.location || undefined,
+      location: onlineMeetingLink || clientAddress || master.location || undefined,
     })
   }
 
@@ -373,6 +376,33 @@ export default function BookingDetailPage() {
             clientAddress задан → выезд мастера (subtitle «Мой адрес»),
             иначе адрес мастера (subtitle «Адрес мастера», координаты из masterFull). */}
         {(() => {
+          if (onlineMeetingLink) {
+            return (
+              <button
+                type="button"
+                onClick={() => openExternalLink(onlineMeetingLink)}
+                aria-label="Открыть ссылку на онлайн-встречу"
+                style={{
+                  background: 'var(--color-surface-transparent)',
+                  borderRadius: 20,
+                  padding: '16px 20px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  border: 'none', cursor: 'pointer',
+                  width: '100%', textAlign: 'left',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    ...text.callout1, color: 'var(--color-on-surface)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {onlineMeetingLink}
+                  </div>
+                  <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Онлайн</div>
+                </div>
+              </button>
+            )
+          }
           const addressText = clientAddress || master?.location
           if (!addressText) return null
           const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'

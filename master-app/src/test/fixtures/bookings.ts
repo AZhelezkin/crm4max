@@ -21,6 +21,7 @@ export function createMasterBooking(overrides: Partial<MasterBooking> = {}): Mas
     notes: null,
     price: null,
     clientAddress: null,
+    onlineMeetingLink: null,
     remind: true,
     color: null,
     master: {
@@ -57,6 +58,7 @@ export function createClientBooking(overrides: Partial<ClientBooking> = {}): Cli
     price: null,
     remind: true,
     clientAddress: null,
+    onlineMeetingLink: null,
     master: {
       id: MASTER_ID,
       name: 'Анна Мастерова',
@@ -112,6 +114,7 @@ export function createMasterBookingPackage(
         sessionIndex: 0,
         remind: true,
         clientAddress: null,
+        onlineMeetingLink: null,
       },
     ],
     ...overrides,

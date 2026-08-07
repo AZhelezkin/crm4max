@@ -11,6 +11,7 @@ import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems, bookin
 import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { openAddToCalendar } from '@/lib/calendar'
+import { openExternalLink } from '@/lib/bridge'
 
 dayjs.locale('ru')
 
@@ -120,7 +121,7 @@ export default function BookingDetailPage() {
       date: booking.date,
       time: booking.time,
       durationMin: bookingDuration(booking),
-      location: addressText,
+      location: booking.onlineMeetingLink || addressText,
     })
   }
 
@@ -172,12 +173,28 @@ export default function BookingDetailPage() {
         </div>
 
         {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
-        {booking.clientAddress && (
+        {!booking.onlineMeetingLink && booking.clientAddress && (
           <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookingAddressText value={booking.clientAddress} />
             </div>
             <LocationIcon />
+          </button>
+        )}
+
+        {booking.onlineMeetingLink && (
+          <button
+            type="button"
+            onClick={() => openExternalLink(booking.onlineMeetingLink!)}
+            aria-label="Открыть ссылку на онлайн-встречу"
+            style={{ ...listItemStyle, cursor: 'pointer' }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {booking.onlineMeetingLink}
+              </div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Онлайн</div>
+            </div>
           </button>
         )}
 
