@@ -257,9 +257,10 @@ export default function CreateBookingPage() {
   const [serviceOverrides, setServiceOverrides] = useState<Record<string, { duration?: number; price?: number }>>(restoredDraft?.serviceOverrides ?? {})
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(restoredDraft?.selectedClient ?? rescheduleInit?.client ?? null)
-  // Место обычной записи мастер выбирает независимо от режима онлайн-записи профиля.
+  // Место записи мастер выбирает независимо от режима онлайн-записи профиля.
   const [bookingPlace, setBookingPlace] = useState<BookingPlace>(
-    restoredDraft?.place ?? (restoredDraft?.outbound ? 'client' : 'master'),
+    restoredDraft?.place
+      ?? (restoredDraft?.outbound || (restoredDraft?.step === 'package' && homeVisit) ? 'client' : 'master'),
   )
   const outbound = bookingPlace === 'client'
   const online = bookingPlace === 'online'
@@ -269,6 +270,7 @@ export default function CreateBookingPage() {
   const [addressComment, setAddressComment] = useState(restoredDraft?.addressComment ?? '')
   const [addressPickerOpen, setAddressPickerOpen] = useState(false)
   const [addressReturnStep, setAddressReturnStep] = useState<'confirm' | 'package'>('confirm')
+  const [onlineLinkReturnStep, setOnlineLinkReturnStep] = useState<'confirm' | 'package'>('confirm')
   const [onlineMeetingLink, setOnlineMeetingLink] = useState(restoredDraft?.onlineMeetingLink ?? '')
   // Суммы для услуг «Прочее» (isMisc) — рубли-строки по serviceId, вводятся в форме-сводке.
   const [miscPrices, setMiscPrices] = useState<Record<string, string>>(restoredDraft?.miscPrices ?? {})
@@ -406,6 +408,7 @@ export default function CreateBookingPage() {
   const pickPackageService = (s: Service) => {
     setServiceId(s.id)
     setSelectedServiceIds([s.id])
+    setBookingPlace(homeVisit ? 'client' : 'master')
     if (!fixedDateFromSchedule) setDate('')
     setTime('')
     setPackageSlots([]); setPackageMode('days'); setPackageSessionIndex(null)
@@ -564,6 +567,13 @@ export default function CreateBookingPage() {
 
   const normalizedOnlineMeetingLink = normalizeOnlineMeetingLink(onlineMeetingLink)
   const trimmedOnlineMeetingLink = onlineMeetingLink.trim()
+  const openPlaceMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const right = Math.max(8, window.innerWidth - bounds.right)
+    setPlaceMenu(bounds.bottom > window.innerHeight - 240
+      ? { right, bottom: window.innerHeight - bounds.top + 6 }
+      : { right, top: bounds.bottom + 6 })
+  }
   const canSave = selectedServices.length > 0
     && !!date
     && !!time
@@ -663,7 +673,8 @@ export default function CreateBookingPage() {
   // Создание записи на абонемент (все N приёмов сразу).
   const handleSavePackage = async () => {
     if (!master || !selectedService || !selectedClient) return
-    if (homeVisit && !address.trim()) return
+    if (outbound && !address.trim()) return
+    if (online && !normalizedOnlineMeetingLink) return
     // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
     if (subState && !subState.onlineBookingAvailable) { openSubscriptionForDraft('package'); return }
     const slots = packageMode === 'days'
@@ -679,11 +690,12 @@ export default function CreateBookingPage() {
         slots,
         masterClientId: selectedClient.id,
         remind,
-        clientAddress: homeVisit ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
+        clientAddress: outbound ? formatBookingAddress(address, addressDetails, addressComment) : undefined,
+        onlineMeetingLink: online ? normalizedOnlineMeetingLink : undefined,
       })
       trackEvent('master_package_created', {
         sessions_count: slots.length,
-        has_address: homeVisit && Boolean(address.trim()),
+        has_address: outbound && Boolean(address.trim()),
         remind,
       })
       navigate('/bookings')
@@ -1082,7 +1094,11 @@ export default function CreateBookingPage() {
     const daysFilled = packageSlots.filter((s) => s && s.date && s.time)
     const weeksSlots = generateWeeklySlots(weekdays, weekTime, N)
     const finalCount = packageMode === 'days' ? daysFilled.length : weeksSlots.length
-    const canSavePkg = !saving && finalCount === N && !!selectedClient && (!homeVisit || !!address.trim())
+    const canSavePkg = !saving
+      && finalCount === N
+      && !!selectedClient
+      && (!outbound || !!address.trim())
+      && (!online || !!normalizedOnlineMeetingLink)
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar
@@ -1113,8 +1129,23 @@ export default function CreateBookingPage() {
             <UserSquareIcon size={16} />
           </button>
 
+          {/* Место одно для всех сеансов абонемента. */}
+          <button
+            type="button"
+            onClick={openPlaceMenu}
+            aria-haspopup="menu"
+            aria-expanded={placeMenu !== null}
+            style={listItemStyle}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Где</div>
+              <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{BOOKING_PLACE_LABELS[bookingPlace]}</div>
+            </div>
+            <ArrowRightIcon />
+          </button>
+
           {/* Адрес выезда */}
-          {homeVisit && (
+          {outbound && (
             <button
               type="button"
               onClick={() => { setAddressReturnStep('package'); setStep('address') }}
@@ -1129,6 +1160,22 @@ export default function CreateBookingPage() {
                 )}
               </div>
               <LocationIcon />
+            </button>
+          )}
+
+          {online && (
+            <button
+              type="button"
+              onClick={() => { setOnlineLinkReturnStep('package'); setStep('onlineLink') }}
+              style={{ ...listItemStyle, width: '100%', border: 'none', textAlign: 'left' }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Ссылка</div>
+                <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {trimmedOnlineMeetingLink || 'Добавить'}
+                </div>
+              </div>
+              <ArrowRightIcon />
             </button>
           )}
 
@@ -1256,6 +1303,15 @@ export default function CreateBookingPage() {
             {saving ? 'Записываем…' : 'Записать'}
           </button>
         </div>
+
+        {placeMenu && (
+          <BookingPlaceMenu
+            pos={placeMenu}
+            value={bookingPlace}
+            onClose={() => setPlaceMenu(null)}
+            onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
+          />
+        )}
       </div>
     )
   }
@@ -1404,8 +1460,8 @@ export default function CreateBookingPage() {
       <BookingOnlineLinkEditor
         value={onlineMeetingLink}
         onChange={setOnlineMeetingLink}
-        onBack={() => setStep('confirm')}
-        onSave={() => setStep('confirm')}
+        onBack={() => setStep(onlineLinkReturnStep)}
+        onSave={() => setStep(onlineLinkReturnStep)}
       />
     )
   }
@@ -1652,13 +1708,7 @@ export default function CreateBookingPage() {
             label="Где"
             value={BOOKING_PLACE_LABELS[bookingPlace]}
             menuOpen={placeMenu !== null}
-            onClick={(event) => {
-              const bounds = event.currentTarget.getBoundingClientRect()
-              const right = Math.max(8, window.innerWidth - bounds.right)
-              setPlaceMenu(bounds.bottom > window.innerHeight - 240
-                ? { right, bottom: window.innerHeight - bounds.top + 6 }
-                : { right, top: bounds.bottom + 6 })
-            }}
+            onClick={openPlaceMenu}
           />
           {outbound && (
             <FormRow
@@ -1685,7 +1735,7 @@ export default function CreateBookingPage() {
                 </div>
               ) : undefined}
               value="Добавить"
-              onClick={() => setStep('onlineLink')}
+              onClick={() => { setOnlineLinkReturnStep('confirm'); setStep('onlineLink') }}
             />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />

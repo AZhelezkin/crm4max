@@ -43,6 +43,8 @@ export const bookingsApi = {
     masterClientId?: string
     remind?: boolean
     clientAddress?: string | null
+    /** Общая HTTPS-ссылка для всех сеансов пакета; задаётся только мастером. */
+    onlineMeetingLink?: string | null
   }) => api.post<BookingPackage>('/bookings/package', data).then((r) => r.data),
 
   confirmPayment: (id: string) =>

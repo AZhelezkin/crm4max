@@ -532,6 +532,7 @@ describe('master CreateBookingPage', () => {
       masterClientId: existingClient.id,
       remind: true,
       clientAddress: undefined,
+      onlineMeetingLink: undefined,
     })
     expect(screen.getByRole('button', { name: /Записать/ })).toBeEnabled()
 
@@ -539,6 +540,38 @@ describe('master CreateBookingPage', () => {
     await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
     expect(api.createPackage).toHaveBeenCalledTimes(2)
     expect(api.createBooking).not.toHaveBeenCalled()
+  })
+
+  it('применяет одну онлайн-ссылку ко всем сеансам package', async () => {
+    const link = 'https://meet.example.com/course'
+    const view = renderPage({ client: existingClient })
+    await view.user.click(formCard('Услуги').getByRole('button', { name: /Наименование/ }))
+    await view.user.click(await screen.findByText('Курс процедур'))
+
+    await view.user.click(screen.getByRole('button', { name: /Где/ }))
+    await view.user.click(screen.getByRole('menuitemradio', { name: 'Онлайн' }))
+    expect(screen.getByRole('button', { name: /Записать/ })).toBeDisabled()
+
+    await view.user.click(screen.getByRole('button', { name: /Ссылка/ }))
+    await view.user.type(screen.getByRole('textbox', { name: 'Ссылка в формате https://' }), link)
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    await view.user.click(screen.getByRole('button', { name: 'По неделям' }))
+    await waitFor(() => expect(api.getSlots).toHaveBeenCalled())
+    await view.user.click(screen.getByRole('button', { name: 'Пн' }))
+    await view.user.click(await screen.findByRole('button', { name: '11:00' }))
+    const expectedSlots = nextWeekdaySlots(1, 3, '11:00')
+    await view.user.click(screen.getByRole('button', { name: /Записать/ }))
+
+    expect(api.createPackage).toHaveBeenCalledWith({
+      masterId: useAuthStore.getState().master!.id,
+      serviceId: packageService.id,
+      slots: expectedSlots,
+      masterClientId: existingClient.id,
+      remind: true,
+      clientAddress: undefined,
+      onlineMeetingLink: link,
+    })
   })
 
   it('bootstrap reschedule не создаёт booking и пишет только после confirmation', async () => {

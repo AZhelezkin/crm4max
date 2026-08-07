@@ -74,7 +74,8 @@ describe('master bookings API', () => {
       ],
       masterClientId: 'master-client-1',
       remind: false,
-      clientAddress: 'Адрес клиента',
+      clientAddress: null,
+      onlineMeetingLink: 'https://meet.example.com/course',
     }
     let body: object | null = null
     server.use(
