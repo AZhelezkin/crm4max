@@ -74,12 +74,13 @@ export default function CalendarPage() {
   const navigate = useNavigate()
   const location = useLocation()
   // Режим выбора слота для приёма абонемента: пришли с PackageBookingPage с индексом.
-  const sessionIndex = (location.state as { sessionIndex?: number } | null)?.sessionIndex
+  const routeState = location.state as { sessionIndex?: number; step?: 'date' | 'time' } | null
+  const sessionIndex = routeState?.sessionIndex
   const isSession = typeof sessionIndex === 'number'
   const { masterId, service, date, time, remind, slots: pkgSlots, setDateTime, setSlot, setRemind } = useBookingStore()
 
   const today = dayjs().startOf('day')
-  const [step, setStep] = useState<'date' | 'time'>('date')
+  const [step, setStep] = useState<'date' | 'time'>(routeState?.step === 'time' && date ? 'time' : 'date')
   const [schedule, setSchedule] = useState<Schedule | null>(null)
   const [selectedDate, setSelectedDate] = useState(date || today.format('YYYY-MM-DD'))
   const [slots, setSlots] = useState<ClientSlot[]>([])

@@ -155,7 +155,7 @@ export default function BookingDetailPage() {
     }
   }
 
-  const handleReschedule = () => {
+  const handleReschedule = (step: 'date' | 'time' = 'date') => {
     // Перенос идёт через тот же flow, что и новая запись: load store → /book/calendar.
     // В post-booking режиме данные уже в store (из ConfirmPage); в view-режиме
     // подгружаем их из текущей записи.
@@ -170,7 +170,7 @@ export default function BookingDetailPage() {
       // Режим переноса: ConfirmPage обновит эту запись (date/time), а не создаст новую.
       setRescheduleId(booking.id)
     }
-    navigate('/book/calendar')
+    navigate('/book/calendar', { state: { step } })
   }
 
   const handleChat = () => {
@@ -452,11 +452,12 @@ export default function BookingDetailPage() {
         })()}
 
         {/* listItem: услуга — column gap=16, нижний row: price + tag «НЕ ОПЛАЧЕНО» */}
-        <div style={{
+        <button type="button" aria-label="Изменить дату" onClick={() => handleReschedule('date')} style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -498,14 +499,15 @@ export default function BookingDetailPage() {
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* listItem: дата */}
-        <div style={{
+        <button type="button" aria-label="Изменить время" onClick={() => handleReschedule('time')} style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
@@ -519,7 +521,7 @@ export default function BookingDetailPage() {
             </div>
           </div>
           <IcoEdit2 />
-        </div>
+        </button>
 
         {/* listItem: время + remind */}
         <div style={{
@@ -583,7 +585,7 @@ export default function BookingDetailPage() {
           {/* Chip: Перенести — недоступно для прошедшей записи. */}
           {!isPast && (
           <button
-            onClick={handleReschedule}
+            onClick={() => handleReschedule()}
             style={{
               flex: 1, minWidth: 0,
               background: 'var(--color-surface-transparent)',
