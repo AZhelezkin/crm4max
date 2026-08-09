@@ -6,8 +6,8 @@ import { mastersApi } from '@client/api/masters.api'
 import { bookingsApi } from '@client/api/bookings.api'
 import { formatClientAddress } from '@client/lib/clientAddress'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Master } from '@client/types'
-import { discountedPrice, formatPrice } from '@client/types'
+import type { BookingReminder, Master } from '@client/types'
+import { BOOKING_REMINDER_OPTIONS, bookingReminderLabel, discountedPrice, formatPrice } from '@client/types'
 import { toClientLocal } from '@client/lib/timezone'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
@@ -17,6 +17,7 @@ import AddressSuggestField from '@client/components/AddressSuggestField'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
 import { checkClientAccess, isClientBlockedByMasterError } from '@client/lib/clientAccess'
 import { closeWebApp } from '@/lib/bridge'
+import WheelPicker from '@/components/WheelPicker'
 
 dayjs.locale('ru')
 
@@ -105,13 +106,14 @@ export default function ConfirmPage() {
   const navigate = useNavigate()
   const mountedRef = useRef(true)
   const {
-    masterId, service, categoryName, date, time, remind, clientAddress, onlineMeetingLink,
+    masterId, service, categoryName, date, time, remind, reminder, clientAddress, onlineMeetingLink,
     clientApartment, clientFloor, clientIntercom,
-    setClientAddress, setClientApartment, setClientFloor, setClientIntercom,
+    setClientAddress, setClientApartment, setClientFloor, setClientIntercom, setReminder,
     reset, rescheduleId,
   } = useBookingStore()
   const [master, setMaster] = useState<Master | null>(null)
   const [loading, setLoading] = useState(false)
+  const [reminderPickerOpen, setReminderPickerOpen] = useState(false)
 
   useEffect(() => {
     mountedRef.current = true
@@ -141,7 +143,7 @@ export default function ConfirmPage() {
         navigate('/my-bookings')
       } else {
         const booking = await bookingsApi.create({
-          masterId, serviceId: service.id, date, time, remind,
+          masterId, serviceId: service.id, date, time, remind, reminder: remind ? reminder : 'NONE',
           clientAddress: master?.homeVisit
             ? formatClientAddress(clientAddress, clientApartment, clientFloor, clientIntercom)
             : null,
@@ -457,10 +459,10 @@ export default function ConfirmPage() {
           <IcoEdit2 />
         </button>
 
-        {/* listItem: время + remind label + edit-2 (back to time step) */}
+        {/* listItem: время + выбранное напоминание */}
         <button
-          aria-label="Изменить время"
-          onClick={() => navigate('/book/calendar', { state: { step: 'time' } })}
+          aria-label="Изменить напоминание"
+          onClick={() => setReminderPickerOpen(true)}
           style={{
             background: 'var(--color-surface-transparent)',
             borderRadius: 20,
@@ -481,13 +483,21 @@ export default function ConfirmPage() {
               ...text.caption2, color: 'var(--color-on-surface-secondary)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {remind ? 'Напомним за 1 час' : 'Без напоминания'}
+              {bookingReminderLabel(reminder, remind)}
             </div>
           </div>
           <IcoEdit2 />
         </button>
 
       </div>
+
+      <WheelPicker
+        open={reminderPickerOpen}
+        value={reminder}
+        options={BOOKING_REMINDER_OPTIONS}
+        onSelect={(value) => setReminder(value as BookingReminder)}
+        onClose={() => setReminderPickerOpen(false)}
+      />
 
       {/* ── Footer button (Figma 8534:14816). bottom-fixed: pt=8 pb=48 px=12.
             Кнопка h=60, rx=20, bg=primarySurface, gap=8 (icon + text). */}

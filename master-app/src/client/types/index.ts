@@ -67,6 +67,21 @@ export function formatDuration(min: number): string {
   return `${min} мин`
 }
 
+export type BookingReminder = 'NONE' | 'ONE_HOUR' | 'TWO_HOURS' | 'MORNING' | 'ONE_DAY'
+
+export const BOOKING_REMINDER_OPTIONS = [
+  { value: 'NONE', label: 'Без напоминания' },
+  { value: 'ONE_HOUR', label: 'Напомним за 1 час' },
+  { value: 'TWO_HOURS', label: 'Напомним за 2 часа' },
+  { value: 'MORNING', label: 'Напомним утром в 09:00' },
+  { value: 'ONE_DAY', label: 'Напомним за сутки' },
+] satisfies { value: BookingReminder; label: string }[]
+
+export function bookingReminderLabel(reminder: BookingReminder | undefined, remind = true): string {
+  const value = reminder ?? (remind ? 'ONE_HOUR' : 'NONE')
+  return BOOKING_REMINDER_OPTIONS.find((option) => option.value === value)?.label ?? BOOKING_REMINDER_OPTIONS[1].label
+}
+
 export interface Booking {
   id: string
   date: string
@@ -80,6 +95,7 @@ export interface Booking {
   totalPrice?: number | null
   /** Напоминание за 1 час (Booking.remind в БД). */
   remind?: boolean
+  reminder?: BookingReminder
   /** Если задан — клиент выбрал «Мой адрес» (выезд). Иначе услуга у мастера. */
   clientAddress: string | null
   /** HTTPS-ссылка для онлайн-записи, созданной мастером. */
@@ -184,6 +200,7 @@ export interface BookingDraft {
    *  Для обычной услуги (1 сеанс) не используется — берутся date/time. */
   slots: { date: string; time: string }[]
   remind: boolean
+  reminder: BookingReminder
   /** Если задан — клиент выбрал «Мой адрес» (выезд мастера). Null — у мастера. */
   clientAddress: string | null
   /** Только для переноса записи, которую мастер создал как онлайн. */

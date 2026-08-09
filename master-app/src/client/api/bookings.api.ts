@@ -1,8 +1,8 @@
 import { api } from './client'
-import type { Booking, BookingPackage } from '@client/types'
+import type { Booking, BookingPackage, BookingReminder } from '@client/types'
 
 export const bookingsApi = {
-  create: (data: { masterId: string; serviceId: string; date: string; time: string; remind?: boolean; clientAddress?: string | null }) =>
+  create: (data: { masterId: string; serviceId: string; date: string; time: string; remind?: boolean; reminder?: BookingReminder; clientAddress?: string | null }) =>
     api.post<Booking>('/bookings', data).then((r) => r.data),
 
   /** Запись на услугу-курс: даты+время на все N сеансов сразу. */
@@ -26,6 +26,9 @@ export const bookingsApi = {
 
   reschedule: (id: string, data: { date: string; time: string }) =>
     api.post<Booking>(`/bookings/${id}/reschedule`, data).then((r) => r.data),
+
+  updateReminder: (id: string, reminder: BookingReminder) =>
+    api.post<Booking>(`/bookings/${id}/reminder`, { reminder }).then((r) => r.data),
 
   cancel: (id: string) =>
     api.post<Booking>(`/bookings/${id}/cancel`).then((r) => r.data),

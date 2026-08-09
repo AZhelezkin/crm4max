@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { BookingDraft, Service } from '@client/types'
+import type { BookingDraft, BookingReminder, Service } from '@client/types'
 import type { ClientMasterSource } from '@/lib/metrics'
 
 interface BookingState extends BookingDraft {
@@ -20,6 +20,7 @@ interface BookingState extends BookingDraft {
   setSlots: (slots: { date: string; time: string }[]) => void
   clearSlots: () => void
   setRemind: (remind: boolean) => void
+  setReminder: (reminder: BookingReminder) => void
   setClientAddress: (addr: string | null) => void
   setOnlineMeetingLink: (link: string | null) => void
   setClientApartment: (apartment: string) => void
@@ -41,6 +42,7 @@ export const useBookingStore = create<BookingState>()(
       time: '',
       slots: [],
       remind: true,
+      reminder: 'ONE_HOUR',
       clientAddress: null,
       onlineMeetingLink: null,
       clientApartment: '',
@@ -62,13 +64,14 @@ export const useBookingStore = create<BookingState>()(
       }),
       setSlots: (slots) => set({ slots }),
       clearSlots: () => set({ slots: [] }),
-      setRemind: (remind) => set({ remind }),
+      setRemind: (remind) => set({ remind, reminder: remind ? 'ONE_HOUR' : 'NONE' }),
+      setReminder: (reminder) => set({ reminder, remind: reminder !== 'NONE' }),
       setClientAddress: (clientAddress) => set({ clientAddress }),
       setOnlineMeetingLink: (onlineMeetingLink) => set({ onlineMeetingLink }),
       setClientApartment: (clientApartment) => set({ clientApartment }),
       setClientFloor: (clientFloor) => set({ clientFloor }),
       setClientIntercom: (clientIntercom) => set({ clientIntercom }),
-      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, rescheduleId: null, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, clientAddress: null, onlineMeetingLink: null, clientApartment: '', clientFloor: '', clientIntercom: '' })),
+      reset: () => set((s) => ({ masterId: s.masterId, masterProfileLink: s.masterProfileLink, rescheduleId: null, service: null, categoryName: null, date: '', time: '', slots: [], remind: true, reminder: 'ONE_HOUR', clientAddress: null, onlineMeetingLink: null, clientApartment: '', clientFloor: '', clientIntercom: '' })),
     }),
     {
       name: 'booking-draft',

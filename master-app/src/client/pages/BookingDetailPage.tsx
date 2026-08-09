@@ -4,14 +4,15 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@client/api/bookings.api'
 import { useBookingStore } from '@client/store/booking.store'
-import type { Booking } from '@client/types'
-import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems } from '@client/types'
+import type { Booking, BookingReminder } from '@client/types'
+import { BOOKING_REMINDER_OPTIONS, bookingReminderLabel, formatPrice, bookingTotal, bookingDuration, bookingServiceItems } from '@client/types'
 import { toClientLocal } from '@client/lib/timezone'
 import { openAddToCalendar } from '@/lib/calendar'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 import { openExternalLink } from '@/lib/bridge'
+import WheelPicker from '@/components/WheelPicker'
 
 dayjs.locale('ru')
 
@@ -136,6 +137,7 @@ export default function BookingDetailPage() {
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [reminderPickerOpen, setReminderPickerOpen] = useState(false)
 
   useEffect(() => {
     if (!bookingId) return
@@ -196,6 +198,12 @@ export default function BookingDetailPage() {
     }
   }
 
+  const handleReminderSelect = async (value: string) => {
+    if (!bookingId) return
+    const updated = await bookingsApi.updateReminder(bookingId, value as BookingReminder)
+    setBooking(updated)
+  }
+
   if (!booking) {
     // Пока booking грузится — рендерим shell-каркас (toolbar + skeleton-карточки).
     return (
@@ -214,6 +222,7 @@ export default function BookingDetailPage() {
 
   const { master, date, time, clientAddress, onlineMeetingLink, paymentStatus } = booking
   const remind = booking.remind ?? true
+  const reminder = booking.reminder ?? (remind ? 'ONE_HOUR' : 'NONE')
   // Итог по всем услугам записи (мастер мог добавить несколько; «Прочее» — сумма мастера).
   const price = bookingTotal(booking)
   const serviceItems = bookingServiceItems(booking)
@@ -524,11 +533,12 @@ export default function BookingDetailPage() {
         </button>
 
         {/* listItem: время + remind */}
-        <div style={{
+        <button type="button" aria-label="Изменить напоминание" disabled={!canAct || isPast} onClick={() => setReminderPickerOpen(true)} style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: canAct && !isPast ? 'pointer' : 'default', width: '100%', textAlign: 'left',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
@@ -541,13 +551,21 @@ export default function BookingDetailPage() {
               ...text.caption2, color: 'var(--color-on-surface-secondary)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {remind ? 'Напомним за 1 час' : 'Без напоминания'}
+              {bookingReminderLabel(reminder, remind)}
             </div>
           </div>
-          <IcoEdit2 />
-        </div>
+          {canAct && !isPast && <IcoEdit2 />}
+        </button>
 
       </div>
+
+      <WheelPicker
+        open={reminderPickerOpen}
+        value={reminder}
+        options={BOOKING_REMINDER_OPTIONS}
+        onSelect={handleReminderSelect}
+        onClose={() => setReminderPickerOpen(false)}
+      />
 
       {/* ── Footer chips (Figma 8534:15134). bottom-fixed, padding 8/12/48.
             Скрываем для COMPLETED/CANCELLED. Для прошедшей записи — без «Перенести»/

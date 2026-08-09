@@ -116,6 +116,7 @@ describe('client standard booking create and reschedule', () => {
       date: '2030-01-10',
       time: '10:30',
       remind: false,
+      reminder: 'NONE',
       clientAddress: 'Москва, Дом 1, кв. 15, этаж 7, домофон 123#',
     })
     expect(submit).toBeDisabled()
@@ -173,17 +174,14 @@ describe('client standard booking create and reschedule', () => {
     expect(api.create).not.toHaveBeenCalled()
   })
 
-  it('редактирование времени на confirmation открывает сразу список слотов', async () => {
+  it('редактирование напоминания на confirmation открывает picker', async () => {
     api.getMaster.mockResolvedValue(createClientMaster({ homeVisit: false }))
     const view = renderFlow()
 
     await screen.findByText('Анна Мастерова')
-    await view.user.click(screen.getByRole('button', { name: 'Изменить время' }))
+    await view.user.click(screen.getByRole('button', { name: 'Изменить напоминание' }))
 
-    expect(view.getLocation()).toMatchObject({
-      pathname: '/book/calendar',
-      state: { step: 'time' },
-    })
+    expect(screen.getByRole('button', { name: 'Выбрать' })).toBeInTheDocument()
   })
 
   it('фиксирует legacy submit пустого date/time для non-home draft', async () => {
