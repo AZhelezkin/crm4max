@@ -14,6 +14,18 @@ describe('master schedule API', () => {
     await expect(scheduleApi.get()).resolves.toEqual(schedule)
   })
 
+  it('получает эффективные интервалы мастера на дату', async () => {
+    const windows = [{ startTime: '09:00', endTime: '12:00' }]
+    let requestedDate: string | null = null
+    server.use(http.get('*/api/schedule/me/windows', ({ request }) => {
+      requestedDate = new URL(request.url).searchParams.get('date')
+      return HttpResponse.json(windows)
+    }))
+
+    await expect(scheduleApi.getEffectiveWindows('2026-08-10')).resolves.toEqual(windows)
+    expect(requestedDate).toBe('2026-08-10')
+  })
+
   it('сохраняет exact weekly schedule payload', async () => {
     const payload = {
       workingDays: [1, 2, 3, 4, 5],

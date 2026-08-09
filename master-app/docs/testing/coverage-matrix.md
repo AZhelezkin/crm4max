@@ -154,6 +154,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/payments.api.ts#paymentsApi.exportXlsx`
 - `src/api/payments.api.ts#paymentsApi.list`
 - `src/api/schedule.api.ts#scheduleApi.get`
+- `src/api/schedule.api.ts#scheduleApi.getEffectiveWindows`
 - `src/api/schedule.api.ts#scheduleApi.upsert`
 - `src/api/services.api.ts#servicesApi.addWorkPhoto`
 - `src/api/services.api.ts#servicesApi.create`

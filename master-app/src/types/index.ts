@@ -32,6 +32,11 @@ export interface Schedule {
   bufferMinutes: number
 }
 
+export interface EffectiveWorkWindow {
+  startTime: string
+  endTime: string
+}
+
 export interface ServicePhoto {
   id: string
   url: string

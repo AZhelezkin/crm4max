@@ -20,6 +20,7 @@ const api = vi.hoisted(() => ({
   reschedule: vi.fn(),
   cancel: vi.fn(),
   getSlots: vi.fn(),
+  getEffectiveWindows: vi.fn(),
   getMaster: vi.fn(),
   getSubscription: vi.fn(),
   confirmPayment: vi.fn(),
@@ -43,6 +44,9 @@ vi.mock('@/api/bookings.api', () => ({
 }))
 vi.mock('@/api/masters.api', () => ({
   mastersApi: { getSlots: api.getSlots, getMe: api.getMaster },
+}))
+vi.mock('@/api/schedule.api', () => ({
+  scheduleApi: { getEffectiveWindows: api.getEffectiveWindows },
 }))
 vi.mock('@/api/subscription.api', () => ({
   subscriptionApi: { getMe: api.getSubscription },
@@ -209,6 +213,7 @@ describe('master CreateBookingPage', () => {
     api.reschedule.mockResolvedValue(createMasterBooking())
     api.cancel.mockResolvedValue(undefined)
     api.getSlots.mockResolvedValue(['10:00', '11:00'])
+    api.getEffectiveWindows.mockResolvedValue([{ startTime: '09:00', endTime: '12:00' }])
     api.getMaster.mockResolvedValue(createMasterProfile())
     // По умолчанию подписка действует — пейволл не срабатывает.
     api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
@@ -239,6 +244,31 @@ describe('master CreateBookingPage', () => {
     expect(screen.getByRole('button', { name: '12:30' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '16:00' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '16:15' })).toBeEnabled()
+  })
+
+  it('разрешает мастеру выбрать выходной и время вне графика с предупреждением', async () => {
+    const selectedDate = nextBookableDate()
+    const currentMaster = useAuthStore.getState().master!
+    useAuthStore.setState({
+      master: {
+        ...currentMaster,
+        schedule: { ...currentMaster.schedule!, workingDays: [] },
+      },
+    })
+    api.getEffectiveWindows.mockResolvedValue([])
+    const view = renderPage()
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Дата/ }))
+    await selectDate(view, selectedDate)
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Выбрано время вне рабочего графика')
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
+    expect(screen.getByRole('button', { name: '00:00' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '23:00' })).toBeEnabled()
+    await view.user.click(screen.getByRole('button', { name: '08:00' }))
+
+    expect(api.getEffectiveWindows).toHaveBeenCalledWith(selectedDate.format('YYYY-MM-DD'))
+    expect(formCard('Дата и время').getByText('08:00')).toBeInTheDocument()
   })
 
   it('сразу после создания на success-экране есть «Отметить как оплачено»', async () => {
@@ -314,7 +344,9 @@ describe('master CreateBookingPage', () => {
       color: '#1F9432',
       services: [{ serviceId: regularService.id, price: undefined }],
       durationMinutes: 60,
+      totalPrice: undefined,
       allowOverlap: true,
+      allowOutsideSchedule: true,
     })
     expect(screen.getByRole('button', { name: 'Записываем…' })).toBeDisabled()
     await view.user.click(screen.getByRole('button', { name: 'Записываем…' }))
@@ -516,7 +548,6 @@ describe('master CreateBookingPage', () => {
     expect(api.createPackage).not.toHaveBeenCalled()
 
     await view.user.click(screen.getByRole('button', { name: 'По неделям' }))
-    await waitFor(() => expect(api.getSlots).toHaveBeenCalled())
     await view.user.click(screen.getByRole('button', { name: 'Пн' }))
     await view.user.click(await screen.findByRole('button', { name: '11:00' }))
     const expectedSlots = nextWeekdaySlots(1, 3, '11:00')
@@ -533,6 +564,7 @@ describe('master CreateBookingPage', () => {
       remind: true,
       clientAddress: undefined,
       onlineMeetingLink: undefined,
+      allowOutsideSchedule: true,
     })
     expect(screen.getByRole('button', { name: /Записать/ })).toBeEnabled()
 
@@ -557,7 +589,6 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await view.user.click(screen.getByRole('button', { name: 'По неделям' }))
-    await waitFor(() => expect(api.getSlots).toHaveBeenCalled())
     await view.user.click(screen.getByRole('button', { name: 'Пн' }))
     await view.user.click(await screen.findByRole('button', { name: '11:00' }))
     const expectedSlots = nextWeekdaySlots(1, 3, '11:00')
@@ -571,6 +602,7 @@ describe('master CreateBookingPage', () => {
       remind: true,
       clientAddress: undefined,
       onlineMeetingLink: link,
+      allowOutsideSchedule: true,
     })
   })
 
@@ -592,6 +624,7 @@ describe('master CreateBookingPage', () => {
       date: selectedDate.format('YYYY-MM-DD'),
       time: '10:00',
       allowOverlap: true,
+      allowOutsideSchedule: true,
     }))
     expect(api.createBooking).not.toHaveBeenCalled()
     await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
@@ -616,6 +649,7 @@ describe('master CreateBookingPage', () => {
       date: selectedDate,
       time: '11:00',
       allowOverlap: true,
+      allowOutsideSchedule: true,
     }))
     expect(api.createBooking).not.toHaveBeenCalled()
     await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))

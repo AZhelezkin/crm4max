@@ -32,6 +32,8 @@ export const bookingsApi = {
     durationMinutes?: number
     /** Свободное время мастера: разрешить пересечения (пропустить проверку слотов). */
     allowOverlap?: boolean
+    /** Разрешить мастеру записать вне эффективных рабочих интервалов. */
+    allowOutsideSchedule?: boolean
   }) => api.post<Booking>('/bookings', data).then((r) => r.data),
 
   /** Запись на услугу-абонемент: даты+время на все N приёмов сразу. */
@@ -45,6 +47,7 @@ export const bookingsApi = {
     clientAddress?: string | null
     /** Общая HTTPS-ссылка для всех сеансов пакета; задаётся только мастером. */
     onlineMeetingLink?: string | null
+    allowOutsideSchedule?: boolean
   }) => api.post<BookingPackage>('/bookings/package', data).then((r) => r.data),
 
   confirmPayment: (id: string) =>
@@ -58,7 +61,7 @@ export const bookingsApi = {
   remindPayment: (id: string) =>
     api.post<{ sent: boolean }>(`/bookings/${id}/remind-payment`).then((r) => r.data),
 
-  reschedule: (id: string, data: { date: string; time: string; allowOverlap?: boolean }) =>
+  reschedule: (id: string, data: { date: string; time: string; allowOverlap?: boolean; allowOutsideSchedule?: boolean }) =>
     api.post<Booking>(`/bookings/${id}/reschedule`, data).then((r) => r.data),
 
   cancel: (id: string) =>

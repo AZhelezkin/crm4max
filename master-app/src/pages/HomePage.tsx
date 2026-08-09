@@ -18,6 +18,7 @@ import { markGuideStep } from '@/lib/guide'
 import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
+import BottomToast from '@/components/BottomToast'
 
 dayjs.locale('ru')
 
@@ -639,16 +640,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* Тост результата действия. */}
-      {toast && (
-        <div style={{
-          position: 'fixed', left: 16, right: 16, bottom: 'calc(104px + env(safe-area-inset-bottom))', zIndex: 1100,
-          background: 'var(--color-on-surface)', color: 'var(--color-surface)',
-          borderRadius: 16, padding: '12px 16px', textAlign: 'center', ...text.caption1,
-        }}>
-          {toast}
-        </div>
-      )}
+      <BottomToast message={toast} />
     </div>
   )
 }
