@@ -28,6 +28,7 @@ interface ServicesCatalogProps {
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
   ({ onServiceCountChange, footer, hideAddButton = false }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
+    const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading')
     // Открытый редактор услуги (создание/правка) — см. ServiceEditorPortal.
     const [editorTarget, setEditorTarget] = useState<ServiceEditorTarget | null>(null)
     // Поиск по названию (иконка в шапке «Списка услуг»).
@@ -40,8 +41,9 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
         // для записи на услугу не из каталога (см. CreateBookingPage).
         const shown = svcs.filter((s) => !s.isMisc)
         setAllServices(shown)
+        setCatalogState('ready')
         onServiceCountChange?.(shown.length)
-      }).catch(() => {})
+      }).catch(() => setCatalogState('error'))
 
     useEffect(() => { load() }, [])
 
@@ -87,7 +89,13 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
             />
           ))}
 
-          {searchOpen && q && shownServices.length === 0 && (
+          {catalogState === 'ready' && allServices.length === 0 && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>
+              Услуг пока нет
+            </div>
+          )}
+
+          {catalogState === 'ready' && allServices.length > 0 && searchOpen && q && shownServices.length === 0 && (
             <div style={{ padding: '24px 12px', textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
               Ничего не найдено
             </div>
