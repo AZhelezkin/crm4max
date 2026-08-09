@@ -17,9 +17,9 @@ export function BookingFlowToolbar({ title, subtitle, onBack, backIcon, backAria
         {backIcon}
       </BookingFlowPillButton>
       {(title || subtitle) && (
-        <div style={{ position: 'absolute', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
-          {title && <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>}
-          {subtitle && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{subtitle}</div>}
+        <div style={{ position: 'absolute', left: 68, right: 68, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
+          {title && <div style={{ ...text.callout1, color: 'var(--color-on-surface)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>}
+          {subtitle && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</div>}
         </div>
       )}
       {trailing ?? <div style={{ width: 44 }} />}
