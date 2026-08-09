@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { text } from '@/styles/typography'
 import { clientsApi } from '@/api/clients.api'
@@ -55,6 +55,8 @@ const VIOLET_GRADIENT =
 
 export default function ClientsPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const requestedClientId = (location.state as { clientId?: string } | null)?.clientId
   const [clients, setClients] = useState<Client[]>([])
   const [loaded, setLoaded] = useState(false)
   const [view, setView] = useState<View>('list')
@@ -74,6 +76,16 @@ export default function ClientsPage() {
     clientsApi.list().then((list) => { setClients(list); setLoaded(true) }).catch(() => setLoaded(true))
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (!loaded || !requestedClientId) return
+    const client = clients.find((item) => item.id === requestedClientId || item.clientId === requestedClientId)
+    if (client) {
+      setSelected(client)
+      setView('detail')
+    }
+    navigate(location.pathname, { replace: true, state: null })
+  }, [clients, loaded, location.pathname, navigate, requestedClientId])
 
   // Под-экраны (список/детали/форма) живут на одном роуте /clients — сбрасываем
   // прокрутку при переключении, иначе экран открывается «промотанным».

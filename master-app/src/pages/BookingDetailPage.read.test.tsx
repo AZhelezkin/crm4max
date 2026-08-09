@@ -29,6 +29,7 @@ function renderPage(id = 'booking-detail') {
   return renderAtRoute(
     <Routes>
       <Route path="/bookings/:id" element={<BookingDetailPage />} />
+      <Route path="/clients" element={<div>Профиль клиента</div>} />
     </Routes>,
     { route: `/bookings/${id}` },
   )
@@ -98,6 +99,17 @@ describe('master BookingDetailPage read state', () => {
     expect(screen.getByRole('button', { name: /Отменить/ })).toBeInTheDocument()
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()
+  })
+
+  it('открывает профиль клиента из карточки записи', async () => {
+    const booking = createMasterBooking()
+    mocks.getById.mockResolvedValue(booking)
+    const view = renderPage()
+
+    await view.user.click(await screen.findByRole('button', { name: `Открыть профиль клиента ${booking.client.name}` }))
+
+    expect(view.getLocation().pathname).toBe('/clients')
+    expect(view.getLocation().state).toEqual({ clientId: booking.client.id })
   })
 
   it('открывает автомобильный маршрут от мастера к адресу клиента через provider bridge', async () => {

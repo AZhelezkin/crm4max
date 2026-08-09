@@ -71,6 +71,7 @@ function renderDetail(booking = futureBooking()) {
       <Route path="/my-bookings" element={<div>Мои записи</div>} />
       <Route path="/my-bookings/:id" element={<BookingDetailPage />} />
       <Route path="/book/calendar" element={<div>Выбор даты</div>} />
+      <Route path="/" element={<div>Профиль мастера</div>} />
     </Routes>,
     { route: `/my-bookings/${booking.id}` },
   )
@@ -224,5 +225,16 @@ describe('client booking lifecycle', () => {
 
     await screen.findByRole('button', { name: 'Перенести' })
     expect(screen.queryByRole('button', { name: 'Отметить как оплачено' })).not.toBeInTheDocument()
+  })
+
+  it('открывает профиль мастера из карточки записи', async () => {
+    const booking = futureBooking()
+    const view = renderDetail(booking)
+
+    await view.user.click(await screen.findByRole('button', { name: `Открыть профиль мастера ${booking.master.name}` }))
+
+    expect(view.getLocation().pathname).toBe('/')
+    expect(view.getLocation().search).toBe(`?masterId=${booking.master.id}`)
+    expect(useBookingStore.getState().masterId).toBe(booking.master.id)
   })
 })
