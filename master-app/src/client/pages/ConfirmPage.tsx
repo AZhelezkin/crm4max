@@ -429,6 +429,7 @@ export default function ConfirmPage() {
 
         {/* listItem: дата + edit-2 (back to date step) */}
         <button
+          aria-label="Изменить дату"
           onClick={() => navigate('/book/calendar')}
           style={{
             background: 'var(--color-surface-transparent)',
@@ -458,7 +459,8 @@ export default function ConfirmPage() {
 
         {/* listItem: время + remind label + edit-2 (back to time step) */}
         <button
-          onClick={() => navigate('/book/calendar')}
+          aria-label="Изменить время"
+          onClick={() => navigate('/book/calendar', { state: { step: 'time' } })}
           style={{
             background: 'var(--color-surface-transparent)',
             borderRadius: 20,

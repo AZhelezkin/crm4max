@@ -76,6 +76,7 @@ function renderFlow() {
     <Routes>
       <Route path="/" element={<div>Карточка мастера</div>} />
       <Route path="/book/confirm" element={<ConfirmPage />} />
+      <Route path="/book/calendar" element={<div>Календарь</div>} />
       <Route path="/book/success" element={<BookingDetailPage />} />
       <Route path="/my-bookings" element={<div>Мои записи</div>} />
     </Routes>,
@@ -170,6 +171,19 @@ describe('client standard booking create and reschedule', () => {
     await waitFor(() => expect(api.getMaster).toHaveBeenCalled())
     expect(screen.queryByRole('button', { name: 'Записаться' })).not.toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()
+  })
+
+  it('редактирование времени на confirmation открывает сразу список слотов', async () => {
+    api.getMaster.mockResolvedValue(createClientMaster({ homeVisit: false }))
+    const view = renderFlow()
+
+    await screen.findByText('Анна Мастерова')
+    await view.user.click(screen.getByRole('button', { name: 'Изменить время' }))
+
+    expect(view.getLocation()).toMatchObject({
+      pathname: '/book/calendar',
+      state: { step: 'time' },
+    })
   })
 
   it('фиксирует legacy submit пустого date/time для non-home draft', async () => {

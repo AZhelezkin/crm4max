@@ -108,6 +108,20 @@ describe('client CalendarPage', () => {
     expect(screen.getByText('Выберите дату')).toBeInTheDocument()
   })
 
+  it('открывает список времени сразу для выбранной даты', async () => {
+    useBookingStore.setState({ date: '2030-01-10', time: '10:30' })
+    api.getAvailability.mockResolvedValue({})
+    api.getSlots.mockResolvedValue([{ time: '12:30', masterDate: '2030-01-10', masterTime: '10:30' }])
+
+    renderAtRoute(<CalendarPage />, {
+      entries: [{ pathname: '/book/calendar', state: { step: 'time' } }],
+    })
+
+    expect(screen.getByText('Выберите время')).toBeInTheDocument()
+    await waitFor(() => expect(api.getSlots).toHaveBeenCalledWith(MASTER_ID, '2030-01-10', SERVICE_ID))
+    expect(await screen.findByRole('button', { name: '12:30' })).toBeInTheDocument()
+  })
+
   it('package session скрывает занятый slot и пишет canonical slot по индексу', async () => {
     const target = dayjs().startOf('day').add(3, 'day')
     useBookingStore.setState({

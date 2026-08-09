@@ -202,6 +202,24 @@ describe('client booking lifecycle', () => {
     expect(api.cancel).not.toHaveBeenCalled()
   })
 
+  it('редактирование времени из записи открывает сразу список слотов', async () => {
+    const booking = futureBooking({ id: 'booking-time-edit' })
+    const view = renderDetail(booking)
+
+    await screen.findByRole('button', { name: 'Перенести' })
+    await view.user.click(screen.getByRole('button', { name: 'Изменить время' }))
+
+    expect(view.getLocation()).toMatchObject({
+      pathname: '/book/calendar',
+      state: { step: 'time' },
+    })
+    expect(useBookingStore.getState()).toMatchObject({
+      date: booking.date,
+      time: booking.time,
+      rescheduleId: booking.id,
+    })
+  })
+
   it('показывает клиенту и открывает ссылку онлайн-встречи', async () => {
     const webApp = installWebApp()
     const link = 'https://meet.example.com/room'
