@@ -23,7 +23,6 @@ import { FloatingField } from '@/components/onboardingShared'
 import BookingAddressEditor from '@/components/BookingAddressEditor'
 import BookingOnlineLinkEditor from '@/components/BookingOnlineLinkEditor'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import BottomToast from '@/components/BottomToast'
 import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
 import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type BookingAddressDetails } from '@/lib/bookingAddress'
@@ -283,8 +282,7 @@ export default function CreateBookingPage() {
   // Показ предупреждения о пересечении времени (свободный выбор времени мастером).
   const [overlapWarn, setOverlapWarn] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scheduleToast, setScheduleToast] = useState<string | null>(null)
-  const scheduleToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [outsideScheduleSlot, setOutsideScheduleSlot] = useState<string | null>(null)
   const effectiveWindowsCache = useRef(new Map<string, EffectiveWorkWindow[]>())
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null)
   const [rescheduleId, setRescheduleId] = useState<string | null>(restoredDraft?.rescheduleId ?? rescheduleInit?.rescheduleId ?? null)
@@ -306,16 +304,6 @@ export default function CreateBookingPage() {
   const [weekdays, setWeekdays] = useState<number[]>(restoredDraft?.weekdays ?? [])
   const [weekTime, setWeekTime] = useState(restoredDraft?.weekTime ?? '')
 
-  useEffect(() => () => {
-    if (scheduleToastTimer.current) clearTimeout(scheduleToastTimer.current)
-  }, [])
-
-  const showOutsideScheduleToast = () => {
-    if (scheduleToastTimer.current) clearTimeout(scheduleToastTimer.current)
-    setScheduleToast('Выбрано время вне рабочего графика')
-    scheduleToastTimer.current = setTimeout(() => setScheduleToast(null), 3000)
-  }
-
   const getEffectiveWindows = async (slotDate: string): Promise<EffectiveWorkWindow[]> => {
     const cached = effectiveWindowsCache.current.get(slotDate)
     if (cached) return cached
@@ -328,9 +316,9 @@ export default function CreateBookingPage() {
     }
   }
 
-  const warnIfOutsideSchedule = async (slotDate: string, slotTime: string, durationMinutes: number) => {
+  const isOutsideSchedule = async (slotDate: string, slotTime: string, durationMinutes: number) => {
     const windows = await getEffectiveWindows(slotDate)
-    if (!fitsWorkWindow(slotTime, durationMinutes, windows)) showOutsideScheduleToast()
+    return !fitsWorkWindow(slotTime, durationMinutes, windows)
   }
 
   const reloadServices = () =>
@@ -508,9 +496,6 @@ export default function CreateBookingPage() {
     const selectedDate = d.format('YYYY-MM-DD')
     setDate(selectedDate)
     setTime('')
-    void getEffectiveWindows(selectedDate).then((windows) => {
-      if (windows.length === 0) showOutsideScheduleToast()
-    })
     // Перенос: дальше выбор времени. Создание: возвращаемся в форму (время — отдельный ряд).
     setStep(rescheduleId ? 'time' : 'confirm')
   }
@@ -722,10 +707,9 @@ export default function CreateBookingPage() {
     }
   }
 
-  // Тап по слоту: абонемент → слот приёма; перенос → reschedule; иначе → подтверждение.
-  const onSlotTap = (s: string) => {
+  // Применить слот: абонемент → слот приёма; перенос → reschedule; иначе → подтверждение.
+  const applySlot = (s: string) => {
     setTime(s)
-    void warnIfOutsideSchedule(date, s, packageSessionIndex !== null ? selectedService?.duration ?? TIME_STEP_MIN : durationMin)
     if (packageSessionIndex !== null) {
       const idx = packageSessionIndex
       setPackageSlots((prev) => {
@@ -740,6 +724,15 @@ export default function CreateBookingPage() {
     } else {
       setStep('confirm')
     }
+  }
+
+  const onSlotTap = async (s: string) => {
+    const slotDuration = packageSessionIndex !== null ? selectedService?.duration ?? TIME_STEP_MIN : durationMin
+    if (await isOutsideSchedule(date, s, slotDuration)) {
+      setOutsideScheduleSlot(s)
+      return
+    }
+    applySlot(s)
   }
 
   const doReschedule = async () => {
@@ -987,7 +980,6 @@ export default function CreateBookingPage() {
             </div>
           ))}
         </div>
-        <BottomToast message={scheduleToast} />
       </div>
     )
   }
@@ -1000,9 +992,9 @@ export default function CreateBookingPage() {
     const dayTimes = buildDayTimes(slotDuration)
     const masterNow = currentMasterWall(master?.timezone)
     const currentMinute = masterNow.hour() * 60 + masterNow.minute() + (masterNow.second() || masterNow.millisecond() ? 1 : 0)
-    const pastTimes = date === masterNow.format('YYYY-MM-DD')
-      ? new Set(dayTimes.filter((t) => hhmmToMin(t) < currentMinute))
-      : new Set<string>()
+    const visibleDayTimes = date === masterNow.format('YYYY-MM-DD')
+      ? dayTimes.filter((t) => hhmmToMin(t) >= currentMinute)
+      : dayTimes
     const busyTimes = new Set<string>()
     const occupied = masterBookings
       .filter((b) => b.date === date && b.status !== 'CANCELLED' && (!rescheduleId || b.id !== rescheduleId))
@@ -1049,12 +1041,12 @@ export default function CreateBookingPage() {
             <div style={{ padding: '24px 8px 8px' }}>
               <span style={{ ...text.caption3Caps, color: 'var(--color-on-surface-soften)' }}>ВРЕМЯ</span>
             </div>
-            {dayTimes.length === 0 ? (
+            {visibleDayTimes.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет доступного времени</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {dayTimes.map((t) => (
-                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} disabled={pastTimes.has(t) || (isPackageTime && busyTimes.has(t))} onClick={() => onSlotTap(t)} />
+                {visibleDayTimes.map((t) => (
+                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} disabled={isPackageTime && busyTimes.has(t)} onClick={() => { void onSlotTap(t) }} />
                 ))}
               </div>
             )}
@@ -1079,7 +1071,16 @@ export default function CreateBookingPage() {
             onCancel={() => setPendingReschedule(null)}
           />
         )}
-        <BottomToast message={scheduleToast} />
+        {outsideScheduleSlot && (
+          <ConfirmDialog
+            title="Вне рабочего графика"
+            message={`Записать на ${selectedDayjs.format('D MMMM')}, ${outsideScheduleSlot}?`}
+            confirmLabel="Записать"
+            danger={false}
+            onConfirm={() => { const slot = outsideScheduleSlot; setOutsideScheduleSlot(null); applySlot(slot) }}
+            onCancel={() => setOutsideScheduleSlot(null)}
+          />
+        )}
       </div>
     )
   }
@@ -1100,14 +1101,6 @@ export default function CreateBookingPage() {
       && !!selectedClient
       && (!outbound || !!address.trim())
       && (!online || !!normalizedOnlineMeetingLink)
-    const warnForWeeklySlots = (candidateSlots: { date: string; time: string }[]) => {
-      void Promise.all(candidateSlots.map(async (slot) => {
-        const windows = await getEffectiveWindows(slot.date)
-        return fitsWorkWindow(slot.time, selectedService.duration, windows)
-      })).then((insideSchedule) => {
-        if (insideSchedule.some((inside) => !inside)) showOutsideScheduleToast()
-      })
-    }
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar
@@ -1264,8 +1257,6 @@ export default function CreateBookingPage() {
                       onClick={() => {
                         const next = sel ? weekdays.filter((day) => day !== w.iso) : [...weekdays, w.iso]
                         setWeekdays(next)
-                        if (!sel && schedule && !schedule.workingDays.includes(w.iso)) showOutsideScheduleToast()
-                        if (weekTime) warnForWeeklySlots(generateWeeklySlots(next, weekTime, N))
                       }}
                       style={{ flex: 1, height: 69, borderRadius: 20, border: 'none', ...text.callout1, background: sel ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)', color: sel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
@@ -1286,7 +1277,6 @@ export default function CreateBookingPage() {
                       type="button"
                       onClick={() => {
                         setWeekTime(t)
-                        warnForWeeklySlots(generateWeeklySlots(weekdays, t, N))
                       }}
                       style={{ height: 69, borderRadius: 20, border: 'none', ...text.callout1, background: sel ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)', color: sel ? 'var(--color-on-primary-surface)' : 'var(--color-on-surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
@@ -1323,7 +1313,6 @@ export default function CreateBookingPage() {
             onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
           />
         )}
-        <BottomToast message={scheduleToast} />
       </div>
     )
   }
@@ -1849,7 +1838,6 @@ export default function CreateBookingPage() {
           onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
         />
       )}
-      <BottomToast message={scheduleToast} />
     </div>
   )
 }

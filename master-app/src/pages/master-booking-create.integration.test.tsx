@@ -225,7 +225,7 @@ describe('master CreateBookingPage', () => {
     vi.useRealTimers()
   })
 
-  it('блокирует прошедшие слоты сегодняшнего дня в часовом поясе мастера', async () => {
+  it('скрывает прошедшие слоты сегодняшнего дня в часовом поясе мастера', async () => {
     vi.useFakeTimers({ now: new Date('2026-08-04T13:00:30Z'), toFake: ['Date'] })
     const currentMaster = useAuthStore.getState().master!
     useAuthStore.setState({
@@ -241,12 +241,12 @@ describe('master CreateBookingPage', () => {
     await selectDate(view, dayjs())
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
 
-    expect(screen.getByRole('button', { name: '12:30' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '16:00' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: '12:30' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '16:00' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '16:15' })).toBeEnabled()
   })
 
-  it('разрешает мастеру выбрать выходной и время вне графика с предупреждением', async () => {
+  it('выбирает время вне графика только после подтверждения', async () => {
     const selectedDate = nextBookableDate()
     const currentMaster = useAuthStore.getState().master!
     useAuthStore.setState({
@@ -261,13 +261,18 @@ describe('master CreateBookingPage', () => {
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Дата/ }))
     await selectDate(view, selectedDate)
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Выбрано время вне рабочего графика')
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
     expect(screen.getByRole('button', { name: '00:00' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '23:00' })).toBeEnabled()
     await view.user.click(screen.getByRole('button', { name: '08:00' }))
 
     expect(api.getEffectiveWindows).toHaveBeenCalledWith(selectedDate.format('YYYY-MM-DD'))
+    expect(screen.getByText('Вне рабочего графика')).toBeInTheDocument()
+    expect(screen.getByText(`Записать на ${selectedDate.format('D MMMM')}, 08:00?`)).toBeInTheDocument()
+    expect(screen.getByText('Выберите время')).toBeInTheDocument()
+    const dialog = screen.getByText('Вне рабочего графика').parentElement!
+    await view.user.click(within(dialog).getByRole('button', { name: 'Записать' }))
+
     expect(formCard('Дата и время').getByText('08:00')).toBeInTheDocument()
   })
 

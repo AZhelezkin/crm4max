@@ -63,7 +63,7 @@ export interface Service {
 
 /** Плоский список услуг мастера (backend отдаёт master.services). */
 export function masterServiceList(m: { services?: Service[] }): Service[] {
-  return m.services ?? []
+  return (m.services ?? []).filter((service) => service.isActive)
 }
 
 /** Клиент в адресной книге мастера (вкладка «Клиенты»). id — строки MasterClient. */
