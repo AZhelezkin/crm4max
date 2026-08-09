@@ -180,6 +180,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/bookings.api.ts#bookingsApi.getPackageById`
 - `src/client/api/bookings.api.ts#bookingsApi.list`
 - `src/client/api/bookings.api.ts#bookingsApi.reschedule`
+- `src/client/api/bookings.api.ts#bookingsApi.updateReminder`
 - `src/client/api/masters.api.ts#mastersApi.getAvailability`
 - `src/client/api/masters.api.ts#mastersApi.checkClientAccess`
 - `src/client/api/masters.api.ts#mastersApi.getById`

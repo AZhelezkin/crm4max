@@ -107,6 +107,22 @@ describe('client bookings API', () => {
     expect(result).toEqual(booking)
   })
 
+  it('обновляет настройку напоминания', async () => {
+    const booking = createClientBooking({ reminder: 'TWO_HOURS' })
+    let body: object | null = null
+    server.use(
+      http.post(`*/api/bookings/${BOOKING_ID}/reminder`, async ({ request }) => {
+        body = await request.json() as object
+        return HttpResponse.json(booking)
+      }),
+    )
+
+    const result = await bookingsApi.updateReminder(BOOKING_ID, 'TWO_HOURS')
+
+    expect(body).toEqual({ reminder: 'TWO_HOURS' })
+    expect(result).toEqual(booking)
+  })
+
   it('отменяет обычную запись по id', async () => {
     const booking = createClientBooking({ status: 'CANCELLED' })
     server.use(
