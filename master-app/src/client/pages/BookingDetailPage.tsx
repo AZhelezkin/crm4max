@@ -318,11 +318,19 @@ export default function BookingDetailPage() {
         {/* listItem: мастер.
             booking.master содержит только id/name/photo/location (booking-include),
             description + rating подгружаются из mastersApi.getById через masterFull. */}
-        <div style={{
+        <button
+          type="button"
+          aria-label={`Открыть профиль мастера ${master.name}`}
+          onClick={() => {
+            setMasterId(master.id)
+            navigate(`/?masterId=${encodeURIComponent(master.id)}`)
+          }}
+          style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{
             width: 44, height: 44, borderRadius: 22,
@@ -370,7 +378,7 @@ export default function BookingDetailPage() {
               </span>
             </div>
           )}
-        </div>
+        </button>
 
         {/* listItem: адрес — clickable card → geo://.
             clientAddress задан → выезд мастера (subtitle «Мой адрес»),

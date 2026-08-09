@@ -157,7 +157,12 @@ export default function BookingDetailPage() {
 
       <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {/* Клиент */}
-        <div style={listItemStyle}>
+        <button
+          type="button"
+          aria-label={`Открыть профиль клиента ${booking.client.name}`}
+          onClick={() => navigate('/clients', { state: { clientId: booking.client.id } })}
+          style={{ ...listItemStyle, cursor: 'pointer' }}
+        >
           <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden', background: booking.client.photo ? 'var(--color-surface)' : VIOLET_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {booking.client.photo
               ? <img src={booking.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -170,7 +175,7 @@ export default function BookingDetailPage() {
             )}
           </div>
           <UserSquareIcon />
-        </div>
+        </button>
 
         {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
         {!booking.onlineMeetingLink && booking.clientAddress && (
