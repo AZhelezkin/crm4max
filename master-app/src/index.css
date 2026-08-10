@@ -323,7 +323,7 @@ body {
   border-top-right-radius: 24px;
   background:
     radial-gradient(circle 184px at 50% -34px, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) 50%, transparent 100%),
-    radial-gradient(circle 287px at 50% -72px, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%);
+    radial-gradient(circle 58.21vw at 50% -18.46vw, var(--color-hero-circle-1) 0%, var(--color-hero-circle-1) 50%, transparent 100%);
   transform-origin: 50% 0%;          /* пульсация от верхнего центра */
   animation: hero-pulse 5s ease-in-out infinite;
   will-change: transform;
@@ -333,6 +333,42 @@ body {
 #root > div > * {
   position: relative;
   z-index: 1;
+}
+
+/* На главной фон закреплён, а декоративные эллипсы слегка отстают от скролла. */
+body.home-parallax #root > div {
+  background: transparent;
+}
+
+body.home-parallax #root > div::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--color-surface) 0%, var(--color-background) 100%) center top / 100% 390px no-repeat,
+    var(--color-background);
+}
+
+body.home-parallax #root > div::before {
+  position: fixed;
+  background:
+    radial-gradient(ellipse 51.03vw 31.79vw at 50% -12.87vw, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) var(--home-mint-solid-stop, 50%), transparent 100%),
+    radial-gradient(ellipse var(--home-violet-rx, 64vw) 58.21vw at 50% 9.64vw, color-mix(in srgb, var(--color-hero-circle-1) var(--home-violet-opacity, 50%), transparent) 0%, color-mix(in srgb, var(--color-hero-circle-1) var(--home-violet-opacity, 50%), transparent) 50%, transparent 100%);
+  transform: translateY(var(--home-parallax-y, 0)) scale(var(--home-parallax-scale, 1));
+  filter: saturate(var(--home-parallax-saturation, 1));
+  transition: transform 280ms ease-out, filter 280ms ease-out;
+  animation: none;
+}
+
+:root[data-theme="dark"] body.home-parallax {
+  --home-mint-solid-stop: 38%;
+}
+
+:root[data-theme="light"] body.home-parallax {
+  --home-violet-rx: 67.08vw;
+  --home-violet-opacity: 38%;
 }
 
 @media (prefers-reduced-motion: reduce) {
