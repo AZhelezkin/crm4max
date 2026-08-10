@@ -245,6 +245,20 @@ body {
   overscroll-behavior: none;
 }
 
+/* Тонкий scrollbar только для desktop-устройств с мышью. На touch/WebView
+   остаётся системное мобильное поведение без постоянно видимой полосы. */
+@media (hover: hover) and (pointer: fine) {
+  body {
+    scrollbar-width: none;
+  }
+
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
 /*
  * MaxUI (@maxhub/max-ui) оборачивает приложение в <div class="MaxUI__…">
  * с background-color: var(--background-surface-primary). Без prop colorScheme
