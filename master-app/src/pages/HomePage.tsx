@@ -79,43 +79,6 @@ export default function HomePage() {
   const { master } = useAuthStore()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const root = document.documentElement
-    document.body.classList.add('home-parallax')
-    let frame = 0
-    let resetTimer = 0
-    let lastY = window.scrollY
-
-    const update = () => {
-      const speed = Math.min(1, Math.abs(window.scrollY - lastY) / 28)
-      lastY = window.scrollY
-      root.style.setProperty('--home-parallax-y', `${window.scrollY * 0.12}px`)
-      root.style.setProperty('--home-parallax-scale', String(1 + speed * 0.012))
-      root.style.setProperty('--home-parallax-saturation', String(1 + speed * 0.04))
-      resetTimer = window.setTimeout(() => {
-        root.style.setProperty('--home-parallax-scale', '1')
-        root.style.setProperty('--home-parallax-saturation', '1')
-      }, 80)
-    }
-    const onScroll = () => {
-      cancelAnimationFrame(frame)
-      window.clearTimeout(resetTimer)
-      frame = requestAnimationFrame(update)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    update()
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      cancelAnimationFrame(frame)
-      window.clearTimeout(resetTimer)
-      document.body.classList.remove('home-parallax')
-      root.style.removeProperty('--home-parallax-y')
-      root.style.removeProperty('--home-parallax-scale')
-      root.style.removeProperty('--home-parallax-saturation')
-    }
-  }, [])
-
   const clients = useHomeDataStore((state) => state.clients)
   const clientsLoaded = useHomeDataStore((state) => state.clientsLoaded)
   const fetchClients = useHomeDataStore((state) => state.fetchClients)

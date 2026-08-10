@@ -335,12 +335,12 @@ body {
   z-index: 1;
 }
 
-/* На главной фон закреплён, а декоративные эллипсы слегка отстают от скролла. */
-body.home-parallax #root > div {
+/* На экранах мастера фон закреплён, а декоративные эллипсы слегка отстают от скролла. */
+body.master-parallax #root > div {
   background: transparent;
 }
 
-body.home-parallax #root > div::after {
+body.master-parallax #root > div::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -351,22 +351,22 @@ body.home-parallax #root > div::after {
     var(--color-background);
 }
 
-body.home-parallax #root > div::before {
+body.master-parallax #root > div::before {
   position: fixed;
   background:
     radial-gradient(ellipse 51.03vw 31.79vw at 50% -12.87vw, var(--color-hero-circle-2) 0%, var(--color-hero-circle-2) var(--home-mint-solid-stop, 50%), transparent 100%),
     radial-gradient(ellipse var(--home-violet-rx, 64vw) 58.21vw at 50% 9.64vw, color-mix(in srgb, var(--color-hero-circle-1) var(--home-violet-opacity, 50%), transparent) 0%, color-mix(in srgb, var(--color-hero-circle-1) var(--home-violet-opacity, 50%), transparent) 50%, transparent 100%);
-  transform: translateY(var(--home-parallax-y, 0)) scale(var(--home-parallax-scale, 1));
-  filter: saturate(var(--home-parallax-saturation, 1));
+  transform: translateY(var(--master-parallax-y, 0)) scale(var(--master-parallax-scale, 1));
+  filter: saturate(var(--master-parallax-saturation, 1));
   transition: transform 280ms ease-out, filter 280ms ease-out;
   animation: none;
 }
 
-:root[data-theme="dark"] body.home-parallax {
+:root[data-theme="dark"] body.master-parallax {
   --home-mint-solid-stop: 38%;
 }
 
-:root[data-theme="light"] body.home-parallax {
+:root[data-theme="light"] body.master-parallax {
   --home-violet-rx: 67.08vw;
   --home-violet-opacity: 38%;
 }

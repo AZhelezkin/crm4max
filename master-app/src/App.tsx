@@ -9,6 +9,7 @@ import ClientApp from '@client/ClientApp'
 import MainLayout from '@/components/MainLayout'
 import ScrollToTop from '@/components/ScrollToTop'
 import DesktopScrollbar from '@/components/DesktopScrollbar'
+import MasterParallaxBackground from '@/components/MasterParallaxBackground'
 import HomePage from '@/pages/HomePage'
 import BookingsPage from '@/pages/BookingsPage'
 import ClientsPage from '@/pages/ClientsPage'
@@ -329,6 +330,7 @@ function MasterApp() {
     <BrowserRouter>
       <ScrollToTop />
       <DesktopScrollbar />
+      <MasterParallaxBackground />
       <MetricsPageTracker appMode="master" />
       <MasterDeepLinkRedirect />
       <Routes>

@@ -20,6 +20,7 @@ export default function DesktopScrollbar() {
   const [hovered, setHovered] = useState(false)
 
   useEffect(() => {
+    if (!window.matchMedia) return
     const query = window.matchMedia(DESKTOP_QUERY)
     const update = () => setDesktop(query.matches)
     update()
