@@ -129,7 +129,7 @@ export default function BookingsPage() {
   return (
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95 }}>
       {/* Тулбар: дата выбранного дня слева (H3), синяя «+»-пилюля справа (макет 8718-37858). */}
-      <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 12 }}>
+      <div style={{ height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
         <h1
           style={{
             ...text.h3,
@@ -165,7 +165,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Календарь (макет 8718-37990): controls / daysOfWeek / daysGrid, gap 8. */}
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div style={{ marginTop: 16, paddingInline: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* controls: месяц + стрелки */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 6 }}>
           <div ref={monthMenuRef} style={{ position: 'relative' }}>
@@ -253,7 +253,7 @@ export default function BookingsPage() {
         </div>
 
         {/* daysGrid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
           {cells.map((day, i) => {
             if (!day) return <div key={`e${i}`} style={{ minHeight: 56 }} />
             const val = day.format('YYYY-MM-DD')
@@ -340,7 +340,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Список записей дня (макет 8718-47821): дивайдеры divider-low h8, секция-заголовок, строки. */}
-      <div style={{ marginTop: 8, padding: '0 8px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ marginTop: 8, padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
         {dayBookings.length > 0 ? (
           <>
             <Divider />
