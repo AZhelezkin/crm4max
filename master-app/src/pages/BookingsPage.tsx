@@ -12,6 +12,7 @@ dayjs.locale('ru')
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 
 const INDICATOR_SIDE_PADDING = 3
+const NON_WORKING_DAY_MINUTES = 8 * 60
 const SELECTED_DATE_KEY = 'bookings.selectedDate'
 
 function readSelectedDate(): string {
@@ -268,7 +269,10 @@ export default function BookingsPage() {
             // (макет 8718-55269). Считаем только при загруженном графике, иначе все дни
             // были бы серыми до прихода schedule.
             const isNonWorking = !!schedule && !schedule.workingDays.includes(day.day() || 7)
-            const ratio = workMin > 0 ? Math.min(1, bookedMin / workMin) : 1
+            // Для записи в выходной процента рабочего графика нет, поэтому
+            // показываем загрузку относительно условного восьмичасового дня.
+            const capacityMin = workMin > 0 ? workMin : NON_WORKING_DAY_MINUTES
+            const ratio = Math.min(1, bookedMin / capacityMin)
             const indicatorWPercent = Math.max(0, Math.round(ratio * 100))
             // Текст: будни/выходные × прошлое/настоящее (как в кабинете клиента).
             const color = isWeekend
@@ -315,6 +319,7 @@ export default function BookingsPage() {
                     }}
                   >
                     <span
+                      data-testid={`booking-load-${val}`}
                       style={{
                         display: 'block',
                         width: `${indicatorWPercent}%`,

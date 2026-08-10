@@ -85,6 +85,21 @@ describe('BookingsPage', () => {
     expect(calendarDay(nonWorking)).toHaveStyle({ background: 'var(--color-pattern-element)' })
   })
 
+  it('считает занятость выходного относительно условных восьми часов', async () => {
+    const nonWorking = dateInCurrentMonth((date) => (date.day() || 7) === 7)
+    api.getSchedule.mockResolvedValue(createMasterSchedule({ workingDays: [1, 2, 3, 4, 5] }))
+    api.listBookings.mockResolvedValue([
+      createMasterBooking({
+        date: nonWorking.format('YYYY-MM-DD'),
+        service: createMasterService({ duration: 60 }),
+      }),
+    ])
+
+    renderAtRoute(<BookingsPage />)
+
+    expect(await screen.findByTestId(`booking-load-${nonWorking.format('YYYY-MM-DD')}`)).toHaveStyle({ width: '13%' })
+  })
+
   it('выбирает дату и передаёт её exact route state в создание записи', async () => {
     const selected = dateInCurrentMonth((date) => date.format('YYYY-MM-DD') !== TODAY)
     const view = renderAtRoute(<BookingsPage />)
