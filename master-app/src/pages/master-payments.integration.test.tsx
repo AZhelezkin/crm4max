@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPayment } from '@/test/fixtures/payments'
 import { renderAtRoute } from '@/test/render'
 import type { Payment } from '@/types'
+import { usePaymentsStore } from '@/store/payments.store'
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
@@ -87,6 +88,8 @@ function renderDay(date = '2026-07-21', entries?: string[]) {
 describe('master payments pages', () => {
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset())
+    sessionStorage.clear()
+    usePaymentsStore.getState().reset()
     mocks.list.mockResolvedValue(payments)
     mocks.usePaymentsExport.mockImplementation((date?: string) => ({
       exporting: false,
@@ -125,6 +128,29 @@ describe('master payments pages', () => {
     await view.user.click(await screen.findByText('21 июл'))
 
     expect(view.getLocation().pathname).toBe('/income/2026-07-21')
+  })
+
+  it('использует общий кеш на day route без второго запроса', async () => {
+    const all = renderAtRoute(<PaymentsPage />)
+    await screen.findByText('Июль ’26')
+    all.unmount()
+
+    renderDay()
+
+    expect(await screen.findByText('Ранняя услуга')).toBeInTheDocument()
+    expect(mocks.list).toHaveBeenCalledOnce()
+  })
+
+  it('восстанавливает выбранный месяц после remount', async () => {
+    const first = renderAtRoute(<PaymentsPage />)
+    await first.user.click(await screen.findByText('Июнь ’26'))
+    expect(screen.getByText('5 июн')).toBeInTheDocument()
+    first.unmount()
+
+    renderAtRoute(<PaymentsPage />)
+
+    expect(screen.getByText('5 июн')).toBeInTheDocument()
+    expect(screen.queryByText('22 июл')).not.toBeInTheDocument()
   })
 
   it('PaymentsDayPage фильтрует дату, сортирует время и показывает status/amount', async () => {
@@ -169,8 +195,8 @@ describe('master payments pages', () => {
 
     mocks.list.mockClear()
     const day = renderDay('2026-07-21')
-    await waitFor(() => expect(mocks.list).toHaveBeenCalledOnce())
     expect(screen.getByText('Нет оплат за этот день')).toBeInTheDocument()
+    expect(mocks.list).not.toHaveBeenCalled()
   })
 
   it('остаётся failure-safe после list errors', async () => {

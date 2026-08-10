@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useBookingsStore } from '@/store/bookings.store'
-import { scheduleApi } from '@/api/schedule.api'
-import { bookingDuration, bookingTotal, bookingServiceNames, type Booking, type Schedule } from '@/types'
+import { useScheduleStore } from '@/store/schedule.store'
+import { bookingDuration, bookingTotal, bookingServiceNames, type Booking } from '@/types'
 import { text } from '@/styles/typography'
 
 dayjs.locale('ru')
@@ -12,6 +12,11 @@ dayjs.locale('ru')
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 
 const INDICATOR_SIDE_PADDING = 3
+const SELECTED_DATE_KEY = 'bookings.selectedDate'
+
+function readSelectedDate(): string {
+  try { return sessionStorage.getItem(SELECTED_DATE_KEY) ?? dayjs().format('YYYY-MM-DD') } catch { return dayjs().format('YYYY-MM-DD') }
+}
 
 const toMin = (t: string) => {
   const [h, m] = t.split(':').map(Number)
@@ -39,7 +44,7 @@ function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[] {
     ...Array(startOffset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => monthStart.add(i, 'day')),
   ]
-  while (cells.length % 7 !== 0) cells.push(null)
+  while (cells.length < 42) cells.push(null)
   return cells
 }
 
@@ -47,9 +52,10 @@ export default function BookingsPage() {
   const navigate = useNavigate()
   const bookings = useBookingsStore((state) => state.bookings)
   const fetchBookings = useBookingsStore((state) => state.fetchBookings)
-  const [schedule, setSchedule] = useState<Schedule | null>(null)
-  const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
-  const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
+  const schedule = useScheduleStore((state) => state.schedule)
+  const fetchSchedule = useScheduleStore((state) => state.fetchSchedule)
+  const [selectedDate, setSelectedDate] = useState(readSelectedDate)
+  const [currentMonth, setCurrentMonth] = useState(() => dayjs(readSelectedDate()).startOf('month'))
 
   // Month-picker меню (как в кабинете клиента, MyBookingsPage): тап по пилюле
   // «Месяц Год» → список месяцев текущего года. Закрытие по клику вне.
@@ -66,8 +72,11 @@ export default function BookingsPage() {
 
   useEffect(() => {
     void fetchBookings()
-    scheduleApi.get().then(setSchedule).catch(() => {})
-  }, [fetchBookings])
+    void fetchSchedule()
+  }, [fetchBookings, fetchSchedule])
+  useEffect(() => {
+    try { sessionStorage.setItem(SELECTED_DATE_KEY, selectedDate) } catch { /* storage недоступен */ }
+  }, [selectedDate])
 
   const today = dayjs().format('YYYY-MM-DD')
 

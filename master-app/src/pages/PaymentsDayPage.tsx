@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { paymentsApi } from '@/api/payments.api'
 import type { Payment } from '@/types'
+import { usePaymentsStore } from '@/store/payments.store'
 import { text } from '@/styles/typography'
 import { usePaymentsExport } from '@/hooks/usePaymentsExport'
 import { ExportToast } from '@/components/ExportToast'
@@ -28,13 +28,15 @@ function initials(name: string): string {
 export default function PaymentsDayPage() {
   const { date } = useParams<{ date: string }>()
   const navigate = useNavigate()
-  const [payments, setPayments] = useState<Payment[]>([])
+  const payments = usePaymentsStore((state) => state.payments)
+  const paymentsLoaded = usePaymentsStore((state) => state.loaded)
+  const fetchPayments = usePaymentsStore((state) => state.fetchPayments)
   // Экспорт детализации только за этот день.
   const { exporting, handleExport, toast, dismissToast } = usePaymentsExport(date)
 
   useEffect(() => {
-    paymentsApi.list().then(setPayments).catch(() => {})
-  }, [])
+    void fetchPayments()
+  }, [fetchPayments])
 
   const dayPayments = useMemo(() => {
     if (!date) return []
@@ -123,7 +125,7 @@ export default function PaymentsDayPage() {
         {dayPayments.map((p) => (
           <DayCard key={p.id} payment={p} onOpen={() => navigate(`/bookings/${p.bookingId}`)} />
         ))}
-        {dayPayments.length === 0 && (
+        {paymentsLoaded && dayPayments.length === 0 && (
           <div style={{ textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет оплат за этот день
           </div>
@@ -241,7 +243,7 @@ function Avatar({ name, photo }: { name: string; photo: string | null }) {
       }}
     >
       {photo ? (
-        <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={photo} alt="" width={24} height={24} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
       ) : (
         <span style={{ ...text.label3Caps, color: 'var(--color-on-surface)' }}>{initials(name)}</span>
       )}

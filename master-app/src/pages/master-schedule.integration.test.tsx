@@ -14,6 +14,7 @@ const refreshMaster = vi.hoisted(() => vi.fn())
 vi.mock('@/api/schedule.api', () => ({ scheduleApi: api }))
 
 import { useAuthStore } from '@/store/auth.store'
+import { useScheduleStore } from '@/store/schedule.store'
 vi.mock('@/pages/OnboardingPage', () => ({
   Step1Form: ({
     workingDays,
@@ -85,6 +86,7 @@ describe('SchedulePage', () => {
     api.get.mockReset()
     api.upsert.mockReset()
     refreshMaster.mockReset()
+    useScheduleStore.getState().reset()
     api.get.mockResolvedValue(createMasterSchedule())
     api.upsert.mockResolvedValue(createMasterSchedule())
     refreshMaster.mockResolvedValue(undefined)

@@ -16,6 +16,8 @@ function handleHomePrefetch() {
     http.get('*/api/bookings', () => HttpResponse.json([])),
     http.get('*/api/clients', () => HttpResponse.json([])),
     http.get('*/api/subscription/me', () => HttpResponse.json(null)),
+    http.get('*/api/payments', () => HttpResponse.json([])),
+    http.get('*/api/schedule/me', () => HttpResponse.json(null)),
   )
 }
 
@@ -55,8 +57,12 @@ describe.sequential('master auth store', () => {
     })
     const { useBookingsStore } = await import('./bookings.store')
     const { useHomeDataStore } = await import('./home-data.store')
+    const { usePaymentsStore } = await import('./payments.store')
+    const { useScheduleStore } = await import('./schedule.store')
     expect(useBookingsStore.getState().loaded).toBe(true)
     expect(useHomeDataStore.getState()).toMatchObject({ clientsLoaded: true, subscriptionLoaded: true })
+    expect(usePaymentsStore.getState().loaded).toBe(true)
+    expect(useScheduleStore.getState().loaded).toBe(true)
   })
 
   it('использует сохранённый master token вне MAX', async () => {

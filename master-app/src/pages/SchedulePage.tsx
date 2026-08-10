@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { scheduleApi } from '@/api/schedule.api'
 import { useAuthStore } from '@/store/auth.store'
+import { useScheduleStore } from '@/store/schedule.store'
 import { markGuideStep } from '@/lib/guide'
 import { Step1Form } from '@/pages/OnboardingPage'
 
@@ -12,6 +13,9 @@ import { Step1Form } from '@/pages/OnboardingPage'
 export default function SchedulePage() {
   const navigate = useNavigate()
   const refreshMaster = useAuthStore((s) => s.refreshMaster)
+  const cachedSchedule = useScheduleStore((s) => s.schedule)
+  const fetchSchedule = useScheduleStore((s) => s.fetchSchedule)
+  const setCachedSchedule = useScheduleStore((s) => s.setSchedule)
 
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5])
   const [startTime, setStartTime]     = useState('09:00')
@@ -24,7 +28,11 @@ export default function SchedulePage() {
   const [error, setError]             = useState<string | null>(null)
 
   useEffect(() => {
-    scheduleApi.get().then((s) => {
+    void fetchSchedule()
+  }, [fetchSchedule])
+
+  useEffect(() => {
+    const s = cachedSchedule
       if (!s) return
       setWorkingDays(s.workingDays)
       setStartTime(s.startTime)
@@ -35,8 +43,7 @@ export default function SchedulePage() {
         setBreakStart(s.breakStart)
         setBreakEnd(s.breakEnd)
       }
-    }).catch(() => {})
-  }, [])
+  }, [cachedSchedule])
 
   const toggleDay = (d: number) =>
     setWorkingDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort())
@@ -49,7 +56,7 @@ export default function SchedulePage() {
     }
     setSaving(true)
     try {
-      await scheduleApi.upsert({
+      const schedule = await scheduleApi.upsert({
         workingDays,
         startTime,
         endTime,
@@ -58,6 +65,7 @@ export default function SchedulePage() {
         breakStart: hasBreak ? breakStart : null,
         breakEnd: hasBreak ? breakEnd : null,
       })
+      setCachedSchedule(schedule)
       // master.schedule в сторе читает главная («График работы») — обновляем,
       // иначе после возврата там остаётся старое расписание.
       await refreshMaster()

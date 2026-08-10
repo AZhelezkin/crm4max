@@ -5,17 +5,23 @@ import type { Master } from '@/types'
 import { metricAuthErrorType, setAnalyticsUserId, trackEventOnce } from '@/lib/metrics'
 import { useBookingsStore } from '@/store/bookings.store'
 import { useHomeDataStore } from '@/store/home-data.store'
+import { usePaymentsStore } from '@/store/payments.store'
+import { useScheduleStore } from '@/store/schedule.store'
 
 async function loadMasterData(): Promise<Master> {
   const masterRequest = mastersApi.getMe()
   const bookingsRequest = useBookingsStore.getState().fetchBookings()
   const { fetchClients, fetchSubscription } = useHomeDataStore.getState()
+  const paymentsRequest = usePaymentsStore.getState().fetchPayments()
+  const scheduleRequest = useScheduleStore.getState().fetchSchedule()
 
   const [master] = await Promise.all([
     masterRequest,
     bookingsRequest,
     fetchClients(),
     fetchSubscription(),
+    paymentsRequest,
+    scheduleRequest,
   ])
   return master
 }

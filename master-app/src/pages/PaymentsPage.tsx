@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { paymentsApi } from '@/api/payments.api'
-import type { Payment } from '@/types'
+import { usePaymentsStore } from '@/store/payments.store'
 import { text } from '@/styles/typography'
 import { usePaymentsExport } from '@/hooks/usePaymentsExport'
 import { ExportToast } from '@/components/ExportToast'
 
 dayjs.locale('ru')
+
+const SELECTED_MONTH_KEY = 'income.selectedMonth'
+
+function readSelectedMonth(): string {
+  try { return sessionStorage.getItem(SELECTED_MONTH_KEY) ?? '' } catch { return '' }
+}
 
 interface MonthSummary {
   key: string
@@ -58,14 +63,16 @@ function pluralRecords(n: number): string {
 
 export default function PaymentsPage() {
   const navigate = useNavigate()
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const payments = usePaymentsStore((state) => state.payments)
+  const paymentsLoaded = usePaymentsStore((state) => state.loaded)
+  const fetchPayments = usePaymentsStore((state) => state.fetchPayments)
+  const [selectedMonth, setSelectedMonth] = useState(readSelectedMonth)
   // Без даты — экспорт всех оплат.
   const { exporting, handleExport, toast, dismissToast } = usePaymentsExport()
 
   useEffect(() => {
-    paymentsApi.list().then(setPayments).catch(() => {})
-  }, [])
+    void fetchPayments()
+  }, [fetchPayments])
 
   const months = useMemo<MonthSummary[]>(() => {
     const map = new Map<string, number>()
@@ -90,8 +97,14 @@ export default function PaymentsPage() {
   }, [payments])
 
   useEffect(() => {
-    if (!selectedMonth && months.length) setSelectedMonth(months[0].key)
+    if ((!selectedMonth || !months.some((month) => month.key === selectedMonth)) && months.length) {
+      setSelectedMonth(months[0].key)
+    }
   }, [months, selectedMonth])
+  useEffect(() => {
+    if (!selectedMonth) return
+    try { sessionStorage.setItem(SELECTED_MONTH_KEY, selectedMonth) } catch { /* storage недоступен */ }
+  }, [selectedMonth])
 
   const days = useMemo<DayEntry[]>(() => {
     if (!selectedMonth) return []
@@ -213,7 +226,7 @@ export default function PaymentsPage() {
             </div>
           )
         })}
-        {months.length === 0 && (
+        {paymentsLoaded && months.length === 0 && (
           <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', padding: '8px 0' }}>
             Пока нет поступлений
           </div>
@@ -287,7 +300,7 @@ export default function PaymentsPage() {
             </div>
           </div>
         ))}
-        {selectedMonth && days.length === 0 && (
+        {paymentsLoaded && selectedMonth && days.length === 0 && (
           <div style={{ textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>
             Нет поступлений в этом месяце
           </div>

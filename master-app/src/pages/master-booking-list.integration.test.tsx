@@ -6,6 +6,8 @@ import { createMasterBooking } from '@/test/fixtures/bookings'
 import { createMasterSchedule } from '@/test/fixtures/schedule'
 import { createMasterService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
+import { useBookingsStore } from '@/store/bookings.store'
+import { useScheduleStore } from '@/store/schedule.store'
 
 const api = vi.hoisted(() => ({
   listBookings: vi.fn(),
@@ -36,6 +38,9 @@ describe('BookingsPage', () => {
   beforeEach(() => {
     api.listBookings.mockReset()
     api.getSchedule.mockReset()
+    sessionStorage.clear()
+    useBookingsStore.getState().reset()
+    useScheduleStore.getState().reset()
     api.listBookings.mockResolvedValue([])
     api.getSchedule.mockResolvedValue(createMasterSchedule())
   })
