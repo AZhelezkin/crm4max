@@ -42,9 +42,9 @@ export default function OtherPage() {
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 95 }}>
       <HeroHeader title="Другое" />
 
-      <div style={{ padding: '8px 16px' }}>
+      <div style={{ padding: '0 16px 8px' }}>
         <div style={{
-          background: 'var(--color-surface-transparent)', borderRadius: 20,
+          background: 'var(--color-surface-transparent)', borderRadius: 20, cornerShape: 'squircle',
           boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', overflow: 'hidden',
         }}>
           {items.map((it, i) => {

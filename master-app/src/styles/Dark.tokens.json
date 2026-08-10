@@ -5,6 +5,10 @@
   "surface":                  { "$type": "color", "$value": "#262729" },
   "surfaceTransparent":       { "$type": "color", "$value": "rgba(242, 243, 245, 0.10)" },
   "background":               { "$type": "color", "$value": "#17181C" },
+  "selectedRaisedSurface":    { "$type": "color", "$value": "#565759" },
+  "floatingSurface":          { "$type": "color", "$value": "#3E3F41" },
+  "floatingSurfaceActive":    { "$type": "color", "$value": "#565759" },
+  "onFloatingSurfaceActive":  { "$type": "color", "$value": "#FFFFFF" },
   "selectedSurface":          { "$type": "color", "$value": "#005BBF" },
 
   "onSurface":                { "$type": "color", "$value": "#FFFFFF" },
@@ -20,6 +24,7 @@
   "secondarySurface":         { "$type": "color", "$value": "#3C3F4D" },
   "secondarySurfaceMuted":    { "$type": "color", "$value": "#1E1F26" },
   "patternElement":           { "$type": "color", "$value": "#24262E" },
+  "nonWorkingSurface":        { "$type": "color", "$value": "#24262E" },
   "onSecondarySurface":       { "$type": "color", "$value": "#FFFFFF" },
 
   "errorSurfaceLite":         { "$type": "color", "$value": "#67212C" },

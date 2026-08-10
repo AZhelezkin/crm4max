@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
@@ -165,7 +165,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Календарь (макет 8718-37990): controls / daysOfWeek / daysGrid, gap 8. */}
-      <div style={{ marginTop: 16, paddingInline: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div style={{ paddingInline: 16, display: 'flex', flexDirection: 'column', gap: 8 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* controls: месяц + стрелки */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 6 }}>
           <div ref={monthMenuRef} style={{ position: 'relative' }}>
@@ -240,20 +240,21 @@ export default function BookingsPage() {
           </div>
         </div>
 
-        {/* daysOfWeek */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-          {WEEKDAYS.map((d) => (
-            <div
-              key={d}
-              style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.body2Medium, color: 'var(--color-on-surface-secondary)' }}
-            >
-              {d}
-            </div>
-          ))}
-        </div>
+        <div>
+          {/* daysOfWeek */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+            {WEEKDAYS.map((d) => (
+              <div
+                key={d}
+                style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', ...text.body2Medium, color: 'var(--color-on-surface-secondary)' }}
+              >
+                {d}
+              </div>
+            ))}
+          </div>
 
-        {/* daysGrid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+          {/* daysGrid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
           {cells.map((day, i) => {
             if (!day) return <div key={`e${i}`} style={{ minHeight: 56 }} />
             const val = day.format('YYYY-MM-DD')
@@ -290,7 +291,8 @@ export default function BookingsPage() {
                 style={{
                   minHeight: 56,
                   padding: '8px 4px',
-                  borderRadius: 12,
+                  borderRadius: 16,
+                  cornerShape: 'squircle',
                   boxSizing: 'border-box',
                   display: 'flex',
                   flexDirection: 'column',
@@ -299,7 +301,7 @@ export default function BookingsPage() {
                   gap: 8,
                   ...text.callout1,
                   color,
-                  background: isNonWorking ? 'var(--color-pattern-element)' : 'transparent',
+                  background: isNonWorking ? 'var(--color-secondary-surface-muted)' : hasAppts ? 'var(--color-active-surface)' : 'transparent',
                   border: isSelected ? '1.5px solid var(--color-interactive-element-accented)' : '1.5px solid transparent',
                   cursor: 'pointer',
                   position: 'relative',
@@ -335,16 +337,18 @@ export default function BookingsPage() {
                 )}
               </button>
             )
-          })}
+            })}
+          </div>
         </div>
       </div>
 
       {/* Список записей дня (макет 8718-47821): дивайдеры divider-low h8, секция-заголовок, строки. */}
       <div style={{ marginTop: 8, padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
-        {dayBookings.length > 0 ? (
-          <>
+        <AnimatedSchedule contentKey={dayBookings.length > 0 ? dayBookings.map((booking) => booking.id).join(':') : 'empty'}>
+          {dayBookings.length > 0 ? (
+            <>
             <Divider />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 16, paddingBottom: 8, paddingLeft: 8, paddingRight: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, paddingBottom: 8, paddingLeft: 8, paddingRight: 8 }}>
               <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{selectedDayjs.format('D MMMM')}</span>
               <span style={{ ...text.body2, color: 'var(--color-on-success-surface-lite)' }}>•</span>
               <span style={{ ...text.body2, color: 'var(--color-on-surface-muted)' }}>{capitalize(selectedDayjs.format('dddd'))}</span>
@@ -356,10 +360,82 @@ export default function BookingsPage() {
               </Fragment>
             ))}
             <Divider />
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет записей на этот день</div>
-        )}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 40 }}>Нет записей на этот день</div>
+          )}
+        </AnimatedSchedule>
+      </div>
+    </div>
+  )
+}
+
+function AnimatedSchedule({ contentKey, children }: { contentKey: string; children: ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const initialized = useRef(false)
+  const renderedKey = useRef(contentKey)
+  const pendingChildren = useRef(children)
+  const pendingKey = useRef(contentKey)
+  const [height, setHeight] = useState<number | 'auto'>('auto')
+  const [renderedChildren, setRenderedChildren] = useState(children)
+  const [phase, setPhase] = useState<'idle' | 'fadeOut' | 'resize' | 'fadeIn'>('idle')
+
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    if (!content) return
+    if (!initialized.current) {
+      initialized.current = true
+      return
+    }
+    if (phase !== 'resize') return
+
+    const nextHeight = content.getBoundingClientRect().height
+    const currentHeight = containerRef.current?.getBoundingClientRect().height ?? nextHeight
+    if (Math.abs(nextHeight - currentHeight) < 1) {
+      setHeight('auto')
+      setPhase('fadeIn')
+      return
+    }
+    requestAnimationFrame(() => setHeight(nextHeight))
+  }, [renderedChildren, phase])
+
+  useLayoutEffect(() => {
+    pendingChildren.current = children
+    pendingKey.current = contentKey
+    if (!initialized.current) return
+    if (contentKey === renderedKey.current) return
+    if (phase === 'idle' || phase === 'fadeIn') setPhase('fadeOut')
+  }, [contentKey])
+
+  const visible = phase === 'idle' || phase === 'fadeIn'
+
+  return (
+    <div
+      ref={containerRef}
+      onTransitionEnd={(event) => {
+        if (event.target !== event.currentTarget || event.propertyName !== 'height' || phase !== 'resize') return
+        setHeight('auto')
+        setPhase('fadeIn')
+      }}
+      style={{ height, overflow: 'hidden', transition: phase === 'resize' ? 'height 240ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none' }}
+    >
+      <div
+        ref={contentRef}
+        onTransitionEnd={(event) => {
+          if (event.target !== event.currentTarget || event.propertyName !== 'opacity') return
+          if (phase === 'fadeOut') {
+            renderedKey.current = pendingKey.current
+            setHeight(containerRef.current?.getBoundingClientRect().height ?? 'auto')
+            setRenderedChildren(pendingChildren.current)
+            setPhase('resize')
+          } else if (phase === 'fadeIn') {
+            setPhase('idle')
+          }
+        }}
+        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(6px)', transition: 'opacity 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+      >
+        {renderedChildren}
       </div>
     </div>
   )

@@ -198,7 +198,7 @@ export default function PaymentsPage() {
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          padding: '8px 16px 0',
+          padding: '0 16px',
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}
@@ -218,6 +218,7 @@ export default function PaymentsPage() {
                 gap: 4,
                 padding: 16,
                 borderRadius: 18,
+                cornerShape: 'squircle',
                 cursor: 'pointer',
                 background: active ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)',
               }}
@@ -228,7 +229,7 @@ export default function PaymentsPage() {
           )
         })}
         {paymentsLoaded && months.length === 0 && (
-          <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', padding: '8px 0' }}>
+          <div style={{ width: 'calc(100vw - 32px)', flexShrink: 0, textAlign: 'center', ...text.caption2, color: 'var(--color-on-surface-secondary)', padding: '8px 0' }}>
             Пока нет поступлений
           </div>
         )}

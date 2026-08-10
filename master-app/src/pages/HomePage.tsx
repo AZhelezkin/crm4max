@@ -9,7 +9,7 @@ import { useBookingsStore } from '@/store/bookings.store'
 import { useHomeDataStore } from '@/store/home-data.store'
 import { bookingsApi } from '@/api/bookings.api'
 import type { SubscriptionState } from '@/api/subscription.api'
-import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, type Booking, type Client } from '@/types'
+import { masterServiceList, bookingTotal, bookingDuration, bookingServiceItems, bookingServiceNames, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import Skeleton from '@/components/Skeleton'
@@ -19,7 +19,6 @@ import { markGuideStep } from '@/lib/guide'
 import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
-import BottomToast from '@/components/BottomToast'
 
 dayjs.locale('ru')
 
@@ -28,10 +27,11 @@ const CARD_SHADOW = '0px 1px 2px 0px rgba(0,0,0,0.1)' // Figma «Card Soft»
 const WEEK_LETTERS = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'] as const // Пн..Вс
 const SHOW_DAY_ROUTE = false
 
-// Карточки повторяют скругление страницы: 24px - 16px inset = 8px.
+// Основные карточки используют сглаженные углы, как в макете главной.
 const cardStyle: CSSProperties = {
   background: 'var(--color-surface-transparent)',
-  borderRadius: 8,
+  borderRadius: 20,
+  cornerShape: 'squircle',
   boxShadow: CARD_SHADOW,
 }
 
@@ -151,19 +151,6 @@ export default function HomePage() {
     }
   }
 
-  const handlePaymentReminder = async (b: Booking) => {
-    if (menuBusy) return
-    setMenuBusy(true)
-    try {
-      const { sent } = await bookingsApi.remindPayment(b.id)
-      showToast(sent ? 'Напоминание об оплате отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
-    } catch {
-      showToast('Не удалось отправить напоминание об оплате')
-    } finally {
-      setMenuBusy(false); setMenu(null)
-    }
-  }
-
   // «Отменить» — подтверждение диалогом, затем отмена записи.
   const handleCancelBooking = async (b: Booking) => {
     if (menuBusy) return
@@ -249,6 +236,19 @@ export default function HomePage() {
   if (!master) return <ProfileSkeleton />
 
   const servicesCount = masterServiceList(master).length
+  const popularService = useMemo(() => {
+    const services = masterServiceList(master)
+    const counts = new Map<string, number>()
+    for (const booking of bookings) {
+      if (booking.status === 'CANCELLED') continue
+      for (const { service } of bookingServiceItems(booking)) {
+        counts.set(service.id, (counts.get(service.id) ?? 0) + 1)
+      }
+    }
+    return services.reduce((best, service) =>
+      (counts.get(service.id) ?? 0) > (counts.get(best?.id ?? '') ?? 0) ? service : best,
+    services.find((service) => service.isActive) ?? services[0])
+  }, [bookings, master])
   const clientAvatars = clients.filter((c) => c.photo).slice(0, 3)
   const dayActive = dayBookings
   const daySum = dayActive.reduce((acc, b) => acc + bookingAmount(b), 0)
@@ -298,7 +298,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── list: карточки, gap 16, px 16 ── */}
+      {/* ── list: карточки, gap 20, px 16 (Figma 10065:50913) ── */}
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Гид «Добро пожаловать!» (макеты 10053-50054 / 10065-50531) — чек-лист
@@ -337,7 +337,7 @@ export default function HomePage() {
           {/* Шапка: «к сегодня» (скрыт, если активен сегодня) + дата + открыть календарь */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
             <button type="button" aria-label="К сегодняшнему дню" onClick={() => focusDay(today)}
-              style={{ background: 'none', border: 'none', padding: 6, display: 'flex', flexShrink: 0,
+              style={{ background: 'none', border: 'none', padding: '6px 0', display: 'flex', flexShrink: 0,
                 opacity: isTodayActive ? 0 : 1, pointerEvents: isTodayActive ? 'none' : 'auto',
                 cursor: isTodayActive ? 'default' : 'pointer' }}>
               <CalendarDayIcon day={todayD.date()} />
@@ -362,10 +362,12 @@ export default function HomePage() {
           />
 
           {/* Записи активного дня / пустой день */}
-          {bookingsLoading ? (
-            <DayBookingsSkeleton />
-          ) : dayBookings.length > 0 ? (
-            <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+          <AnimatedHeight contentKey={bookingsLoading ? 'loading' : dayBookings.length > 0 ? dayBookings.map((booking) => booking.id).join(':') : 'empty'}>
+            <div>
+              {bookingsLoading ? (
+                <DayBookingsSkeleton />
+              ) : dayBookings.length > 0 ? (
+              <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 4, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
               {dayBookings.map((b) => {
                 const end = dayjs(`${b.date}T${b.time}`).add(bookingDuration(b), 'minute').format('HH:mm')
                 const confirmed = b.status === 'CONFIRMED' || b.status === 'COMPLETED'
@@ -373,19 +375,19 @@ export default function HomePage() {
                 return (
                   // Строка: кликабельная часть → карточка записи; кебаб «⋮» — отдельная
                   // кнопка (меню действий), поэтому строка не <button>, а контейнер.
-                  <div key={b.id} style={{ width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
+                  <div key={b.id} style={{ width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: '0 4px 0 12px' }}>
                     <button type="button" onClick={() => navigate(`/bookings/${b.id}`)}
                       style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, textAlign: 'left' }}>
-                      <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-                        <div style={{ width: 2, height: 44, marginLeft: -8, marginRight: 8, borderRadius: 1, background: lineColor }} />
-                      </div>
-                      <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
-                        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{end}</span>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client.name}</span>
-                        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
+                      <div style={{ width: 2, height: 44, marginRight: 16, borderRadius: 1, background: lineColor, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 52, flexShrink: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
+                          <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>{end}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <span style={{ ...text.callout1, color: 'var(--color-on-surface)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.client.name}</span>
+                          <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bookingServiceNames(b)}</span>
+                        </div>
                       </div>
                     </button>
                     <button
@@ -407,40 +409,41 @@ export default function HomePage() {
                   </div>
                 )
               })}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '24px 12px', borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-              <span style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--color-interactive-element)' }}><FolderIcon /></span>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>В этот день нет записей</span>
-                {nearestUpcoming && (
-                  <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>
-                    Ближайшая запись{' '}
-                    {/* Тап — доскролл полоски к неделе этой даты + выделение дня. */}
-                    <button
-                      type="button"
-                      onClick={() => focusDay(nearestUpcoming.date)}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...text.caption1, color: 'var(--color-primary-surface)' }}
-                    >
-                      {dayjs(nearestUpcoming.date).format('D MMMM')}
-                    </button>
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>В этот день нет записей</span>
+                    {nearestUpcoming && (
+                      <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
+                        Ближайшая запись{' '}
+                        {/* Тап — доскролл полоски к неделе этой даты + выделение дня. */}
+                        <button
+                          type="button"
+                          onClick={() => focusDay(nearestUpcoming.date)}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...text.caption2, color: 'var(--color-primary-surface)' }}
+                        >
+                          {dayjs(nearestUpcoming.date).format('D MMMM')}
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
-          {/* Футер: сводка активного дня */}
-          {bookingsLoading ? (
-            <div style={{ padding: 12, display: 'flex', justifyContent: 'center' }}>
-              {/* «N записей на N ₽» — Caption 1 (line-height 20) */}
-              <Skeleton width={132} height={16} radius={8} />
+              {/* Футер: сводка активного дня */}
+              {bookingsLoading ? (
+                <div style={{ padding: 12, display: 'flex', justifyContent: 'center' }}>
+                  {/* «N записей на N ₽» — Caption 1 (line-height 20) */}
+                  <Skeleton width={132} height={16} radius={8} />
+                </div>
+              ) : dayActive.length > 0 && (
+                <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
+                  {pluralRecords(dayActive.length)} на {formatRub(daySum)}
+                </div>
+              )}
             </div>
-          ) : (
-            <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)', visibility: dayActive.length > 0 ? 'visible' : 'hidden' }}>
-              {dayActive.length > 0 ? `${pluralRecords(dayActive.length)} на ${formatRub(daySum)}` : '\u00A0'}
-            </div>
-          )}
+          </AnimatedHeight>
         </div>
 
         {SHOW_DAY_ROUTE && (
@@ -463,7 +466,7 @@ export default function HomePage() {
 
         {/* Кнопка «Создать запись» */}
         <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}
-          style={{ width: '100%', height: 60, borderRadius: 8, border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
+          style={{ width: '100%', height: 60, borderRadius: 20, cornerShape: 'squircle', border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
           <span style={{ display: 'inline-flex' }}><AddCircleIcon /></span>
           <span style={text.callout1}>Создать запись</span>
         </button>
@@ -474,18 +477,17 @@ export default function HomePage() {
             type="button"
             aria-label="Открыть раздел «Клиенты»"
             onClick={() => { markGuideStep('edited'); navigate('/clients') }}
-            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 8, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 12, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
-                Клиенты{clientsLoading ? '' : `, ${clients.length}`}
-              </span>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Клиенты</span>
               <EditIndicator />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minHeight: 32 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 {clientsLoading ? (
                   <>
-                    {/* Количество в заголовке + стопка из 3 аватарок 32. */}
+                    {/* Число клиентов + стопка из 3 аватарок 32. */}
                     <TextBarSkeleton lineHeight={26} width={28} height={20} />
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {[0, 1, 2].map((i) => (
@@ -497,7 +499,7 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <span />
+                    <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{clients.length}</span>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {clientAvatars.map((c, i) => (
                         <div key={c.id} style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', background: 'var(--color-surface)', marginLeft: i ? -8 : 0, border: '2px solid var(--color-background)' }}>
@@ -507,6 +509,7 @@ export default function HomePage() {
                     </div>
                   </>
                 )}
+              </div>
               {/* «ходят/не ходят» считается из клиентов И записей — ждём оба ответа. */}
               {clientsLoading || bookingsLoading ? (
                 <TextBarSkeleton lineHeight={16} width={110} height={14} />
@@ -522,22 +525,32 @@ export default function HomePage() {
             type="button"
             aria-label="Открыть раздел «Услуги»"
             onClick={() => { markGuideStep('edited'); navigate('/services') }}
-            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 16, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 12, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги, {servicesCount}</span>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги</span>
               <EditIndicator />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: 32 }}>
+                <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{servicesCount}</span>
+              </div>
+              {popularService && (
+                <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {popularService.name}
+                </span>
+              )}
             </div>
           </button>
         </div>
 
         {/* График работы */}
-        <div style={{ ...cardStyle, padding: 12, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ ...cardStyle, padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>График работы</span>
             <EditButton onClick={() => navigate('/schedule')} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
             <div style={{ display: 'flex', gap: 4, width: '100%' }}>
               {WEEK_LETTERS.map((letter, i) => {
                 const iso = i + 1
@@ -545,9 +558,9 @@ export default function HomePage() {
                 const weekend = i >= 5
                 return (
                   <div key={i} style={{
-                    flex: 1, minWidth: 0, padding: '8px 14px 6px', borderRadius: 8,
+                    flex: 1, minWidth: 0, padding: '8px 14px 6px', borderRadius: working ? 8 : 16, cornerShape: working ? undefined : 'squircle',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                    background: working ? 'transparent' : 'var(--color-background)',
+                    background: working ? 'transparent' : 'var(--color-non-working-surface)',
                   }}>
                     <span style={{ fontSize: 11, lineHeight: '13px', fontWeight: 400, letterSpacing: -0.11, textAlign: 'center',
                       color: weekend ? 'var(--color-error-element-muted)' : 'var(--color-interactive-element-secondary)' }}>
@@ -555,7 +568,7 @@ export default function HomePage() {
                     </span>
                     {working && master.schedule ? (
                       <div style={{ fontSize: 14, lineHeight: '14px', letterSpacing: -0.14, color: 'var(--color-interactive-element-accented)', textAlign: 'center' }}>
-                        <div style={{ marginBottom: 8 }}>{master.schedule.startTime}</div>
+                        <div style={{ marginBottom: 4 }}>{master.schedule.startTime}</div>
                         <div>{master.schedule.endTime}</div>
                       </div>
                     ) : (
@@ -566,9 +579,13 @@ export default function HomePage() {
               })}
             </div>
             {master.schedule?.breakStart && master.schedule?.breakEnd && (
-              <span style={{ ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}>
-                Обед {master.schedule.breakStart}–{master.schedule.breakEnd}
-              </span>
+              <div style={{ margin: '0 -12px -12px', borderTop: '1px solid var(--color-secondary-surface-muted)', padding: 12, display: 'flex', justifyContent: 'center' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}>
+                  <span>Обед {master.schedule.breakStart}</span>
+                  <span>–</span>
+                  <span>{master.schedule.breakEnd}</span>
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -581,22 +598,27 @@ export default function HomePage() {
           </div>
           {master.location ? (
             <>
-              {/* Адрес: иконка-локация + текст (px12 pt4 pb12, gap10) */}
+              {/* Адрес: px12, gap8; header → строка 4px. */}
               <IconTextRow
                 icon={<LocationIcon />}
                 text={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}
-                style={{ padding: '4px 12px 12px' }}
+                 style={{ padding: '4px 12px 0' }}
               >
                 {master.location}
               </IconTextRow>
               {master.locationNote && (
-                <IconTextRow
-                  icon={<MessageTextIcon />}
-                  text={{ ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}
-                  style={{ padding: 12, borderTop: '1px solid var(--color-secondary-surface-muted)' }}
-                >
-                  {master.locationNote}
-                </IconTextRow>
+                <>
+                  <div style={{ height: 13, padding: '6px 0', boxSizing: 'border-box' }}>
+                    <div style={{ height: 1, background: 'var(--color-secondary-surface-muted)' }} />
+                  </div>
+                  <IconTextRow
+                    icon={<MessageTextIcon />}
+                    text={{ ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}
+                    style={{ padding: '0 12px 12px' }}
+                  >
+                    {master.locationNote}
+                  </IconTextRow>
+                </>
               )}
             </>
           ) : (
@@ -616,8 +638,6 @@ export default function HomePage() {
           busy={menuBusy}
           onClose={() => setMenu(null)}
           onRemind={() => { void handleRemind(menu.booking) }}
-          onRemindPayment={() => { void handlePaymentReminder(menu.booking) }}
-          showPaymentReminder={menu.booking.paymentStatus !== 'PAID'}
           onEdit={() => { const id = menu.booking.id; setMenu(null); navigate(`/bookings/${id}`) }}
           onReschedule={() => {
             const b = menu.booking
@@ -640,27 +660,33 @@ export default function HomePage() {
         />
       )}
 
-      <BottomToast message={toast} />
+      {/* Тост результата действия. */}
+      {toast && (
+        <div style={{
+          position: 'fixed', left: 16, right: 16, bottom: 'calc(104px + env(safe-area-inset-bottom))', zIndex: 1100,
+          background: 'var(--color-on-surface)', color: 'var(--color-surface)',
+          borderRadius: 16, padding: '12px 16px', textAlign: 'center', ...text.caption1,
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }
 
 // Popover-меню действий по записи (макет 10265-79559): карточка surface rx16,
 // px20 py12, пункты Body 2 с иконкой 20 справа и 8px-разделителями; «Отменить» — красный.
-function BookingActionMenu({ pos, busy, onClose, onRemind, onRemindPayment, showPaymentReminder, onEdit, onReschedule, onCancel }: {
+function BookingActionMenu({ pos, busy, onClose, onRemind, onEdit, onReschedule, onCancel }: {
   pos: { right: number; top?: number; bottom?: number }
   busy: boolean
   onClose: () => void
   onRemind: () => void
-  onRemindPayment: () => void
-  showPaymentReminder: boolean
   onEdit: () => void
   onReschedule: () => void
   onCancel: () => void
 }) {
   const items: Array<{ label: string; icon: ReactNode; onClick: () => void; danger?: boolean }> = [
     { label: 'Напомнить клиенту', icon: <MessageNotifIcon />, onClick: onRemind },
-    ...(showPaymentReminder ? [{ label: 'Напомнить об оплате', icon: <MoneyTimeIcon />, onClick: onRemindPayment }] : []),
     { label: 'Изменить', icon: <Edit2SmallIcon />, onClick: onEdit },
     { label: 'Перенести', icon: <CalendarEditIcon />, onClick: onReschedule },
     { label: 'Отменить', icon: <CloseCircleIcon />, onClick: onCancel, danger: true },
@@ -728,19 +754,6 @@ function MessageNotifIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M17 18.43h-4l-4.45 2.96c-.66.44-1.55-.03-1.55-.83v-2.13c-3 0-5-2-5-5v-6c0-3 2-5 5-5h8c3 0 5 2 5 5v3" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="19" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-// money-time (20) — точные path из ~/Downloads/money-time.svg.
-function MoneyTimeIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10.0013 12.0827C11.1519 12.0827 12.0846 11.1499 12.0846 9.99935C12.0846 8.84876 11.1519 7.91602 10.0013 7.91602C8.85071 7.91602 7.91797 8.84876 7.91797 9.99935C7.91797 11.1499 8.85071 12.0827 10.0013 12.0827Z" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.418 7.91602V12.0827" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4.16536 18.3327C6.00631 18.3327 7.4987 16.8403 7.4987 14.9993C7.4987 13.1584 6.00631 11.666 4.16536 11.666C2.32442 11.666 0.832031 13.1584 0.832031 14.9993C0.832031 16.8403 2.32442 18.3327 4.16536 18.3327Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4.3737 13.957V14.732C4.3737 15.0237 4.22371 15.2987 3.96537 15.4487L3.33203 15.832" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M1.66797 12.6673V7.50065C1.66797 4.58398 3.33464 3.33398 5.83464 3.33398H14.168C16.668 3.33398 18.3346 4.58398 18.3346 7.50065V12.5007C18.3346 15.4173 16.668 16.6673 14.168 16.6673H7.08464" stroke="currentColor" strokeWidth="2" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -875,7 +888,7 @@ function EditButton({ onClick }: { onClick: () => void }) {
   }
   return (
     <button type="button" onClick={handleClick} aria-label="Редактировать"
-      style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, color: 'var(--color-profile-edit-icon)' }}>
+      style={{ width: 24, height: 24, padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', flexShrink: 0, transform: 'translateY(1px)', color: 'var(--color-profile-edit-icon)' }}>
       <Edit2Icon />
     </button>
   )
@@ -883,9 +896,72 @@ function EditButton({ onClick }: { onClick: () => void }) {
 
 function EditIndicator() {
   return (
-    <span aria-hidden="true" style={{ width: 24, height: 24, display: 'inline-flex', flexShrink: 0, color: 'var(--color-profile-edit-icon)' }}>
+    <span aria-hidden="true" style={{ width: 24, height: 24, display: 'inline-flex', flexShrink: 0, transform: 'translateY(1px)', color: 'var(--color-profile-edit-icon)' }}>
       <Edit2Icon />
     </span>
+  )
+}
+
+function AnimatedHeight({ contentKey, children }: { contentKey: string; children: ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const initialized = useRef(false)
+  const pendingChildren = useRef(children)
+  const [height, setHeight] = useState<number | 'auto'>('auto')
+  const [renderedChildren, setRenderedChildren] = useState(children)
+  const [visible, setVisible] = useState(true)
+  const [resizing, setResizing] = useState(false)
+
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    if (!content) return
+    if (!initialized.current) {
+      initialized.current = true
+      return
+    }
+    if (!resizing) return
+
+    const nextHeight = content.getBoundingClientRect().height
+    const currentHeight = containerRef.current?.getBoundingClientRect().height ?? nextHeight
+    if (Math.abs(nextHeight - currentHeight) < 1) {
+      setHeight('auto')
+      setResizing(false)
+      setVisible(true)
+      return
+    }
+    requestAnimationFrame(() => {
+      setHeight(nextHeight)
+      setVisible(true)
+    })
+  }, [renderedChildren, resizing])
+
+  useLayoutEffect(() => {
+    pendingChildren.current = children
+    if (!initialized.current) return
+    setHeight(containerRef.current?.getBoundingClientRect().height ?? 'auto')
+    setVisible(false)
+    const swapTimer = window.setTimeout(() => {
+      setResizing(true)
+      setRenderedChildren(pendingChildren.current)
+    }, 120)
+    return () => window.clearTimeout(swapTimer)
+  }, [contentKey])
+
+  return (
+    <div
+      ref={containerRef}
+      onTransitionEnd={(event) => {
+        if (event.propertyName !== 'height' || !resizing) return
+        setHeight('auto')
+        setResizing(false)
+        if (!visible) setVisible(true)
+      }}
+      style={{ height, overflow: 'hidden', transition: resizing ? 'height 240ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none' }}
+    >
+      <div ref={contentRef} style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(6px)', transition: 'opacity 240ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1)' }}>
+        {renderedChildren}
+      </div>
+    </div>
   )
 }
 
@@ -1019,15 +1095,6 @@ function CalendarDayIcon({ day }: { day: number }) {
       </svg>
       <span style={{ position: 'absolute', left: 0, right: 0, top: 10, textAlign: 'center', fontSize: 11, lineHeight: '12px', fontWeight: 800, letterSpacing: -0.55 }}>{day}</span>
     </span>
-  )
-}
-
-// vuesax/linear/folder-2 — пустой день (36×36).
-function FolderIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-      <path d="M22 11.4V16c0 4-1 5-5 5H7c-4 0-5-1-5-5V8c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8H17c4 0 5 1 5 4.4Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
 

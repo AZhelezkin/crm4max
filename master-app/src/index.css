@@ -39,6 +39,10 @@ textarea::placeholder {
   --color-surface:                #262729;
   --color-surface-transparent:    rgba(242, 243, 245, 0.10);
   --color-background:             #17181C;
+  --color-selected-raised-surface: #565759;
+  --color-floating-surface:       #3E3F41;
+  --color-floating-surface-active: #565759;
+  --color-on-floating-surface-active: #FFFFFF;
 
   /* Текст / иконки */
   --color-on-surface:             #FFFFFF;
@@ -57,6 +61,7 @@ textarea::placeholder {
   --color-secondary-surface:        #3C3F4D;
   --color-secondary-surface-muted:  #1E1F26;
   --color-pattern-element:          #24262E;
+  --color-non-working-surface:      #24262E;
   --color-on-secondary-surface:     #FFFFFF;
 
   /* Error */
@@ -146,6 +151,10 @@ textarea::placeholder {
   --color-surface:                #FFFFFF;
   --color-surface-transparent:    rgba(255, 255, 255, 0.60);
   --color-background:             #F2F3F5;
+  --color-selected-raised-surface: #E4E5EB;
+  --color-floating-surface:       #FFFFFF;
+  --color-floating-surface-active: #F2F3F5;
+  --color-on-floating-surface-active: #007AFE;
 
   --color-on-surface:             #0E0F11;
   --color-on-surface-inverted:    #FFFFFF;
@@ -161,6 +170,7 @@ textarea::placeholder {
   --color-secondary-surface:        #D7D8E0;
   --color-secondary-surface-muted:  #E4E5EB;
   --color-pattern-element:          #E4E5EB;
+  --color-non-working-surface:      #F2F3F5;
   --color-on-secondary-surface:     #0E0F11;
 
   --color-error-surface-lite:        #F3D0D5;

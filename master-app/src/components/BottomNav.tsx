@@ -1,10 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 
 // Таб-бар по макету 10220-102508 (плавающая пилюля): Главная / Записи / Доход /
-// Другое. Активный таб — подсветка-пилюля (secondary-surface-muted) + синий
-// (active-element). «Другое» → экран /other (согласия/подписка/поддержка и т.д.).
+// Другое. Активный таб выделяется нейтральной elevated-поверхностью.
+// «Другое» → экран /other (согласия/подписка/поддержка и т.д.).
 
-const ACTIVE = 'var(--color-active-element)'
+const ACTIVE = 'var(--color-on-floating-surface-active)'
 const INACTIVE = 'var(--color-on-surface-secondary)'
 
 // Figma «Label 2 / tab»: 12 / 14 / 600, letterSpacing 0.06.
@@ -87,36 +87,50 @@ export default function BottomNav() {
       paddingTop: 12, paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
       pointerEvents: 'none',
     }}>
-      {/* Плавающая пилюля (liquid glass): surface + blur + мягкая тень */}
-      <div style={{
-        pointerEvents: 'auto',
-        display: 'flex', alignItems: 'stretch',
-        width: 'calc(100% - 24px)', maxWidth: 360,
-        background: 'var(--color-surface)',
-        borderRadius: 32,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-        padding: 6,
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-      }}>
-        {TABS.map((tab) => {
-          const active = activeTab === tab.path
-          const color = active ? ACTIVE : INACTIVE
-          return (
-            <button key={tab.path} onClick={() => navigate(tab.path)} style={tabStyle}>
-              {active && (
-                <span style={{
-                  position: 'absolute', inset: 0, borderRadius: 24,
-                  background: 'var(--color-secondary-surface-muted)', opacity: 0.85, zIndex: 0,
-                }} />
-              )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex' }}>
-                <tab.Icon color={color} />
-              </span>
-              <span style={{ position: 'relative', zIndex: 1, ...LABEL, color }}>{tab.label}</span>
-            </button>
-          )
-        })}
+      <div style={{ position: 'relative', width: 'calc(100% - 24px)', maxWidth: 360 }}>
+        <span aria-hidden="true" style={{
+          position: 'absolute', inset: -8, zIndex: 0,
+          borderRadius: 40,
+          padding: 8,
+          background: 'radial-gradient(ellipse at center, color-mix(in srgb, var(--color-divider-mid) 28%, transparent) 56%, color-mix(in srgb, var(--color-divider-low) 10%, transparent) 68%, transparent 76%)',
+          mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          maskComposite: 'exclude',
+          WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          WebkitMaskComposite: 'xor',
+          filter: 'blur(3px)',
+          pointerEvents: 'none',
+        }} />
+        {/* Плавающая пилюля (liquid glass): surface + blur + мягкая тень */}
+        <div style={{
+          position: 'relative', zIndex: 1,
+          pointerEvents: 'auto',
+          display: 'flex', alignItems: 'stretch',
+          background: 'var(--color-floating-surface)',
+          borderRadius: 32,
+          boxShadow: 'none',
+          padding: 6,
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        }}>
+          {TABS.map((tab) => {
+            const active = activeTab === tab.path
+            const color = active ? ACTIVE : INACTIVE
+            return (
+              <button key={tab.path} onClick={() => navigate(tab.path)} style={tabStyle}>
+                {active && (
+                  <span style={{
+                    position: 'absolute', inset: 0, borderRadius: 26,
+                    background: 'var(--color-floating-surface-active)', zIndex: 0,
+                  }} />
+                )}
+                <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex' }}>
+                  <tab.Icon color={color} />
+                </span>
+                <span style={{ position: 'relative', zIndex: 1, ...LABEL, color }}>{tab.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </nav>
   )

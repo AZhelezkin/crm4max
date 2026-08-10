@@ -33,7 +33,7 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, foc
   focusDate?: string
   focusToken?: number
 }) {
-  const [offset, setOffset] = useState(0)
+  const [offset, setOffset] = useState(() => focusDate ? weekOffsetOf(baseMonday, focusDate) : 0)
   const [dragX, setDragX] = useState(0)
   const [animating, setAnimating] = useState(false)
 
@@ -135,10 +135,10 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, foc
               const isToday = ds === today
               const weekend = i >= 5
               // Приоритет цвета: выбранный > сегодня(синий) > выходной(красный) > обычный.
-              const letterColor = selected ? 'var(--color-pattern-element)'
+              const letterColor = selected ? 'var(--color-on-surface-secondary)'
                 : weekend ? 'var(--color-error-element-muted)'
                 : 'var(--color-interactive-element-secondary)'
-              const numColor = selected ? 'var(--color-surface)'
+              const numColor = selected ? 'var(--color-on-surface)'
                 : isToday ? 'var(--color-primary-surface)'
                 : weekend ? 'var(--color-error-surface-accented)'
                 : 'var(--color-interactive-element-accented)'
@@ -149,9 +149,9 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, foc
                   // Свайп не должен выбирать день: клик после жеста игнорируем.
                   onClick={() => { if (moved.current) { moved.current = false; return } onSelect(ds) }}
                   style={{
-                    width: 48, padding: '8px 14px 6px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    flex: 1, minWidth: 0, padding: '8px 0 6px', borderRadius: selected ? 16 : 8, cornerShape: selected ? 'squircle' : undefined, border: 'none', cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    background: selected ? 'var(--color-on-surface)' : 'transparent',
+                    background: selected ? 'var(--color-selected-raised-surface)' : 'transparent',
                   }}
                 >
                   <span style={{ fontSize: 11, lineHeight: '13px', fontWeight: 400, letterSpacing: -0.11, color: letterColor }}>{letter}</span>

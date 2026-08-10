@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { useAuthStore } from '@/store/auth.store'
@@ -17,24 +16,20 @@ import confettiImg from '@/assets/guide-confetti.png'
 export default function GuideCard({ firstBookingId }: { firstBookingId?: string }) {
   const navigate = useNavigate()
   const master = useAuthStore((s) => s.master)
-  // Мгновенное скрытие по крестику — не ждём ответа бэка.
-  const [hidden, setHidden] = useState(false)
-
   const progress = master?.guideProgress ?? {}
-  if (hidden || progress.dismissed) return null
+  if (progress.dismissed) return null
 
   const remainingSteps = [progress.edited, progress.shared, progress.openedBooking].filter(Boolean).length
   const allDone = !!progress.edited && !!progress.shared && !!progress.openedBooking
 
   const dismiss = () => {
-    setHidden(true)
     markGuideStep('dismissed')
   }
 
   return (
     <div style={{
       width: '100%', boxSizing: 'border-box', background: 'var(--color-surface-transparent)',
-      borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 12,
+      borderRadius: 20, cornerShape: 'squircle', padding: 12, display: 'flex', flexDirection: 'column', gap: 12,
     }}>
       {/* Заголовок: картинка 41×38 + тексты + крестик */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -64,22 +59,22 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* 1. Бот — выполнен всегда (регистрация через мастер-бот). */}
           <GuideTask done>
-            Познакомиться с умным ассистентом — ботом в чате
+            Познакомиться с умным<br />ассистентом — ботом в чате
           </GuideTask>
           {/* 2. Заменить пример своими данными (любое сохранение правки). */}
           <GuideTask done={!!progress.edited}>
-            Нажми на <InlineEditIcon /> возле любого блока, чтобы заменить пример своими данными
+            Нажми на <InlineEditIcon done={!!progress.edited} /> возле любого<br />блока, чтобы заменить пример<br />своими данными
           </GuideTask>
           {/* 3. Поделиться профилем (экран /share). */}
           <GuideTask done={!!progress.shared}>
-            Поделись профилем кнопкой сверху справа <InlineExportIcon /> — так клиенты смогут записаться
+            Поделись профилем кнопкой<br />сверху справа <InlineExportIcon done={!!progress.shared} /> так клиенты<br />смогут записаться
           </GuideTask>
           {/* 4. Открыть запись — кликабельная, ведёт в пример-запись. */}
           <GuideTask
             done={!!progress.openedBooking}
             onClick={firstBookingId ? () => navigate(`/bookings/${firstBookingId}`) : undefined}
           >
-            Попробуй открыть запись Синьёры Капибары и посмотри, как работают записи
+            Попробуй открыть запись Синьёры<br />Капибары и посмотри, как<br />работают записи
           </GuideTask>
         </div>
       )}
@@ -121,7 +116,7 @@ function GuideCheck({ done }: { done: boolean }) {
   if (done) {
     return (
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}>
-        <circle cx="14" cy="14" r="10.8" fill="var(--color-primary-surface)" />
+        <circle cx="14" cy="14" r="10.8" fill="var(--color-interactive-element)" />
         <path d="M9.6 14.2L12.6 17.2L18.4 11.2" stroke="var(--color-on-primary-surface)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
@@ -134,21 +129,23 @@ function GuideCheck({ done }: { done: boolean }) {
 }
 
 // Инлайн-иконки в тексте задач (20×20, по базовой линии текста).
-function InlineEditIcon() {
+function InlineEditIcon({ done }: { done: boolean }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ verticalAlign: 'text-bottom', color: 'var(--color-primary-surface)' }}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', verticalAlign: -4, color: 'var(--color-primary-surface)' }}>
       <path d="M13.26 3.6 5.05 12.29c-.31.33-.61.98-.67 1.43l-.37 3.24c-.13 1.17.71 1.97 1.87 1.77l3.22-.55c.45-.08 1.08-.41 1.39-.75l8.21-8.69c1.42-1.5 2.06-3.21-.15-5.3-2.2-2.07-3.87-1.34-5.29.16Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M11.89 5.05a6.126 6.126 0 0 0 5.45 5.15" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      {done && <path d="M0 14h24" stroke="var(--color-on-surface)" strokeWidth="2" />}
     </svg>
   )
 }
 
-function InlineExportIcon() {
+function InlineExportIcon({ done }: { done: boolean }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ verticalAlign: 'text-bottom', color: 'var(--color-on-surface)' }}>
-      <path d="M12 15V3.62" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.35 5.85L12 2.5 8.65 5.85" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8 9.5H7c-3 0-4 1.5-4 5v2c0 3.5 1 5 4 5h10c3 0 4-1.5 4-5v-2c0-3.5-1-5-4-5h-1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', verticalAlign: -4, color: 'var(--color-on-surface)' }}>
+      <path d="M9 6.5 12 3.5 15 6.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 14.5V4.5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12c0 4.42 3 8 8 8s8-3.58 8-8" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+      {done && <path d="M0 14h24" stroke="var(--color-on-surface)" strokeWidth="2" />}
     </svg>
   )
 }

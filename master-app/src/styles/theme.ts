@@ -13,6 +13,10 @@ type SemanticTheme = {
   surface: string
   surfaceTransparent: string
   background: string
+  selectedRaisedSurface: string
+  floatingSurface: string
+  floatingSurfaceActive: string
+  onFloatingSurfaceActive: string
   onSurface: string
   onSurfaceInverted: string
   onSurfaceSoften: string
@@ -26,6 +30,7 @@ type SemanticTheme = {
   secondarySurface: string
   secondarySurfaceMuted: string
   patternElement: string
+  nonWorkingSurface: string
   onSecondarySurface: string
   errorSurfaceLite: string
   errorElementMuted: string
@@ -75,6 +80,10 @@ export const darkTheme: SemanticTheme = {
   surface:               '#262729',                       // black90
   surfaceTransparent:    'rgba(242, 243, 245, 0.10)',
   background:            '#17181C',                       // MAX UI --background-surface-primary (синхронизировано с Max chrome)
+  selectedRaisedSurface: '#565759',
+  floatingSurface:       '#3E3F41',
+  floatingSurfaceActive: '#565759',
+  onFloatingSurfaceActive: '#FFFFFF',
 
   // Текст / иконки на основной поверхности
   onSurface:             '#FFFFFF',                       // black00
@@ -93,6 +102,7 @@ export const darkTheme: SemanticTheme = {
   secondarySurface:      '#3C3F4D',                       // calmindigo80
   secondarySurfaceMuted: '#1E1F26',                       // calmindigo95
   patternElement:        '#24262E',                       // calmindigo90
+  nonWorkingSurface:     '#24262E',
   onSecondarySurface:    '#FFFFFF',                       // black00
 
   // Error
@@ -159,6 +169,10 @@ export const lightTheme: SemanticTheme = {
   surface:               '#FFFFFF',
   surfaceTransparent:    'rgba(255, 255, 255, 0.60)',
   background:            '#F2F3F5',
+  selectedRaisedSurface: '#E4E5EB',
+  floatingSurface:       '#FFFFFF',
+  floatingSurfaceActive: '#F2F3F5',
+  onFloatingSurfaceActive: '#007AFE',
 
   onSurface:             '#0E0F11',
   onSurfaceInverted:     '#FFFFFF',
@@ -174,6 +188,7 @@ export const lightTheme: SemanticTheme = {
   secondarySurface:      '#D7D8E0',
   secondarySurfaceMuted: '#E4E5EB',
   patternElement:        '#E4E5EB',
+  nonWorkingSurface:     '#F2F3F5',
   onSecondarySurface:    '#0E0F11',
 
   errorSurfaceLite:        '#F3D0D5',
