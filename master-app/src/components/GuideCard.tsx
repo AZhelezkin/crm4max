@@ -29,7 +29,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
   return (
     <div style={{
       width: '100%', boxSizing: 'border-box', background: 'var(--color-surface-transparent)',
-      borderRadius: 20, cornerShape: 'squircle', padding: 12, display: 'flex', flexDirection: 'column', gap: 12,
+      borderRadius: 24, cornerShape: 'squircle', padding: 12, display: 'flex', flexDirection: 'column', gap: 12,
     }}>
       {/* Заголовок: картинка 41×38 + тексты + крестик */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>

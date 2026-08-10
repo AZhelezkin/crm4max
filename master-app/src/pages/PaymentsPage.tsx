@@ -217,7 +217,7 @@ export default function PaymentsPage() {
                 alignItems: 'flex-start',
                 gap: 4,
                 padding: 16,
-                borderRadius: 18,
+                borderRadius: 24,
                 cornerShape: 'squircle',
                 cursor: 'pointer',
                 background: active ? 'var(--color-primary-surface)' : 'var(--color-surface-transparent)',

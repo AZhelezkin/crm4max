@@ -30,7 +30,7 @@ const SHOW_DAY_ROUTE = false
 // Основные карточки используют сглаженные углы, как в макете главной.
 const cardStyle: CSSProperties = {
   background: 'var(--color-surface-transparent)',
-  borderRadius: 20,
+  borderRadius: 24,
   cornerShape: 'squircle',
   boxShadow: CARD_SHADOW,
 }

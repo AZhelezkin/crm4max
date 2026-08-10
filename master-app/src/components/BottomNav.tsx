@@ -105,12 +105,12 @@ export default function BottomNav() {
           position: 'relative', zIndex: 1,
           pointerEvents: 'auto',
           display: 'flex', alignItems: 'stretch',
-          background: 'var(--color-floating-surface)',
+          background: 'color-mix(in srgb, var(--color-floating-surface) 70%, transparent)',
           borderRadius: 32,
           boxShadow: 'none',
           padding: 6,
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
         }}>
           {TABS.map((tab) => {
             const active = activeTab === tab.path
@@ -120,7 +120,8 @@ export default function BottomNav() {
                 {active && (
                   <span style={{
                     position: 'absolute', inset: 0, borderRadius: 26,
-                    background: 'var(--color-floating-surface-active)', zIndex: 0,
+                    background: 'var(--color-floating-surface-active)',
+                    zIndex: 0,
                   }} />
                 )}
                 <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex' }}>
