@@ -43,6 +43,7 @@ textarea::placeholder {
   --color-floating-surface:       #3E3F41;
   --color-floating-surface-active: #565759;
   --color-on-floating-surface-active: #FFFFFF;
+  --color-floating-surface-highlight: rgba(255, 255, 255, 0.28);
 
   /* Текст / иконки */
   --color-on-surface:             #FFFFFF;
@@ -155,6 +156,7 @@ textarea::placeholder {
   --color-floating-surface:       #FFFFFF;
   --color-floating-surface-active: #F2F3F5;
   --color-on-floating-surface-active: #007AFE;
+  --color-floating-surface-highlight: rgba(255, 255, 255, 0.58);
 
   --color-on-surface:             #0E0F11;
   --color-on-surface-inverted:    #FFFFFF;

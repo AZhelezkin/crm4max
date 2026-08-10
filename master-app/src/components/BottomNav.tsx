@@ -112,6 +112,12 @@ export default function BottomNav() {
           backdropFilter: 'blur(4px)',
           WebkitBackdropFilter: 'blur(4px)',
         }}>
+          <span aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: '12%', right: '12%', height: 1,
+            borderRadius: 1,
+            background: 'linear-gradient(90deg, transparent, var(--color-floating-surface-highlight) 24%, var(--color-floating-surface-highlight) 76%, transparent)',
+            pointerEvents: 'none',
+          }} />
           {TABS.map((tab) => {
             const active = activeTab === tab.path
             const color = active ? ACTIVE : INACTIVE
