@@ -28,10 +28,10 @@ const CARD_SHADOW = '0px 1px 2px 0px rgba(0,0,0,0.1)' // Figma «Card Soft»
 const WEEK_LETTERS = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'] as const // Пн..Вс
 const SHOW_DAY_ROUTE = false
 
-// Figma «Card Soft»-карточка (surface-transparent, rounded 20, тень).
+// Карточки повторяют скругление страницы: 24px - 16px inset = 8px.
 const cardStyle: CSSProperties = {
   background: 'var(--color-surface-transparent)',
-  borderRadius: 20,
+  borderRadius: 8,
   boxShadow: CARD_SHADOW,
 }
 
@@ -314,7 +314,7 @@ export default function HomePage() {
             style={{
               width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', gap: 8,
-              padding: '15px 16px', borderRadius: 16,
+              padding: '15px 16px', borderRadius: 8,
               background: 'linear-gradient(214.04deg, var(--color-grad-peach-100) 5.83%, var(--color-grad-peach-0) 90.48%)',
             }}
           >
@@ -373,11 +373,11 @@ export default function HomePage() {
                 return (
                   // Строка: кликабельная часть → карточка записи; кебаб «⋮» — отдельная
                   // кнопка (меню действий), поэтому строка не <button>, а контейнер.
-                  <div key={b.id} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
+                  <div key={b.id} style={{ width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: '4px 4px 4px 12px' }}>
                     <button type="button" onClick={() => navigate(`/bookings/${b.id}`)}
                       style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, textAlign: 'left' }}>
                       <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: 8, flexShrink: 0 }}>
-                        <div style={{ width: 2, height: 44, borderRadius: 1, background: lineColor }} />
+                        <div style={{ width: 2, height: 44, marginLeft: -8, marginRight: 8, borderRadius: 1, background: lineColor }} />
                       </div>
                       <div style={{ width: 64, flexShrink: 0, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                         <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{b.time}</span>
@@ -451,7 +451,7 @@ export default function HomePage() {
             style={{
               display: 'flex', width: '100%', height: 36, padding: 10,
               justifyContent: 'center', alignItems: 'center', gap: 8, alignSelf: 'stretch',
-              boxSizing: 'border-box', borderRadius: 12, border: 'none',
+              boxSizing: 'border-box', borderRadius: 8, border: 'none',
               background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)',
               cursor: hasRouteOrigin && dayRouteStops.length > 0 ? 'pointer' : 'default',
             }}
@@ -463,7 +463,7 @@ export default function HomePage() {
 
         {/* Кнопка «Создать запись» */}
         <button type="button" onClick={() => navigate('/bookings/new', { state: { date: activeDate } })}
-          style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
+          style={{ width: '100%', height: 60, borderRadius: 8, border: 'none', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
           <span style={{ display: 'inline-flex' }}><AddCircleIcon /></span>
           <span style={text.callout1}>Создать запись</span>
         </button>
@@ -548,7 +548,7 @@ export default function HomePage() {
                 const weekend = i >= 5
                 return (
                   <div key={i} style={{
-                    flex: 1, minWidth: 0, padding: '8px 14px 6px', borderRadius: 12,
+                    flex: 1, minWidth: 0, padding: '8px 14px 6px', borderRadius: 8,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                     background: working ? 'transparent' : 'var(--color-background)',
                   }}>
@@ -605,7 +605,7 @@ export default function HomePage() {
           ) : (
             /* Дефолт (макет 10220-102836): адрес не указан — та же строка, редактирование карандашом. */
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 12px 12px' }}>
-              <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
+              <span style={{ padding: '6px 6px 6px 0', display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
               <span style={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}>Не указан</span>
             </div>
           )}
@@ -983,7 +983,7 @@ function IconTextRow({ icon, text: textStyle, style, children }: {
 
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: multiline ? 'flex-start' : 'center', ...style }}>
-      <span style={{ padding: 6, display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>{icon}</span>
+      <span style={{ padding: '6px 6px 6px 0', display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>{icon}</span>
       <span ref={ref} style={{ flex: 1, minWidth: 0, ...textStyle }}>{children}</span>
     </div>
   )

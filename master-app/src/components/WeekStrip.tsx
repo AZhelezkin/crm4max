@@ -113,7 +113,7 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, foc
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       style={{
-        overflow: 'hidden', padding: 8,
+        overflow: 'hidden', padding: '8px 12px',
         borderBottom: '1px solid var(--color-secondary-surface-muted)',
         touchAction: 'pan-y',
       }}
@@ -149,7 +149,7 @@ export default function WeekStrip({ baseMonday, today, activeDate, onSelect, foc
                   // Свайп не должен выбирать день: клик после жеста игнорируем.
                   onClick={() => { if (moved.current) { moved.current = false; return } onSelect(ds) }}
                   style={{
-                    width: 48, padding: '8px 14px 6px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                    width: 48, padding: '8px 14px 6px', borderRadius: 8, border: 'none', cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     background: selected ? 'var(--color-on-surface)' : 'transparent',
                   }}

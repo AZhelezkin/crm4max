@@ -34,7 +34,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
   return (
     <div style={{
       width: '100%', boxSizing: 'border-box', background: 'var(--color-surface-transparent)',
-      borderRadius: 20, padding: 16, display: 'flex', flexDirection: 'column', gap: 12,
+      borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12,
     }}>
       {/* Заголовок: картинка 41×38 + тексты + крестик */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -53,7 +53,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
           type="button"
           aria-label="Скрыть подсказки"
           onClick={dismiss}
-          style={{ padding: 6, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}
+          style={{ padding: 0, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', color: 'var(--color-interactive-element-secondary)' }}
         >
           <CloseCircleIcon />
         </button>
@@ -87,7 +87,7 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
   )
 }
 
-// Строка-задача: surface rx20 (Card Soft), чекбокс 28 + текст 15/20.
+// Строка-задача: surface rx8, чекбокс 28 + текст 15/20.
 // Выполненная — галка, зачёркнутый приглушённый текст (макет 10053-50054).
 function GuideTask({ done, onClick, children }: {
   done: boolean
@@ -100,7 +100,7 @@ function GuideTask({ done, onClick, children }: {
       {...(onClick ? { type: 'button' as const, onClick } : {})}
       style={{
         width: '100%', boxSizing: 'border-box', background: 'var(--color-surface)',
-        borderRadius: 20, padding: '16px 20px 16px 16px', border: 'none', textAlign: 'left',
+        borderRadius: 8, padding: '16px 20px 16px 16px', border: 'none', textAlign: 'left',
         boxShadow: '0px 1px 1px rgba(0,0,0,0.1)', cursor: onClick ? 'pointer' : 'default',
         display: 'flex', alignItems: 'center', gap: 16,
       }}
