@@ -6,6 +6,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
+import { useBookingsStore } from '@/store/bookings.store'
 import type { Booking } from '@/types'
 import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems, bookingServiceNames } from '@/types'
 import { text } from '@/styles/typography'
@@ -68,6 +69,7 @@ const chipStyle: React.CSSProperties = {
 export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const upsertBooking = useBookingsStore((state) => state.upsertBooking)
   const [booking, setBooking] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -102,14 +104,18 @@ export default function BookingDetailPage() {
   const handleConfirmPayment = async () => {
     if (busy) return
     setBusy(true)
-    try { setBooking(await bookingsApi.confirmPayment(booking.id)) } finally { setBusy(false) }
+    try {
+      const updated = await bookingsApi.confirmPayment(booking.id)
+      setBooking(updated)
+      upsertBooking(updated)
+    } finally { setBusy(false) }
   }
 
   const handleCancel = async () => {
     if (busy) return
     setBusy(true)
     try {
-      await bookingsApi.cancel(booking.id)
+      upsertBooking(await bookingsApi.cancel(booking.id))
       navigate('/bookings')
     } catch { setBusy(false) }
   }

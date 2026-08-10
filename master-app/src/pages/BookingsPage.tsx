@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import { bookingsApi } from '@/api/bookings.api'
+import { useBookingsStore } from '@/store/bookings.store'
 import { scheduleApi } from '@/api/schedule.api'
 import { bookingDuration, bookingTotal, bookingServiceNames, type Booking, type Schedule } from '@/types'
 import { text } from '@/styles/typography'
@@ -45,7 +45,8 @@ function buildMonthGrid(monthStart: dayjs.Dayjs): (dayjs.Dayjs | null)[] {
 
 export default function BookingsPage() {
   const navigate = useNavigate()
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const bookings = useBookingsStore((state) => state.bookings)
+  const fetchBookings = useBookingsStore((state) => state.fetchBookings)
   const [schedule, setSchedule] = useState<Schedule | null>(null)
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().startOf('month'))
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
@@ -64,9 +65,9 @@ export default function BookingsPage() {
   }, [monthMenuOpen])
 
   useEffect(() => {
-    bookingsApi.list().then(setBookings).catch(() => {})
+    void fetchBookings()
     scheduleApi.get().then(setSchedule).catch(() => {})
-  }, [])
+  }, [fetchBookings])
 
   const today = dayjs().format('YYYY-MM-DD')
 

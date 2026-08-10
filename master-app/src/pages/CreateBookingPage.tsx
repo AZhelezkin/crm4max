@@ -11,6 +11,7 @@ import { scheduleApi } from '@/api/schedule.api'
 import { clientsApi } from '@/api/clients.api'
 import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
 import { useAuthStore } from '@/store/auth.store'
+import { useBookingsStore } from '@/store/bookings.store'
 import type { Booking, Client, EffectiveWorkWindow, Schedule, Service } from '@/types'
 import { discountedPrice, formatPrice, formatDuration, formatDurationHuman, bookingDuration, bookingTotal, bookingServiceItems, bookingServiceNames } from '@/types'
 import { text } from '@/styles/typography'
@@ -191,6 +192,8 @@ function maskPhoneInput(raw: string, prev: string): string {
 export default function CreateBookingPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const upsertBooking = useBookingsStore((state) => state.upsertBooking)
+  const invalidateBookings = useBookingsStore((state) => state.invalidate)
   const master = useAuthStore((s) => s.master)
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
@@ -648,6 +651,7 @@ export default function CreateBookingPage() {
         allowOverlap: true,
         allowOutsideSchedule: true,
       })
+      upsertBooking(booking)
       trackEvent('master_booking_created', {
         booking_type: 'regular',
         services_count: selectedServices.length,
@@ -690,6 +694,7 @@ export default function CreateBookingPage() {
         onlineMeetingLink: online ? normalizedOnlineMeetingLink : undefined,
         allowOutsideSchedule: true,
       })
+      invalidateBookings()
       trackEvent('master_package_created', {
         sessions_count: slots.length,
         has_address: outbound && Boolean(address.trim()),
@@ -741,7 +746,7 @@ export default function CreateBookingPage() {
     setPendingReschedule(null)
     try {
       // Свободный перенос мастером — время любое в рабочем дне, пересечения разрешены.
-      await bookingsApi.reschedule(rescheduleId, { date, time: t, allowOverlap: true, allowOutsideSchedule: true })
+      upsertBooking(await bookingsApi.reschedule(rescheduleId, { date, time: t, allowOverlap: true, allowOutsideSchedule: true }))
     } catch (e) {
       console.error('[booking] reschedule failed', e)
     }
@@ -767,7 +772,7 @@ export default function CreateBookingPage() {
   const handleCancelBooking = async () => {
     if (!createdBooking) return
     try {
-      await bookingsApi.cancel(createdBooking.id)
+      upsertBooking(await bookingsApi.cancel(createdBooking.id))
     } catch (e) {
       console.error('[booking] cancel failed', e)
     }
@@ -780,7 +785,9 @@ export default function CreateBookingPage() {
     if (!createdBooking || payingBusy) return
     setPayingBusy(true)
     try {
-      setCreatedBooking(await bookingsApi.confirmPayment(createdBooking.id))
+      const updated = await bookingsApi.confirmPayment(createdBooking.id)
+      setCreatedBooking(updated)
+      upsertBooking(updated)
     } catch (e) {
       console.error('[booking] confirm payment failed', e)
     } finally {

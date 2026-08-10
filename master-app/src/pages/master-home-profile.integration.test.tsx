@@ -40,6 +40,8 @@ vi.mock('@/api/masters.api', () => ({
 }))
 
 import { useAuthStore } from '@/store/auth.store'
+import { useBookingsStore } from '@/store/bookings.store'
+import { useHomeDataStore } from '@/store/home-data.store'
 
 import HomePage from './HomePage'
 
@@ -74,6 +76,8 @@ describe('master HomePage', () => {
     vi.spyOn(window, 'open').mockImplementation(() => null)
     // Выбранный день полоски персистится в sessionStorage — чистим между тестами.
     sessionStorage.clear()
+    useBookingsStore.getState().reset()
+    useHomeDataStore.getState().reset()
     primeSuccessfulReads()
     setMaster(null)
   })

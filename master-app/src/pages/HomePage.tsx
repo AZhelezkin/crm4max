@@ -5,9 +5,10 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { useAuthStore } from '@/store/auth.store'
+import { useBookingsStore } from '@/store/bookings.store'
+import { useHomeDataStore } from '@/store/home-data.store'
 import { bookingsApi } from '@/api/bookings.api'
-import { clientsApi } from '@/api/clients.api'
-import { subscriptionApi, type SubscriptionState } from '@/api/subscription.api'
+import type { SubscriptionState } from '@/api/subscription.api'
 import { masterServiceList, bookingTotal, bookingDuration, bookingServiceNames, type Booking, type Client } from '@/types'
 import { text } from '@/styles/typography'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
@@ -76,17 +77,24 @@ export default function HomePage() {
   const { master } = useAuthStore()
   const navigate = useNavigate()
 
-  const [clients, setClients] = useState<Client[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const clients = useHomeDataStore((state) => state.clients)
+  const clientsLoaded = useHomeDataStore((state) => state.clientsLoaded)
+  const fetchClients = useHomeDataStore((state) => state.fetchClients)
+  const sub = useHomeDataStore((state) => state.subscription)
+  const subLoaded = useHomeDataStore((state) => state.subscriptionLoaded)
+  const fetchSubscription = useHomeDataStore((state) => state.fetchSubscription)
+  const setSubscription = useHomeDataStore((state) => state.setSubscription)
+  const bookings = useBookingsStore((state) => state.bookings)
+  const bookingsLoaded = useBookingsStore((state) => state.loaded)
+  const fetchBookings = useBookingsStore((state) => state.fetchBookings)
+  const upsertBooking = useBookingsStore((state) => state.upsertBooking)
   // Статус подписки — строка под именем в шапке (макет 10216-40371).
-  const [sub, setSub] = useState<SubscriptionState | null>(null)
-  const [subLoading, setSubLoading] = useState(true)
+  const subLoading = !subLoaded
   const subLoadedRef = useRef(false)
   const subRequestRef = useRef<Promise<void> | null>(null)
   const { isPending: cardReconciliationPending } = useCardBindingReconciliation((state) => {
     subLoadedRef.current = true
-    setSub(state)
-    setSubLoading(false)
+    setSubscription(state)
   })
   // Выбранный день недельной полоски (пусто = сегодня) — макеты календаря.
   // Инициализируем из sessionStorage, чтобы вернуться на тот же день после карточки.
@@ -111,26 +119,21 @@ export default function HomePage() {
   const [toast, setToast] = useState<string | null>(null)
   // Пока ответы не пришли — скелетоны вместо списка записей и строки подписки.
   // Флаг снимается и на ошибке: показываем пустое состояние, а не вечный shimmer.
-  const [bookingsLoading, setBookingsLoading] = useState(true)
-  const [clientsLoading, setClientsLoading] = useState(true)
+  const bookingsLoading = !bookingsLoaded
+  const clientsLoading = !clientsLoaded
   useEffect(() => {
-    clientsApi.list().then(setClients).catch(() => {}).finally(() => setClientsLoading(false))
-    bookingsApi.list().then(setBookings).catch(() => {}).finally(() => setBookingsLoading(false))
-  }, [])
+    void fetchClients()
+    void fetchBookings()
+  }, [fetchBookings, fetchClients])
   useEffect(() => {
     if (cardReconciliationPending || subLoadedRef.current || subRequestRef.current) return
-    const request = subscriptionApi.getMe()
-      .then((state) => {
-        subLoadedRef.current = true
-        setSub(state)
-      })
-      .catch(() => {})
+    const request = fetchSubscription()
+      .then(() => { subLoadedRef.current = true })
       .finally(() => {
         subRequestRef.current = null
-        setSubLoading(false)
       })
     subRequestRef.current = request
-  }, [cardReconciliationPending])
+  }, [cardReconciliationPending, fetchSubscription])
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
@@ -167,7 +170,7 @@ export default function HomePage() {
     setMenuBusy(true)
     try {
       const updated = await bookingsApi.cancel(b.id)
-      setBookings((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+      upsertBooking(updated)
       showToast('Запись отменена')
     } catch {
       showToast('Не удалось отменить запись')
@@ -433,9 +436,9 @@ export default function HomePage() {
               {/* «N записей на N ₽» — Caption 1 (line-height 20) */}
               <Skeleton width={132} height={16} radius={8} />
             </div>
-          ) : dayActive.length > 0 && (
-            <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
-              {pluralRecords(dayActive.length)} на {formatRub(daySum)}
+          ) : (
+            <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)', visibility: dayActive.length > 0 ? 'visible' : 'hidden' }}>
+              {dayActive.length > 0 ? `${pluralRecords(dayActive.length)} на ${formatRub(daySum)}` : '\u00A0'}
             </div>
           )}
         </div>
