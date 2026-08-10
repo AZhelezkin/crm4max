@@ -786,7 +786,7 @@ export function Step0Form(props: Step0Props) {
     >
       {/* Back-кнопка — absolute overlay (в Figma header.toolbarTop лежит
           поверх Form, а не в потоке выше неё; иначе аватар съезжает на
-          лишних 56px вниз). pointer-events: none на обёртке, auto на
+           лишних 76px вниз). pointer-events: none на обёртке, auto на
           кнопке — чтобы скролл проходил, а саму кнопку можно тапать. */}
       <div
         style={{
@@ -794,8 +794,9 @@ export function Step0Form(props: Step0Props) {
           top: 0, left: 0, right: 0,
           display: 'flex', alignItems: 'center',
           justifyContent: title ? 'center' : undefined,
-          padding: '6px 12px',
-          height: 56,
+          padding: 16,
+          height: 76,
+          boxSizing: 'border-box',
           zIndex: 1,
           pointerEvents: 'none',
         }}
@@ -806,7 +807,7 @@ export function Step0Form(props: Step0Props) {
           aria-label="Назад"
           style={{
             position: title ? 'absolute' : undefined,
-            left: title ? 12 : undefined,
+            left: title ? 16 : undefined,
             width: 44, height: 44,
             borderRadius: '50%',
             background: 'var(--color-background)',
@@ -1136,4 +1137,3 @@ function ChevronRightIcon() {
     </svg>
   )
 }
-

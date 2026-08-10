@@ -38,7 +38,7 @@ export default function SettingsPage() {
   return (
     <div style={{ minHeight: '100dvh' }}>
       {/* Тулбар: круглый back 44 + центрированный заголовок (на hero-градиенте #root>div). */}
-      <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
+      <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: 16 }}>
         <button
           type="button"
           onClick={() => navigate(-1)}

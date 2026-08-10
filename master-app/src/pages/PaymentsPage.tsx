@@ -136,15 +136,16 @@ export default function PaymentsPage() {
     // overflowX:hidden + overscrollBehaviorX:contain — чтобы экран не «ездил»/не давал
     // «резинку» при горизонтальном свайпе (строка месяцев скроллится сама, см. ниже).
     <div style={{ minHeight: '100dvh', color: 'var(--color-on-surface)', paddingBottom: 95, overflowX: 'hidden', overscrollBehaviorX: 'contain' }}>
-      {/* Тулбар: h56, заголовок «Доход» по центру, экспорт-пилюля справа (макет 8712-44229). */}
+      {/* Тулбар: заголовок «Доход» по центру, экспорт-пилюля справа (макет 8712-44229). */}
       <div
         style={{
           position: 'relative',
-          height: 56,
+          height: 76,
+          boxSizing: 'border-box',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
-          padding: '6px 12px',
+          padding: 16,
         }}
       >
         <div

@@ -235,13 +235,13 @@ export default function AvatarCropPortal({ open, src, onCancel, onConfirm, outpu
       }}
     >
       {/* Header: back 44×44 слева, заголовок центрирован относительно viewport. */}
-      <div style={{ position: 'relative', flexShrink: 0, height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', flexShrink: 0, height: 76, boxSizing: 'border-box', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button
           type="button"
           onClick={onCancel}
           aria-label="Назад"
           style={{
-            position: 'absolute', left: 12,
+            position: 'absolute', left: 16,
             width: 44, height: 44,
             borderRadius: '50%',
             background: 'var(--color-background)',

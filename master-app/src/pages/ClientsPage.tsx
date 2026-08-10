@@ -249,13 +249,14 @@ export default function ClientsPage() {
 
 // ─── Шапки ─────────────────────────────────────────────────────────────────────
 
-// Базовая панель тулбара: h56, padding 6/12, контент по центру вертикали.
+// Базовая панель тулбара: 16 + control 44 + 16 = 76.
 const toolbarStyle = {
   position: 'relative' as const,
-  height: 56,
+  height: 76,
+  boxSizing: 'border-box' as const,
   display: 'flex',
   alignItems: 'center',
-  padding: '6px 12px',
+  padding: 16,
 }
 
 // Круглая кнопка 44 на фоне background (back / иконки тулбара).

@@ -6,19 +6,20 @@ import { text } from '@/styles/typography'
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Spinner } from '@maxhub/max-ui'
 
-// ── Hero-шапка: круглый back 44×44 (left 12) + центрированный заголовок ─────────
-// Лежит на hero-градиенте (#root > div). h=56 (back 44 + 6/6). Макет shedule.svg.
+// ── Hero-шапка: круглый back 44×44 (left 16) + центрированный заголовок ─────────
+// Лежит на hero-градиенте (#root > div). h=76 (back 44 + 16/16).
 // `onBack` опционален: у экранов-вкладок (например «Другое», макет 10338-42120)
 // в leading-слоте тулбара пусто — возврата нет, переключение идёт навбаром.
 export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBack?: () => void; trailing?: ReactNode }) {
   return (
     <div style={{
       position: 'relative',
-      height: 56,
+      height: 76,
+      boxSizing: 'border-box',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '6px 12px',
+      padding: 16,
       flexShrink: 0,
     }}>
       {onBack && (
@@ -28,7 +29,7 @@ export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBa
           aria-label="Назад"
           style={{
             position: 'absolute',
-            left: 12,
+            left: 16,
             width: 44, height: 44,
             borderRadius: '50%',
             background: 'var(--color-background)',
@@ -45,7 +46,7 @@ export function HeroHeader({ title, onBack, trailing }: { title: ReactNode; onBa
       <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</div>
       {/* Трейлинг-действия справа (например + и поиск на «Списке услуг»). */}
       {trailing && (
-        <div style={{ position: 'absolute', right: 12, display: 'flex', alignItems: 'center' }}>
+        <div style={{ position: 'absolute', right: 16, display: 'flex', alignItems: 'center' }}>
           {trailing}
         </div>
       )}

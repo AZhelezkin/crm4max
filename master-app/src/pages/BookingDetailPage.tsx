@@ -152,7 +152,7 @@ export default function BookingDetailPage() {
   return (
     <div style={{ minHeight: '100dvh' }}>
       {/* Шапка: назад + «Запись» */}
-      <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
+      <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
           <button type="button" aria-label="Назад" onClick={handleBack} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface)' }}>
             <ArrowLeftIcon />

@@ -821,7 +821,7 @@ export default function CreateBookingPage() {
       // прибита к низу экрана, список скроллится над ней (макет 10130-52706).
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {searchMode ? (
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px' }}>
+          <div style={{ height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8, padding: 16 }}>
             <PillButton onClick={backFromService} ariaLabel="Назад">
               <ArrowLeftIcon />
             </PillButton>
@@ -1332,7 +1332,7 @@ export default function CreateBookingPage() {
     return (
       <div style={{ minHeight: '100dvh', paddingBottom: 20 }}>
         {clientSearchMode ? (
-          <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 12px' }}>
+          <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 16 }}>
             <PillButton onClick={closeClientSearch} ariaLabel="Назад">
               <ArrowLeftIcon />
             </PillButton>
@@ -1492,7 +1492,7 @@ export default function CreateBookingPage() {
     return (
       <div style={{ minHeight: '100dvh' }}>
         {/* Шапка: зелёная галочка + «Запись создана!» + «Закрыть» */}
-        <div style={{ height: 56, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ height: 76, boxSizing: 'border-box', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, background: 'linear-gradient(149.74deg, var(--color-grad-green-vibrance-0) 7.31%, var(--color-grad-green-vibrance-100) 91.96%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IcoTickCircle />

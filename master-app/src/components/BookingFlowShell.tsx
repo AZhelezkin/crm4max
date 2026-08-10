@@ -12,7 +12,7 @@ interface BookingFlowToolbarProps {
 
 export function BookingFlowToolbar({ title, subtitle, onBack, backIcon, backAriaLabel = 'Назад', trailing }: BookingFlowToolbarProps) {
   return (
-    <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
+    <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
       <BookingFlowPillButton onClick={onBack} ariaLabel={backAriaLabel}>
         {backIcon}
       </BookingFlowPillButton>

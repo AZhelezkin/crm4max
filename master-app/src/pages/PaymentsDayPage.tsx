@@ -58,11 +58,12 @@ export default function PaymentsDayPage() {
       <div
         style={{
           position: 'relative',
-          height: 56,
+          height: 76,
+          boxSizing: 'border-box',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '6px 12px',
+          padding: 16,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22 }}>
