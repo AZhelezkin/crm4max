@@ -23,10 +23,11 @@ interface ServicesCatalogProps {
   footer?: ReactNode
   /** Скрыть нижнюю кнопку «Добавить услугу» — на «Списке услуг» добавление в шапке (+). */
   hideAddButton?: boolean
+  documentScroll?: boolean
 }
 
 const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
-  ({ onServiceCountChange, footer, hideAddButton = false }, ref) => {
+  ({ onServiceCountChange, footer, hideAddButton = false, documentScroll = false }, ref) => {
     const [allServices, setAllServices] = useState<Service[]>([])
     const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading')
     // Открытый редактор услуги (создание/правка) — см. ServiceEditorPortal.
@@ -63,8 +64,8 @@ const ServicesCatalog = forwardRef<ServicesCatalogHandle, ServicesCatalogProps>(
     const shownServices = q ? allServices.filter((s) => s.name.toLowerCase().includes(q)) : allServices
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 8px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: documentScroll ? undefined : 1, minHeight: documentScroll ? undefined : 0 }}>
+        <div style={{ flex: documentScroll ? undefined : 1, overflowY: documentScroll ? undefined : 'auto', padding: documentScroll ? '8px 16px 48px' : '8px 16px', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
 
           {/* Строка поиска (по иконке в шапке) */}
           {searchOpen && (

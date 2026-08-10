@@ -171,6 +171,7 @@ export default function AboutMePage() {
         onBack={() => navigate(-1)}
         title="Профиль"
         showServiceMode={false}
+        documentScroll
       />
 
       <div style={{ padding: '24px 16px calc(48px + env(safe-area-inset-bottom))', flexShrink: 0 }}>

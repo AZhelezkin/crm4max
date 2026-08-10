@@ -13,7 +13,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <HeroHeader
         title="Услуги"
         onBack={handleBack}
@@ -31,7 +31,7 @@ export default function ServicesPage() {
           </div>
         }
       />
-      <ServicesCatalog ref={editorRef} hideAddButton />
+      <ServicesCatalog ref={editorRef} hideAddButton documentScroll />
     </div>
   )
 }

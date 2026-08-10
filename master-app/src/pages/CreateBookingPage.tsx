@@ -819,7 +819,7 @@ export default function CreateBookingPage() {
     return (
       // height:100dvh (не minHeight) + minHeight:0 у скролла — кнопка «Выбрать»
       // прибита к низу экрана, список скроллится над ней (макет 10130-52706).
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {searchMode ? (
           <div style={{ height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8, padding: 16 }}>
             <PillButton onClick={backFromService} ariaLabel="Назад">
@@ -854,7 +854,7 @@ export default function CreateBookingPage() {
           />
         )}
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 32px' }}>
+        <div style={{ flex: 1, padding: '8px 16px 32px' }}>
           {/* Сегмент-контрол «Все услуги / Оказывались клиенту» (в поиске скрыт). */}
           {!searchMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, padding: 4, boxSizing: 'border-box', background: 'var(--color-surface-transparent)', borderRadius: 16, marginBottom: 12 }}>
@@ -924,7 +924,7 @@ export default function CreateBookingPage() {
             }
           }}
         />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ flex: 1, padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {months.map((monthStart) => (
             <div key={monthStart.format('YYYY-MM')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ paddingLeft: 6 }}>
@@ -1022,7 +1022,7 @@ export default function CreateBookingPage() {
           else if (packageSessionIndex !== null || rescheduleId) setStep('date')
           else setStep('confirm')
         }} />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: 1, padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {fixedDateFromSchedule && packageSessionIndex === null ? (
             <div style={{ ...listItemStyle, gap: 12, cursor: 'default' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1123,7 +1123,7 @@ export default function CreateBookingPage() {
           }
         />
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* Клиент */}
           <button type="button" onClick={() => setStep('client')} style={listItemStyle}>
             {selectedClient && <ClientAvatar name={selectedClient.name} photo={selectedClient.photo} />}
@@ -1645,7 +1645,7 @@ export default function CreateBookingPage() {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar title="Цвет записи" onBack={() => setStep('confirm')} />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 32px' }}>
+        <div style={{ flex: 1, padding: '8px 16px 32px' }}>
           <div style={{ background: 'var(--color-surface-transparent)', borderRadius: 20, boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', padding: 24, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, justifyItems: 'center' }}>
             {BOOKING_COLORS.map((c) => {
               const selected = c.toUpperCase() === color.toUpperCase()
@@ -1676,7 +1676,7 @@ export default function CreateBookingPage() {
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <Toolbar title="Создание записи" onBack={() => navigate(-1)} />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px calc(16px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ flex: 1, padding: '8px 16px calc(16px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Клиент */}
         <FormCard title="Клиент">
           <FormRow label="Имя" value={selectedClient ? selectedClient.name : 'Выбрать'} prompt={!selectedClient} onClick={() => setStep('client')} last />

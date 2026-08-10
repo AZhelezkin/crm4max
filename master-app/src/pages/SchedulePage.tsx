@@ -89,6 +89,7 @@ export default function SchedulePage() {
         breakStart={breakStart} setBreakStart={setBreakStart}
         breakEnd={breakEnd} setBreakEnd={setBreakEnd}
         onBack={() => navigate(-1)}
+        documentScroll
         footer={
           <>
             {error && (

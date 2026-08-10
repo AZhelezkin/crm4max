@@ -29,11 +29,12 @@ export default function DesktopScrollbar() {
 
   useEffect(() => {
     if (!desktop) return
-    const scroller = document.body
     const update = () => {
-      const viewport = scroller.clientHeight
+      const scroller = document.scrollingElement
+      if (!scroller) return
+      const viewport = window.innerHeight
       const content = scroller.scrollHeight
-      if (content <= viewport) {
+      if (content - viewport <= 1) {
         setThumb({ visible: false, height: 0, top: 0, progress: 0 })
         return
       }
@@ -45,15 +46,15 @@ export default function DesktopScrollbar() {
       setThumb({ visible: true, height, top: TRACK_INSET + progress * maxTop, progress })
     }
     const resizeObserver = new ResizeObserver(update)
-    resizeObserver.observe(scroller)
+    resizeObserver.observe(document.body)
     const root = document.getElementById('root')
     if (root) resizeObserver.observe(root)
-    scroller.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     update()
     return () => {
       resizeObserver.disconnect()
-      scroller.removeEventListener('scroll', update)
+      window.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
   }, [desktop])
@@ -66,14 +67,16 @@ export default function DesktopScrollbar() {
       onPointerLeave={() => { if (!dragging) setHovered(false) }}
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId)
+        const scroller = document.scrollingElement
+        if (!scroller) return
         const startY = event.clientY
-        const startScroll = document.body.scrollTop
-        const trackHeight = document.body.clientHeight - TRACK_INSET * 2
+        const startScroll = scroller.scrollTop
+        const trackHeight = window.innerHeight - TRACK_INSET * 2
         const maxThumbTop = trackHeight - thumb.height
-        const maxScroll = document.body.scrollHeight - document.body.clientHeight
+        const maxScroll = scroller.scrollHeight - window.innerHeight
         setDragging(true)
         const move = (moveEvent: PointerEvent) => {
-          if (maxThumbTop > 0) document.body.scrollTop = startScroll + (moveEvent.clientY - startY) / maxThumbTop * maxScroll
+          if (maxThumbTop > 0) scroller.scrollTop = startScroll + (moveEvent.clientY - startY) / maxThumbTop * maxScroll
         }
         const stop = () => {
           setDragging(false)

@@ -424,6 +424,7 @@ export interface Step1Props {
   setBreakEnd: (v: string) => void
   onBack: () => void
   footer?: ReactNode
+  documentScroll?: boolean
 }
 
 export function Step1Form(props: Step1Props) {
@@ -433,11 +434,11 @@ export function Step1Form(props: Step1Props) {
     buffer, setBuffer,
     hasBreak, setHasBreak,
     breakStart, setBreakStart, breakEnd, setBreakEnd,
-    onBack, footer,
+    onBack, footer, documentScroll = false,
   } = props
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+    <div style={{ flex: documentScroll ? undefined : 1, overflowY: documentScroll ? undefined : 'auto', position: 'relative' }}>
       <HeroHeader title="График работы" onBack={onBack} />
 
       {/* Контент: padding 16 по бокам; header→группа1 и группа→группа = 34 */}
@@ -748,6 +749,7 @@ export interface Step0Props {
   title?: ReactNode
   showServiceMode?: boolean
   footer?: ReactNode
+  documentScroll?: boolean
 }
 
 // Figma «Caption 2» 14/16/500 ls -0.028 — caption под полем + текст сегмента.
@@ -761,7 +763,7 @@ export function Step0Form(props: Step0Props) {
     location,
     homeVisit, setHomeVisit,
     photoPreview, photoUploading, photoInputRef, onPhotoChange,
-    onAddressClick, onBack, title, showServiceMode = true, footer,
+    onAddressClick, onBack, title, showServiceMode = true, footer, documentScroll = false,
   } = props
 
   // Описание: auto-grow textarea (до 7 строк по 24px = 168px, потом скролл).
@@ -779,8 +781,8 @@ export function Step0Form(props: Step0Props) {
   return (
     <div
       style={{
-        flex: 1,
-        overflowY: 'auto',
+        flex: documentScroll ? undefined : 1,
+        overflowY: documentScroll ? undefined : 'auto',
         position: 'relative',
       }}
     >
