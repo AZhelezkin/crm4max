@@ -25,6 +25,9 @@
   "secondarySurfaceMuted":    { "$type": "color", "$value": "#E4E5EB" },
   "patternElement":           { "$type": "color", "$value": "#E4E5EB" },
   "nonWorkingSurface":        { "$type": "color", "$value": "#F2F3F5" },
+  "calendarNonWorkingSurface": { "$type": "color", "$value": "#E4E5EB" },
+  "calendarBookedSurfaceTransparent": { "$type": "color", "$value": "rgba(128, 188, 255, 0.60)" },
+  "calendarNonWorkingSurfaceTransparent": { "$type": "color", "$value": "rgba(228, 229, 235, 0.60)" },
   "onSecondarySurface":       { "$type": "color", "$value": "#0E0F11" },
 
   "errorSurfaceLite":         { "$type": "color", "$value": "#F3D0D5" },

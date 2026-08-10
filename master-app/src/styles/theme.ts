@@ -31,6 +31,9 @@ type SemanticTheme = {
   secondarySurfaceMuted: string
   patternElement: string
   nonWorkingSurface: string
+  calendarNonWorkingSurface: string
+  calendarBookedSurfaceTransparent: string
+  calendarNonWorkingSurfaceTransparent: string
   onSecondarySurface: string
   errorSurfaceLite: string
   errorElementMuted: string
@@ -103,6 +106,9 @@ export const darkTheme: SemanticTheme = {
   secondarySurfaceMuted: '#1E1F26',                       // calmindigo95
   patternElement:        '#24262E',                       // calmindigo90
   nonWorkingSurface:     '#24262E',
+  calendarNonWorkingSurface: '#3C3F4D',
+  calendarBookedSurfaceTransparent: 'rgba(0, 122, 254, 0.24)',
+  calendarNonWorkingSurfaceTransparent: 'rgba(60, 63, 77, 0.24)',
   onSecondarySurface:    '#FFFFFF',                       // black00
 
   // Error
@@ -189,6 +195,9 @@ export const lightTheme: SemanticTheme = {
   secondarySurfaceMuted: '#E4E5EB',
   patternElement:        '#E4E5EB',
   nonWorkingSurface:     '#F2F3F5',
+  calendarNonWorkingSurface: '#E4E5EB',
+  calendarBookedSurfaceTransparent: 'rgba(128, 188, 255, 0.60)',
+  calendarNonWorkingSurfaceTransparent: 'rgba(228, 229, 235, 0.60)',
   onSecondarySurface:    '#0E0F11',
 
   errorSurfaceLite:        '#F3D0D5',

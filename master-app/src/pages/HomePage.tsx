@@ -33,6 +33,8 @@ const cardStyle: CSSProperties = {
   borderRadius: 24,
   cornerShape: 'squircle',
   boxShadow: CARD_SHADOW,
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
 }
 
 function initials(name: string): string {
@@ -413,7 +415,7 @@ export default function HomePage() {
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>В этот день нет записей</span>
+                    <span style={{ ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>В этот день нет записей</span>
                     {nearestUpcoming && (
                       <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
                         Ближайшая запись{' '}
@@ -438,7 +440,7 @@ export default function HomePage() {
                   <Skeleton width={132} height={16} radius={8} />
                 </div>
               ) : dayActive.length > 0 && (
-                <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-muted)' }}>
+                <div style={{ padding: 12, textAlign: 'center', ...text.caption1, color: 'var(--color-interactive-element-secondary)' }}>
                   {pluralRecords(dayActive.length)} на {formatRub(daySum)}
                 </div>
               )}
