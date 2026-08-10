@@ -3,6 +3,22 @@ import { authApi } from '@/api/auth.api'
 import { mastersApi } from '@/api/masters.api'
 import type { Master } from '@/types'
 import { metricAuthErrorType, setAnalyticsUserId, trackEventOnce } from '@/lib/metrics'
+import { useBookingsStore } from '@/store/bookings.store'
+import { useHomeDataStore } from '@/store/home-data.store'
+
+async function loadMasterData(): Promise<Master> {
+  const masterRequest = mastersApi.getMe()
+  const bookingsRequest = useBookingsStore.getState().fetchBookings()
+  const { fetchClients, fetchSubscription } = useHomeDataStore.getState()
+
+  const [master] = await Promise.all([
+    masterRequest,
+    bookingsRequest,
+    fetchClients(),
+    fetchSubscription(),
+  ])
+  return master
+}
 
 interface AuthState {
   token: string | null
@@ -30,7 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       setAnalyticsUserId(analyticsUserId)
       localStorage.setItem('masterToken', token)
 
-      const master = await mastersApi.getMe()
+      const master = await loadMasterData()
       set({ token, master, isLoading: false })
       trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: isNewUser })
     } catch (error) {
@@ -38,7 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const token = localStorage.getItem('masterToken')
       if (token) {
         try {
-          const master = await mastersApi.getMe()
+          const master = await loadMasterData()
           set({ token, master, isLoading: false })
           trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: false })
           return

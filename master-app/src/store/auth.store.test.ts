@@ -11,12 +11,21 @@ async function loadStore() {
   return import('./auth.store')
 }
 
+function handleHomePrefetch() {
+  server.use(
+    http.get('*/api/bookings', () => HttpResponse.json([])),
+    http.get('*/api/clients', () => HttpResponse.json([])),
+    http.get('*/api/subscription/me', () => HttpResponse.json(null)),
+  )
+}
+
 afterEach(() => {
   delete window.ym
 })
 
 describe.sequential('master auth store', () => {
   it('авторизуется через MAX, сохраняет token и загружает профиль', async () => {
+    handleHomePrefetch()
     const webApp = installWebApp({ initData: 'master-init-data' })
     const master = createMasterProfile()
     const ym = vi.fn()
@@ -44,9 +53,14 @@ describe.sequential('master auth store', () => {
       master,
       isLoading: false,
     })
+    const { useBookingsStore } = await import('./bookings.store')
+    const { useHomeDataStore } = await import('./home-data.store')
+    expect(useBookingsStore.getState().loaded).toBe(true)
+    expect(useHomeDataStore.getState()).toMatchObject({ clientsLoaded: true, subscriptionLoaded: true })
   })
 
   it('использует сохранённый master token вне MAX', async () => {
+    handleHomePrefetch()
     removeWebApp()
     localStorage.setItem('masterToken', MASTER_TOKEN)
     const master = createMasterProfile()
@@ -72,6 +86,7 @@ describe.sequential('master auth store', () => {
   })
 
   it('удаляет невалидный сохранённый token', async () => {
+    handleHomePrefetch()
     removeWebApp()
     localStorage.setItem('masterToken', MASTER_TOKEN)
     server.use(
