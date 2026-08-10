@@ -34,11 +34,11 @@ export default function GuideCard({ firstBookingId }: { firstBookingId?: string 
   return (
     <div style={{
       width: '100%', boxSizing: 'border-box', background: 'var(--color-surface-transparent)',
-      borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12,
+      borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 12,
     }}>
       {/* Заголовок: картинка 41×38 + тексты + крестик */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        <img src={allDone ? confettiImg : helloImg} alt="" style={{ width: 41, height: 38, objectFit: 'contain', flexShrink: 0 }} />
+        <img src={allDone ? confettiImg : helloImg} alt="" width={32} height={30} style={{ width: 32, height: 30, objectFit: 'contain', flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
           <span style={{ ...text.callout1, color: 'var(--color-on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {allDone ? 'Отлично!' : 'Добро пожаловать!'}

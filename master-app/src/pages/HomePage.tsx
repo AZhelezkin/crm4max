@@ -298,8 +298,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── list: карточки, gap 20, px 16 (Figma 10065:50913) ── */}
-      <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── list: карточки, gap 16, px 16 ── */}
+      <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Гид «Добро пожаловать!» (макеты 10053-50054 / 10065-50531) — чек-лист
             погружения; скрывается крестиком навсегда. Первым в списке. */}
@@ -335,18 +335,18 @@ export default function HomePage() {
         {/* Карточка календаря (макеты 10265-56644 / 10261-56461 / 10265-56802 / 10265-57000) */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
           {/* Шапка: «к сегодня» (скрыт, если активен сегодня) + дата + открыть календарь */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
             <button type="button" aria-label="К сегодняшнему дню" onClick={() => focusDay(today)}
               style={{ background: 'none', border: 'none', padding: 6, display: 'flex', flexShrink: 0,
                 opacity: isTodayActive ? 0 : 1, pointerEvents: isTodayActive ? 'none' : 'auto',
                 cursor: isTodayActive ? 'default' : 'pointer' }}>
               <CalendarDayIcon day={todayD.date()} />
             </button>
-            <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+            <div style={{ position: 'absolute', left: 48, right: 48, textAlign: 'center', pointerEvents: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...text.callout1, color: 'var(--color-on-surface)' }}>
               {isTodayActive ? `Сегодня, ${activeD.format('D MMMM')}` : `${capitalize(activeD.format('dddd'))}, ${activeD.format('D MMMM')}`}
             </div>
             <button type="button" aria-label="Открыть записи" onClick={() => navigate('/bookings')}
-              style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-primary-surface)', flexShrink: 0 }}>
+              style={{ background: 'none', border: 'none', padding: '6px 0', cursor: 'pointer', display: 'flex', color: 'var(--color-primary-surface)', flexShrink: 0 }}>
               <CalendarIcon />
             </button>
           </div>
@@ -469,22 +469,23 @@ export default function HomePage() {
         </button>
 
         {/* Статистика: Клиенты + Услуги */}
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div style={{ display: 'flex', gap: 16 }}>
           <button
             type="button"
             aria-label="Открыть раздел «Клиенты»"
             onClick={() => { markGuideStep('edited'); navigate('/clients') }}
-            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 24, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 8, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Клиенты</span>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
+                Клиенты{clientsLoading ? '' : `, ${clients.length}`}
+              </span>
               <EditIndicator />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minHeight: 32 }}>
                 {clientsLoading ? (
                   <>
-                    {/* Число клиентов (H3 = 26) + стопка из 3 аватарок 32. */}
+                    {/* Количество в заголовке + стопка из 3 аватарок 32. */}
                     <TextBarSkeleton lineHeight={26} width={28} height={20} />
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {[0, 1, 2].map((i) => (
@@ -496,7 +497,7 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{clients.length}</span>
+                    <span />
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {clientAvatars.map((c, i) => (
                         <div key={c.id} style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', background: 'var(--color-surface)', marginLeft: i ? -8 : 0, border: '2px solid var(--color-background)' }}>
@@ -506,7 +507,6 @@ export default function HomePage() {
                     </div>
                   </>
                 )}
-              </div>
               {/* «ходят/не ходят» считается из клиентов И записей — ждём оба ответа. */}
               {clientsLoading || bookingsLoading ? (
                 <TextBarSkeleton lineHeight={16} width={110} height={14} />
@@ -522,20 +522,17 @@ export default function HomePage() {
             type="button"
             aria-label="Открыть раздел «Услуги»"
             onClick={() => { markGuideStep('edited'); navigate('/services') }}
-            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 24, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+            style={{ ...cardStyle, flex: 1, minWidth: 0, padding: 12, border: 'none', display: 'flex', flexDirection: 'column', gap: 16, color: 'inherit', textAlign: 'left', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги</span>
+              <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>Услуги, {servicesCount}</span>
               <EditIndicator />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              <span style={{ ...text.h3, color: 'var(--color-on-surface)' }}>{servicesCount}</span>
             </div>
           </button>
         </div>
 
         {/* График работы */}
-        <div style={{ ...cardStyle, padding: 12, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ ...cardStyle, padding: 12, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>График работы</span>
             <EditButton onClick={() => navigate('/schedule')} />
@@ -604,7 +601,7 @@ export default function HomePage() {
             </>
           ) : (
             /* Дефолт (макет 10220-102836): адрес не указан — та же строка, редактирование карандашом. */
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 12px 12px' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 12px 12px' }}>
               <span style={{ padding: '6px 6px 6px 0', display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><LocationIcon /></span>
               <span style={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}>Не указан</span>
             </div>
@@ -982,7 +979,7 @@ function IconTextRow({ icon, text: textStyle, style, children }: {
   }, [lineHeight, children])
 
   return (
-    <div style={{ display: 'flex', gap: 10, alignItems: multiline ? 'flex-start' : 'center', ...style }}>
+    <div style={{ display: 'flex', gap: 8, alignItems: multiline ? 'flex-start' : 'center', ...style }}>
       <span style={{ padding: '6px 6px 6px 0', display: 'inline-flex', flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>{icon}</span>
       <span ref={ref} style={{ flex: 1, minWidth: 0, ...textStyle }}>{children}</span>
     </div>
