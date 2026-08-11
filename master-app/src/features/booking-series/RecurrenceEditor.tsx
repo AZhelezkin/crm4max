@@ -192,8 +192,8 @@ export default function RecurrenceEditor({
           </>
         )}
 
-        <SectionTitle>Ближайшие записи</SectionTitle>
-        <OccurrencePreview occurrences={shownOccurrences} />
+        <SectionTitle>Конфликты</SectionTitle>
+        <OccurrencePreview occurrences={shownOccurrences.filter((occurrence) => occurrence.warnings?.length)} />
 
         {activePreview && (
           <AuthoritativePreviewSummary preview={activePreview} endless={draft.endDate === null} />
@@ -215,9 +215,6 @@ export default function RecurrenceEditor({
           </div>
         )}
 
-        {activePreview && activePreview.warningsCount > 0 && (
-          <WarningSummary warnings={activePreview.occurrences.flatMap((occurrence) => occurrence.warnings)} />
-        )}
       </div>
 
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2 }}>
@@ -240,7 +237,7 @@ export function OccurrencePreview({ occurrences }: { occurrences: (SeriesOccurre
   if (occurrences.length === 0) {
     return (
       <div style={previewCardStyle}>
-        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>Записи появятся после настройки дней и времени</span>
+        <span style={{ ...text.caption1, color: 'var(--color-on-surface-secondary)' }}>Конфликтов нет</span>
       </div>
     )
   }
@@ -286,11 +283,6 @@ function AuthoritativePreviewSummary({ preview, endless }: { preview: BookingSer
       <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
         В ближайшие 90 дней: {preview.materializationOccurrences}
       </span>
-      {preview.warningsCount > 0 && (
-        <span style={{ ...text.caption2, color: 'var(--color-warning-surface-accented)' }}>
-          Предупреждений: {preview.warningsCount}
-        </span>
-      )}
     </div>
   )
 }

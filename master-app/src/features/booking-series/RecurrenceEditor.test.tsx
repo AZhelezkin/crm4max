@@ -60,19 +60,22 @@ describe('RecurrenceEditor', () => {
   it('показывает local preview до получения authoritative preview и затем заменяет его', () => {
     const view = renderEditor()
 
-    expect(screen.getAllByText('10:00')).toHaveLength(4)
+    expect(screen.getByText('10:00')).toBeInTheDocument()
+    expect(screen.getByText('Конфликтов нет')).toBeInTheDocument()
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
     expect(screen.queryByText(/Всего записей:/)).not.toBeInTheDocument()
 
     const authoritativePreview = createPreview({
-      occurrences: [{ date: '2026-08-18', time: '16:30', warnings: [] }],
+      occurrences: [{ date: '2026-08-18', time: '16:30', warnings: [bookingOverlapWarning] }],
       estimatedTotalOccurrences: 1,
       materializationOccurrences: 1,
+      warningsCount: 1,
     })
     view.rerender(<RecurrenceEditor {...view.props} preview={authoritativePreview} />)
 
     expect(screen.getByText('10:00')).toBeInTheDocument()
     expect(screen.getByText('16:30')).toBeInTheDocument()
+    expect(screen.getByText('Занятое время')).toBeInTheDocument()
     expect(screen.getByText('Всего записей: 1')).toBeInTheDocument()
   })
 
@@ -123,16 +126,15 @@ describe('RecurrenceEditor', () => {
 
     expect(screen.getByText('16:30')).toBeInTheDocument()
     expect(screen.getByText('Всего записей: 3')).toBeInTheDocument()
-    expect(screen.getByText('Предупреждений: 1')).toBeInTheDocument()
-    expect(screen.getByText('Есть предупреждения')).toBeInTheDocument()
+    expect(screen.getByText('Конфликты')).toBeInTheDocument()
+    expect(screen.getByText('Занятое время')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Сохранить расписание' })).toBeInTheDocument()
 
     await view.user.click(screen.getByRole('button', { name: 'Раз в две недели' }))
 
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
     expect(screen.queryByText('Всего записей: 3')).not.toBeInTheDocument()
-    expect(screen.queryByText('Предупреждений: 1')).not.toBeInTheDocument()
-    expect(screen.queryByText('Есть предупреждения')).not.toBeInTheDocument()
+    expect(screen.getByText('Конфликтов нет')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeInTheDocument()
   })
 
