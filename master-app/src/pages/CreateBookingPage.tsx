@@ -824,9 +824,7 @@ export default function CreateBookingPage() {
     const loadingClientTab = serviceTab === 'client' && !clientTabEmpty && !masterBookingsLoaded
     const nothing = loaded && !clientTabEmpty && !loadingClientTab && shownServices.length === 0
     return (
-      // height:100dvh (не minHeight) + minHeight:0 у скролла — кнопка «Выбрать»
-      // прибита к низу экрана, список скроллится над ней (макет 10130-52706).
-      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100dvh', minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
         {searchMode ? (
           <div style={{ height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8, padding: 16 }}>
             <PillButton onClick={backFromService} ariaLabel="Назад">
@@ -861,7 +859,7 @@ export default function CreateBookingPage() {
           />
         )}
 
-        <div style={{ flex: 1, padding: '8px 16px 32px' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px calc(132px + env(safe-area-inset-bottom))' }}>
           {/* Сегмент-контрол «Все услуги / Оказывались клиенту» (в поиске скрыт). */}
           {!searchMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 44, padding: 4, boxSizing: 'border-box', background: 'var(--color-surface-transparent)', borderRadius: 16, marginBottom: 12 }}>
@@ -897,9 +895,11 @@ export default function CreateBookingPage() {
           </div>
         </div>
 
-        <BookingFlowBottomButton disabled={stagedIds.length === 0} onClick={commitServices}>
-          {stagedIds.length > 1 ? `Выбрать (${stagedIds.length})` : 'Выбрать'}
-        </BookingFlowBottomButton>
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2 }}>
+          <BookingFlowBottomButton disabled={stagedIds.length === 0} onClick={commitServices}>
+            {stagedIds.length > 1 ? `Выбрать (${stagedIds.length})` : 'Выбрать'}
+          </BookingFlowBottomButton>
+        </div>
 
         {/* Инлайн-редактор услуги (карандаш/«+») — правит услугу, не уводя из флоу. */}
         <ServiceEditorPortal

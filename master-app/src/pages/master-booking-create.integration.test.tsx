@@ -238,6 +238,21 @@ describe('master CreateBookingPage', () => {
     vi.useRealTimers()
   })
 
+  it('держит кнопку выбора поверх списка услуг с запасом под прокрутку', async () => {
+    const view = renderPage()
+    await view.user.click(formCard('Услуги').getByRole('button', { name: /Наименование/ }))
+    await screen.findByText('Обычная услуга')
+
+    const button = screen.getByRole('button', { name: 'Выбрать' })
+    const overlay = button.parentElement?.parentElement
+    const page = overlay?.parentElement
+    const scrollArea = page?.children[1] as HTMLElement
+
+    expect(page).toHaveStyle({ height: '100dvh', overflow: 'hidden', position: 'relative' })
+    expect(overlay).toHaveStyle({ position: 'absolute', bottom: '0px' })
+    expect(scrollArea).toHaveStyle({ overflowY: 'auto', paddingBottom: 'calc(132px + env(safe-area-inset-bottom))' })
+  })
+
   it('скрывает прошедшие слоты сегодняшнего дня в часовом поясе мастера', async () => {
     vi.useFakeTimers({ now: new Date('2026-08-04T13:00:30Z'), toFake: ['Date'] })
     const currentMaster = useAuthStore.getState().master!
