@@ -24,7 +24,7 @@ describe('MasterAddressPage', () => {
     useBookingStore.setState({ masterId: MASTER_ID })
   })
 
-  it('показывает read-only реквизиты и копирует чистый адрес', async () => {
+  it('показывает read-only реквизиты и копирует адрес вместе с ними', async () => {
     const user = userEvent.setup()
     render(<MemoryRouter initialEntries={['/master/address']}><Routes><Route path="/master/address" element={<MasterAddressPage />} /></Routes></MemoryRouter>)
 
@@ -35,9 +35,9 @@ describe('MasterAddressPage', () => {
 
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     await user.click(screen.getByRole('button', { name: /Адрес Москва/ }))
-    await user.click(screen.getByRole('button', { name: 'Скопировать' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Скопировать' }))
 
-    expect(writeText).toHaveBeenCalledWith('Москва, Тестовая улица, 1')
+    expect(writeText).toHaveBeenCalledWith('Москва, Тестовая улица, 1\nПодъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со двора')
     expect(screen.getByRole('status')).toHaveTextContent('Скопировано')
   })
 
@@ -49,7 +49,7 @@ describe('MasterAddressPage', () => {
     await screen.findByText('Москва, Тестовая улица, 1')
 
     await user.click(screen.getByRole('button', { name: /Адрес Москва/ }))
-    await user.click(screen.getByRole('button', { name: 'Открыть в картах' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Открыть в картах' }))
 
     expect(webApp.openLink).toHaveBeenCalledWith('geo:55.7,37.6?q=55.7%2C37.6')
   })

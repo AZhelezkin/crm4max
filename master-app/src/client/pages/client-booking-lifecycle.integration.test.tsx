@@ -249,14 +249,15 @@ describe('client booking lifecycle', () => {
       'Комментарий: Позвонить за пять минут',
     ].join('\n')
     const view = renderDetail(futureBooking({ clientAddress: address }))
-    const addressButton = await screen.findByRole('button', { name: 'Открыть на карте' })
+    const addressButton = await screen.findByRole('button', { name: 'Действия с адресом' })
 
     expect(within(addressButton).getByText('Москва, Тверская улица, 1')).toBeInTheDocument()
-    expect(within(addressButton).getByText('кв. 34')).toBeInTheDocument()
+    expect(within(addressButton).getByText(/кв\.\/офис 34/)).toBeInTheDocument()
     expect(within(addressButton).getByText('Позвонить за пять минут')).toBeInTheDocument()
-    expect(within(addressButton).getByText('12 этаж, домофон 123#')).toBeInTheDocument()
+    expect(within(addressButton).getByText(/домофон 123#, 12 этаж/)).toBeInTheDocument()
 
     await view.user.click(addressButton)
+    await view.user.click(screen.getByRole('menuitem', { name: 'Открыть в картах' }))
     expect(webApp.openLink).toHaveBeenCalledWith(`geo:0,0?q=${encodeURIComponent('Москва, Тверская улица, 1')}`)
   })
 

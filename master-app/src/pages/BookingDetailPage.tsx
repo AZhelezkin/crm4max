@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
-import { parseBookingAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import { parseBookingAddress } from '@/lib/bookingAddress'
 import BookingAddressText from '@/components/BookingAddressText'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -13,6 +13,9 @@ import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { openAddToCalendar } from '@/lib/calendar'
 import { openExternalLink } from '@/lib/bridge'
+import AddressActionsMenu from '@/components/AddressActionsMenu'
+import BottomToast from '@/components/BottomToast'
+import { systemMapsUrl } from '@/lib/maps'
 
 dayjs.locale('ru')
 
@@ -73,6 +76,8 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [addressMenuOpen, setAddressMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (id) bookingsApi.getById(id).then((bk) => { setBooking(bk); markGuideStep('openedBooking') }).catch(() => {})
@@ -89,19 +94,6 @@ export default function BookingDetailPage() {
   const addressText = booking.clientAddress || booking.master.location || ''
   const addressNote = booking.clientAddress ? booking.notes : booking.master.locationNote
   const routeAddress = addressText ? parseBookingAddress(addressText, addressNote).address : ''
-
-  const handleOpenAddress = () => {
-    if (!routeAddress) return
-    const url = booking.clientAddress
-      ? yandexRouteUrl(
-          { lat: booking.master.lat, lng: booking.master.lng, address: booking.master.location },
-          routeAddress,
-        )
-      : booking.master.lat && booking.master.lng
-        ? `geo:${booking.master.lat},${booking.master.lng}?q=${booking.master.lat},${booking.master.lng}(${encodeURIComponent(booking.master.name)})`
-        : `geo:0,0?q=${encodeURIComponent(routeAddress)}`
-    window.WebApp?.openLink?.(url)
-  }
 
   const handleConfirmPayment = async () => {
     if (busy) return
@@ -187,12 +179,31 @@ export default function BookingDetailPage() {
 
         {/* Для выезда показываем адрес клиента, иначе — адрес из профиля мастера. */}
         {!booking.onlineMeetingLink && addressText && (
-          <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          <button type="button" onClick={() => setAddressMenuOpen(true)} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookingAddressText value={addressText} note={addressNote} />
             </div>
             <LocationIcon />
           </button>
+        )}
+
+        {addressMenuOpen && (
+          <AddressActionsMenu
+            onClose={() => setAddressMenuOpen(false)}
+            onCopy={() => {
+              void navigator.clipboard.writeText([routeAddress, addressNote].filter(Boolean).join('\n')).then(() => {
+                setAddressMenuOpen(false)
+                setCopied(true)
+                window.setTimeout(() => setCopied(false), 2000)
+              })
+            }}
+            onOpenMaps={() => {
+              setAddressMenuOpen(false)
+              const url = systemMapsUrl({ address: routeAddress, lat: booking.clientAddress ? null : booking.master.lat, lng: booking.clientAddress ? null : booking.master.lng, label: booking.master.name })
+              if (window.WebApp?.openLink) window.WebApp.openLink(url)
+              else window.location.href = url
+            }}
+          />
         )}
 
         {booking.onlineMeetingLink && (
@@ -255,6 +266,7 @@ export default function BookingDetailPage() {
           </div>
         )}
       </div>
+      <BottomToast message={copied ? 'Скопировано' : null} />
 
       {/* Действия (для активной записи) — в конце контента, не прибиты к низу */}
       {canAct && (

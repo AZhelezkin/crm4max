@@ -112,20 +112,17 @@ describe('master BookingDetailPage read state', () => {
     expect(view.getLocation().state).toEqual({ clientId: booking.client.id })
   })
 
-  it('открывает автомобильный маршрут от мастера к адресу клиента через provider bridge', async () => {
+  it('предлагает действия с адресом и открывает его в картах через provider bridge', async () => {
     const webApp = installWebApp()
     mocks.getById.mockResolvedValue(createMasterBooking({
       clientAddress: 'Москва, Клиентская улица, 10',
     }))
     const view = renderPage()
 
-    await view.user.click(await screen.findByRole('button', { name: 'Построить маршрут' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с адресом' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Открыть в картах' }))
 
-    const route = new URL(webApp.openLink.mock.calls[0]?.[0] as string)
-    expect(route.origin + route.pathname).toBe('https://yandex.ru/maps/')
-    expect(route.searchParams.get('mode')).toBe('routes')
-    expect(route.searchParams.get('rtext')).toBe('Москва, Тестовая улица, 1~Москва, Клиентская улица, 10')
-    expect(route.searchParams.get('rtt')).toBe('auto')
+    expect(webApp.openLink).toHaveBeenCalledWith('geo:0,0?q=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%9A%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%81%D0%BA%D0%B0%D1%8F%20%D1%83%D0%BB%D0%B8%D1%86%D0%B0%2C%2010')
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()
   })
@@ -150,9 +147,9 @@ describe('master BookingDetailPage read state', () => {
     renderPage()
 
     expect(await screen.findByText('Москва, Серебряническая набережная, 29')).toBeInTheDocument()
-    expect(screen.getByText('кв. 104')).toBeInTheDocument()
+    expect(screen.getByText(/кв\.\/офис 104/)).toBeInTheDocument()
     expect(screen.getByText('Слева у входа есть подвал. Там справа будет окно')).toBeInTheDocument()
-    expect(screen.getByText('7 этаж, домофон 123#')).toBeInTheDocument()
+    expect(screen.getByText(/домофон 123#, 7 этаж/)).toBeInTheDocument()
   })
 
   it('передаёт exact reschedule и edit-time route state', async () => {
