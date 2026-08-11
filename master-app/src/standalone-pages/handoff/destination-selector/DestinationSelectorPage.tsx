@@ -58,28 +58,24 @@ export default function DestinationSelectorPage({ token }: Props) {
           <AddressSuggestField
             value={address}
             onChange={setAddress}
-            onPickerOpen={masterLocation ? () => setPickerOpen(true) : undefined}
+            onPickerOpen={() => setPickerOpen(true)}
             label={masterLocation ? 'Укажите адрес мастера' : 'Укажите адрес клиента'}
             placeholder={masterLocation ? 'Улица, дом' : 'Город, улица, дом'}
           />
-          {!masterLocation && (
-            <>
-              <div role="heading" aria-level={2} style={{ ...text.callout1, color: 'var(--color-on-surface)', textAlign: 'center' }}>Дополнительно</div>
-              <FloatingField label="Этаж" value={details.floor} onChange={setFloor} valueBold />
-              <FloatingField label="Квартира/офис" value={details.apartment} onChange={setApartment} valueBold />
-              <FloatingField label="Домофон" value={details.intercom} onChange={setIntercom} valueBold />
-              <FloatingField
-                multiline
-                align="top"
-                autoGrow
-                showCounter
-                label="Комментарий"
-                value={comment}
-                onChange={setComment}
-                maxLength={300}
-              />
-            </>
-          )}
+          <div role="heading" aria-level={2} style={{ ...text.callout1, color: 'var(--color-on-surface)', textAlign: 'center' }}>Дополнительно</div>
+          <FloatingField label="Этаж" value={details.floor} onChange={setFloor} valueBold />
+          <FloatingField label="Квартира/офис" value={details.apartment} onChange={setApartment} valueBold />
+          <FloatingField label="Домофон" value={details.intercom} onChange={setIntercom} valueBold />
+          <FloatingField
+            multiline
+            align="top"
+            autoGrow
+            showCounter
+            label="Комментарий"
+            value={comment}
+            onChange={setComment}
+            maxLength={300}
+          />
         </fieldset>
         {visibleError && (
           <div role="alert" aria-live="polite" style={{ ...text.footnote, color: 'var(--color-error-surface-accented)', textAlign: 'center' }}>

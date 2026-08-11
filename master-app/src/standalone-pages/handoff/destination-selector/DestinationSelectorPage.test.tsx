@@ -114,7 +114,7 @@ describe('DestinationSelectorPage', () => {
     expect(webApp.close).toHaveBeenCalledOnce()
   })
 
-  it('отправляет адрес, этаж, квартиру или офис, домофон и комментарий', async () => {
+  it('для адреса клиента открывает карту и отправляет адрес со всеми реквизитами', async () => {
     const user = userEvent.setup()
     installWebApp()
     useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
@@ -124,6 +124,9 @@ describe('DestinationSelectorPage', () => {
     expect(continueButton).toBeDisabled()
     await waitFor(() => expect(continueButton).toBeEnabled())
 
+    await user.click(screen.getByPlaceholderText('Город, улица, дом'))
+    expect(screen.getByRole('dialog', { name: 'Карта выбора адреса' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
     await user.type(screen.getByPlaceholderText('Этаж'), '4')
     await user.type(screen.getByPlaceholderText('Квартира/офис'), '402')
     await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
@@ -133,7 +136,7 @@ describe('DestinationSelectorPage', () => {
 
     await waitFor(() => expect(apiMock.saveAddress).toHaveBeenCalledWith(
       DESTINATION_TOKEN,
-      'Адрес клиента\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со стороны бульвара',
+      'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со стороны бульвара',
     ))
     expect(screen.getByRole('alert')).toHaveTextContent('Проверьте адрес')
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
@@ -158,22 +161,19 @@ describe('DestinationSelectorPage', () => {
   })
 
   it('оставляет continue disabled для пустого адреса', async () => {
-    const user = userEvent.setup()
     apiMock.getContext.mockResolvedValue({
       status: 'ok',
       data: createDestinationContext({ clientAddress: null }),
     })
     useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
     render(<DestinationSelectorPage token={DESTINATION_TOKEN} />)
-    const input = await screen.findByPlaceholderText('Город, улица, дом')
-
-    await user.type(input, '   ')
+    await screen.findByPlaceholderText('Город, улица, дом')
 
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeDisabled()
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })
 
-  it('в режиме адреса мастера открывает карту без реквизитов и сохраняет точку профиля', async () => {
+  it('для адреса мастера открывает карту и сохраняет точку со всеми реквизитами', async () => {
     const user = userEvent.setup()
     apiMock.getContext.mockResolvedValue({
       status: 'ok',
@@ -186,10 +186,10 @@ describe('DestinationSelectorPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Адрес мастера' })).toBeInTheDocument()
     expect(screen.getByText('Укажите адрес мастера')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Этаж')).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Квартира/офис')).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Домофон')).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Комментарий')).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Этаж')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Квартира/офис')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Домофон')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Комментарий')).toBeInTheDocument()
 
     await user.click(input)
 
@@ -200,10 +200,14 @@ describe('DestinationSelectorPage', () => {
     expect(openPickerProps).not.toHaveProperty('details')
 
     await user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await user.type(screen.getByPlaceholderText('Этаж'), '4')
+    await user.type(screen.getByPlaceholderText('Квартира/офис'), '402')
+    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
+    await user.type(screen.getByPlaceholderText('Комментарий'), 'Вход со двора')
     await user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => expect(apiMock.saveMasterLocation).toHaveBeenCalledWith(DESTINATION_TOKEN, {
-      location: 'Москва, Тестовая улица, 2',
+      location: 'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со двора',
       lat: 55.76,
       lng: 37.61,
     }))
