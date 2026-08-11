@@ -74,7 +74,10 @@ export default function AddressPickerPortal({ open, value, details, onClose, onC
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <AddressSuggestInput
           value={draft}
-          onChange={setDraft}
+          onChange={(nextDraft) => {
+            setDraft(nextDraft)
+            setCoords(null)
+          }}
           onGeocode={(lat, lng) => setCoords({ lat, lng })}
           confirmedAddress={draft}
           onBack={onClose}

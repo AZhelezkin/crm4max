@@ -6,6 +6,7 @@ export function createDestinationContext(
   overrides: Partial<DestinationSelectorContextData> = {},
 ): DestinationSelectorContextData {
   return {
+    addressPurpose: 'client_address',
     clientName: 'Ирина Клиентова',
     clientPhone: '+79990000002',
     serviceName: 'Стрижка',

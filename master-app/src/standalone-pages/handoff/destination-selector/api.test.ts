@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createDestinationContext, DESTINATION_TOKEN } from '@/test/fixtures/destination-selector'
 import { server } from '@/test/msw/server'
 
-import { getDestinationSelectorContext, saveDestinationSelectorAddress } from './api'
+import { getDestinationSelectorContext, saveDestinationSelectorAddress, saveDestinationSelectorMasterLocation } from './api'
 
 describe('destination selector API', () => {
   it('получает context по exact token path', async () => {
@@ -34,6 +34,25 @@ describe('destination selector API', () => {
     const result = await saveDestinationSelectorAddress(DESTINATION_TOKEN, address)
 
     expect(body).toEqual({ clientAddress: address })
+    expect(result).toEqual({ status: 'ok' })
+  })
+
+  it('сохраняет постоянный адрес мастера с координатами', async () => {
+    let body: object | null = null
+    server.use(
+      http.post(`*/api/master-assistant/destination-selector/${DESTINATION_TOKEN}`, async ({ request }) => {
+        body = await request.json() as object
+        return HttpResponse.json({ status: 'ok' })
+      }),
+    )
+
+    const result = await saveDestinationSelectorMasterLocation(DESTINATION_TOKEN, {
+      location: 'Москва, Тестовая улица, 2',
+      lat: 55.76,
+      lng: 37.61,
+    })
+
+    expect(body).toEqual({ location: 'Москва, Тестовая улица, 2', lat: 55.76, lng: 37.61 })
     expect(result).toEqual({ status: 'ok' })
   })
 

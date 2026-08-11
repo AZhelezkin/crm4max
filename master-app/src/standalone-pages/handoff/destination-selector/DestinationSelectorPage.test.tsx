@@ -8,30 +8,64 @@ import { installWebApp } from '@/test/web-app-fixture'
 const apiMock = vi.hoisted(() => ({
   getContext: vi.fn(),
   saveAddress: vi.fn(),
+  saveMasterLocation: vi.fn(),
 }))
+const pickerRenderMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./api', () => ({
   getDestinationSelectorContext: apiMock.getContext,
   saveDestinationSelectorAddress: apiMock.saveAddress,
+  saveDestinationSelectorMasterLocation: apiMock.saveMasterLocation,
 }))
 
 vi.mock('@client/components/AddressSuggestField', () => ({
   default: ({
     value,
     onChange,
+    onPickerOpen,
     label,
     placeholder,
   }: {
     value: string
     onChange: (value: string) => void
+    onPickerOpen?: () => void
     label: string
     placeholder: string
   }) => (
     <label>
       {label}
-      <input value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+      <input
+        value={value}
+        placeholder={placeholder}
+        readOnly={Boolean(onPickerOpen)}
+        onClick={onPickerOpen}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </label>
   ),
+}))
+
+vi.mock('@/components/AddressPickerPortal', () => ({
+  default: (props: {
+    open: boolean
+    value: string
+    details?: unknown
+    onClose: () => void
+    onConfirm: (address: string, coords: { lat: number; lng: number } | null) => void
+  }) => {
+    pickerRenderMock(props)
+    if (!props.open) return null
+    return (
+      <div role="dialog" aria-label="Карта выбора адреса">
+        <button type="button" onClick={() => {
+          props.onConfirm('Москва, Тестовая улица, 2', { lat: 55.76, lng: 37.61 })
+          props.onClose()
+        }}>
+          Выбрать адрес на карте
+        </button>
+      </div>
+    )
+  },
 }))
 
 import { useAuthStore } from '@/store/auth.store'
@@ -40,11 +74,13 @@ import DestinationSelectorPage from './DestinationSelectorPage'
 
 describe('DestinationSelectorPage', () => {
   beforeEach(() => {
+    pickerRenderMock.mockClear()
     apiMock.getContext.mockResolvedValue({
       status: 'ok',
       data: createDestinationContext({ clientAddress: 'Адрес клиента' }),
     })
     apiMock.saveAddress.mockResolvedValue({ status: 'invalid_address' })
+    apiMock.saveMasterLocation.mockResolvedValue({ status: 'invalid_address' })
   })
 
   it('сигнализирует ready, запускает auth и ждёт его до context load', async () => {
@@ -134,6 +170,43 @@ describe('DestinationSelectorPage', () => {
     await user.type(input, '   ')
 
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeDisabled()
+    expect(apiMock.saveAddress).not.toHaveBeenCalled()
+  })
+
+  it('в режиме адреса мастера открывает карту без реквизитов и сохраняет точку профиля', async () => {
+    const user = userEvent.setup()
+    apiMock.getContext.mockResolvedValue({
+      status: 'ok',
+      data: createDestinationContext({ addressPurpose: 'master_location', clientAddress: null, masterLocation: null }),
+    })
+    installWebApp()
+    useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
+    render(<DestinationSelectorPage token={DESTINATION_TOKEN} />)
+    const input = await screen.findByPlaceholderText('Улица, дом')
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Адрес мастера' })).toBeInTheDocument()
+    expect(screen.getByText('Укажите адрес мастера')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Этаж')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Квартира/офис')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Домофон')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Комментарий')).not.toBeInTheDocument()
+
+    await user.click(input)
+
+    expect(screen.getByRole('dialog', { name: 'Карта выбора адреса' })).toBeInTheDocument()
+    const openPickerProps = pickerRenderMock.mock.calls
+      .map(([props]) => props as { open: boolean; details?: unknown })
+      .find((props) => props.open)
+    expect(openPickerProps).not.toHaveProperty('details')
+
+    await user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await user.click(screen.getByRole('button', { name: 'Продолжить' }))
+
+    await waitFor(() => expect(apiMock.saveMasterLocation).toHaveBeenCalledWith(DESTINATION_TOKEN, {
+      location: 'Москва, Тестовая улица, 2',
+      lat: 55.76,
+      lng: 37.61,
+    }))
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })
 })

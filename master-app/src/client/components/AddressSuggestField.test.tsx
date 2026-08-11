@@ -9,6 +9,7 @@ import { server } from '@/test/msw/server'
 interface FieldProps {
   value: string
   onChange: (value: string) => void
+  onPickerOpen?: () => void
   label?: string
   placeholder?: string
   details?: {
@@ -28,7 +29,7 @@ beforeAll(async () => {
   AddressSuggestField = (await import('./AddressSuggestField')).default
 })
 
-function FieldHarness({ initial = '' }: { initial?: string }) {
+function FieldHarness({ initial = '', onPickerOpen }: { initial?: string; onPickerOpen?: () => void }) {
   const [value, setValue] = useState(initial)
   const [apartment, setApartment] = useState('')
   const [floor, setFloor] = useState('')
@@ -37,6 +38,7 @@ function FieldHarness({ initial = '' }: { initial?: string }) {
     <AddressSuggestField
       value={value}
       onChange={setValue}
+      onPickerOpen={onPickerOpen}
       label="Ваш адрес"
       placeholder="Введите адрес"
       details={{
@@ -92,6 +94,18 @@ describe('AddressSuggestField', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Очистить' }))
 
     expect(screen.getByPlaceholderText('Введите адрес')).toHaveValue('')
+  })
+
+  it('открывает карту вместо ручного ввода в picker-режиме', () => {
+    const onPickerOpen = vi.fn()
+    render(<FieldHarness initial="Тверская улица, 7" onPickerOpen={onPickerOpen} />)
+    const input = screen.getByPlaceholderText('Введите адрес')
+
+    expect(input).toHaveAttribute('readonly')
+    expect(input).toHaveAttribute('aria-haspopup', 'dialog')
+    fireEvent.click(input)
+
+    expect(onPickerOpen).toHaveBeenCalledOnce()
   })
 
   it('редактирует квартиру, этаж и домофон отдельно от адреса', () => {

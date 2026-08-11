@@ -7,11 +7,13 @@ import { installWebApp } from '@/test/web-app-fixture'
 const apiMock = vi.hoisted(() => ({
   getContext: vi.fn(),
   saveAddress: vi.fn(),
+  saveMasterLocation: vi.fn(),
 }))
 
 vi.mock('./api', () => ({
   getDestinationSelectorContext: apiMock.getContext,
   saveDestinationSelectorAddress: apiMock.saveAddress,
+  saveDestinationSelectorMasterLocation: apiMock.saveMasterLocation,
 }))
 
 import { useDestinationSelector } from './useDestinationSelector'
@@ -20,6 +22,7 @@ describe('useDestinationSelector', () => {
   beforeEach(() => {
     apiMock.getContext.mockResolvedValue({ status: 'ok', data: createDestinationContext() })
     apiMock.saveAddress.mockResolvedValue({ status: 'ok' })
+    apiMock.saveMasterLocation.mockResolvedValue({ status: 'ok' })
   })
 
   it('не загружает context когда hook disabled', () => {
@@ -50,6 +53,26 @@ describe('useDestinationSelector', () => {
     expect(result.current.details).toEqual({ floor: '7', apartment: '104', intercom: '123#' })
     expect(result.current.comment).toBe('Слева от входа')
     expect(result.current.error).toBeNull()
+  })
+
+  it('загружает адрес и координаты профиля в master-location режиме', async () => {
+    const context = createDestinationContext({
+      addressPurpose: 'master_location',
+      clientAddress: null,
+      masterLocation: 'Москва, Тверская улица, 7',
+      masterLat: 55.76,
+      masterLng: 37.61,
+    })
+    apiMock.getContext.mockResolvedValue({ status: 'ok', data: context })
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+
+    expect(result.current.context).toEqual(context)
+    expect(result.current.address).toBe('Москва, Тверская улица, 7')
+    expect(result.current.coords).toEqual({ lat: 55.76, lng: 37.61 })
+    expect(result.current.details).toEqual({ floor: '', apartment: '', intercom: '' })
+    expect(result.current.comment).toBe('')
   })
 
   it('не обрезает и сохраняет без изменений длинный legacy-комментарий', async () => {
@@ -181,6 +204,29 @@ describe('useDestinationSelector', () => {
     expect(webApp.close).not.toHaveBeenCalled()
     act(() => vi.advanceTimersByTime(1))
     expect(webApp.close).toHaveBeenCalledOnce()
+  })
+
+  it('сохраняет выбранный адрес мастера и координаты отдельным payload', async () => {
+    apiMock.getContext.mockResolvedValue({
+      status: 'ok',
+      data: createDestinationContext({ addressPurpose: 'master_location', clientAddress: null, masterLocation: null }),
+    })
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+    act(() => result.current.selectAddress('  Москва, Тестовая улица, 2  ', { lat: 55.76, lng: 37.61 }))
+    vi.useFakeTimers()
+
+    await act(async () => {
+      await result.current.save()
+    })
+
+    expect(apiMock.saveMasterLocation).toHaveBeenCalledWith(DESTINATION_TOKEN, {
+      location: 'Москва, Тестовая улица, 2',
+      lat: 55.76,
+      lng: 37.61,
+    })
+    expect(apiMock.saveAddress).not.toHaveBeenCalled()
+    vi.clearAllTimers()
   })
 
   it('не отправляет второй save пока первый pending', async () => {

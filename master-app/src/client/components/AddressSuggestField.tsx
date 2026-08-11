@@ -10,6 +10,7 @@ interface Suggestion { title: string; subtitle: string }
 interface Props {
   value: string
   onChange: (v: string) => void
+  onPickerOpen?: () => void
   /** Плавающий лейбл над input-ом. Figma «Ваш адрес», caption2 secondary. */
   label?: string
   placeholder?: string
@@ -37,6 +38,7 @@ export default function AddressSuggestField({
   label,
   placeholder = 'Адрес',
   details,
+  onPickerOpen,
 }: Props) {
   const inputId = useId()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -112,8 +114,11 @@ export default function AddressSuggestField({
             id={inputId}
             value={value}
             onChange={(e) => { onChange(e.target.value); setOpen(true) }}
-            onFocus={() => setOpen(true)}
+            onClick={onPickerOpen}
+            onFocus={() => { if (!onPickerOpen) setOpen(true) }}
             onBlur={() => { setTimeout(() => setOpen(false), 150) }}
+            readOnly={Boolean(onPickerOpen)}
+            aria-haspopup={onPickerOpen ? 'dialog' : undefined}
             placeholder={placeholder}
             style={{
               width: '100%',

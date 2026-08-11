@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { formatStructuredBookingAddress, parseBookingAddress, type BookingAddressDetails } from '@/lib/bookingAddress'
-import { getDestinationSelectorContext, saveDestinationSelectorAddress } from './api'
-import type { DestinationSelectorContextData } from './types'
+import { getDestinationSelectorContext, saveDestinationSelectorAddress, saveDestinationSelectorMasterLocation } from './api'
+import type { DestinationSelectorContextData, DestinationSelectorCoords } from './types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved'
@@ -17,6 +17,7 @@ export function useDestinationSelector(token: string | null, enabled = true) {
   const [details, setDetails] = useState<BookingAddressDetails>(EMPTY_DETAILS)
   const [comment, setComment] = useState('')
   const [initialAddress, setInitialAddress] = useState<{ raw: string; parsed: ReturnType<typeof parseBookingAddress> } | null>(null)
+  const [coords, setCoords] = useState<DestinationSelectorCoords | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -40,12 +41,23 @@ export function useDestinationSelector(token: string | null, enabled = true) {
           return
         }
         setContext(response.data)
-        const rawAddress = response.data.clientAddress ?? ''
-        const parsedAddress = parseBookingAddress(rawAddress)
-        setInitialAddress({ raw: rawAddress, parsed: parsedAddress })
-        setAddress(parsedAddress.address)
-        setDetails({ floor: parsedAddress.floor, apartment: parsedAddress.apartment, intercom: parsedAddress.intercom })
-        setComment(parsedAddress.comment)
+        if (response.data.addressPurpose === 'master_location') {
+          setInitialAddress(null)
+          setAddress(response.data.masterLocation ?? '')
+          setDetails(EMPTY_DETAILS)
+          setComment('')
+          setCoords(typeof response.data.masterLat === 'number' && typeof response.data.masterLng === 'number'
+            ? { lat: response.data.masterLat, lng: response.data.masterLng }
+            : null)
+        } else {
+          const rawAddress = response.data.clientAddress ?? ''
+          const parsedAddress = parseBookingAddress(rawAddress)
+          setInitialAddress({ raw: rawAddress, parsed: parsedAddress })
+          setAddress(parsedAddress.address)
+          setDetails({ floor: parsedAddress.floor, apartment: parsedAddress.apartment, intercom: parsedAddress.intercom })
+          setComment(parsedAddress.comment)
+          setCoords(null)
+        }
         setLoadState('ready')
       })
       .catch(() => {
@@ -64,8 +76,9 @@ export function useDestinationSelector(token: string | null, enabled = true) {
     && details.intercom === initialAddress!.parsed.intercom
     && comment === initialAddress!.parsed.comment
   const clientAddress = addressIsUnchanged ? initialAddress!.raw : formatStructuredBookingAddress(address, details, comment)
-  const isCommentTooLong = !addressIsUnchanged && comment.length > MAX_COMMENT_LENGTH
-  const isAddressTooLong = clientAddress.length > MAX_DESTINATION_ADDRESS_LENGTH
+  const masterLocationMode = context?.addressPurpose === 'master_location'
+  const isCommentTooLong = !masterLocationMode && !addressIsUnchanged && comment.length > MAX_COMMENT_LENGTH
+  const isAddressTooLong = (masterLocationMode ? address.trim() : clientAddress).length > MAX_DESTINATION_ADDRESS_LENGTH
 
   const save = useCallback(async () => {
     if (!token || saveState === 'saving') return
@@ -85,7 +98,13 @@ export function useDestinationSelector(token: string | null, enabled = true) {
     setSaveState('saving')
     setError(null)
     try {
-      const response = await saveDestinationSelectorAddress(token, clientAddress)
+      const response = masterLocationMode
+        ? await saveDestinationSelectorMasterLocation(token, {
+            location: address.trim(),
+            lat: coords?.lat ?? null,
+            lng: coords?.lng ?? null,
+          })
+        : await saveDestinationSelectorAddress(token, clientAddress)
       if (response.status !== 'ok') {
         setSaveState('idle')
         setError(errorText(response.status))
@@ -97,14 +116,28 @@ export function useDestinationSelector(token: string | null, enabled = true) {
       setSaveState('idle')
       setError('Не удалось сохранить адрес')
     }
-  }, [address, clientAddress, isAddressTooLong, isCommentTooLong, saveState, token])
+  }, [address, clientAddress, coords, isAddressTooLong, isCommentTooLong, masterLocationMode, saveState, token])
+
+  const changeAddress = useCallback((value: string) => {
+    setAddress(value)
+    setCoords(null)
+    setError(null)
+  }, [])
+
+  const selectAddress = useCallback((value: string, nextCoords: DestinationSelectorCoords | null) => {
+    setAddress(value)
+    setCoords(nextCoords)
+    setError(null)
+  }, [])
 
   return {
     loadState,
     saveState,
     context,
     address,
-    setAddress: (value: string) => { setAddress(value); setError(null) },
+    coords,
+    setAddress: changeAddress,
+    selectAddress,
     details,
     setFloor: (floor: string) => { setDetails((current) => ({ ...current, floor })); setError(null) },
     setApartment: (apartment: string) => { setDetails((current) => ({ ...current, apartment })); setError(null) },

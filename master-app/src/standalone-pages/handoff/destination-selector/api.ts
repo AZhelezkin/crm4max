@@ -10,3 +10,11 @@ export async function saveDestinationSelectorAddress(token: string, clientAddres
   const { data } = await api.post<DestinationSelectorSaveResponse>(`/master-assistant/destination-selector/${token}`, { clientAddress })
   return data
 }
+
+export async function saveDestinationSelectorMasterLocation(
+  token: string,
+  input: { location: string; lat: number | null; lng: number | null },
+): Promise<DestinationSelectorSaveResponse> {
+  const { data } = await api.post<DestinationSelectorSaveResponse>(`/master-assistant/destination-selector/${token}`, input)
+  return data
+}

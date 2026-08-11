@@ -191,6 +191,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/support.api.ts#startSupport`
 - `src/standalone-pages/handoff/destination-selector/api.ts#getDestinationSelectorContext`
 - `src/standalone-pages/handoff/destination-selector/api.ts#saveDestinationSelectorAddress`
+- `src/standalone-pages/handoff/destination-selector/api.ts#saveDestinationSelectorMasterLocation`
 
 ## Production source partition
 

@@ -24,6 +24,7 @@ vi.mock('@/components/AddressSuggestInput', () => ({
       }}>
         Выбрать адрес
       </button>
+      <button onClick={() => onChange('Москва, Адрес без координат')}>Изменить адрес без координат</button>
       <button onClick={onBack}>Назад с карты</button>
     </div>
   ),
@@ -85,6 +86,28 @@ describe('AddressPickerPortal', () => {
       lng: 37.61,
     })
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('не рендерит этаж, квартиру или офис и домофон без details', () => {
+    installBrowserFixture()
+    render(<AddressPickerPortal open value="Адрес" onClose={() => {}} onConfirm={() => {}} />)
+
+    expect(screen.queryByRole('textbox', { name: 'Этаж' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Квартира/Офис' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Домофон' })).not.toBeInTheDocument()
+  })
+
+  it('сбрасывает устаревшие координаты после изменения адреса', async () => {
+    installBrowserFixture()
+    const user = userEvent.setup()
+    const onConfirm = vi.fn()
+    render(<AddressPickerPortal open value="Адрес" onClose={() => {}} onConfirm={onConfirm} />)
+
+    await user.click(screen.getByRole('button', { name: 'Выбрать адрес' }))
+    await user.click(screen.getByRole('button', { name: 'Изменить адрес без координат' }))
+    await user.click(screen.getByRole('button', { name: 'Готово' }))
+
+    expect(onConfirm).toHaveBeenCalledWith('Москва, Адрес без координат', null)
   })
 
   it('возвращает этаж, квартиру или офис и домофон вместе с адресом', async () => {

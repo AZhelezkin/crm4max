@@ -9,13 +9,24 @@ export type DestinationSelectorContextStatus =
   | 'draft_incomplete'
   | 'draft_not_awaiting_address'
 
+export type DestinationAddressPurpose = 'client_address' | 'master_location'
+
+export interface DestinationSelectorCoords {
+  lat: number
+  lng: number
+}
+
 export interface DestinationSelectorContextData {
+  addressPurpose?: DestinationAddressPurpose
   clientName: string
   clientPhone?: string | null
   serviceName: string
   date: string
   time: string
   clientAddress?: string | null
+  masterLocation?: string | null
+  masterLat?: number | null
+  masterLng?: number | null
   expiresAt: string
   draftVersion: number
 }
