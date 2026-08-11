@@ -12,6 +12,8 @@ import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 import { openExternalLink } from '@/lib/bridge'
+import { bookingRouteAddress } from '@/lib/bookingAddress'
+import BookingAddressText from '@/components/BookingAddressText'
 import WheelPicker from '@/components/WheelPicker'
 
 dayjs.locale('ru')
@@ -420,13 +422,13 @@ export default function BookingDetailPage() {
               </button>
             )
           }
-          const addressText = clientAddress || master?.location
-          if (!addressText) return null
+          const routeAddress = clientAddress ? bookingRouteAddress(clientAddress) : master?.location
+          if (!routeAddress) return null
           const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'
           const handleOpenAddress = () => {
             const url = !clientAddress && master.lat && master.lng
               ? `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
-              : `geo:0,0?q=${encodeURIComponent(addressText)}`
+              : `geo:0,0?q=${encodeURIComponent(routeAddress)}`
             window.WebApp?.openLink(url)
           }
           return (
@@ -444,13 +446,17 @@ export default function BookingDetailPage() {
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  ...text.callout1, color: 'var(--color-on-surface)',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden', wordBreak: 'break-word',
-                }}>
-                  {addressText}
-                </div>
+                {clientAddress
+                  ? <BookingAddressText value={clientAddress} />
+                  : (
+                      <div style={{
+                        ...text.callout1, color: 'var(--color-on-surface)',
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden', wordBreak: 'break-word',
+                      }}>
+                        {routeAddress}
+                      </div>
+                    )}
                 <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
                   {subtitle}
                 </div>

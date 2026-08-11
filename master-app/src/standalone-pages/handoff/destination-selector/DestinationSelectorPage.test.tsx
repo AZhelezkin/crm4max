@@ -56,7 +56,9 @@ describe('DestinationSelectorPage', () => {
 
     expect(webApp.ready).toHaveBeenCalledOnce()
     expect(init).toHaveBeenCalledOnce()
+    expect(screen.getByRole('heading', { level: 1, name: 'Адрес клиента' })).toBeInTheDocument()
     expect(apiMock.getContext).not.toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('Город, улица, дом')).toBeDisabled()
 
     act(() => {
       useAuthStore.setState({ isLoading: false })
@@ -76,7 +78,7 @@ describe('DestinationSelectorPage', () => {
     expect(webApp.close).toHaveBeenCalledOnce()
   })
 
-  it('разрешает продолжить после ready context и отправляет только address attach', async () => {
+  it('отправляет адрес, этаж, квартиру или офис, домофон и комментарий', async () => {
     const user = userEvent.setup()
     installWebApp()
     useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
@@ -86,13 +88,37 @@ describe('DestinationSelectorPage', () => {
     expect(continueButton).toBeDisabled()
     await waitFor(() => expect(continueButton).toBeEnabled())
 
+    await user.type(screen.getByPlaceholderText('Этаж'), '4')
+    await user.type(screen.getByPlaceholderText('Квартира/офис'), '402')
+    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
+    await user.type(screen.getByPlaceholderText('Комментарий'), 'Вход со стороны бульвара')
+
     await user.click(continueButton)
 
     await waitFor(() => expect(apiMock.saveAddress).toHaveBeenCalledWith(
       DESTINATION_TOKEN,
-      'Адрес клиента',
+      'Адрес клиента\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со стороны бульвара',
     ))
+    expect(screen.getByRole('alert')).toHaveTextContent('Проверьте адрес')
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
+  })
+
+  it('показывает дополнительные поля из сохранённого адреса', async () => {
+    apiMock.getContext.mockResolvedValue({
+      status: 'ok',
+      data: createDestinationContext({
+        clientAddress: 'Москва, Серебряническая набережная, 240\nэтаж 4, кв./офис 105, домофон #402*\nНа двери будет табличка',
+      }),
+    })
+    useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
+
+    render(<DestinationSelectorPage token={DESTINATION_TOKEN} />)
+
+    expect(await screen.findByDisplayValue('Москва, Серебряническая набережная, 240')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('4')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('105')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('#402*')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('На двери будет табличка')).toBeInTheDocument()
   })
 
   it('оставляет continue disabled для пустого адреса', async () => {
@@ -103,7 +129,7 @@ describe('DestinationSelectorPage', () => {
     })
     useAuthStore.setState({ isLoading: false, init: vi.fn().mockResolvedValue(undefined) })
     render(<DestinationSelectorPage token={DESTINATION_TOKEN} />)
-    const input = await screen.findByPlaceholderText('Улица, дом, квартира')
+    const input = await screen.findByPlaceholderText('Город, улица, дом')
 
     await user.type(input, '   ')
 

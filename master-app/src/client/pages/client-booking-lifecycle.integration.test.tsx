@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { Route, Routes } from 'react-router-dom'
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BOOKING_ID, MASTER_ID } from '@/test/fixtures/auth'
@@ -236,6 +236,28 @@ describe('client booking lifecycle', () => {
       rescheduleId: BOOKING_ID,
       onlineMeetingLink: link,
     })
+  })
+
+  it('показывает реквизиты выезда, но открывает карту только по адресу', async () => {
+    const webApp = installWebApp()
+    const address = [
+      'Москва, Тверская улица, 1',
+      'Дополнительно [CRM4MAX/1]:',
+      'Этаж: 12',
+      'Квартира/офис: 34',
+      'Домофон: 123#',
+      'Комментарий: Позвонить за пять минут',
+    ].join('\n')
+    const view = renderDetail(futureBooking({ clientAddress: address }))
+    const addressButton = await screen.findByRole('button', { name: 'Открыть на карте' })
+
+    expect(within(addressButton).getByText('Москва, Тверская улица, 1')).toBeInTheDocument()
+    expect(within(addressButton).getByText('кв. 34')).toBeInTheDocument()
+    expect(within(addressButton).getByText('Позвонить за пять минут')).toBeInTheDocument()
+    expect(within(addressButton).getByText('12 этаж, домофон 123#')).toBeInTheDocument()
+
+    await view.user.click(addressButton)
+    expect(webApp.openLink).toHaveBeenCalledWith(`geo:0,0?q=${encodeURIComponent('Москва, Тверская улица, 1')}`)
   })
 
   it('у клиента нет кнопки «Отметить как оплачено» — оплату подтверждает мастер', async () => {

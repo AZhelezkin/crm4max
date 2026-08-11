@@ -56,6 +56,12 @@ const suggestResponse = (title: string, subtitle = 'Москва') => ({
 })
 
 describe('AddressSuggestField', () => {
+  it('связывает видимый label с полем адреса', () => {
+    render(<FieldHarness />)
+
+    expect(screen.getByRole('textbox', { name: 'Ваш адрес' })).toBeInTheDocument()
+  })
+
   it('debounce request и выбирает полный адрес', async () => {
     let search = ''
     server.use(

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { text } from '@/styles/typography'
 import { FloatingField } from '@/components/onboardingShared'
 
@@ -38,6 +38,7 @@ export default function AddressSuggestField({
   placeholder = 'Адрес',
   details,
 }: Props) {
+  const inputId = useId()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [open, setOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -100,14 +101,15 @@ export default function AddressSuggestField({
       }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {label && (
-            <div style={{
+            <label htmlFor={inputId} style={{
               ...text.caption2, color: 'var(--color-on-surface-secondary)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               {label}
-            </div>
+            </label>
           )}
           <input
+            id={inputId}
             value={value}
             onChange={(e) => { onChange(e.target.value); setOpen(true) }}
             onFocus={() => setOpen(true)}

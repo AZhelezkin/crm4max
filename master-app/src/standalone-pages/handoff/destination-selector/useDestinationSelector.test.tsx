@@ -37,8 +37,8 @@ describe('useDestinationSelector', () => {
     expect(apiMock.getContext).not.toHaveBeenCalled()
   })
 
-  it('загружает server context и initial address', async () => {
-    const context = createDestinationContext({ clientAddress: 'Сохранённый адрес' })
+  it('разбирает server context на адрес, реквизиты и комментарий', async () => {
+    const context = createDestinationContext({ clientAddress: 'Сохранённый адрес\nэтаж 7, кв./офис 104, домофон 123#\nСлева от входа' })
     apiMock.getContext.mockResolvedValue({ status: 'ok', data: context })
     const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
 
@@ -47,7 +47,59 @@ describe('useDestinationSelector', () => {
     expect(apiMock.getContext).toHaveBeenCalledWith(DESTINATION_TOKEN)
     expect(result.current.context).toEqual(context)
     expect(result.current.address).toBe('Сохранённый адрес')
+    expect(result.current.details).toEqual({ floor: '7', apartment: '104', intercom: '123#' })
+    expect(result.current.comment).toBe('Слева от входа')
     expect(result.current.error).toBeNull()
+  })
+
+  it('не обрезает и сохраняет без изменений длинный legacy-комментарий', async () => {
+    const clientAddress = `Адрес клиента\n${'а'.repeat(301)}`
+    apiMock.saveAddress.mockResolvedValue({ status: 'invalid_address' })
+    apiMock.getContext.mockResolvedValue({
+      status: 'ok',
+      data: createDestinationContext({ clientAddress }),
+    })
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+    expect(result.current.comment).toHaveLength(301)
+
+    await act(async () => {
+      await result.current.save()
+    })
+
+    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, clientAddress)
+  })
+
+  it('не переносит длинный legacy-комментарий в новый structured payload после изменения реквизитов', async () => {
+    const clientAddress = `Адрес клиента\n${'а'.repeat(301)}`
+    apiMock.getContext.mockResolvedValue({ status: 'ok', data: createDestinationContext({ clientAddress }) })
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+    act(() => result.current.setFloor('7'))
+    expect(result.current.isCommentTooLong).toBe(true)
+
+    await act(async () => {
+      await result.current.save()
+    })
+
+    expect(result.current.error).toBe('Сократите комментарий до 300 символов')
+    expect(apiMock.saveAddress).not.toHaveBeenCalled()
+  })
+
+  it('не расширяет неизменённый legacy payload при сохранении', async () => {
+    const clientAddress = `Адрес клиента\nэтаж 7, кв./офис 12, корпус 2, домофон 123#\n${'а'.repeat(400)}`
+    apiMock.saveAddress.mockResolvedValue({ status: 'invalid_address' })
+    apiMock.getContext.mockResolvedValue({ status: 'ok', data: createDestinationContext({ clientAddress }) })
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+    await act(async () => {
+      await result.current.save()
+    })
+
+    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, clientAddress)
   })
 
   it.each([
@@ -89,11 +141,29 @@ describe('useDestinationSelector', () => {
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })
 
-  it('trim адрес и закрывает WebApp через 500 ms после success', async () => {
+  it('не отправляет итоговый адрес длиннее 500 символов', async () => {
+    const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
+    await waitFor(() => expect(result.current.loadState).toBe('ready'))
+    act(() => result.current.setAddress('а'.repeat(501)))
+
+    await act(async () => {
+      await result.current.save()
+    })
+
+    expect(result.current.isAddressTooLong).toBe(true)
+    expect(result.current.error).toBe('Сократите адрес или комментарий до 500 символов')
+    expect(apiMock.saveAddress).not.toHaveBeenCalled()
+  })
+
+  it('форматирует полный адрес и закрывает WebApp через 500 ms после success', async () => {
     const webApp = installWebApp()
     const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
     await waitFor(() => expect(result.current.loadState).toBe('ready'))
     act(() => result.current.setAddress('  Москва, Тестовая улица, 2  '))
+    act(() => result.current.setFloor(' 4 '))
+    act(() => result.current.setApartment(' 402 '))
+    act(() => result.current.setIntercom(' #402* '))
+    act(() => result.current.setComment('  Вход со двора  '))
     vi.useFakeTimers()
 
     await act(async () => {
@@ -102,7 +172,7 @@ describe('useDestinationSelector', () => {
 
     expect(apiMock.saveAddress).toHaveBeenCalledWith(
       DESTINATION_TOKEN,
-      'Москва, Тестовая улица, 2',
+      'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со двора',
     )
     expect(result.current.saveState).toBe('saved')
     expect(webApp.close).not.toHaveBeenCalled()

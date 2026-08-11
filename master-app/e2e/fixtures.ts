@@ -300,6 +300,12 @@ export function installMasterApi(api: ApiMock) {
   api.respond('GET', '/api/masters/me', masterProfile)
   api.respond('GET', '/api/clients', [masterClient])
   api.respond('GET', '/api/bookings', [])
+  api.respond('GET', '/api/payments', [])
+  api.respond('GET', '/api/schedule/me', {
+    id: '90000000-0000-4000-8000-000000000009',
+    workingDays: [1, 2, 3, 4, 5],
+    startTime: '09:00', endTime: '18:00', breakStart: '13:00', breakEnd: '14:00', bufferMinutes: 15,
+  })
   api.respond('GET', '/api/subscription/me', {
     status: 'ACTIVE', trialEndsAt: null, currentPeriodEnd: '2030-01-01T00:00:00.000Z',
     graceEndsAt: null, cardPan: '2200••••1234', lastChargeError: null, hasAccess: true,

@@ -8,9 +8,10 @@ interface BookingFlowToolbarProps {
   backIcon: ReactNode
   backAriaLabel?: string
   trailing?: ReactNode
+  titleHeadingLevel?: number
 }
 
-export function BookingFlowToolbar({ title, subtitle, onBack, backIcon, backAriaLabel = 'Назад', trailing }: BookingFlowToolbarProps) {
+export function BookingFlowToolbar({ title, subtitle, onBack, backIcon, backAriaLabel = 'Назад', trailing, titleHeadingLevel }: BookingFlowToolbarProps) {
   return (
     <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
       <BookingFlowPillButton onClick={onBack} ariaLabel={backAriaLabel}>
@@ -18,7 +19,7 @@ export function BookingFlowToolbar({ title, subtitle, onBack, backIcon, backAria
       </BookingFlowPillButton>
       {(title || subtitle) && (
         <div style={{ position: 'absolute', left: 68, right: 68, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
-          {title && <div style={{ ...text.callout1, color: 'var(--color-on-surface)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>}
+          {title && <div role={titleHeadingLevel ? 'heading' : undefined} aria-level={titleHeadingLevel} style={{ ...text.callout1, color: 'var(--color-on-surface)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>}
           {subtitle && <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</div>}
         </div>
       )}

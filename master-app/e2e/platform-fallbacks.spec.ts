@@ -106,7 +106,7 @@ test('destination selector success сохраняет exact address и закр�
   api.respond('POST', '/api/master-assistant/destination-selector/destination-success', { status: 'ok' })
 
   await page.goto('./')
-  await expect(page.getByPlaceholder('Улица, дом, квартира')).toHaveValue('Москва, Дом 1')
+  await expect(page.getByPlaceholder('Город, улица, дом')).toHaveValue('Москва, Дом 1')
   await page.getByRole('button', { name: 'Продолжить' }).click()
   await expect.poll(() => page.evaluate(() =>
     (window as typeof window & { __e2ePlatformCalls: { close: number } }).__e2ePlatformCalls.close,
