@@ -5,9 +5,9 @@ export type RepetitionMode = 'single' | 'series'
 interface RepetitionFieldsProps {
   mode: RepetitionMode
   menuOpen: boolean
-  summary?: string
+  period?: string
+  schedule?: string
   warningsCount?: number
-  reviewRequired?: boolean
   onMenuOpenChange: (open: boolean, trigger?: HTMLButtonElement) => void
   onModeChange: (mode: RepetitionMode) => void
   onEditSchedule: () => void
@@ -16,9 +16,9 @@ interface RepetitionFieldsProps {
 export default function RepetitionFields({
   mode,
   menuOpen,
-  summary,
+  period,
+  schedule,
   warningsCount = 0,
-  reviewRequired = false,
   onMenuOpenChange,
   onModeChange,
   onEditSchedule,
@@ -45,26 +45,17 @@ export default function RepetitionFields({
       </div>
 
       {mode === 'series' && (
-        <button type="button" onClick={onEditSchedule} style={{ ...rowStyle, borderBottom: 'none' }}>
-          <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: 1, minWidth: 0 }}>Расписание</span>
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-            <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ ...text.body2, color: summary ? 'var(--color-on-surface)' : 'var(--color-primary-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                {summary || 'Настроить'}
-              </span>
-              {warningsCount > 0 && (
-                <span style={{ ...text.caption2, color: 'var(--color-warning-surface-accented)' }}>
-                  Конфликтов: {warningsCount}
-                </span>
-              )}
-              {reviewRequired && (
-                <span style={{ ...text.caption2, color: 'var(--color-warning-surface-accented)' }}>
-                  Проверьте расписание снова
-                </span>
-              )}
+        <button type="button" onClick={onEditSchedule} style={{ ...scheduleRowStyle, borderBottom: 'none' }}>
+          <span style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)' }}>Расписание</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ ...text.body2, color: 'var(--color-primary-surface)' }}>Настроить</span>
+              <ChevronRightIcon />
             </span>
-            <ChevronRightIcon />
           </span>
+          {period && <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{period}</span>}
+          {schedule && <span style={{ ...text.body2, color: 'var(--color-on-surface)' }}>{schedule}</span>}
+          {warningsCount > 0 && <span style={{ ...text.caption2, color: 'var(--color-warning-surface-accented)' }}>Конфликтов: {warningsCount}</span>}
         </button>
       )}
     </>
@@ -83,6 +74,12 @@ const rowStyle: React.CSSProperties = {
   borderBottom: '1px solid var(--color-secondary-surface-muted)',
   cursor: 'pointer',
   textAlign: 'left',
+}
+
+const scheduleRowStyle: React.CSSProperties = {
+  ...rowStyle,
+  flexDirection: 'column',
+  alignItems: 'flex-start',
 }
 
 function ChevronRightIcon() {

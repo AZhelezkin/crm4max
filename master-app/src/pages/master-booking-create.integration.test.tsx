@@ -686,7 +686,7 @@ describe('master CreateBookingPage', () => {
     const view = renderPage(undefined, true)
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
-    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
     await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
 
     await selectBookingPlace(view, 'Онлайн')
@@ -705,7 +705,7 @@ describe('master CreateBookingPage', () => {
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
 
-    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => expect(api.previewSeries).toHaveBeenCalledOnce())
     expect(api.previewSeries).toHaveBeenCalledWith({
@@ -754,19 +754,14 @@ describe('master CreateBookingPage', () => {
     const view = renderPage(undefined, true)
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
-    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
     await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
 
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Напоминание клиенту/ }))
 
-    expect(screen.getByText('Проверьте расписание снова')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Записать' })).toBeDisabled()
-    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Расписание/ }))
-    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
-
+    expect(screen.queryByText('Проверьте расписание снова')).not.toBeInTheDocument()
     await waitFor(() => expect(api.previewSeries).toHaveBeenCalledTimes(2))
     expect(api.previewSeries.mock.calls[1]?.[0]).toMatchObject({ template: { remind: false } })
-    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
     expect(screen.getByRole('button', { name: 'Записать' })).toBeEnabled()
   })
 

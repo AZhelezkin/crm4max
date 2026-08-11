@@ -11,6 +11,11 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 
 const WEEKDAY_LABELS = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 
+function formatDisplayDate(value: string): string {
+  const [year, month, day] = value.split('-')
+  return `${day}.${month}.${year}`
+}
+
 export type RecurrenceValidationErrorCode =
   | 'INVALID_RULE'
   | 'INVALID_START_DATE'
@@ -261,4 +266,20 @@ export function formatRecurrenceSummary(rule: RecurrenceRule): string {
     .join(', ')
 
   return `${frequency} · ${schedule}`
+}
+
+export function formatRecurrencePeriod(rule: RecurrenceRule): string {
+  assertValidRule(rule)
+  const start = formatDisplayDate(rule.startDate)
+  return rule.endDate
+    ? `с ${start} по ${formatDisplayDate(rule.endDate)}`
+    : `с ${start} без даты окончания`
+}
+
+export function formatRecurrenceSchedule(rule: RecurrenceRule): string {
+  assertValidRule(rule)
+  return [...rule.slots]
+    .sort(compareSlots)
+    .map((slot) => `${WEEKDAY_LABELS[slot.dayOfWeek]}. ${slot.time}`)
+    .join(', ')
 }

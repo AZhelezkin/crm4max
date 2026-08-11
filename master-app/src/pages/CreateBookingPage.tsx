@@ -38,7 +38,7 @@ import RecurrenceEditor from '@/features/booking-series/RecurrenceEditor'
 import SeriesCreationSuccess from '@/features/booking-series/SeriesCreationSuccess'
 import { useBookingSeriesGateway } from '@/features/booking-series/gateway'
 import { SeriesEditContextCard } from '@/features/booking-series/BookingSeriesEditPage'
-import { formatRecurrenceSummary, generateOccurrenceDates, validateRecurrenceRule } from '@/features/booking-series/recurrence'
+import { formatRecurrencePeriod, formatRecurrenceSchedule, generateOccurrenceDates, validateRecurrenceRule } from '@/features/booking-series/recurrence'
 import type { BookingSeriesCreateResponse, BookingSeriesPreviewRequest, BookingSeriesPreviewResponse, BookingSeriesTemplate, RecurrenceRule } from '@/features/booking-series/types'
 import { normalizeOnlineMeetingLink } from '@/lib/onlineMeetingLink'
 
@@ -653,7 +653,8 @@ export default function CreateBookingPage() {
   }
   const recurrenceValid = recurrenceRule ? validateRecurrenceRule(recurrenceRule).valid : false
   const seriesMode = seriesEnabled && repetitionMode === 'series'
-  const recurrenceSummary = recurrenceRule && recurrenceValid ? formatRecurrenceSummary(recurrenceRule) : ''
+  const recurrencePeriod = recurrenceRule && recurrenceValid ? formatRecurrencePeriod(recurrenceRule) : ''
+  const recurrenceSchedule = recurrenceRule && recurrenceValid ? formatRecurrenceSchedule(recurrenceRule) : ''
   const inlineMasterNow = currentMasterWall(master?.timezone)
   const inlineCurrentMinute = inlineMasterNow.hour() * 60 + inlineMasterNow.minute() + (inlineMasterNow.second() || inlineMasterNow.millisecond() ? 1 : 0)
   const inlineMinTime = date === inlineMasterNow.format('YYYY-MM-DD')
@@ -702,6 +703,23 @@ export default function CreateBookingPage() {
     ? seriesPreview
     : null
   const dateTimeReady = seriesMode ? recurrenceValid && !!freshSeriesPreview : !!date && !!time
+
+  useEffect(() => {
+    if (!seriesMode || !currentPreviewRequest || !currentPreviewFingerprint || freshSeriesPreview || !seriesGateway) return
+    let cancelled = false
+    setSeriesPreviewError(null)
+    seriesGateway.preview(currentPreviewRequest)
+      .then((preview) => {
+        if (cancelled) return
+        setSeriesPreview(preview)
+        setSeriesPreviewFingerprint(currentPreviewFingerprint)
+      })
+      .catch((previewError) => {
+        if (!cancelled) setSeriesPreviewError(seriesPreviewErrorMessage(previewError))
+      })
+    return () => { cancelled = true }
+  }, [seriesMode, currentPreviewFingerprint])
+
   const canSave = selectedServices.length > 0
     && dateTimeReady
     && !!selectedClient
@@ -2040,9 +2058,9 @@ export default function CreateBookingPage() {
             <RepetitionFields
               mode={repetitionMode}
               menuOpen={repetitionMenuOpen}
-              summary={recurrenceSummary}
+              period={recurrencePeriod}
+              schedule={recurrenceSchedule}
               warningsCount={freshSeriesPreview?.warningsCount ?? 0}
-              reviewRequired={seriesMode && !!recurrenceRule && !freshSeriesPreview}
               onMenuOpenChange={(open, trigger) => {
                 setRepetitionMenuOpen(open)
                 if (!open || !trigger) { setRepetitionMenu(null); return }

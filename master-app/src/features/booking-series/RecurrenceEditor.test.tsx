@@ -46,6 +46,17 @@ function renderEditor(overrides: Partial<ComponentProps<typeof RecurrenceEditor>
 }
 
 describe('RecurrenceEditor', () => {
+  it('держит CTA поверх списка с запасом 48 px под кнопкой', () => {
+    const view = renderEditor()
+    const button = screen.getByRole('button', { name: 'Сохранить расписание' })
+    const overlay = button.parentElement?.parentElement
+    const scrollArea = overlay?.previousElementSibling
+
+    expect(overlay).toHaveStyle({ position: 'absolute', bottom: '0px' })
+    expect(scrollArea).toHaveStyle({ overflowY: 'auto', paddingBottom: 'calc(132px + env(safe-area-inset-bottom))' })
+    view.unmount()
+  })
+
   it('показывает local preview до получения authoritative preview и затем заменяет его', () => {
     const view = renderEditor()
 
@@ -122,7 +133,7 @@ describe('RecurrenceEditor', () => {
     expect(screen.queryByText('Всего записей: 3')).not.toBeInTheDocument()
     expect(screen.queryByText('Предупреждений: 1')).not.toBeInTheDocument()
     expect(screen.queryByText('Есть предупреждения')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Проверить расписание' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Продолжить' })).toBeInTheDocument()
   })
 
   it('показывает preview error и не сохраняет invalid rule', async () => {
@@ -141,7 +152,7 @@ describe('RecurrenceEditor', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Не удалось проверить расписание')
     expect(screen.getByText('Время должно быть в формате HH:mm')).toBeInTheDocument()
-    const submitButton = screen.getByRole('button', { name: 'Проверить расписание' })
+    const submitButton = screen.getByRole('button', { name: 'Продолжить' })
     expect(submitButton).toBeDisabled()
 
     await view.user.click(submitButton)

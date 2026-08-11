@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { RecurrenceRule } from './types'
 import {
+  formatRecurrencePeriod,
+  formatRecurrenceSchedule,
   formatRecurrenceSummary,
   generateOccurrenceDates,
   validateRecurrenceRule,
@@ -98,6 +100,8 @@ describe('recurrence occurrence dates', () => {
       { date: '2026-08-23', time: '08:15' },
     ])
     expect(formatRecurrenceSummary(rule)).toBe('Каждую неделю · Пн 12:30, Ср 18:45, Вс 08:15')
+    expect(formatRecurrencePeriod(rule)).toBe('с 17.08.2026 по 23.08.2026')
+    expect(formatRecurrenceSchedule(rule)).toBe('Пн. 12:30, Ср. 18:45, Вс. 08:15')
   })
 
   it('не создаёт дубли', () => {
