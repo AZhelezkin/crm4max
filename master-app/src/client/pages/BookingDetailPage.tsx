@@ -11,6 +11,9 @@ import { openAddToCalendar } from '@/lib/calendar'
 import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
+import AddressActionsMenu from '@/components/AddressActionsMenu'
+import { bookingRouteAddress } from '@/lib/bookingAddress'
+import { mapsUrl } from '@/lib/maps'
 
 dayjs.locale('ru')
 
@@ -133,6 +136,8 @@ export default function BookingDetailPage() {
   const isPostBooking = !params.id  // /book/success — после создания
 
   const [booking, setBooking] = useState<Booking | null>(null)
+  const [addressMenuOpen, setAddressMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
@@ -153,7 +158,7 @@ export default function BookingDetailPage() {
     }
   }
 
-  const handleReschedule = () => {
+  const handleReschedule = (step: 'date' | 'time' = 'date') => {
     // Перенос идёт через тот же flow, что и новая запись: load store → /book/calendar.
     // В post-booking режиме данные уже в store (из ConfirmPage); в view-режиме
     // подгружаем их из текущей записи.
@@ -167,7 +172,7 @@ export default function BookingDetailPage() {
       // Режим переноса: ConfirmPage обновит эту запись (date/time), а не создаст новую.
       setRescheduleId(booking.id)
     }
-    navigate('/book/calendar')
+    navigate('/book/calendar', { state: { step } })
   }
 
   const handleChat = () => {
@@ -315,11 +320,19 @@ export default function BookingDetailPage() {
         {/* listItem: мастер.
             booking.master содержит только id/name/photo/location (booking-include),
             description + rating подгружаются из mastersApi.getById через masterFull. */}
-        <div style={{
+        <button
+          type="button"
+          aria-label={`Открыть профиль мастера ${master.name}`}
+          onClick={() => {
+            setMasterId(master.id)
+            navigate(`/?masterId=${encodeURIComponent(master.id)}`)
+          }}
+          style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{
             width: 44, height: 44, borderRadius: 22,
@@ -367,7 +380,7 @@ export default function BookingDetailPage() {
               </span>
             </div>
           )}
-        </div>
+        </button>
 
         {/* listItem: адрес — clickable card → geo://.
             clientAddress задан → выезд мастера (subtitle «Мой адрес»),
@@ -376,17 +389,11 @@ export default function BookingDetailPage() {
           const addressText = clientAddress || master?.location
           if (!addressText) return null
           const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'
-          const handleOpenAddress = () => {
-            const url = !clientAddress && master.lat && master.lng
-              ? `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
-              : `geo:0,0?q=${encodeURIComponent(addressText)}`
-            window.WebApp?.openLink(url)
-          }
-          return (
+           return (
             <button
               type="button"
-              onClick={handleOpenAddress}
-              aria-label="Открыть на карте"
+               onClick={() => setAddressMenuOpen(true)}
+               aria-label="Действия с адресом"
               style={{
                 background: 'var(--color-surface-transparent)',
                 borderRadius: 20,
@@ -411,14 +418,42 @@ export default function BookingDetailPage() {
               <IcoLocation />
             </button>
           )
+         })()}
+
+        {addressMenuOpen && (() => {
+          const copyText = clientAddress || master?.location || ''
+          const routeAddress = bookingRouteAddress(copyText)
+          return (
+            <AddressActionsMenu
+              onClose={() => setAddressMenuOpen(false)}
+              onCopy={() => {
+                void navigator.clipboard.writeText(copyText).then(() => {
+                  setAddressMenuOpen(false)
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 2500)
+                })
+              }}
+              onOpenMaps={() => {
+                setAddressMenuOpen(false)
+                window.WebApp?.openLink(mapsUrl(routeAddress, clientAddress ? null : master.lat, clientAddress ? null : master.lng, master.name))
+              }}
+            />
+          )
         })()}
 
+        {copied && (
+          <div style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(24px + env(safe-area-inset-bottom))', zIndex: 1100, background: 'var(--color-on-surface)', color: 'var(--color-surface)', borderRadius: 16, padding: '12px 16px', textAlign: 'center', ...text.caption1 }}>
+            Скопировано
+          </div>
+        )}
+
         {/* listItem: услуга — column gap=16, нижний row: price + tag «НЕ ОПЛАЧЕНО» */}
-        <div style={{
+        <button type="button" aria-label="Изменить дату" onClick={() => handleReschedule('date')} style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -460,14 +495,15 @@ export default function BookingDetailPage() {
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* listItem: дата */}
-        <div style={{
+        <button type="button" aria-label="Изменить время" onClick={() => handleReschedule('time')} style={{
           background: 'var(--color-surface-transparent)',
           borderRadius: 20,
           padding: '16px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
+          border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
@@ -481,7 +517,7 @@ export default function BookingDetailPage() {
             </div>
           </div>
           <IcoEdit2 />
-        </div>
+        </button>
 
         {/* listItem: время + remind */}
         <div style={{
@@ -545,7 +581,7 @@ export default function BookingDetailPage() {
           {/* Chip: Перенести — недоступно для прошедшей записи. */}
           {!isPast && (
           <button
-            onClick={handleReschedule}
+            onClick={() => handleReschedule()}
             style={{
               flex: 1, minWidth: 0,
               background: 'var(--color-surface-transparent)',

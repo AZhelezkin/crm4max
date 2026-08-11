@@ -29,6 +29,7 @@ function renderPage(id = 'booking-detail') {
   return renderAtRoute(
     <Routes>
       <Route path="/bookings/:id" element={<BookingDetailPage />} />
+      <Route path="/clients" element={<div>Профиль клиента</div>} />
     </Routes>,
     { route: `/bookings/${id}` },
   )
@@ -100,20 +101,28 @@ describe('master BookingDetailPage read state', () => {
     expect(mocks.cancel).not.toHaveBeenCalled()
   })
 
-  it('открывает автомобильный маршрут от мастера к адресу клиента через provider bridge', async () => {
+  it('открывает профиль клиента из карточки записи', async () => {
+    const booking = createMasterBooking()
+    mocks.getById.mockResolvedValue(booking)
+    const view = renderPage()
+
+    await view.user.click(await screen.findByRole('button', { name: `Открыть профиль клиента ${booking.client.name}` }))
+
+    expect(view.getLocation().pathname).toBe('/clients')
+    expect(view.getLocation().state).toEqual({ clientId: booking.client.id })
+  })
+
+  it('предлагает действия с адресом и открывает его в картах через provider bridge', async () => {
     const webApp = installWebApp()
     mocks.getById.mockResolvedValue(createMasterBooking({
       clientAddress: 'Москва, Клиентская улица, 10',
     }))
     const view = renderPage()
 
-    await view.user.click(await screen.findByRole('button', { name: 'Построить маршрут' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с адресом' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Открыть в картах' }))
 
-    const route = new URL(webApp.openLink.mock.calls[0]?.[0] as string)
-    expect(route.origin + route.pathname).toBe('https://yandex.ru/maps/')
-    expect(route.searchParams.get('mode')).toBe('routes')
-    expect(route.searchParams.get('rtext')).toBe('Москва, Тестовая улица, 1~Москва, Клиентская улица, 10')
-    expect(route.searchParams.get('rtt')).toBe('auto')
+    expect(webApp.openLink).toHaveBeenCalledWith('geo:0,0?q=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%9A%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%81%D0%BA%D0%B0%D1%8F%20%D1%83%D0%BB%D0%B8%D1%86%D0%B0%2C%2010')
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()
   })

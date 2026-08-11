@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
-import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import { bookingRouteAddress } from '@/lib/bookingAddress'
 import BookingAddressText from '@/components/BookingAddressText'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import { bookingsApi } from '@/api/bookings.api'
+import { useBookingsStore } from '@/store/bookings.store'
 import type { Booking } from '@/types'
 import { formatPrice, bookingTotal, bookingDuration, bookingServiceItems, bookingServiceNames } from '@/types'
 import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { openAddToCalendar } from '@/lib/calendar'
+import BookingSeriesSummaryCard from '@/features/booking-series/BookingSeriesSummaryCard'
+import SeriesScopeDialog from '@/features/booking-series/SeriesScopeDialog'
+import { useBookingSeriesGateway } from '@/features/booking-series/gateway'
+import type { BookingSeriesBatchCancelResponse, BookingSeriesPreviewChangeResponse, SeriesActionScope } from '@/features/booking-series/types'
+import AddressActionsMenu from '@/components/AddressActionsMenu'
+import { mapsUrl } from '@/lib/maps'
 
 dayjs.locale('ru')
 
@@ -62,14 +69,28 @@ const chipStyle: React.CSSProperties = {
   color: 'var(--color-active-element)',
 }
 
+interface BatchCancelError {
+  phase: 'preview' | 'cancel'
+  versionConflict: boolean
+}
+
 // Карточка записи (как «успешная запись» / кабинет клиента, макет 8746-41315).
 // Открывается тапом по записи в «Расписании» (/bookings/:id).
 export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const upsertBooking = useBookingsStore((state) => state.upsertBooking)
+  const invalidateBookings = useBookingsStore((state) => state.invalidate)
+  const { enabled: seriesEnabled, gateway: seriesGateway } = useBookingSeriesGateway()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [scopeIntent, setScopeIntent] = useState<'date' | 'time' | 'cancel' | null>(null)
+  const [batchCancelScope, setBatchCancelScope] = useState<Exclude<SeriesActionScope, 'SINGLE'> | null>(null)
+  const [batchCancelPreview, setBatchCancelPreview] = useState<BookingSeriesPreviewChangeResponse | null>(null)
+  const [batchCancelError, setBatchCancelError] = useState<BatchCancelError | null>(null)
+  const [addressMenuOpen, setAddressMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (id) bookingsApi.getById(id).then((bk) => { setBooking(bk); markGuideStep('openedBooking') }).catch(() => {})
@@ -85,30 +106,22 @@ export default function BookingDetailPage() {
   const serviceItems = bookingServiceItems(booking)
   const addressText = booking.clientAddress || booking.master.location || ''
 
-  const handleOpenAddress = () => {
-    if (!addressText) return
-    const url = booking.clientAddress
-      ? yandexRouteUrl(
-          { lat: booking.master.lat, lng: booking.master.lng, address: booking.master.location },
-          bookingRouteAddress(booking.clientAddress),
-        )
-      : booking.master.lat && booking.master.lng
-        ? `geo:${booking.master.lat},${booking.master.lng}?q=${booking.master.lat},${booking.master.lng}(${encodeURIComponent(booking.master.name)})`
-        : `geo:0,0?q=${encodeURIComponent(addressText)}`
-    window.WebApp?.openLink?.(url)
-  }
-
   const handleConfirmPayment = async () => {
     if (busy) return
     setBusy(true)
-    try { setBooking(await bookingsApi.confirmPayment(booking.id)) } finally { setBusy(false) }
+    try {
+      const updated = await bookingsApi.confirmPayment(booking.id)
+      setBooking(updated)
+      upsertBooking(updated)
+    } finally { setBusy(false) }
   }
 
   const handleCancel = async () => {
     if (busy) return
     setBusy(true)
     try {
-      await bookingsApi.cancel(booking.id)
+      const updated = await bookingsApi.cancel(booking.id)
+      if (updated) upsertBooking(updated)
       navigate('/bookings')
     } catch { setBusy(false) }
   }
@@ -125,12 +138,109 @@ export default function BookingDetailPage() {
   }
 
   // Перенос (изменение даты, затем времени) — флоу CreateBookingPage с rescheduleId.
-  const handleReschedule = () =>
+  const openDateReschedule = () => {
+    if (seriesEnabled && booking.series) { setScopeIntent('date'); return }
     navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id } })
+  }
 
   // Изменить только время — сразу шаг времени, дата записи сохраняется.
-  const handleEditTime = () =>
+  const openTimeReschedule = () => {
+    if (seriesEnabled && booking.series) { setScopeIntent('time'); return }
     navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id, editTime: true, date: booking.date } })
+  }
+
+  const requestCancel = () => {
+    if (seriesEnabled && booking.series) { setScopeIntent('cancel'); return }
+    setConfirmCancel(true)
+  }
+
+  const handleScopeSelect = async (scope: SeriesActionScope) => {
+    const intent = scopeIntent
+    setScopeIntent(null)
+    if (!intent || !booking.series) return
+    if (scope === 'SINGLE') {
+      if (intent === 'cancel') { setConfirmCancel(true); return }
+      if (intent === 'time') {
+        navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id, editTime: true, date: booking.date, seriesScope: 'SINGLE' } })
+        return
+      }
+      navigate('/bookings/new', { state: { rescheduleId: booking.id, serviceId: booking.service.id, seriesScope: 'SINGLE' } })
+      return
+    }
+    if (intent !== 'cancel') {
+      const params = new URLSearchParams({ scope })
+      if (scope === 'THIS_AND_FUTURE') params.set('anchorBookingId', booking.id)
+      navigate(`/booking-series/${booking.series.id}/edit?${params.toString()}`)
+      return
+    }
+    if (!seriesGateway) return
+    setBatchCancelScope(scope)
+    setBatchCancelError(null)
+    setBusy(true)
+    try {
+      const preview = await seriesGateway.previewChange(booking.series.id, scope === 'THIS_AND_FUTURE'
+        ? { operation: 'CANCEL', scope, anchorBookingId: booking.id, expectedVersion: booking.series.version }
+        : { operation: 'CANCEL', scope, expectedVersion: booking.series.version })
+      setBatchCancelPreview(preview)
+    } catch (error) {
+      setBatchCancelError({ phase: 'preview', versionConflict: seriesVersionConflict(error) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const confirmBatchCancel = async () => {
+    if (!booking.series || !seriesGateway || !batchCancelScope || !batchCancelPreview || busy) return
+    setBusy(true)
+    setBatchCancelError(null)
+    try {
+      const response = await seriesGateway.cancel(booking.id, {
+        scope: batchCancelScope,
+        expectedSeriesVersion: batchCancelPreview.version,
+      })
+      if (!isBatchCancelResponse(response)) throw new Error('Batch cancellation response expected')
+      invalidateBookings()
+      navigate(`/booking-series/${booking.series.id}`, { state: { batchCancelResult: response } })
+    } catch (error) {
+      setBatchCancelError({ phase: 'cancel', versionConflict: seriesVersionConflict(error) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const retryBatchCancel = async () => {
+    if (!booking.series || !seriesGateway || !batchCancelScope || busy) return
+    if (!batchCancelError?.versionConflict) {
+      if (batchCancelError?.phase === 'cancel') void confirmBatchCancel()
+      else {
+        setBusy(true)
+        seriesGateway.previewChange(booking.series.id, batchCancelScope === 'THIS_AND_FUTURE'
+          ? { operation: 'CANCEL', scope: batchCancelScope, anchorBookingId: booking.id, expectedVersion: booking.series.version }
+          : { operation: 'CANCEL', scope: batchCancelScope, expectedVersion: booking.series.version })
+          .then((preview) => { setBatchCancelPreview(preview); setBatchCancelError(null) })
+          .catch((error) => setBatchCancelError({ phase: 'preview', versionConflict: seriesVersionConflict(error) }))
+          .finally(() => setBusy(false))
+      }
+      return
+    }
+    setBusy(true)
+    try {
+      const refreshed = await seriesGateway.get(booking.series.id)
+      const version = refreshed.series.version
+      setBooking((current) => current?.series
+        ? { ...current, series: { ...current.series, version } }
+        : current)
+      const preview = await seriesGateway.previewChange(booking.series.id, batchCancelScope === 'THIS_AND_FUTURE'
+        ? { operation: 'CANCEL', scope: batchCancelScope, anchorBookingId: booking.id, expectedVersion: version }
+        : { operation: 'CANCEL', scope: batchCancelScope, expectedVersion: version })
+      setBatchCancelPreview(preview)
+      setBatchCancelError(null)
+    } catch (error) {
+      setBatchCancelError({ phase: 'preview', versionConflict: seriesVersionConflict(error) })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   // «Назад»: внутри приложения (зашли из списка «Записи») — обычный возврат.
   // Если карточка открыта первым экраном сессии — мастер пришёл по deep-link из
@@ -145,7 +255,7 @@ export default function BookingDetailPage() {
   return (
     <div style={{ minHeight: '100dvh' }}>
       {/* Шапка: назад + «Запись» */}
-      <div style={{ position: 'relative', height: 56, display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
+      <div style={{ position: 'relative', height: 76, boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'var(--color-background)', borderRadius: 22, flexShrink: 0 }}>
           <button type="button" aria-label="Назад" onClick={handleBack} style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex', color: 'var(--color-on-surface)' }}>
             <ArrowLeftIcon />
@@ -156,7 +266,12 @@ export default function BookingDetailPage() {
 
       <div style={{ flex: 1, padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {/* Клиент */}
-        <div style={listItemStyle}>
+        <button
+          type="button"
+          aria-label={`Открыть профиль клиента ${booking.client.name}`}
+          onClick={() => navigate('/clients', { state: { clientId: booking.client.id } })}
+          style={{ ...listItemStyle, cursor: 'pointer' }}
+        >
           <div style={{ width: 44, height: 44, borderRadius: 22, flexShrink: 0, overflow: 'hidden', background: booking.client.photo ? 'var(--color-surface)' : VIOLET_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {booking.client.photo
               ? <img src={booking.client.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -169,16 +284,39 @@ export default function BookingDetailPage() {
             )}
           </div>
           <UserSquareIcon />
-        </div>
+        </button>
 
         {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
         {booking.clientAddress && (
-          <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          <button type="button" onClick={() => setAddressMenuOpen(true)} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookingAddressText value={booking.clientAddress} />
             </div>
             <LocationIcon />
           </button>
+        )}
+
+        {addressMenuOpen && booking.clientAddress && (
+          <AddressActionsMenu
+            onClose={() => setAddressMenuOpen(false)}
+            onCopy={() => {
+              void navigator.clipboard.writeText(booking.clientAddress ?? '').then(() => {
+                setAddressMenuOpen(false)
+                setCopied(true)
+                window.setTimeout(() => setCopied(false), 2500)
+              })
+            }}
+            onOpenMaps={() => {
+              setAddressMenuOpen(false)
+              window.WebApp?.openLink?.(mapsUrl(bookingRouteAddress(booking.clientAddress ?? '')))
+            }}
+          />
+        )}
+
+        {copied && (
+          <div style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(24px + env(safe-area-inset-bottom))', zIndex: 1100, background: 'var(--color-on-surface)', color: 'var(--color-surface)', borderRadius: 16, padding: '12px 16px', textAlign: 'center', ...text.caption1 }}>
+            Скопировано
+          </div>
         )}
 
         {/* Услуги (мультиуслуги: список) + итог и статус оплаты */}
@@ -202,7 +340,7 @@ export default function BookingDetailPage() {
         </div>
 
         {/* Дата — тап открывает перенос (только для активной записи). */}
-        <button type="button" onClick={handleReschedule} disabled={!canAct} aria-label="Изменить дату" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
+        <button type="button" onClick={openDateReschedule} disabled={!canAct} aria-label="Изменить дату" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{dayjs(booking.date).format('D MMMM, dd')}</div>
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>Дата</div>
@@ -211,13 +349,17 @@ export default function BookingDetailPage() {
         </button>
 
         {/* Время — тап открывает выбор времени, дата прежняя (только для активной записи). */}
-        <button type="button" onClick={handleEditTime} disabled={!canAct} aria-label="Изменить время" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
+        <button type="button" onClick={openTimeReschedule} disabled={!canAct} aria-label="Изменить время" style={{ ...listItemStyle, cursor: canAct ? 'pointer' : 'default' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{booking.time}</div>
             <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{booking.remind ? 'Напомним за 1 час' : 'Без напоминания'}</div>
           </div>
           {canAct && <EditIcon />}
         </button>
+
+        {seriesEnabled && booking.series && (
+          <BookingSeriesSummaryCard series={booking.series} onOpen={() => navigate(`/booking-series/${booking.series?.id}`)} />
+        )}
 
         {!canAct && (
           <div style={{ textAlign: 'center', ...text.caption1, color: 'var(--color-on-surface-secondary)', marginTop: 8 }}>
@@ -239,7 +381,7 @@ export default function BookingDetailPage() {
             <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
           </button>
           <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-            <button type="button" onClick={handleReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
+            <button type="button" onClick={openDateReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
               <RepeatIcon />
               <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
             </button>
@@ -247,7 +389,7 @@ export default function BookingDetailPage() {
               <MessageTextIcon />
               <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
             </button>
-            <button type="button" onClick={() => setConfirmCancel(true)} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
+            <button type="button" onClick={requestCancel} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
               <CloseCircleIcon />
               <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
             </button>
@@ -265,8 +407,49 @@ export default function BookingDetailPage() {
           onCancel={() => setConfirmCancel(false)}
         />
       )}
+
+      {scopeIntent && (
+        <SeriesScopeDialog
+          action={scopeIntent === 'cancel' ? 'cancel' : 'reschedule'}
+          onSelect={(scope) => { void handleScopeSelect(scope) }}
+          onClose={() => setScopeIntent(null)}
+        />
+      )}
+
+      {batchCancelPreview && !batchCancelError && (
+        <ConfirmDialog
+          title="Подтвердить отмену"
+          message={`Будет отменено записей: ${batchCancelPreview.result.cancelled}. Пропущено: ${batchCancelPreview.result.skipped.length}.`}
+          confirmLabel="Отменить записи"
+          cancelLabel="Назад"
+          onConfirm={() => { void confirmBatchCancel() }}
+          onCancel={() => { setBatchCancelPreview(null); setBatchCancelScope(null) }}
+        />
+      )}
+
+      {batchCancelError && (
+        <ConfirmDialog
+          title={batchCancelError.versionConflict ? 'Серия уже изменилась' : batchCancelError.phase === 'preview' ? 'Не удалось проверить отмену' : 'Не удалось отменить записи'}
+          message={batchCancelError.versionConflict
+            ? 'Обновим серию и заново покажем результат отмены перед подтверждением.'
+            : 'Проверьте подключение и повторите попытку. Выбранная область сохранена.'}
+          confirmLabel={batchCancelError.versionConflict ? 'Обновить и повторить' : 'Повторить'}
+          cancelLabel="Назад"
+          danger={false}
+          onConfirm={() => { void retryBatchCancel() }}
+          onCancel={() => setBatchCancelError(null)}
+        />
+      )}
     </div>
   )
+}
+
+function isBatchCancelResponse(value: unknown): value is BookingSeriesBatchCancelResponse {
+  return !!value && typeof value === 'object' && 'series' in value && 'result' in value
+}
+
+function seriesVersionConflict(error: unknown): boolean {
+  return (error as { response?: { data?: { error?: { code?: string } } } }).response?.data?.error?.code === 'SERIES_VERSION_CONFLICT'
 }
 
 function ArrowLeftIcon() {
