@@ -791,7 +791,13 @@ export default function CreateBookingPage() {
     if (!validateRecurrenceRule(rule).valid) return
     const request = buildSeriesPreviewRequest(rule)
     if (!seriesGateway || !request) {
-      setSeriesPreviewError('Сначала выберите клиента и услуги и проверьте данные записи.')
+      const first = generateOccurrenceDates(rule)[0]
+      setRecurrenceRule(rule)
+      setRecurrenceEditorRule(null)
+      setRepetitionMode('series')
+      if (first) { setDate(first.date); setTime(first.time) }
+      setSeriesPreviewError(null)
+      setStep('confirm')
       return
     }
     const fingerprint = previewFingerprint(request)
@@ -1717,7 +1723,7 @@ export default function CreateBookingPage() {
       <RecurrenceEditor
         initialRule={recurrenceEditorRule ?? recurrenceRule ?? createInitialRecurrenceRule(date, time, master?.timezone)}
         preview={editorSeriesPreview}
-        previewRequired
+        previewRequired={!!editorPreviewRequest}
         errorMessage={seriesPreviewError}
         onBack={() => { setRecurrenceEditorRule(null); setSeriesPreviewError(null); setStep('confirm') }}
         onSave={(rule) => previewOrSaveRecurrenceRule(rule)}
@@ -2030,7 +2036,6 @@ export default function CreateBookingPage() {
             />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={seriesMode ? openRecurrenceEditor : () => setStep('date')} />
-          {!seriesMode && <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => date ? setTimePickerOpen(true) : setStep('date')} />}
           {seriesEnabled && !rescheduleId && (
             <RepetitionFields
               mode={repetitionMode}
@@ -2051,6 +2056,7 @@ export default function CreateBookingPage() {
               onEditSchedule={openRecurrenceEditor}
             />
           )}
+          {!seriesMode && <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => date ? setTimePickerOpen(true) : setStep('date')} />}
           <FormRow
             label="Длительность"
             value={durationMin > 0 ? formatDuration(durationMin) : '0 мин'}

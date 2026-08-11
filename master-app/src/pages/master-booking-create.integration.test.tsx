@@ -643,6 +643,28 @@ describe('master CreateBookingPage', () => {
     expect(api.createSeries).not.toHaveBeenCalled()
   })
 
+  it('сохраняет настройку серии до выбора клиента и услуги без server preview', async () => {
+    const view = renderPage(undefined, true)
+
+    await openSeriesEditor(view)
+    await view.user.click(screen.getByRole('button', { name: /Выбрать время/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить расписание' }))
+
+    expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Несколько/ })).toBeInTheDocument()
+    expect(screen.queryByText('Сначала выберите клиента и услуги и проверьте данные записи.')).not.toBeInTheDocument()
+    expect(api.previewSeries).not.toHaveBeenCalled()
+  })
+
+  it('показывает повторение перед временем в карточке даты', () => {
+    renderPage(undefined, true)
+    const card = formCard('Дата и время')
+    const repetition = card.getByRole('button', { name: /Повторение/ })
+    const time = card.getByRole('button', { name: /Время/ })
+
+    expect(repetition.compareDocumentPosition(time) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('не открывает редактор серии для онлайн-записи', async () => {
     const selectedDate = nextBookableDate()
     const view = renderPage(undefined, true)
