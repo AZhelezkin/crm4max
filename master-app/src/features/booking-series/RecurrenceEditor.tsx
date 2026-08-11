@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { BookingFlowBottomButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import TimeWheelPicker from '@/components/TimeWheelPicker'
@@ -29,7 +29,6 @@ const WEEKDAYS: { value: IsoWeekday; label: string; fullLabel: string }[] = [
 interface RecurrenceEditorProps {
   initialRule: RecurrenceRule
   preview?: BookingSeriesPreviewResponse | null
-  previewRequired?: boolean
   errorMessage?: string | null
   showValidationInitially?: boolean
   title?: string
@@ -38,21 +37,22 @@ interface RecurrenceEditorProps {
   templateContent?: React.ReactNode
   saveDisabled?: boolean
   onBack: () => void
+  onChange?: (rule: RecurrenceRule) => void
   onSave: (rule: RecurrenceRule) => void | Promise<void>
 }
 
 export default function RecurrenceEditor({
   initialRule,
   preview = null,
-  previewRequired = false,
   errorMessage = null,
   showValidationInitially = false,
   title = 'Расписание',
   subtitle,
-  saveLabel = 'Сохранить расписание',
+  saveLabel = 'Продолжить',
   templateContent,
   saveDisabled = false,
   onBack,
+  onChange,
   onSave,
 }: RecurrenceEditorProps) {
   const [draft, setDraft] = useState(initialRule)
@@ -66,6 +66,10 @@ export default function RecurrenceEditor({
   )
   const activePreview = JSON.stringify(draft) === JSON.stringify(initialRule) ? preview : null
   const shownOccurrences = activePreview?.occurrences.length ? activePreview.occurrences : localOccurrences.map((item) => ({ ...item, warnings: [] }))
+
+  useEffect(() => {
+    if (validation.valid) onChange?.(draft)
+  }, [draft, validation.valid, onChange])
 
   const updateDateRange = (changes: Partial<Pick<RecurrenceRule, 'startDate' | 'endDate'>>) => {
     setDraft((current) => ({ ...current, ...changes }))
@@ -195,10 +199,6 @@ export default function RecurrenceEditor({
         <SectionTitle>Конфликты</SectionTitle>
         <OccurrencePreview occurrences={shownOccurrences.filter((occurrence) => occurrence.warnings?.length)} />
 
-        {activePreview && (
-          <AuthoritativePreviewSummary preview={activePreview} endless={draft.endDate === null} />
-        )}
-
         {showValidation && !validation.valid && (
           <div style={errorCardStyle}>
             {validation.errors.map((error) => (
@@ -219,7 +219,7 @@ export default function RecurrenceEditor({
 
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2 }}>
         <BookingFlowBottomButton disabled={!validation.valid || saveDisabled || saving} onClick={() => { void submit() }}>
-          {saving ? 'Проверяем…' : previewRequired && !activePreview ? 'Продолжить' : saveLabel}
+          {saving ? 'Сохраняем…' : saveLabel}
         </BookingFlowBottomButton>
       </div>
       <TimeWheelPicker
@@ -268,21 +268,6 @@ export function OccurrencePreview({ occurrences }: { occurrences: (SeriesOccurre
           </span>
         </div>
       ))}
-    </div>
-  )
-}
-
-function AuthoritativePreviewSummary({ preview, endless }: { preview: BookingSeriesPreviewResponse; endless: boolean }) {
-  return (
-    <div style={{ ...previewCardStyle, display: 'flex', flexDirection: 'column' }}>
-      <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>
-        {endless
-          ? `Без даты окончания · показаны первые ${preview.occurrences.length}`
-          : `Всего записей: ${preview.estimatedTotalOccurrences ?? preview.occurrences.length}`}
-      </span>
-      <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
-        В ближайшие 90 дней: {preview.materializationOccurrences}
-      </span>
     </div>
   )
 }

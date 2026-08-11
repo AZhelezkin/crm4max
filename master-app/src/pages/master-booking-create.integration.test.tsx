@@ -10,7 +10,7 @@ import { createMasterService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
 import type { Booking, Client } from '@/types'
 import { BookingSeriesGatewayProvider, type BookingSeriesGateway } from '@/features/booking-series/gateway'
-import type { BookingSeriesCreateResponse, BookingSeriesPreviewResponse } from '@/features/booking-series/types'
+import type { BookingSeriesCreateResponse, BookingSeriesPreviewRequest, BookingSeriesPreviewResponse } from '@/features/booking-series/types'
 
 const api = vi.hoisted(() => ({
   listServices: vi.fn(),
@@ -287,6 +287,7 @@ describe('master CreateBookingPage', () => {
     api.getSlots.mockResolvedValue(['10:00', '11:00'])
     api.getEffectiveWindows.mockResolvedValue([{ startTime: '09:00', endTime: '12:00' }])
     api.getMaster.mockResolvedValue(createMasterProfile())
+    api.previewSeries.mockImplementation(async (request: BookingSeriesPreviewRequest) => previewResponse(request.rule.startDate, request.rule.slots[0]?.time))
     // По умолчанию подписка действует — пейволл не срабатывает.
     api.getSubscription.mockResolvedValue(createSubscriptionState({ status: 'ACTIVE' }))
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -639,7 +640,7 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Назад' }))
 
     expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Разовая/ })).toBeInTheDocument()
-    expect(api.previewSeries).not.toHaveBeenCalled()
+    expect(api.previewSeries).toHaveBeenCalledOnce()
     expect(api.createSeries).not.toHaveBeenCalled()
   })
 
@@ -649,7 +650,7 @@ describe('master CreateBookingPage', () => {
     await openSeriesEditor(view)
     await view.user.click(screen.getByRole('button', { name: /Выбрать время/ }))
     await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
-    await view.user.click(screen.getByRole('button', { name: 'Сохранить расписание' }))
+    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Несколько/ })).toBeInTheDocument()
     expect(screen.queryByText('Сначала выберите клиента и услуги и проверьте данные записи.')).not.toBeInTheDocument()
@@ -687,7 +688,6 @@ describe('master CreateBookingPage', () => {
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
     await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
-    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
 
     await selectBookingPlace(view, 'Онлайн')
 
@@ -704,8 +704,6 @@ describe('master CreateBookingPage', () => {
     const view = renderPage(undefined, true)
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
-
-    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => expect(api.previewSeries).toHaveBeenCalledOnce())
     expect(api.previewSeries).toHaveBeenCalledWith({
@@ -730,10 +728,7 @@ describe('master CreateBookingPage', () => {
       },
     })
     expect(api.createSeries).not.toHaveBeenCalled()
-    expect(await screen.findByText('Без даты окончания · показаны первые 1')).toBeInTheDocument()
-    expect(screen.getByText('В ближайшие 90 дней: 1')).toBeInTheDocument()
-
-    await view.user.click(screen.getByRole('button', { name: 'Сохранить расписание' }))
+    await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
     expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Несколько/ })).toBeInTheDocument()
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
 
@@ -754,8 +749,8 @@ describe('master CreateBookingPage', () => {
     const view = renderPage(undefined, true)
     await completeRegularDraft(view, selectedDate)
     await openSeriesEditor(view)
+    await waitFor(() => expect(api.previewSeries).toHaveBeenCalledOnce())
     await view.user.click(screen.getByRole('button', { name: 'Продолжить' }))
-    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
 
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Напоминание клиенту/ }))
 

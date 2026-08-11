@@ -48,7 +48,7 @@ function renderEditor(overrides: Partial<ComponentProps<typeof RecurrenceEditor>
 describe('RecurrenceEditor', () => {
   it('держит CTA поверх списка с запасом 48 px под кнопкой', () => {
     const view = renderEditor()
-    const button = screen.getByRole('button', { name: 'Сохранить расписание' })
+    const button = screen.getByRole('button', { name: 'Продолжить' })
     const overlay = button.parentElement?.parentElement
     const scrollArea = overlay?.previousElementSibling
 
@@ -63,7 +63,6 @@ describe('RecurrenceEditor', () => {
     expect(screen.getByText('10:00')).toBeInTheDocument()
     expect(screen.getByText('Конфликтов нет')).toBeInTheDocument()
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Всего записей:/)).not.toBeInTheDocument()
 
     const authoritativePreview = createPreview({
       occurrences: [{ date: '2026-08-18', time: '16:30', warnings: [bookingOverlapWarning] }],
@@ -76,43 +75,6 @@ describe('RecurrenceEditor', () => {
     expect(screen.getByText('10:00')).toBeInTheDocument()
     expect(screen.getByText('16:30')).toBeInTheDocument()
     expect(screen.getByText('Занятое время')).toBeInTheDocument()
-    expect(screen.getByText('Всего записей: 1')).toBeInTheDocument()
-  })
-
-  it.each([
-    {
-      kind: 'finite',
-      rule: finiteRule,
-      preview: createPreview({
-        occurrences: [
-          { date: '2026-08-17', time: '10:00', warnings: [] },
-          { date: '2026-08-24', time: '10:00', warnings: [] },
-        ],
-        estimatedTotalOccurrences: 8,
-        materializationOccurrences: 6,
-      }),
-      expectedSummary: 'Всего записей: 8',
-      expectedMaterialization: 'В ближайшие 90 дней: 6',
-    },
-    {
-      kind: 'endless',
-      rule: { ...finiteRule, endDate: null },
-      preview: createPreview({
-        occurrences: [
-          { date: '2026-08-17', time: '10:00', warnings: [] },
-          { date: '2026-08-24', time: '10:00', warnings: [] },
-        ],
-        estimatedTotalOccurrences: null,
-        materializationOccurrences: 13,
-      }),
-      expectedSummary: 'Без даты окончания · показаны первые 2',
-      expectedMaterialization: 'В ближайшие 90 дней: 13',
-    },
-  ])('показывает authoritative summary для $kind серии', ({ rule, preview, expectedSummary, expectedMaterialization }) => {
-    renderEditor({ initialRule: rule, preview })
-
-    expect(screen.getByText(expectedSummary)).toBeInTheDocument()
-    expect(screen.getByText(expectedMaterialization)).toBeInTheDocument()
   })
 
   it('скрывает старые authoritative preview и warnings после изменения draft', async () => {
@@ -122,19 +84,19 @@ describe('RecurrenceEditor', () => {
       materializationOccurrences: 3,
       warningsCount: 1,
     })
-    const view = renderEditor({ preview, previewRequired: true })
+    const onChange = vi.fn()
+    const view = renderEditor({ preview, onChange })
 
     expect(screen.getByText('16:30')).toBeInTheDocument()
-    expect(screen.getByText('Всего записей: 3')).toBeInTheDocument()
     expect(screen.getByText('Конфликты')).toBeInTheDocument()
     expect(screen.getByText('Занятое время')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Сохранить расписание' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Продолжить' })).toBeInTheDocument()
 
     await view.user.click(screen.getByRole('button', { name: 'Раз в две недели' }))
 
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
-    expect(screen.queryByText('Всего записей: 3')).not.toBeInTheDocument()
     expect(screen.getByText('Конфликтов нет')).toBeInTheDocument()
+    expect(onChange).toHaveBeenLastCalledWith({ ...finiteRule, intervalWeeks: 2 })
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeInTheDocument()
   })
 
@@ -146,7 +108,6 @@ describe('RecurrenceEditor', () => {
     }
     const view = renderEditor({
       initialRule: invalidRule,
-      previewRequired: true,
       errorMessage: 'Не удалось проверить расписание',
       showValidationInitially: true,
       onSave,
@@ -181,7 +142,7 @@ describe('RecurrenceEditor', () => {
     fireEvent.scroll(hours)
     fireEvent.scroll(minutes)
     await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
-    const submitButton = screen.getByRole('button', { name: 'Сохранить расписание' })
+    const submitButton = screen.getByRole('button', { name: 'Продолжить' })
     expect(submitButton).toBeEnabled()
     await view.user.click(submitButton)
 

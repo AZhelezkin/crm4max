@@ -720,6 +720,22 @@ export default function CreateBookingPage() {
     return () => { cancelled = true }
   }, [seriesMode, currentPreviewFingerprint])
 
+  useEffect(() => {
+    if (step !== 'recurrence' || !editorPreviewRequest || !editorPreviewFingerprint || editorSeriesPreview || !seriesGateway) return
+    let cancelled = false
+    setSeriesPreviewError(null)
+    seriesGateway.preview(editorPreviewRequest)
+      .then((preview) => {
+        if (cancelled) return
+        setSeriesPreview(preview)
+        setSeriesPreviewFingerprint(editorPreviewFingerprint)
+      })
+      .catch((previewError) => {
+        if (!cancelled) setSeriesPreviewError(seriesPreviewErrorMessage(previewError))
+      })
+    return () => { cancelled = true }
+  }, [step, editorPreviewFingerprint])
+
   const canSave = selectedServices.length > 0
     && dateTimeReady
     && !!selectedClient
@@ -807,39 +823,13 @@ export default function CreateBookingPage() {
 
   const previewOrSaveRecurrenceRule = async (rule: RecurrenceRule) => {
     if (!validateRecurrenceRule(rule).valid) return
-    const request = buildSeriesPreviewRequest(rule)
-    if (!seriesGateway || !request) {
-      const first = generateOccurrenceDates(rule)[0]
-      setRecurrenceRule(rule)
-      setRecurrenceEditorRule(null)
-      setRepetitionMode('series')
-      if (first) { setDate(first.date); setTime(first.time) }
-      setSeriesPreviewError(null)
-      setStep('confirm')
-      return
-    }
-    const fingerprint = previewFingerprint(request)
-    if (seriesPreview && seriesPreviewFingerprint === fingerprint) {
-      const first = generateOccurrenceDates(rule)[0]
-      setRecurrenceRule(rule)
-      setRecurrenceEditorRule(null)
-      setRepetitionMode('series')
-      if (first) { setDate(first.date); setTime(first.time) }
-      setSeriesPreviewError(null)
-      setStep('confirm')
-      return
-    }
-    setRecurrenceEditorRule(rule)
-    setSeriesPreview(null)
-    setSeriesPreviewFingerprint(null)
+    const first = generateOccurrenceDates(rule)[0]
+    setRecurrenceRule(rule)
+    setRecurrenceEditorRule(null)
+    setRepetitionMode('series')
+    if (first) { setDate(first.date); setTime(first.time) }
     setSeriesPreviewError(null)
-    try {
-      const preview = await seriesGateway.preview(request)
-      setSeriesPreview(preview)
-      setSeriesPreviewFingerprint(fingerprint)
-    } catch (previewError) {
-      setSeriesPreviewError(seriesPreviewErrorMessage(previewError))
-    }
+    setStep('confirm')
   }
 
   const handleSave = async (force = false) => {
@@ -1741,9 +1731,9 @@ export default function CreateBookingPage() {
       <RecurrenceEditor
         initialRule={recurrenceEditorRule ?? recurrenceRule ?? createInitialRecurrenceRule(date, time, master?.timezone)}
         preview={editorSeriesPreview}
-        previewRequired={!!editorPreviewRequest}
         errorMessage={seriesPreviewError}
         onBack={() => { setRecurrenceEditorRule(null); setSeriesPreviewError(null); setStep('confirm') }}
+        onChange={setRecurrenceEditorRule}
         onSave={(rule) => previewOrSaveRecurrenceRule(rule)}
       />
     )
