@@ -106,10 +106,10 @@ export default function RecurrenceEditor({
   }
 
   return (
-    <div style={{ height: '100dvh', minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <BookingFlowToolbar title={title} subtitle={subtitle} onBack={onBack} backIcon={<ArrowLeftIcon />} />
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px calc(132px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ flex: 1, padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {templateContent}
         <SectionTitle>Период</SectionTitle>
         <FloatingField
@@ -217,11 +217,9 @@ export default function RecurrenceEditor({
 
       </div>
 
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2 }}>
-        <BookingFlowBottomButton disabled={!validation.valid || saveDisabled || saving} onClick={() => { void submit() }}>
-          {saving ? 'Сохраняем…' : saveLabel}
-        </BookingFlowBottomButton>
-      </div>
+      <BookingFlowBottomButton disabled={!validation.valid || saveDisabled || saving} onClick={() => { void submit() }}>
+        {saving ? 'Сохраняем…' : saveLabel}
+      </BookingFlowBottomButton>
       <TimeWheelPicker
         open={timePickerDay !== null}
         value={draft.slots.find((slot) => slot.dayOfWeek === timePickerDay)?.time || '12:00'}
