@@ -109,7 +109,7 @@ export interface Booking {
   remind: boolean
   /** Цвет записи (hex), выбранный мастером; null — цвет по статусу. */
   color: string | null
-  master: { id: string; name: string; photo: string | null; location: string | null; lat: number | null; lng: number | null }
+  master: { id: string; name: string; photo: string | null; location: string | null; locationNote?: string | null; lat: number | null; lng: number | null }
   client: { id: string; name: string; phone: string | null; photo: string | null }
   /** Первичная услуга (= services[0]). Оставлена для обратной совместимости. */
   service: Service

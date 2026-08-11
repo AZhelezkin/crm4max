@@ -22,6 +22,7 @@ export default function DestinationSelectorPage({ token }: Props) {
     setAddress,
     selectAddress,
     details,
+    setEntrance,
     setFloor,
     setApartment,
     setIntercom,
@@ -29,14 +30,21 @@ export default function DestinationSelectorPage({ token }: Props) {
     setComment,
     isCommentTooLong,
     isAddressTooLong,
+    isNoteTooLong,
     error,
     save,
   } = useDestinationSelector(token, !authLoading)
   const [pickerOpen, setPickerOpen] = useState(false)
   const masterLocation = context?.addressPurpose === 'master_location'
-  const canContinue = loadState === 'ready' && saveState !== 'saving' && saveState !== 'saved' && Boolean(address.trim()) && !isCommentTooLong && !isAddressTooLong
+  const canContinue = loadState === 'ready' && saveState !== 'saving' && saveState !== 'saved' && Boolean(address.trim()) && !isCommentTooLong && !isAddressTooLong && !isNoteTooLong
   const fieldsDisabled = loadState !== 'ready' || saveState !== 'idle'
-  const visibleError = isCommentTooLong ? 'Сократите комментарий до 300 символов' : isAddressTooLong ? 'Сократите адрес или комментарий до 500 символов' : error
+  const visibleError = isCommentTooLong
+    ? 'Сократите комментарий до 300 символов'
+    : isAddressTooLong
+      ? 'Сократите адрес до 500 символов'
+      : isNoteTooLong
+        ? 'Сократите реквизиты и комментарий до 500 символов'
+        : error
 
   useEffect(() => {
     window.WebApp?.ready?.()
@@ -63,9 +71,10 @@ export default function DestinationSelectorPage({ token }: Props) {
             placeholder={masterLocation ? 'Улица, дом' : 'Город, улица, дом'}
           />
           <div role="heading" aria-level={2} style={{ ...text.callout1, color: 'var(--color-on-surface)', textAlign: 'center' }}>Дополнительно</div>
+          <FloatingField label="Подъезд" value={details.entrance} onChange={setEntrance} valueBold />
+          <FloatingField label="Домофон" value={details.intercom} onChange={setIntercom} valueBold />
           <FloatingField label="Этаж" value={details.floor} onChange={setFloor} valueBold />
           <FloatingField label="Квартира/офис" value={details.apartment} onChange={setApartment} valueBold />
-          <FloatingField label="Домофон" value={details.intercom} onChange={setIntercom} valueBold />
           <FloatingField
             multiline
             align="top"

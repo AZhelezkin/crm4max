@@ -12,7 +12,7 @@ import { text } from '@/styles/typography'
 import MasterListItemSkeleton from '@client/components/MasterListItemSkeleton'
 import AddressListItemSkeleton from '@client/components/AddressListItemSkeleton'
 import { openExternalLink } from '@/lib/bridge'
-import { bookingRouteAddress } from '@/lib/bookingAddress'
+import { parseBookingAddress } from '@/lib/bookingAddress'
 import BookingAddressText from '@/components/BookingAddressText'
 import WheelPicker from '@/components/WheelPicker'
 
@@ -422,7 +422,9 @@ export default function BookingDetailPage() {
               </button>
             )
           }
-          const routeAddress = clientAddress ? bookingRouteAddress(clientAddress) : master?.location
+          const addressValue = clientAddress || master?.location
+          const addressNote = clientAddress ? booking.notes : master?.locationNote
+          const routeAddress = addressValue ? parseBookingAddress(addressValue, addressNote).address : ''
           if (!routeAddress) return null
           const subtitle = clientAddress ? 'Ваш адрес' : 'Адрес мастера'
           const handleOpenAddress = () => {
@@ -446,17 +448,7 @@ export default function BookingDetailPage() {
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                {clientAddress
-                  ? <BookingAddressText value={clientAddress} />
-                  : (
-                      <div style={{
-                        ...text.callout1, color: 'var(--color-on-surface)',
-                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden', wordBreak: 'break-word',
-                      }}>
-                        {routeAddress}
-                      </div>
-                    )}
+                <BookingAddressText value={addressValue!} note={addressNote} />
                 <div style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>
                   {subtitle}
                 </div>

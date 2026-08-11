@@ -16,7 +16,7 @@ import Skeleton from '@/components/Skeleton'
 import WeekStrip from '@/components/WeekStrip'
 import GuideCard from '@/components/GuideCard'
 import { markGuideStep } from '@/lib/guide'
-import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import { bookingRouteAddress, parseBookingAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
 
@@ -237,6 +237,7 @@ export default function HomePage() {
 
   if (!master) return <ProfileSkeleton />
 
+  const parsedMasterAddress = master.location ? parseBookingAddress(master.location, master.locationNote) : null
   const servicesCount = masterServiceList(master).length
   const popularService = useMemo(() => {
     const services = masterServiceList(master)
@@ -606,9 +607,9 @@ export default function HomePage() {
                 text={{ ...text.caption1, color: 'var(--color-on-secondary-surface)' }}
                  style={{ padding: '4px 12px 0' }}
               >
-                {master.location}
+                {parsedMasterAddress?.address}
               </IconTextRow>
-              {master.locationNote && (
+              {(parsedMasterAddress?.entrance || parsedMasterAddress?.intercom || parsedMasterAddress?.floor || parsedMasterAddress?.apartment || parsedMasterAddress?.comment) && (
                 <>
                   <div style={{ height: 13, padding: '6px 0', boxSizing: 'border-box' }}>
                     <div style={{ height: 1, background: 'var(--color-secondary-surface-muted)' }} />
@@ -618,7 +619,13 @@ export default function HomePage() {
                     text={{ ...text.caption2, color: 'var(--color-interactive-element-secondary)' }}
                     style={{ padding: '0 12px 12px' }}
                   >
-                    {master.locationNote}
+                    {[
+                      parsedMasterAddress.entrance && `Подъезд: ${parsedMasterAddress.entrance}`,
+                      parsedMasterAddress.intercom && `Домофон: ${parsedMasterAddress.intercom}`,
+                      parsedMasterAddress.floor && `Этаж: ${parsedMasterAddress.floor}`,
+                      parsedMasterAddress.apartment && `Квартира/офис: ${parsedMasterAddress.apartment}`,
+                      parsedMasterAddress.comment,
+                    ].filter(Boolean).join('\n')}
                   </IconTextRow>
                 </>
               )}

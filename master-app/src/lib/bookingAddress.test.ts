@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { bookingRouteAddress, formatBookingAddress, formatStructuredBookingAddress, parseBookingAddress, yandexRouteUrl } from './bookingAddress'
+import { bookingRouteAddress, formatBookingAddress, formatBookingAddressNote, parseBookingAddress, yandexRouteUrl } from './bookingAddress'
 
 describe('bookingAddress', () => {
   it('собирает адрес, реквизиты помещения и комментарий отдельными строками', () => {
@@ -19,6 +19,7 @@ describe('bookingAddress', () => {
   it('сохраняет запятые внутри inline legacy-реквизитов', () => {
     expect(parseBookingAddress('Москва, Дом 1, кв. 12, корпус 2, этаж 7')).toEqual({
       address: 'Москва, Дом 1',
+      entrance: '',
       floor: '7',
       apartment: '12, корпус 2',
       intercom: '',
@@ -29,6 +30,7 @@ describe('bookingAddress', () => {
   it('сохраняет inline legacy-реквизиты перед многострочным комментарием', () => {
     expect(parseBookingAddress('Москва, Дом 1, кв. 12, этаж 7\nПозвонить заранее')).toEqual({
       address: 'Москва, Дом 1',
+      entrance: '',
       floor: '7',
       apartment: '12',
       intercom: '',
@@ -41,12 +43,13 @@ describe('bookingAddress', () => {
 
     expect(parsed).toEqual({
       address: 'Москва, Дом 1',
+      entrance: '',
       floor: '',
       apartment: '',
       intercom: '',
       comment: 'кв. 12, этаж 7, этаж 8\nПозвонить заранее',
     })
-    expect(formatStructuredBookingAddress(parsed.address, parsed, parsed.comment)).toContain('Комментарий: кв. 12, этаж 7, этаж 8')
+    expect(formatBookingAddressNote({ entrance: parsed.entrance, floor: parsed.floor, apartment: parsed.apartment, intercom: parsed.intercom }, parsed.comment)).toContain('Комментарий: кв. 12, этаж 7, этаж 8')
   })
 
   it('разбирает реквизиты помещения и многострочный комментарий', () => {
@@ -54,6 +57,7 @@ describe('bookingAddress', () => {
       'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева у входа есть подвал\nТам справа будет окно',
     )).toEqual({
       address: 'Москва, Серебряническая набережная, 29',
+      entrance: '',
       floor: '7',
       apartment: '104',
       intercom: '123#',
@@ -62,15 +66,12 @@ describe('bookingAddress', () => {
   })
 
   it('обратно разбирает маркированные реквизиты с запятыми и комментарий с названием поля', () => {
-    const value = formatStructuredBookingAddress(
-      'Москва, Дом 1',
-      { floor: '7', apartment: '12, корпус 2', intercom: '123#' },
-      'Домофон не работает, позвоните\nВстречу у подъезда',
-    )
+    const value = 'Москва, Дом 1\nДополнительно [CRM4MAX/1]:\nЭтаж: 7\nКвартира/офис: 12, корпус 2\nДомофон: 123#\nКомментарий: Домофон не работает, позвоните\nВстречу у подъезда'
 
     expect(value).toBe('Москва, Дом 1\nДополнительно [CRM4MAX/1]:\nЭтаж: 7\nКвартира/офис: 12, корпус 2\nДомофон: 123#\nКомментарий: Домофон не работает, позвоните\nВстречу у подъезда')
     expect(parseBookingAddress(value)).toEqual({
       address: 'Москва, Дом 1',
+      entrance: '',
       floor: '7',
       apartment: '12, корпус 2',
       intercom: '123#',
@@ -79,11 +80,7 @@ describe('bookingAddress', () => {
   })
 
   it('не применяет legacy-очистку к первой строке versioned payload', () => {
-    const value = formatStructuredBookingAddress(
-      'Москва, Дом 1, кв. 12',
-      { floor: '', apartment: '', intercom: '' },
-      'Позвонить заранее',
-    )
+    const value = 'Москва, Дом 1, кв. 12\nДополнительно [CRM4MAX/1]:\nКомментарий: Позвонить заранее'
 
     expect(parseBookingAddress(value)).toMatchObject({
       address: 'Москва, Дом 1, кв. 12',
@@ -129,9 +126,33 @@ describe('bookingAddress', () => {
   })
 
   it('сохраняет пустые строки внутри structured-комментария', () => {
-    const value = formatStructuredBookingAddress('Москва, Дом 1', { floor: '', apartment: '', intercom: '' }, 'Первая строка\n\nТретья строка')
+    const value = 'Москва, Дом 1\nДополнительно [CRM4MAX/1]:\nКомментарий: Первая строка\n\nТретья строка'
 
     expect(parseBookingAddress(value).comment).toBe('Первая строка\n\nТретья строка')
+  })
+
+  it('формирует отдельный комментарий без технического маркера в нужном порядке', () => {
+    const note = formatBookingAddressNote(
+      { entrance: ' 2 ', intercom: ' #402* ', floor: ' 4 ', apartment: ' 402 ' },
+      ' Вход со двора ',
+    )
+
+    expect(note).toBe('Подъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со двора')
+    expect(note).not.toContain('CRM4MAX')
+  })
+
+  it('разбирает отдельный комментарий приоритетнее legacy-реквизитов адреса', () => {
+    expect(parseBookingAddress(
+      'Москва, Дом 1\nДополнительно [CRM4MAX/1]:\nЭтаж: 7\nДомофон: 111#',
+      'Подъезд: 2\nДомофон: 222#\nЭтаж: 4\nКвартира/офис: 12\nКомментарий: Вход со двора',
+    )).toEqual({
+      address: 'Москва, Дом 1',
+      entrance: '2',
+      intercom: '222#',
+      floor: '4',
+      apartment: '12',
+      comment: 'Вход со двора',
+    })
   })
 
   it('строит автомобильный маршрут от адреса мастера, если он заполнен', () => {

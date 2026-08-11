@@ -25,6 +25,7 @@ export interface DestinationSelectorContextData {
   time: string
   clientAddress?: string | null
   masterLocation?: string | null
+  note?: string | null
   masterLat?: number | null
   masterLng?: number | null
   expiresAt: string
@@ -51,3 +52,15 @@ export type DestinationSelectorSaveStatus =
 export type DestinationSelectorSaveResponse =
   | { status: 'ok' }
   | { status: DestinationSelectorSaveStatus }
+
+export interface DestinationSelectorAddressInput {
+  clientAddress: string
+  note: string | null
+}
+
+export interface DestinationSelectorMasterLocationInput {
+  location: string
+  lat: number | null
+  lng: number | null
+  note: string | null
+}

@@ -31,9 +31,12 @@ describe('destination selector API', () => {
       ),
     )
 
-    const result = await saveDestinationSelectorAddress(DESTINATION_TOKEN, address)
+    const result = await saveDestinationSelectorAddress(DESTINATION_TOKEN, {
+      clientAddress: address,
+      note: 'Подъезд: 2',
+    })
 
-    expect(body).toEqual({ clientAddress: address })
+    expect(body).toEqual({ clientAddress: address, note: 'Подъезд: 2' })
     expect(result).toEqual({ status: 'ok' })
   })
 
@@ -50,9 +53,10 @@ describe('destination selector API', () => {
       location: 'Москва, Тестовая улица, 2',
       lat: 55.76,
       lng: 37.61,
+      note: null,
     })
 
-    expect(body).toEqual({ location: 'Москва, Тестовая улица, 2', lat: 55.76, lng: 37.61 })
+    expect(body).toEqual({ location: 'Москва, Тестовая улица, 2', lat: 55.76, lng: 37.61, note: null })
     expect(result).toEqual({ status: 'ok' })
   })
 

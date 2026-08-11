@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { formatStructuredBookingAddress, parseBookingAddress, type BookingAddressDetails } from '@/lib/bookingAddress'
+import { formatBookingAddressNote, parseBookingAddress, type DestinationAddressDetails } from '@/lib/bookingAddress'
 import { getDestinationSelectorContext, saveDestinationSelectorAddress, saveDestinationSelectorMasterLocation } from './api'
 import type { DestinationSelectorContextData, DestinationSelectorCoords } from './types'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved'
-const EMPTY_DETAILS: BookingAddressDetails = { floor: '', apartment: '', intercom: '' }
+const EMPTY_DETAILS: DestinationAddressDetails = { entrance: '', floor: '', apartment: '', intercom: '' }
 const MAX_DESTINATION_ADDRESS_LENGTH = 500
+const MAX_DESTINATION_NOTE_LENGTH = 500
 const MAX_COMMENT_LENGTH = 300
 
 export function useDestinationSelector(token: string | null, enabled = true) {
@@ -14,9 +15,9 @@ export function useDestinationSelector(token: string | null, enabled = true) {
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [context, setContext] = useState<DestinationSelectorContextData | null>(null)
   const [address, setAddress] = useState('')
-  const [details, setDetails] = useState<BookingAddressDetails>(EMPTY_DETAILS)
+  const [details, setDetails] = useState<DestinationAddressDetails>(EMPTY_DETAILS)
   const [comment, setComment] = useState('')
-  const [initialAddress, setInitialAddress] = useState<{ raw: string; parsed: ReturnType<typeof parseBookingAddress> } | null>(null)
+  const [initialAddress, setInitialAddress] = useState<ReturnType<typeof parseBookingAddress> | null>(null)
   const [coords, setCoords] = useState<DestinationSelectorCoords | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,20 +44,20 @@ export function useDestinationSelector(token: string | null, enabled = true) {
         setContext(response.data)
         if (response.data.addressPurpose === 'master_location') {
           const rawLocation = response.data.masterLocation ?? ''
-          const parsedLocation = parseBookingAddress(rawLocation)
-          setInitialAddress({ raw: rawLocation, parsed: parsedLocation })
+          const parsedLocation = parseBookingAddress(rawLocation, response.data.note)
+          setInitialAddress(parsedLocation)
           setAddress(parsedLocation.address)
-          setDetails({ floor: parsedLocation.floor, apartment: parsedLocation.apartment, intercom: parsedLocation.intercom })
+          setDetails({ entrance: parsedLocation.entrance, floor: parsedLocation.floor, apartment: parsedLocation.apartment, intercom: parsedLocation.intercom })
           setComment(parsedLocation.comment)
           setCoords(typeof response.data.masterLat === 'number' && typeof response.data.masterLng === 'number'
             ? { lat: response.data.masterLat, lng: response.data.masterLng }
             : null)
         } else {
           const rawAddress = response.data.clientAddress ?? ''
-          const parsedAddress = parseBookingAddress(rawAddress)
-          setInitialAddress({ raw: rawAddress, parsed: parsedAddress })
+          const parsedAddress = parseBookingAddress(rawAddress, response.data.note)
+          setInitialAddress(parsedAddress)
           setAddress(parsedAddress.address)
-          setDetails({ floor: parsedAddress.floor, apartment: parsedAddress.apartment, intercom: parsedAddress.intercom })
+          setDetails({ entrance: parsedAddress.entrance, floor: parsedAddress.floor, apartment: parsedAddress.apartment, intercom: parsedAddress.intercom })
           setComment(parsedAddress.comment)
           setCoords(null)
         }
@@ -72,15 +73,18 @@ export function useDestinationSelector(token: string | null, enabled = true) {
   }, [enabled, token])
 
   const addressIsUnchanged = Boolean(initialAddress)
-    && address === initialAddress!.parsed.address
-    && details.floor === initialAddress!.parsed.floor
-    && details.apartment === initialAddress!.parsed.apartment
-    && details.intercom === initialAddress!.parsed.intercom
-    && comment === initialAddress!.parsed.comment
-  const destinationAddress = addressIsUnchanged ? initialAddress!.raw : formatStructuredBookingAddress(address, details, comment)
+    && address === initialAddress!.address
+    && details.entrance === initialAddress!.entrance
+    && details.floor === initialAddress!.floor
+    && details.apartment === initialAddress!.apartment
+    && details.intercom === initialAddress!.intercom
+    && comment === initialAddress!.comment
+  const destinationAddress = address.trim()
+  const destinationNote = formatBookingAddressNote(details, comment) || null
   const masterLocationMode = context?.addressPurpose === 'master_location'
   const isCommentTooLong = !addressIsUnchanged && comment.length > MAX_COMMENT_LENGTH
   const isAddressTooLong = destinationAddress.length > MAX_DESTINATION_ADDRESS_LENGTH
+  const isNoteTooLong = (destinationNote?.length ?? 0) > MAX_DESTINATION_NOTE_LENGTH
 
   const save = useCallback(async () => {
     if (!token || saveState === 'saving') return
@@ -93,7 +97,11 @@ export function useDestinationSelector(token: string | null, enabled = true) {
       return
     }
     if (isAddressTooLong) {
-      setError('Сократите адрес или комментарий до 500 символов')
+      setError('Сократите адрес до 500 символов')
+      return
+    }
+    if (isNoteTooLong) {
+      setError('Сократите реквизиты и комментарий до 500 символов')
       return
     }
 
@@ -105,8 +113,9 @@ export function useDestinationSelector(token: string | null, enabled = true) {
             location: destinationAddress,
             lat: coords?.lat ?? null,
             lng: coords?.lng ?? null,
+            note: destinationNote,
           })
-        : await saveDestinationSelectorAddress(token, destinationAddress)
+        : await saveDestinationSelectorAddress(token, { clientAddress: destinationAddress, note: destinationNote })
       if (response.status !== 'ok') {
         setSaveState('idle')
         setError(errorText(response.status))
@@ -118,7 +127,7 @@ export function useDestinationSelector(token: string | null, enabled = true) {
       setSaveState('idle')
       setError('Не удалось сохранить адрес')
     }
-  }, [address, coords, destinationAddress, isAddressTooLong, isCommentTooLong, masterLocationMode, saveState, token])
+  }, [address, coords, destinationAddress, destinationNote, isAddressTooLong, isCommentTooLong, isNoteTooLong, masterLocationMode, saveState, token])
 
   const changeAddress = useCallback((value: string) => {
     setAddress(value)
@@ -141,6 +150,7 @@ export function useDestinationSelector(token: string | null, enabled = true) {
     setAddress: changeAddress,
     selectAddress,
     details,
+    setEntrance: (entrance: string) => { setDetails((current) => ({ ...current, entrance })); setError(null) },
     setFloor: (floor: string) => { setDetails((current) => ({ ...current, floor })); setError(null) },
     setApartment: (apartment: string) => { setDetails((current) => ({ ...current, apartment })); setError(null) },
     setIntercom: (intercom: string) => { setDetails((current) => ({ ...current, intercom })); setError(null) },
@@ -148,6 +158,7 @@ export function useDestinationSelector(token: string | null, enabled = true) {
     setComment: (value: string) => { setComment(value.slice(0, MAX_COMMENT_LENGTH)); setError(null) },
     isCommentTooLong,
     isAddressTooLong,
+    isNoteTooLong,
     error,
     save,
   }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { markGuideStep } from '@/lib/guide'
-import { bookingRouteAddress, yandexRouteUrl } from '@/lib/bookingAddress'
+import { parseBookingAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import BookingAddressText from '@/components/BookingAddressText'
 import { useParams, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -87,17 +87,19 @@ export default function BookingDetailPage() {
   const price = bookingTotal(booking)
   const serviceItems = bookingServiceItems(booking)
   const addressText = booking.clientAddress || booking.master.location || ''
+  const addressNote = booking.clientAddress ? booking.notes : booking.master.locationNote
+  const routeAddress = addressText ? parseBookingAddress(addressText, addressNote).address : ''
 
   const handleOpenAddress = () => {
-    if (!addressText) return
+    if (!routeAddress) return
     const url = booking.clientAddress
       ? yandexRouteUrl(
           { lat: booking.master.lat, lng: booking.master.lng, address: booking.master.location },
-          bookingRouteAddress(booking.clientAddress),
+          routeAddress,
         )
       : booking.master.lat && booking.master.lng
         ? `geo:${booking.master.lat},${booking.master.lng}?q=${booking.master.lat},${booking.master.lng}(${encodeURIComponent(booking.master.name)})`
-        : `geo:0,0?q=${encodeURIComponent(addressText)}`
+        : `geo:0,0?q=${encodeURIComponent(routeAddress)}`
     window.WebApp?.openLink?.(url)
   }
 
@@ -127,7 +129,7 @@ export default function BookingDetailPage() {
       date: booking.date,
       time: booking.time,
       durationMin: bookingDuration(booking),
-      location: booking.onlineMeetingLink || addressText,
+      location: booking.onlineMeetingLink || routeAddress,
     })
   }
 
@@ -183,11 +185,11 @@ export default function BookingDetailPage() {
           <UserSquareIcon />
         </button>
 
-        {/* Адрес — только выезд к клиенту. Свой адрес мастеру не показываем. */}
-        {!booking.onlineMeetingLink && booking.clientAddress && (
+        {/* Для выезда показываем адрес клиента, иначе — адрес из профиля мастера. */}
+        {!booking.onlineMeetingLink && addressText && (
           <button type="button" onClick={handleOpenAddress} aria-label="Построить маршрут" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <BookingAddressText value={booking.clientAddress} />
+              <BookingAddressText value={addressText} note={addressNote} />
             </div>
             <LocationIcon />
           </button>

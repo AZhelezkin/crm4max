@@ -105,6 +105,7 @@ export interface Booking {
     name: string
     photo: string | null
     location: string | null
+    locationNote?: string | null
     description: string | null
     rating: number
     lat: number | null

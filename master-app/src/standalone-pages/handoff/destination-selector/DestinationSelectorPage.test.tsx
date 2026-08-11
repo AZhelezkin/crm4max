@@ -127,16 +127,20 @@ describe('DestinationSelectorPage', () => {
     await user.click(screen.getByPlaceholderText('Город, улица, дом'))
     expect(screen.getByRole('dialog', { name: 'Карта выбора адреса' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await user.type(screen.getByPlaceholderText('Подъезд'), '2')
+    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
     await user.type(screen.getByPlaceholderText('Этаж'), '4')
     await user.type(screen.getByPlaceholderText('Квартира/офис'), '402')
-    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
     await user.type(screen.getByPlaceholderText('Комментарий'), 'Вход со стороны бульвара')
 
     await user.click(continueButton)
 
     await waitFor(() => expect(apiMock.saveAddress).toHaveBeenCalledWith(
       DESTINATION_TOKEN,
-      'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со стороны бульвара',
+      {
+        clientAddress: 'Москва, Тестовая улица, 2',
+        note: 'Подъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со стороны бульвара',
+      },
     ))
     expect(screen.getByRole('alert')).toHaveTextContent('Проверьте адрес')
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
@@ -186,9 +190,10 @@ describe('DestinationSelectorPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Адрес мастера' })).toBeInTheDocument()
     expect(screen.getByText('Укажите адрес мастера')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Подъезд')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Домофон')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Этаж')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Квартира/офис')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Домофон')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Комментарий')).toBeInTheDocument()
 
     await user.click(input)
@@ -200,16 +205,18 @@ describe('DestinationSelectorPage', () => {
     expect(openPickerProps).not.toHaveProperty('details')
 
     await user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await user.type(screen.getByPlaceholderText('Подъезд'), '2')
+    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
     await user.type(screen.getByPlaceholderText('Этаж'), '4')
     await user.type(screen.getByPlaceholderText('Квартира/офис'), '402')
-    await user.type(screen.getByPlaceholderText('Домофон'), '#402*')
     await user.type(screen.getByPlaceholderText('Комментарий'), 'Вход со двора')
     await user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => expect(apiMock.saveMasterLocation).toHaveBeenCalledWith(DESTINATION_TOKEN, {
-      location: 'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со двора',
+      location: 'Москва, Тестовая улица, 2',
       lat: 55.76,
       lng: 37.61,
+      note: 'Подъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со двора',
     }))
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })

@@ -50,7 +50,7 @@ describe('useDestinationSelector', () => {
     expect(apiMock.getContext).toHaveBeenCalledWith(DESTINATION_TOKEN)
     expect(result.current.context).toEqual(context)
     expect(result.current.address).toBe('Сохранённый адрес')
-    expect(result.current.details).toEqual({ floor: '7', apartment: '104', intercom: '123#' })
+    expect(result.current.details).toEqual({ entrance: '', floor: '7', apartment: '104', intercom: '123#' })
     expect(result.current.comment).toBe('Слева от входа')
     expect(result.current.error).toBeNull()
   })
@@ -71,7 +71,7 @@ describe('useDestinationSelector', () => {
     expect(result.current.context).toEqual(context)
     expect(result.current.address).toBe('Москва, Тверская улица, 7')
     expect(result.current.coords).toEqual({ lat: 55.76, lng: 37.61 })
-    expect(result.current.details).toEqual({ floor: '7', apartment: '104', intercom: '123#' })
+    expect(result.current.details).toEqual({ entrance: '', floor: '7', apartment: '104', intercom: '123#' })
     expect(result.current.comment).toBe('Вход со двора')
   })
 
@@ -91,7 +91,10 @@ describe('useDestinationSelector', () => {
       await result.current.save()
     })
 
-    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, clientAddress)
+    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, {
+      clientAddress: 'Адрес клиента',
+      note: `Комментарий: ${'а'.repeat(301)}`,
+    })
   })
 
   it('не переносит длинный legacy-комментарий в новый structured payload после изменения реквизитов', async () => {
@@ -111,7 +114,7 @@ describe('useDestinationSelector', () => {
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })
 
-  it('не расширяет неизменённый legacy payload при сохранении', async () => {
+  it('разделяет legacy payload только при явном сохранении формы', async () => {
     const clientAddress = `Адрес клиента\nэтаж 7, кв./офис 12, корпус 2, домофон 123#\n${'а'.repeat(400)}`
     apiMock.saveAddress.mockResolvedValue({ status: 'invalid_address' })
     apiMock.getContext.mockResolvedValue({ status: 'ok', data: createDestinationContext({ clientAddress }) })
@@ -122,7 +125,10 @@ describe('useDestinationSelector', () => {
       await result.current.save()
     })
 
-    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, clientAddress)
+    expect(apiMock.saveAddress).toHaveBeenCalledWith(DESTINATION_TOKEN, {
+      clientAddress: 'Адрес клиента',
+      note: `Домофон: 123#\nЭтаж: 7\nКвартира/офис: 12, корпус 2\nКомментарий: ${'а'.repeat(400)}`,
+    })
   })
 
   it.each([
@@ -174,7 +180,7 @@ describe('useDestinationSelector', () => {
     })
 
     expect(result.current.isAddressTooLong).toBe(true)
-    expect(result.current.error).toBe('Сократите адрес или комментарий до 500 символов')
+    expect(result.current.error).toBe('Сократите адрес до 500 символов')
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
   })
 
@@ -183,6 +189,7 @@ describe('useDestinationSelector', () => {
     const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
     await waitFor(() => expect(result.current.loadState).toBe('ready'))
     act(() => result.current.setAddress('  Москва, Тестовая улица, 2  '))
+    act(() => result.current.setEntrance(' 2 '))
     act(() => result.current.setFloor(' 4 '))
     act(() => result.current.setApartment(' 402 '))
     act(() => result.current.setIntercom(' #402* '))
@@ -195,7 +202,10 @@ describe('useDestinationSelector', () => {
 
     expect(apiMock.saveAddress).toHaveBeenCalledWith(
       DESTINATION_TOKEN,
-      'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со двора',
+      {
+        clientAddress: 'Москва, Тестовая улица, 2',
+        note: 'Подъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со двора',
+      },
     )
     expect(result.current.saveState).toBe('saved')
     expect(webApp.close).not.toHaveBeenCalled()
@@ -214,6 +224,7 @@ describe('useDestinationSelector', () => {
     const { result } = renderHook(() => useDestinationSelector(DESTINATION_TOKEN))
     await waitFor(() => expect(result.current.loadState).toBe('ready'))
     act(() => result.current.selectAddress('  Москва, Тестовая улица, 2  ', { lat: 55.76, lng: 37.61 }))
+    act(() => result.current.setEntrance(' 2 '))
     act(() => result.current.setFloor(' 4 '))
     act(() => result.current.setApartment(' 402 '))
     act(() => result.current.setIntercom(' #402* '))
@@ -225,9 +236,10 @@ describe('useDestinationSelector', () => {
     })
 
     expect(apiMock.saveMasterLocation).toHaveBeenCalledWith(DESTINATION_TOKEN, {
-      location: 'Москва, Тестовая улица, 2\nДополнительно [CRM4MAX/1]:\nЭтаж: 4\nКвартира/офис: 402\nДомофон: #402*\nКомментарий: Вход со двора',
+      location: 'Москва, Тестовая улица, 2',
       lat: 55.76,
       lng: 37.61,
+      note: 'Подъезд: 2\nДомофон: #402*\nЭтаж: 4\nКвартира/офис: 402\nКомментарий: Вход со двора',
     })
     expect(apiMock.saveAddress).not.toHaveBeenCalled()
     vi.clearAllTimers()
