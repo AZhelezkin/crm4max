@@ -46,14 +46,14 @@ function renderEditor(overrides: Partial<ComponentProps<typeof RecurrenceEditor>
 }
 
 describe('RecurrenceEditor', () => {
-  it('держит CTA поверх списка с запасом 48 px под кнопкой', () => {
+  it('показывает CTA после списка, а не поверх конфликтов', () => {
     const view = renderEditor()
     const button = screen.getByRole('button', { name: 'Продолжить' })
-    const overlay = button.parentElement?.parentElement
-    const scrollArea = overlay?.previousElementSibling
+    const buttonContainer = button.parentElement
+    const content = buttonContainer?.previousElementSibling
 
-    expect(overlay).toHaveStyle({ position: 'absolute', bottom: '0px' })
-    expect(scrollArea).toHaveStyle({ overflowY: 'auto', paddingBottom: 'calc(132px + env(safe-area-inset-bottom))' })
+    expect(buttonContainer).not.toHaveStyle({ position: 'absolute' })
+    expect(content).toHaveStyle({ paddingBottom: '32px' })
     view.unmount()
   })
 
