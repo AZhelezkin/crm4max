@@ -1,14 +1,18 @@
 import { createPortal } from 'react-dom'
 import { text } from '@/styles/typography'
 
-export type AddressMenuPosition = { right: number; top?: number; bottom?: number }
+export type AddressMenuPosition = { left: number; top?: number; bottom?: number }
 
-export function addressMenuPosition(element: HTMLElement): AddressMenuPosition {
-  const rect = element.getBoundingClientRect()
-  const openUp = window.innerHeight - rect.bottom < 140 && rect.top > 140
+export function addressMenuPosition(event: React.MouseEvent<HTMLElement>): AddressMenuPosition {
+  const menuWidth = 220
+  const edge = 16
+  const x = event.clientX || event.currentTarget.getBoundingClientRect().right
+  const y = event.clientY || event.currentTarget.getBoundingClientRect().bottom
+  const left = Math.min(Math.max(edge, x), window.innerWidth - menuWidth - edge)
+  const openUp = window.innerHeight - y < 140 && y > 140
   return openUp
-    ? { right: 16, bottom: window.innerHeight - rect.top + 8 }
-    : { right: 16, top: rect.bottom + 8 }
+    ? { left, bottom: window.innerHeight - y + 8 }
+    : { left, top: y + 8 }
 }
 
 export default function AddressActionsMenu({ position, onClose, onCopy, onOpenMaps }: {
@@ -25,7 +29,7 @@ export default function AddressActionsMenu({ position, onClose, onCopy, onOpenMa
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
       <div role="menu" onClick={(event) => event.stopPropagation()} style={{
-        position: 'fixed', right: position.right,
+        position: 'fixed', left: position.left,
         ...(position.top !== undefined ? { top: position.top } : { bottom: position.bottom }),
         minWidth: 220, maxWidth: 'calc(100vw - 32px)',
         background: 'var(--color-surface)', borderRadius: 16, padding: '12px 20px',

@@ -179,7 +179,7 @@ export default function BookingDetailPage() {
 
         {/* Для выезда показываем адрес клиента, иначе — адрес из профиля мастера. */}
         {!booking.onlineMeetingLink && addressText && (
-          <button type="button" onClick={(event) => setAddressMenu(addressMenuPosition(event.currentTarget))} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          <button type="button" onClick={(event) => setAddressMenu(addressMenuPosition(event))} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookingAddressText value={addressText} note={addressNote} />
             </div>

@@ -66,7 +66,7 @@ export default function MasterAddressPage() {
         <button
           type="button"
           aria-label={`Адрес ${parsed.address}`}
-          onClick={(event) => setMenu(addressMenuPosition(event.currentTarget))}
+          onClick={(event) => setMenu(addressMenuPosition(event))}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--color-surface-transparent)', borderRadius: 20,

@@ -435,7 +435,7 @@ export default function BookingDetailPage() {
           return (
             <button
               type="button"
-              onClick={(event) => setAddressMenu(addressMenuPosition(event.currentTarget))}
+              onClick={(event) => setAddressMenu(addressMenuPosition(event))}
               aria-label="Действия с адресом"
               style={{
                 background: 'var(--color-surface-transparent)',
