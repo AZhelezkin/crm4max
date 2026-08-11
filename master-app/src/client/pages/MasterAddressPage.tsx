@@ -7,13 +7,13 @@ import { HeroHeader } from '@/components/onboardingShared'
 import { parseBookingAddress } from '@/lib/bookingAddress'
 import { systemMapsUrl } from '@/lib/maps'
 import { text } from '@/styles/typography'
-import AddressActionsMenu from '@/components/AddressActionsMenu'
+import AddressActionsMenu, { addressMenuPosition, type AddressMenuPosition } from '@/components/AddressActionsMenu'
 
 export default function MasterAddressPage() {
   const navigate = useNavigate()
   const masterId = useBookingStore((state) => state.masterId)
   const [details, setDetails] = useState<MasterAddressDetails | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menu, setMenu] = useState<AddressMenuPosition | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number | null>(null)
 
@@ -43,7 +43,7 @@ export default function MasterAddressPage() {
   }
 
   const copyAddress = async () => {
-    setMenuOpen(false)
+    setMenu(null)
     try {
       await navigator.clipboard.writeText([parsed.address, details.locationNote].filter(Boolean).join('\n'))
       showCopied()
@@ -53,7 +53,7 @@ export default function MasterAddressPage() {
   }
 
   const openMaps = () => {
-    setMenuOpen(false)
+    setMenu(null)
     const url = systemMapsUrl({ address: parsed.address, lat: details.lat, lng: details.lng })
     if (window.WebApp?.openLink) window.WebApp.openLink(url)
     else window.location.href = url
@@ -66,7 +66,7 @@ export default function MasterAddressPage() {
         <button
           type="button"
           aria-label={`Адрес ${parsed.address}`}
-          onClick={() => setMenuOpen(true)}
+          onClick={(event) => setMenu(addressMenuPosition(event.currentTarget))}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--color-surface-transparent)', borderRadius: 20,
@@ -88,7 +88,7 @@ export default function MasterAddressPage() {
         <ReadOnlyField label="Комментарий" value={parsed.comment} multiline />
       </div>
 
-      {menuOpen && <AddressActionsMenu onClose={() => setMenuOpen(false)} onCopy={() => { void copyAddress() }} onOpenMaps={openMaps} />}
+      {menu && <AddressActionsMenu position={menu} onClose={() => setMenu(null)} onCopy={() => { void copyAddress() }} onOpenMaps={openMaps} />}
       <BottomToast message={toast} />
     </div>
   )

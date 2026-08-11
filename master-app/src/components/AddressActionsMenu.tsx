@@ -1,7 +1,18 @@
 import { createPortal } from 'react-dom'
 import { text } from '@/styles/typography'
 
-export default function AddressActionsMenu({ onClose, onCopy, onOpenMaps }: {
+export type AddressMenuPosition = { right: number; top?: number; bottom?: number }
+
+export function addressMenuPosition(element: HTMLElement): AddressMenuPosition {
+  const rect = element.getBoundingClientRect()
+  const openUp = window.innerHeight - rect.bottom < 140 && rect.top > 140
+  return openUp
+    ? { right: 16, bottom: window.innerHeight - rect.top + 8 }
+    : { right: 16, top: rect.bottom + 8 }
+}
+
+export default function AddressActionsMenu({ position, onClose, onCopy, onOpenMaps }: {
+  position: AddressMenuPosition
   onClose: () => void
   onCopy: () => void
   onOpenMaps: () => void
@@ -12,9 +23,12 @@ export default function AddressActionsMenu({ onClose, onCopy, onOpenMaps }: {
   ]
 
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'flex-end', padding: 16 }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
       <div role="menu" onClick={(event) => event.stopPropagation()} style={{
-        width: '100%', background: 'var(--color-surface)', borderRadius: 16, padding: '12px 20px',
+        position: 'fixed', right: position.right,
+        ...(position.top !== undefined ? { top: position.top } : { bottom: position.bottom }),
+        minWidth: 220, maxWidth: 'calc(100vw - 32px)',
+        background: 'var(--color-surface)', borderRadius: 16, padding: '12px 20px',
         boxShadow: '0 16px 16px -4px rgba(12,12,13,0.10), 0 4px 2px -4px rgba(12,12,13,0.05)',
       }}>
         {items.map((item, index) => (

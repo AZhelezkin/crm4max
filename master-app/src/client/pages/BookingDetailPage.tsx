@@ -15,7 +15,7 @@ import { openExternalLink } from '@/lib/bridge'
 import { parseBookingAddress } from '@/lib/bookingAddress'
 import BookingAddressText from '@/components/BookingAddressText'
 import WheelPicker from '@/components/WheelPicker'
-import AddressActionsMenu from '@/components/AddressActionsMenu'
+import AddressActionsMenu, { addressMenuPosition, type AddressMenuPosition } from '@/components/AddressActionsMenu'
 import BottomToast from '@/components/BottomToast'
 import { systemMapsUrl } from '@/lib/maps'
 
@@ -143,7 +143,7 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [cancelling, setCancelling] = useState(false)
   const [reminderPickerOpen, setReminderPickerOpen] = useState(false)
-  const [addressMenuOpen, setAddressMenuOpen] = useState(false)
+  const [addressMenu, setAddressMenu] = useState<AddressMenuPosition | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -435,7 +435,7 @@ export default function BookingDetailPage() {
           return (
             <button
               type="button"
-              onClick={() => setAddressMenuOpen(true)}
+              onClick={(event) => setAddressMenu(addressMenuPosition(event.currentTarget))}
               aria-label="Действия с адресом"
               style={{
                 background: 'var(--color-surface-transparent)',
@@ -457,21 +457,22 @@ export default function BookingDetailPage() {
           )
         })()}
 
-        {addressMenuOpen && (() => {
+        {addressMenu && (() => {
           const addressValue = clientAddress || master.location || ''
           const addressNote = clientAddress ? booking.notes : master.locationNote
           const parsed = parseBookingAddress(addressValue, addressNote)
           return <AddressActionsMenu
-            onClose={() => setAddressMenuOpen(false)}
+            position={addressMenu}
+            onClose={() => setAddressMenu(null)}
             onCopy={() => {
               void navigator.clipboard.writeText([parsed.address, addressNote].filter(Boolean).join('\n')).then(() => {
-                setAddressMenuOpen(false)
+                setAddressMenu(null)
                 setCopied(true)
                 window.setTimeout(() => setCopied(false), 2000)
               })
             }}
             onOpenMaps={() => {
-              setAddressMenuOpen(false)
+              setAddressMenu(null)
               const url = systemMapsUrl({ address: parsed.address, lat: clientAddress ? null : master.lat, lng: clientAddress ? null : master.lng, label: master.name })
               if (window.WebApp?.openLink) window.WebApp.openLink(url)
               else window.location.href = url

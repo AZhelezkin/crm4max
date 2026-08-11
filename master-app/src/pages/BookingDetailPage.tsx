@@ -13,7 +13,7 @@ import { text } from '@/styles/typography'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { openAddToCalendar } from '@/lib/calendar'
 import { openExternalLink } from '@/lib/bridge'
-import AddressActionsMenu from '@/components/AddressActionsMenu'
+import AddressActionsMenu, { addressMenuPosition, type AddressMenuPosition } from '@/components/AddressActionsMenu'
 import BottomToast from '@/components/BottomToast'
 import { systemMapsUrl } from '@/lib/maps'
 
@@ -76,7 +76,7 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
-  const [addressMenuOpen, setAddressMenuOpen] = useState(false)
+  const [addressMenu, setAddressMenu] = useState<AddressMenuPosition | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function BookingDetailPage() {
 
         {/* Для выезда показываем адрес клиента, иначе — адрес из профиля мастера. */}
         {!booking.onlineMeetingLink && addressText && (
-          <button type="button" onClick={() => setAddressMenuOpen(true)} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
+          <button type="button" onClick={(event) => setAddressMenu(addressMenuPosition(event.currentTarget))} aria-label="Действия с адресом" style={{ ...listItemStyle, cursor: 'pointer' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookingAddressText value={addressText} note={addressNote} />
             </div>
@@ -187,18 +187,19 @@ export default function BookingDetailPage() {
           </button>
         )}
 
-        {addressMenuOpen && (
+        {addressMenu && (
           <AddressActionsMenu
-            onClose={() => setAddressMenuOpen(false)}
+            position={addressMenu}
+            onClose={() => setAddressMenu(null)}
             onCopy={() => {
               void navigator.clipboard.writeText([routeAddress, addressNote].filter(Boolean).join('\n')).then(() => {
-                setAddressMenuOpen(false)
+                setAddressMenu(null)
                 setCopied(true)
                 window.setTimeout(() => setCopied(false), 2000)
               })
             }}
             onOpenMaps={() => {
-              setAddressMenuOpen(false)
+              setAddressMenu(null)
               const url = systemMapsUrl({ address: routeAddress, lat: booking.clientAddress ? null : booking.master.lat, lng: booking.clientAddress ? null : booking.master.lng, label: booking.master.name })
               if (window.WebApp?.openLink) window.WebApp.openLink(url)
               else window.location.href = url
