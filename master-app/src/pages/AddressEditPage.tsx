@@ -6,16 +6,24 @@ import { mastersApi } from '@/api/masters.api'
 import { markGuideStep } from '@/lib/guide'
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import { HeroHeader, FloatingField } from '@/components/onboardingShared'
+import { formatBookingAddressNote, parseBookingAddress, type DestinationAddressDetails } from '@/lib/bookingAddress'
 
 // «Адрес, где оказывается услуга» (макет 10220-101957) — открывается карандашом
-// виджета адреса на главной: строка «Адрес» → пикер адреса, поле «Комментарий»
-// (заметка «как пройти»), «Сохранить» → updateProfile и назад.
+// виджета адреса на главной: строка «Адрес» → пикер адреса, реквизиты помещения
+// и комментарий → updateProfile и назад.
 export default function AddressEditPage() {
   const navigate = useNavigate()
   const { master, setMaster } = useAuthStore()
+  const initialAddress = parseBookingAddress(master?.location ?? '', master?.locationNote)
 
-  const [location, setLocation] = useState(master?.location ?? '')
-  const [note, setNote] = useState(master?.locationNote ?? '')
+  const [location, setLocation] = useState(initialAddress.address)
+  const [details, setDetails] = useState<DestinationAddressDetails>({
+    entrance: initialAddress.entrance,
+    intercom: initialAddress.intercom,
+    floor: initialAddress.floor,
+    apartment: initialAddress.apartment,
+  })
+  const [comment, setComment] = useState(initialAddress.comment)
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [showPicker, setShowPicker] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -24,9 +32,10 @@ export default function AddressEditPage() {
     if (saving) return
     setSaving(true)
     try {
+      const locationNote = formatBookingAddressNote(details, comment) || null
       const updated = await mastersApi.updateProfile({
-        location: location || null,
-        locationNote: note || null,
+        location: location.trim() || null,
+        locationNote,
         ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
       })
       setMaster({ ...master!, ...updated })
@@ -66,16 +75,38 @@ export default function AddressEditPage() {
           </span>
         </button>
 
-        {/* Комментарий (заметка к адресу: вход, звонок и т.п.) — макет textField 10304-45837:
-            top-align, авто-рост до 7 строк со скроллом, счётчик у лимита. */}
+        <FloatingField
+          label="Подъезд"
+          value={details.entrance}
+          onChange={(entrance) => setDetails((current) => ({ ...current, entrance }))}
+          valueBold
+        />
+        <FloatingField
+          label="Домофон"
+          value={details.intercom}
+          onChange={(intercom) => setDetails((current) => ({ ...current, intercom }))}
+          valueBold
+        />
+        <FloatingField
+          label="Этаж"
+          value={details.floor}
+          onChange={(floor) => setDetails((current) => ({ ...current, floor }))}
+          valueBold
+        />
+        <FloatingField
+          label="Квартира/офис"
+          value={details.apartment}
+          onChange={(apartment) => setDetails((current) => ({ ...current, apartment }))}
+          valueBold
+        />
         <FloatingField
           multiline
           align="top"
           autoGrow
           showCounter
           label="Комментарий"
-          value={note}
-          onChange={(v) => setNote(v.slice(0, 300))}
+          value={comment}
+          onChange={(value) => setComment(value.slice(0, 300))}
           maxLength={300}
         />
       </div>

@@ -378,34 +378,40 @@ describe('master settings pages', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-second')
   })
 
-  it('AddressEditPage показывает values и сохраняет bounded note с coordinates', async () => {
+  it('AddressEditPage показывает реквизиты и сохраняет отдельный note с coordinates', async () => {
     const original = setMaster(createMasterProfile({
       location: 'Москва, Старая улица, 1',
-      locationNote: 'Старый комментарий',
+      locationNote: 'Подъезд: 1\nДомофон: 111#\nЭтаж: 2\nКвартира/офис: 20\nКомментарий: Старый комментарий',
     }))
     const updated = createMasterProfile({
       ...original,
       location: 'Москва, Новый адрес, 5',
-      locationNote: 'Новый комментарий',
+      locationNote: 'Подъезд: 2\nДомофон: 222#\nЭтаж: 4\nКвартира/офис: 40\nКомментарий: Новый комментарий',
       lat: 55.7,
       lng: 37.6,
     })
     api.updateProfile.mockResolvedValue(updated)
     const view = renderAtRoute(<AddressEditPage />, { entries: ['/', '/address'] })
-    const note = view.container.querySelector('textarea')!
-
     expect(screen.getByText(original.location!)).toBeInTheDocument()
-    expect(note).toHaveValue('Старый комментарий')
+    expect(screen.getByLabelText('Подъезд')).toHaveValue('1')
+    expect(screen.getByLabelText('Домофон')).toHaveValue('111#')
+    expect(screen.getByLabelText('Этаж')).toHaveValue('2')
+    expect(screen.getByLabelText('Квартира/офис')).toHaveValue('20')
+    expect(screen.getByLabelText('Комментарий')).toHaveValue('Старый комментарий')
     expect(api.updateProfile).not.toHaveBeenCalled()
 
-    fireEvent.change(note, { target: { value: 'Новый комментарий' } })
+    fireEvent.change(screen.getByLabelText('Подъезд'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Домофон'), { target: { value: '222#' } })
+    fireEvent.change(screen.getByLabelText('Этаж'), { target: { value: '4' } })
+    fireEvent.change(screen.getByLabelText('Квартира/офис'), { target: { value: '40' } })
+    fireEvent.change(screen.getByLabelText('Комментарий'), { target: { value: 'Новый комментарий' } })
     await view.user.click(screen.getByRole('button', { name: /Адрес Москва/ }))
     await view.user.click(screen.getByRole('button', { name: 'Выбрать новый адрес' }))
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({
       location: 'Москва, Новый адрес, 5',
-      locationNote: 'Новый комментарий',
+      locationNote: 'Подъезд: 2\nДомофон: 222#\nЭтаж: 4\nКвартира/офис: 40\nКомментарий: Новый комментарий',
       lat: 55.7,
       lng: 37.6,
     }))
