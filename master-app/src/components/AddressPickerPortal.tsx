@@ -14,10 +14,11 @@ interface Props {
   value: string
   onClose: () => void
   details?: BookingAddressDetails
+  showDetails?: boolean
   onConfirm: (address: string, coords: AddressPickerCoords | null, details?: BookingAddressDetails) => void
 }
 
-export default function AddressPickerPortal({ open, value, details, onClose, onConfirm }: Props) {
+export default function AddressPickerPortal({ open, value, details, showDetails = true, onClose, onConfirm }: Props) {
   const [draft, setDraft] = useState(value)
   const [coords, setCoords] = useState<AddressPickerCoords | null>(null)
   const [detailDraft, setDetailDraft] = useState<BookingAddressDetails>(details ?? { floor: '', apartment: '', intercom: '' })
@@ -84,7 +85,7 @@ export default function AddressPickerPortal({ open, value, details, onClose, onC
         />
       </div>
 
-      {details && (
+      {details && showDetails && (
         <div style={{
           position: 'absolute', left: 12, right: 12, bottom: 'calc(116px + env(safe-area-inset-bottom))',
           zIndex: 5, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8,

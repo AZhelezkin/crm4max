@@ -93,6 +93,7 @@ export default function BookingAddressEditor({
         open={pickerOpen}
         value={address}
         details={details}
+        showDetails={false}
         onClose={() => onPickerOpenChange(false)}
         onConfirm={(nextAddress, _coords, nextDetails) => {
           onAddressChange(nextAddress)

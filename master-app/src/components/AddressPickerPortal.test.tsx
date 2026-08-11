@@ -97,6 +97,24 @@ describe('AddressPickerPortal', () => {
     expect(screen.queryByRole('textbox', { name: 'Домофон' })).not.toBeInTheDocument()
   })
 
+  it('скрывает реквизиты в режиме выбора только адреса', () => {
+    installBrowserFixture()
+    render(
+      <AddressPickerPortal
+        open
+        value="Адрес"
+        details={{ floor: '7', apartment: '104', intercom: '123#' }}
+        showDetails={false}
+        onClose={() => {}}
+        onConfirm={() => {}}
+      />,
+    )
+
+    expect(screen.queryByRole('textbox', { name: 'Этаж' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Квартира/Офис' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Домофон' })).not.toBeInTheDocument()
+  })
+
   it('сбрасывает устаревшие координаты после изменения адреса', async () => {
     installBrowserFixture()
     const user = userEvent.setup()
