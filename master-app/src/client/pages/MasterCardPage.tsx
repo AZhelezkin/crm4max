@@ -455,24 +455,15 @@ export default function MasterCardPage() {
               </div>
             )}
 
-            {/* Адрес — pin (16×16) + текст в primarySurface, кликабельный →
-                открывает системные карты через geo: schema с lat/lng мастера.
-                Показываем только если мастер НЕ выезжает на дом и есть location. */}
+            {/* Адрес открывает внутренний read-only экран с реквизитами. */}
             {!master.homeVisit && master.location && (
               <button
                 type="button"
-                onClick={() => {
-                  if (master.lat && master.lng) {
-                    window.WebApp?.openLink(
-                      `geo:${master.lat},${master.lng}?q=${master.lat},${master.lng}(${encodeURIComponent(master.name)})`
-                    )
-                  }
-                }}
-                disabled={!master.lat || !master.lng}
+                onClick={() => navigate('/master/address')}
                 style={{
                   display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 3,
                   background: 'none', border: 'none', padding: 0,
-                  cursor: master.lat && master.lng ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   maxWidth: '100%',
                 }}
               >

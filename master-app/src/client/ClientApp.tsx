@@ -18,6 +18,7 @@ import MyBookingsPage    from '@client/pages/MyBookingsPage'
 import MessagesPage      from '@client/pages/MessagesPage'
 import QRScanPage        from '@client/pages/QRScanPage'
 import RecentMastersPage from '@client/pages/RecentMastersPage'
+import MasterAddressPage from '@client/pages/MasterAddressPage'
 import MetricsPageTracker from '@/components/MetricsPageTracker'
 import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
 import { checkClientAccess } from '@client/lib/clientAccess'
@@ -147,6 +148,7 @@ export default function ClientApp() {
       <Routes>
         <Route path="/"                element={<HomeRoute />} />
         <Route path="/masters"         element={<RecentMastersPage />} />
+        <Route path="/master/address"  element={<MasterAddressPage />} />
         <Route path="/qr"              element={<QRScanPage />} />
         <Route element={<ClientBookingAccessGuard />}>
           {/* Категории убраны — старый deep-link/back ведём на плоский список услуг. */}

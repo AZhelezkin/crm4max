@@ -120,4 +120,16 @@ describe('MasterCardPage contact and media effects', () => {
       text: `Окрашивание\n${photoUrl}`,
     })
   })
+
+  it('открывает внутренний экран адреса вместо внешней карты', async () => {
+    const webApp = installWebApp()
+    api.getMaster.mockResolvedValue(createClientMaster({ homeVisit: false, location: 'Москва, Дом 1' }))
+    const view = renderAtRoute(<MasterCardPage />, { route: '/' })
+    await screen.findByText('Москва, Дом 1')
+
+    await view.user.click(screen.getByRole('button', { name: /Москва, Дом 1/ }))
+
+    expect(view.getLocation().pathname).toBe('/master/address')
+    expect(webApp.openLink).not.toHaveBeenCalled()
+  })
 })

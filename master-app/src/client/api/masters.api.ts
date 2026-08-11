@@ -18,6 +18,13 @@ export interface RecentMaster {
   description: string | null
 }
 
+export interface MasterAddressDetails {
+  location: string | null
+  locationNote: string | null
+  lat: number | null
+  lng: number | null
+}
+
 export type ClientAccessResponse =
   | { access: 'allowed' }
   | {
@@ -31,6 +38,9 @@ export const mastersApi = {
 
   getById: (id: string) =>
     api.get<Master>(`/masters/${id}`).then((r) => r.data),
+
+  getAddressDetails: (id: string) =>
+    api.get<MasterAddressDetails>(`/masters/${id}/address-details`).then((r) => r.data),
 
   rememberVisit: (id: string) =>
     api.post(`/masters/${id}/view`).then(() => undefined),
