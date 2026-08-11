@@ -44,6 +44,7 @@ import { useBookingsStore } from '@/store/bookings.store'
 import { useHomeDataStore } from '@/store/home-data.store'
 
 import HomePage from './HomePage'
+import { reminderRetryMessage } from '@/lib/reminderError'
 
 const TODAY = dayjs().format('YYYY-MM-DD')
 
@@ -71,6 +72,22 @@ function deferred<T>() {
 }
 
 describe('master HomePage', () => {
+  it('форматирует retryAt относительным временем с округлением вверх', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-08-11T10:00:00.000Z'))
+      expect(reminderRetryMessage({
+        isAxiosError: true,
+        response: { status: 429, data: { retryAt: '2026-08-11T13:00:01.000Z' } },
+      })).toBe('Можно отправить через 3 часа 1 минуту')
+      expect(reminderRetryMessage({
+        isAxiosError: true,
+        response: { status: 429, data: { retryAt: '2026-08-12T14:00:00.000Z' } },
+      })).toBe('Можно отправить через 1 день 4 часа')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
     vi.spyOn(window, 'open').mockImplementation(() => null)
@@ -430,6 +447,23 @@ describe('master HomePage', () => {
 
     await waitFor(() => expect(api.remindPayment).toHaveBeenCalledWith('booking-payment'))
     expect(screen.getByText('Напоминание об оплате отправлено клиенту')).toBeInTheDocument()
+  })
+
+  it('не показывает напоминание об оплате до окончания записи', async () => {
+    const booking = createMasterBooking({
+      id: 'booking-future-payment',
+      date: TODAY,
+      time: '23:00',
+      paymentStatus: 'UNPAID',
+    })
+    api.listBookings.mockResolvedValue([booking])
+    setMaster(createMasterProfile({ services: [booking.service] }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с записью' }))
+
+    expect(screen.getByRole('button', { name: 'Напомнить клиенту' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Напомнить об оплате' })).not.toBeInTheDocument()
   })
 
 })

@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
   confirmPayment: vi.fn(),
   cancel: vi.fn(),
+  remind: vi.fn(),
+  remindPayment: vi.fn(),
   openAddToCalendar: vi.fn(),
 }))
 
@@ -19,6 +21,8 @@ vi.mock('@/api/bookings.api', () => ({
     getById: mocks.getById,
     confirmPayment: mocks.confirmPayment,
     cancel: mocks.cancel,
+    remind: mocks.remind,
+    remindPayment: mocks.remindPayment,
   },
 }))
 vi.mock('@/lib/calendar', () => ({ openAddToCalendar: mocks.openAddToCalendar }))
@@ -38,6 +42,8 @@ function renderPage(id = 'booking-detail') {
 describe('master BookingDetailPage read state', () => {
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset())
+    mocks.remind.mockResolvedValue({ sent: true })
+    mocks.remindPayment.mockResolvedValue({ sent: true })
   })
 
   it('остаётся пустым пока authoritative booking загружается', () => {
@@ -70,7 +76,7 @@ describe('master BookingDetailPage read state', () => {
     mocks.getById.mockResolvedValue(createMasterBooking({
       id: 'booking-fields',
       paymentStatus: 'DEPOSIT_PAID',
-      date: '2026-07-21',
+      date: '2099-08-11',
       time: '14:30',
       clientAddress: 'Москва, Клиентская улица, 10',
       client: {
@@ -95,8 +101,7 @@ describe('master BookingDetailPage read state', () => {
     expect(screen.getByText('ДЕПОЗИТ')).toBeInTheDocument()
     expect(screen.getByText('Москва, Клиентская улица, 10')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Отметить как оплачено' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Перенести/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Отменить/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Действия' })).toBeInTheDocument()
     expect(mocks.confirmPayment).not.toHaveBeenCalled()
     expect(mocks.cancel).not.toHaveBeenCalled()
   })
@@ -179,7 +184,7 @@ describe('master BookingDetailPage read state', () => {
   it('передаёт authoritative calendar payload без CRM mutation', async () => {
     const booking = createMasterBooking({
       id: 'booking-calendar',
-      date: '2026-08-05',
+      date: '2099-08-05',
       time: '11:00',
       clientAddress: 'Москва, Адрес клиента, 1',
       service: createMasterService({ name: 'Консультация', duration: 90 }),
@@ -187,12 +192,13 @@ describe('master BookingDetailPage read state', () => {
     mocks.getById.mockResolvedValue(booking)
     const view = renderPage('booking-calendar')
 
-    await view.user.click(await screen.findByRole('button', { name: /Добавить в календарь/ }))
+    await view.user.click(await screen.findByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Добавить в календарь' }))
 
     expect(mocks.openAddToCalendar).toHaveBeenCalledWith({
       bookingId: 'booking-calendar',
       title: 'Консультация',
-      date: '2026-08-05',
+      date: '2099-08-05',
       time: '11:00',
       durationMin: 90,
       location: 'Москва, Адрес клиента, 1',
@@ -205,12 +211,14 @@ describe('master BookingDetailPage read state', () => {
     const link = 'https://meet.example.com/room'
     mocks.getById.mockResolvedValue(createMasterBooking({
       id: 'booking-online-calendar',
+      date: '2099-08-05',
       onlineMeetingLink: link,
       clientAddress: null,
     }))
     const view = renderPage('booking-online-calendar')
 
-    await view.user.click(await screen.findByRole('button', { name: /Добавить в календарь/ }))
+    await view.user.click(await screen.findByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Добавить в календарь' }))
 
     expect(mocks.openAddToCalendar).toHaveBeenCalledWith(expect.objectContaining({ location: link }))
   })
@@ -227,5 +235,21 @@ describe('master BookingDetailPage read state', () => {
     expect(screen.getByRole('button', { name: 'Изменить время' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: /Отметить как оплачено/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Отменить/ })).not.toBeInTheDocument()
+  })
+
+  it('для прошедшей неоплаченной записи оставляет только платёжные действия', async () => {
+    mocks.getById.mockResolvedValue(createMasterBooking({
+      date: '2020-08-05',
+      status: 'CONFIRMED',
+      paymentStatus: 'UNPAID',
+    }))
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Отметить как оплачено' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Напомнить об оплате' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Действия' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Напомнить о записи')).not.toBeInTheDocument()
+    expect(screen.queryByText('Перенести')).not.toBeInTheDocument()
+    expect(screen.queryByText('Отменить')).not.toBeInTheDocument()
   })
 })

@@ -28,6 +28,7 @@ import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } fr
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
 import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type DestinationAddressDetails } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
+import { BookingActionsButton, BookingActionsMenu, bookingActionsPosition, type BookingActionsPosition } from '@/components/BookingActionsMenu'
 import BookingAddressText from '@/components/BookingAddressText'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
 import { normalizeOnlineMeetingLink } from '@/lib/onlineMeetingLink'
@@ -780,6 +781,8 @@ export default function CreateBookingPage() {
     }
     navigate('/bookings')
   }
+
+  const [createdActionsMenu, setCreatedActionsMenu] = useState<BookingActionsPosition | null>(null)
 
   // «Отметить как оплачено» на экране «Запись создана!» — сразу после создания.
   const [payingBusy, setPayingBusy] = useState(false)
@@ -1608,25 +1611,17 @@ export default function CreateBookingPage() {
               Отметить как оплачено
             </button>
           )}
-          <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
-            <CalendarIcon />
-            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
-          </button>
-          <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-            <button type="button" onClick={handleReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
-              <RepeatIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
-            </button>
-            <button type="button" disabled style={{ ...chipStyle, flex: 1, minWidth: 0, cursor: 'default', color: 'var(--color-interactive-element-muted)' }}>
-              <MessageTextIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
-            </button>
-            <button type="button" onClick={() => setConfirmCancel(true)} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
-              <CloseCircleIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
-            </button>
-          </div>
+          <BookingActionsButton onClick={(event) => setCreatedActionsMenu(bookingActionsPosition(event.currentTarget))} />
         </div>
+
+        {createdActionsMenu && (
+          <BookingActionsMenu pos={createdActionsMenu} onClose={() => setCreatedActionsMenu(null)} items={[
+            { label: 'Добавить в календарь', icon: <CalendarIcon />, onClick: () => { setCreatedActionsMenu(null); handleAddToCalendar() } },
+            { label: 'Напомнить о записи', icon: <MessageTextIcon />, onClick: () => { setCreatedActionsMenu(null); if (createdBooking) void bookingsApi.remind(createdBooking.id) } },
+            { label: 'Перенести', icon: <RepeatIcon />, onClick: () => { setCreatedActionsMenu(null); handleReschedule() } },
+            { label: 'Отменить', icon: <CloseCircleIcon />, onClick: () => { setCreatedActionsMenu(null); setConfirmCancel(true) }, danger: true },
+          ]} />
+        )}
 
         {confirmCancel && (
           <ConfirmDialog

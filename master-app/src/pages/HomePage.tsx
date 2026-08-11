@@ -19,6 +19,7 @@ import { markGuideStep } from '@/lib/guide'
 import { bookingRouteAddress, parseBookingAddress, yandexRouteUrl } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import { useCardBindingReconciliation } from '@/hooks/useCardBindingReconciliation'
+import { reminderRetryMessage } from '@/lib/reminderError'
 
 dayjs.locale('ru')
 
@@ -146,8 +147,21 @@ export default function HomePage() {
     try {
       const { sent } = await bookingsApi.remind(b.id)
       showToast(sent ? 'Напоминание отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
-    } catch {
-      showToast('Не удалось отправить напоминание')
+    } catch (error) {
+      showToast(reminderRetryMessage(error) ?? 'Не удалось отправить напоминание')
+    } finally {
+      setMenuBusy(false); setMenu(null)
+    }
+  }
+
+  const handleRemindPayment = async (b: Booking) => {
+    if (menuBusy) return
+    setMenuBusy(true)
+    try {
+      const { sent } = await bookingsApi.remindPayment(b.id)
+      showToast(sent ? 'Напоминание об оплате отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
+    } catch (error) {
+      showToast(reminderRetryMessage(error) ?? 'Не удалось отправить напоминание об оплате')
     } finally {
       setMenuBusy(false); setMenu(null)
     }
@@ -647,6 +661,9 @@ export default function HomePage() {
           busy={menuBusy}
           onClose={() => setMenu(null)}
           onRemind={() => { void handleRemind(menu.booking) }}
+          onRemindPayment={dayjs(`${menu.booking.date}T${menu.booking.time}`).add(bookingDuration(menu.booking), 'minute').isBefore(dayjs())
+            ? () => { void handleRemindPayment(menu.booking) }
+            : undefined}
           onEdit={() => { const id = menu.booking.id; setMenu(null); navigate(`/bookings/${id}`) }}
           onReschedule={() => {
             const b = menu.booking
@@ -685,17 +702,19 @@ export default function HomePage() {
 
 // Popover-меню действий по записи (макет 10265-79559): карточка surface rx16,
 // px20 py12, пункты Body 2 с иконкой 20 справа и 8px-разделителями; «Отменить» — красный.
-function BookingActionMenu({ pos, busy, onClose, onRemind, onEdit, onReschedule, onCancel }: {
+function BookingActionMenu({ pos, busy, onClose, onRemind, onRemindPayment, onEdit, onReschedule, onCancel }: {
   pos: { right: number; top?: number; bottom?: number }
   busy: boolean
   onClose: () => void
   onRemind: () => void
+  onRemindPayment?: () => void
   onEdit: () => void
   onReschedule: () => void
   onCancel: () => void
 }) {
   const items: Array<{ label: string; icon: ReactNode; onClick: () => void; danger?: boolean }> = [
     { label: 'Напомнить клиенту', icon: <MessageNotifIcon />, onClick: onRemind },
+    ...(onRemindPayment ? [{ label: 'Напомнить об оплате', icon: <MoneyTimeIcon />, onClick: onRemindPayment }] : []),
     { label: 'Изменить', icon: <Edit2SmallIcon />, onClick: onEdit },
     { label: 'Перенести', icon: <CalendarEditIcon />, onClick: onReschedule },
     { label: 'Отменить', icon: <CloseCircleIcon />, onClick: onCancel, danger: true },
@@ -763,6 +782,16 @@ function MessageNotifIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M17 18.43h-4l-4.45 2.96c-.66.44-1.55-.03-1.55-.83v-2.13c-3 0-5-2-5-5v-6c0-3 2-5 5-5h8c3 0 5 2 5 5v3" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="19" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  )
+}
+
+function MoneyTimeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10.0013 12.0827C11.1519 12.0827 12.0846 11.15 12.0846 9.99935C12.0846 8.84876 11.1519 7.91602 10.0013 7.91602C8.85071 7.91602 7.91797 8.84876 7.91797 9.99935C7.91797 11.15 8.85071 12.0827 10.0013 12.0827Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.5 6.66732C2.5 4.82565 3.99167 3.33398 5.83333 3.33398H14.1667C16.0083 3.33398 17.5 4.82565 17.5 6.66732V13.334C17.5 15.1757 16.0083 16.6673 14.1667 16.6673H5.83333C3.99167 16.6673 2.5 15.1757 2.5 13.334V6.66732Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 6.66797H5.00833M15 13.3346H15.0083" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

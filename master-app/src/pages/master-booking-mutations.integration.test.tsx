@@ -10,6 +10,8 @@ const api = vi.hoisted(() => ({
   getById: vi.fn(),
   confirmPayment: vi.fn(),
   cancel: vi.fn(),
+  remind: vi.fn(),
+  remindPayment: vi.fn(),
   openAddToCalendar: vi.fn(),
 }))
 
@@ -18,6 +20,8 @@ vi.mock('@/api/bookings.api', () => ({
     getById: api.getById,
     confirmPayment: api.confirmPayment,
     cancel: api.cancel,
+    remind: api.remind,
+    remindPayment: api.remindPayment,
   },
 }))
 vi.mock('@/lib/calendar', () => ({ openAddToCalendar: api.openAddToCalendar }))
@@ -46,12 +50,14 @@ function renderPage(id = 'booking-mutation') {
 describe('master BookingDetailPage mutations', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
-    api.getById.mockResolvedValue(createMasterBooking({ id: 'booking-mutation' }))
+    api.getById.mockResolvedValue(createMasterBooking({ id: 'booking-mutation', date: '2099-08-11' }))
     api.confirmPayment.mockResolvedValue(createMasterBooking({
       id: 'booking-mutation',
       paymentStatus: 'PAID',
     }))
-    api.cancel.mockResolvedValue(undefined)
+    api.cancel.mockResolvedValue(createMasterBooking({ id: 'booking-mutation', status: 'CANCELLED' }))
+    api.remind.mockResolvedValue({ sent: true })
+    api.remindPayment.mockResolvedValue({ sent: true })
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
@@ -80,35 +86,38 @@ describe('master BookingDetailPage mutations', () => {
   })
 
   it('cancel не пишет до dialog confirmation и использует exact booking id', async () => {
-    const cancellation = deferred<void>()
+    const cancellation = deferred<Booking>()
     api.cancel.mockReturnValue(cancellation.promise)
     const view = renderPage()
     await screen.findByText('Ирина Клиентова')
 
-    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Отменить' }))
     expect(api.cancel).not.toHaveBeenCalled()
 
     await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
     expect(api.cancel).toHaveBeenCalledWith('booking-mutation')
     expect(api.cancel).toHaveBeenCalledOnce()
 
-    await act(async () => cancellation.resolve())
+    await act(async () => cancellation.resolve(createMasterBooking({ id: 'booking-mutation', status: 'CANCELLED' })))
     await waitFor(() => expect(view.getLocation().pathname).toBe('/bookings'))
   })
 
   it('cancel failure сохраняет detail и разрешает отдельный retry', async () => {
-    api.cancel.mockRejectedValueOnce(new Error('cancel unavailable')).mockResolvedValueOnce(undefined)
+    api.cancel.mockRejectedValueOnce(new Error('cancel unavailable')).mockResolvedValueOnce(createMasterBooking({ id: 'booking-mutation', status: 'CANCELLED' }))
     const view = renderPage()
     await screen.findByText('Ирина Клиентова')
 
-    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Отменить' }))
     await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
 
     await waitFor(() => expect(api.cancel).toHaveBeenCalledTimes(1))
     expect(view.getLocation().pathname).toBe('/bookings/booking-mutation')
     expect(screen.getByText('Ирина Клиентова')).toBeInTheDocument()
 
-    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Отменить' }))
     await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
 
     await waitFor(() => expect(api.cancel).toHaveBeenCalledTimes(2))

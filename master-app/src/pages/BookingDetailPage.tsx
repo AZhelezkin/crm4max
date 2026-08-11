@@ -16,6 +16,8 @@ import { openExternalLink } from '@/lib/bridge'
 import AddressActionsMenu, { addressMenuPosition, type AddressMenuPosition } from '@/components/AddressActionsMenu'
 import BottomToast from '@/components/BottomToast'
 import { systemMapsUrl } from '@/lib/maps'
+import { BookingActionsButton, BookingActionsMenu, bookingActionsPosition, type BookingActionsPosition } from '@/components/BookingActionsMenu'
+import { reminderRetryMessage } from '@/lib/reminderError'
 
 dayjs.locale('ru')
 
@@ -54,19 +56,6 @@ const listItemStyle: React.CSSProperties = {
   textAlign: 'left',
 }
 
-const chipStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 4,
-  background: 'var(--color-surface-transparent)',
-  borderRadius: 18,
-  padding: '12px 8px',
-  border: 'none',
-  cursor: 'pointer',
-  color: 'var(--color-active-element)',
-}
-
 // Карточка записи (как «успешная запись» / кабинет клиента, макет 8746-41315).
 // Открывается тапом по записи в «Расписании» (/bookings/:id).
 export default function BookingDetailPage() {
@@ -78,6 +67,8 @@ export default function BookingDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [addressMenu, setAddressMenu] = useState<AddressMenuPosition | null>(null)
   const [copied, setCopied] = useState(false)
+  const [actionsMenu, setActionsMenu] = useState<BookingActionsPosition | null>(null)
+  const [actionToast, setActionToast] = useState<string | null>(null)
 
   useEffect(() => {
     if (id) bookingsApi.getById(id).then((bk) => { setBooking(bk); markGuideStep('openedBooking') }).catch(() => {})
@@ -86,6 +77,8 @@ export default function BookingDetailPage() {
   if (!booking) return null
 
   const canAct = booking.status === 'PENDING' || booking.status === 'CONFIRMED'
+  const finished = dayjs(`${booking.date}T${booking.time}`).add(bookingDuration(booking), 'minute').isBefore(dayjs())
+  const canFutureAct = canAct && !finished
   const paid = booking.paymentStatus === 'PAID'
   const badge = PAYMENT_BADGE[booking.paymentStatus]
   // Итог по всем услугам записи (мультиуслуги; «Прочее» — индивидуальная цена).
@@ -123,6 +116,29 @@ export default function BookingDetailPage() {
       durationMin: bookingDuration(booking),
       location: booking.onlineMeetingLink || routeAddress,
     })
+  }
+
+  const showActionToast = (message: string) => {
+    setActionToast(message)
+    window.setTimeout(() => setActionToast(null), 3000)
+  }
+
+  const handleRemind = async () => {
+    try {
+      const { sent } = await bookingsApi.remind(booking.id)
+      showActionToast(sent ? 'Напоминание отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
+    } catch (error) {
+      showActionToast(reminderRetryMessage(error) ?? 'Не удалось отправить напоминание')
+    }
+  }
+
+  const handleRemindPayment = async () => {
+    try {
+      const { sent } = await bookingsApi.remindPayment(booking.id)
+      showActionToast(sent ? 'Напоминание об оплате отправлено клиенту' : 'У клиента нет чата в Max — напоминание не отправлено')
+    } catch (error) {
+      showActionToast(reminderRetryMessage(error) ?? 'Не удалось отправить напоминание об оплате')
+    }
   }
 
   // Перенос (изменение даты, затем времени) — флоу CreateBookingPage с rescheduleId.
@@ -267,35 +283,32 @@ export default function BookingDetailPage() {
           </div>
         )}
       </div>
-      <BottomToast message={copied ? 'Скопировано' : null} />
+      <BottomToast message={actionToast ?? (copied ? 'Скопировано' : null)} />
 
       {/* Действия (для активной записи) — в конце контента, не прибиты к низу */}
-      {canAct && (
+      {(canFutureAct || (finished && !paid)) && (
         <div style={{ padding: '16px 12px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!paid && (
             <button type="button" disabled={busy} onClick={() => { void handleConfirmPayment() }} style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', cursor: busy ? 'default' : 'pointer', ...text.callout1, background: 'var(--color-primary-surface)', color: 'var(--color-on-primary-surface)' }}>
               Отметить как оплачено
             </button>
           )}
-          <button type="button" onClick={handleAddToCalendar} style={{ ...chipStyle, width: '100%' }}>
-            <CalendarIcon />
-            <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Добавить в календарь</span>
-          </button>
-          <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-            <button type="button" onClick={handleReschedule} style={{ ...chipStyle, flex: 1, minWidth: 0 }}>
-              <RepeatIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-active-element)' }}>Перенести</span>
+          {canFutureAct && <BookingActionsButton onClick={(event) => setActionsMenu(bookingActionsPosition(event.currentTarget))} />}
+          {finished && !paid && (
+            <button type="button" onClick={() => { void handleRemindPayment() }} style={{ width: '100%', height: 60, borderRadius: 20, border: 'none', cursor: 'pointer', ...text.callout1, background: 'var(--color-chat-bg-elements)', color: 'var(--color-interactive-element-accented)' }}>
+              Напомнить об оплате
             </button>
-            <button type="button" disabled style={{ ...chipStyle, flex: 1, minWidth: 0, cursor: 'default', color: 'var(--color-interactive-element-muted)' }}>
-              <MessageTextIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-interactive-element-muted)' }}>Чат</span>
-            </button>
-            <button type="button" onClick={() => setConfirmCancel(true)} style={{ ...chipStyle, flex: 1, minWidth: 0, color: 'var(--color-error-surface-accented)' }}>
-              <CloseCircleIcon />
-              <span style={{ ...text.caption2, color: 'var(--color-error-surface-accented)' }}>Отменить</span>
-            </button>
-          </div>
+          )}
         </div>
+      )}
+
+      {actionsMenu && (
+        <BookingActionsMenu pos={actionsMenu} onClose={() => setActionsMenu(null)} items={[
+          { label: 'Добавить в календарь', icon: <CalendarIcon />, onClick: () => { setActionsMenu(null); handleAddToCalendar() } },
+          { label: 'Напомнить о записи', icon: <MessageTextIcon />, onClick: () => { setActionsMenu(null); void handleRemind() } },
+          { label: 'Перенести', icon: <RepeatIcon />, onClick: () => { setActionsMenu(null); handleReschedule() } },
+          { label: 'Отменить', icon: <CloseCircleIcon />, onClick: () => { setActionsMenu(null); setConfirmCancel(true) }, danger: true },
+        ]} />
       )}
 
       {confirmCancel && (

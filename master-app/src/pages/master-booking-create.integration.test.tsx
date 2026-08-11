@@ -670,7 +670,8 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
     expect(await screen.findByText('Запись создана!')).toBeInTheDocument()
 
-    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Отменить' }))
     expect(api.cancel).not.toHaveBeenCalled()
     await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
 
@@ -688,7 +689,8 @@ describe('master CreateBookingPage', () => {
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
     await screen.findByText('Запись создана!')
 
-    await view.user.click(screen.getByRole('button', { name: /Отменить/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Действия' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Отменить' }))
     await view.user.click(screen.getByRole('button', { name: 'Отменить запись' }))
 
     await waitFor(() => expect(api.cancel).toHaveBeenCalledWith('booking-created'))
