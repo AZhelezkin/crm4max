@@ -40,6 +40,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
     homeVisit,
     setHomeVisit,
     onAddressClick,
+    showAddress = true,
     onPhotoChange,
     onBack,
     footer,
@@ -58,6 +59,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
     homeVisit: boolean
     setHomeVisit: (value: boolean) => void
     onAddressClick: () => void
+    showAddress?: boolean
     onPhotoChange: (event: ChangeEvent<HTMLInputElement>) => void
     onBack: () => void
     footer: ReactNode
@@ -69,7 +71,7 @@ vi.mock('@/pages/OnboardingPage', () => ({
       <label>Описание<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
       {photoPreview && <img src={photoPreview} alt="Текущее фото профиля" />}
       <input aria-label="Загрузить фото профиля" type="file" onChange={onPhotoChange} />
-      <button type="button" onClick={onAddressClick}>Адрес: {location}</button>
+      {showAddress && <button type="button" onClick={onAddressClick}>Адрес: {location}</button>}
       <button type="button" onClick={() => setHomeVisit(!homeVisit)}>Выезд: {homeVisit ? 'да' : 'нет'}</button>
       <button type="button" onClick={onBack}>Назад из формы</button>
       {footer}
@@ -198,7 +200,7 @@ describe('master settings pages', () => {
     expect(screen.getByLabelText('Имя')).toHaveValue(master.name)
     expect(screen.getByLabelText('Телефон')).toHaveValue(master.phone)
     expect(screen.getByLabelText('Описание')).toHaveValue(master.description)
-    expect(screen.getByRole('button', { name: `Адрес: ${master.location}` })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Адрес:/ })).not.toBeInTheDocument()
     expect(api.updateProfile).not.toHaveBeenCalled()
   })
 
@@ -225,32 +227,23 @@ describe('master settings pages', () => {
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledOnce())
   })
 
-  it('AboutMePage отправляет exact form/address payload, обновляет store и возвращается', async () => {
+  it('AboutMePage не отправляет адрес, обновляет store и возвращается', async () => {
     const original = setMaster(createMasterProfile({ homeVisit: false }))
     const updated = createMasterProfile({
       ...original,
       name: 'Новое имя',
-      location: 'Москва, Новый адрес, 5',
-      lat: 55.7,
-      lng: 37.6,
     })
     api.updateProfile.mockResolvedValue(updated)
     const view = renderAtRoute(<AboutMePage />, { entries: ['/settings', '/about'] })
     await view.user.clear(screen.getByLabelText('Имя'))
     await view.user.type(screen.getByLabelText('Имя'), 'Новое имя')
-    await view.user.click(screen.getByRole('button', { name: /Адрес:/ }))
-    await view.user.click(screen.getByRole('button', { name: 'Выбрать новый адрес' }))
-
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({
       name: 'Новое имя',
       phone: original.phone,
       description: original.description,
-      location: 'Москва, Новый адрес, 5',
       homeVisit: false,
-      lat: 55.7,
-      lng: 37.6,
       photo: original.photo,
     }))
     expect(view.getLocation().pathname).toBe('/settings')

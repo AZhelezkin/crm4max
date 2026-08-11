@@ -5,14 +5,13 @@ import { useAuthStore } from '@/store/auth.store'
 import { mastersApi } from '@/api/masters.api'
 import { markGuideStep } from '@/lib/guide'
 import { uploadPhoto } from '@/api/upload.api'
-import AddressPickerPortal from '@/components/AddressPickerPortal'
 import AvatarCropPortal from '@/components/AvatarCropPortal'
 import { Step0Form } from '@/pages/OnboardingPage'
 
 const PROFILE_ERROR_MESSAGE = 'Не удалось сохранить фото\nпрофиля. Попробуйте ещё раз'
 
 // «Мои данные» (Настройки → Мои данные). Переиспользует форму шага 2 онбординга
-// (Step0Form): фото, имя, описание, телефон, режим работы, адрес. Сохраняет сразу
+// (Step0Form): фото, имя, описание и телефон. Сохраняет сразу
 // через mastersApi.updateProfile и возвращается назад.
 export default function AboutMePage() {
   const navigate = useNavigate()
@@ -23,9 +22,7 @@ export default function AboutMePage() {
   const [phone, setPhone]             = useState(master?.phone ?? '')
   const [phoneError, setPhoneError]   = useState<string | null>(null)
   const [description, setDescription] = useState(master?.description ?? '')
-  const [location, setLocation]       = useState(master?.location ?? '')
   const [homeVisit, setHomeVisit]     = useState(master?.homeVisit ?? false)
-  const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null)
   const [saving, setSaving]           = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -37,7 +34,6 @@ export default function AboutMePage() {
   const photoUrlRef = useRef(master?.photo ?? null)
   const uploadRequestIdRef = useRef(0)
   const uploadPreviewUrlsRef = useRef(new Set<string>())
-  const [showAddressPortal, setShowAddressPortal] = useState(false)
 
   useEffect(() => () => {
     if (avatarCropSrc) URL.revokeObjectURL(avatarCropSrc)
@@ -121,9 +117,7 @@ export default function AboutMePage() {
         // photoUrl инициализирован из master.photo, так что не сотрёт существующее.
         phone: phone || null,
         description,
-        location,
         homeVisit,
-        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
         photo: savedPhotoUrl,
       })
       setMaster({ ...master!, ...updated, photo: savedPhotoUrl })
@@ -161,16 +155,17 @@ export default function AboutMePage() {
         name={name} setName={(value) => { setName(value); setNameError(false) }} nameError={nameError}
         phone={phone} phoneError={phoneError} showPhoneErrorMessage={false} onPhoneChange={handlePhoneChange}
         description={description} setDescription={setDescription}
-        location={location}
+        location=""
         homeVisit={homeVisit} setHomeVisit={setHomeVisit}
         photoPreview={photoPreview} setPhotoPreview={setPhotoPreview}
         setPhotoUrl={setPhotoUrl}
         photoUploading={photoUploading} setPhotoUploading={setPhotoUploading}
         photoInputRef={photoInputRef} onPhotoChange={handlePhotoChange}
-        onAddressClick={() => setShowAddressPortal(true)}
+        onAddressClick={() => undefined}
         onBack={() => navigate(-1)}
         title="Профиль"
         showServiceMode={false}
+        showAddress={false}
         documentScroll
       />
 
@@ -179,16 +174,6 @@ export default function AboutMePage() {
       </div>
 
       {profileError && <ProfileErrorPopup message={profileError} />}
-
-      <AddressPickerPortal
-        open={showAddressPortal}
-        value={location}
-        onClose={() => setShowAddressPortal(false)}
-        onConfirm={(address, pickedCoords) => {
-          setLocation(address)
-          if (pickedCoords) setCoords(pickedCoords)
-        }}
-      />
 
       <AvatarCropPortal
         open={!!avatarCropSrc}

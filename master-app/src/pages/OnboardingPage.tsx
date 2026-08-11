@@ -748,6 +748,7 @@ export interface Step0Props {
   onBack: () => void
   title?: ReactNode
   showServiceMode?: boolean
+  showAddress?: boolean
   footer?: ReactNode
   documentScroll?: boolean
 }
@@ -763,7 +764,7 @@ export function Step0Form(props: Step0Props) {
     location,
     homeVisit, setHomeVisit,
     photoPreview, photoUploading, photoInputRef, onPhotoChange,
-    onAddressClick, onBack, title, showServiceMode = true, footer, documentScroll = false,
+    onAddressClick, onBack, title, showServiceMode = true, showAddress = true, footer, documentScroll = false,
   } = props
 
   // Описание: auto-grow textarea (до 7 строк по 24px = 168px, потом скролл).
@@ -962,7 +963,7 @@ export function Step0Form(props: Step0Props) {
               Заметка к адресу редактируется на отдельном экране /address (макет 10220-101957). */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
             {showServiceMode && <ServiceModeSegment value={homeVisit} onChange={setHomeVisit} />}
-            {!homeVisit && (
+            {showAddress && !homeVisit && (
               <AddressButton location={location} onClick={onAddressClick} />
             )}
           </div>
