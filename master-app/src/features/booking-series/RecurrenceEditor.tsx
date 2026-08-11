@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react'
 
-import type { Schedule } from '@/types'
 import { BookingFlowBottomButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import ToggleSwitch from '@/components/ToggleSwitch'
-import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
 import { ArrowLeftIcon, FloatingField } from '@/components/onboardingShared'
 import { text } from '@/styles/typography'
 
@@ -27,17 +25,12 @@ const WEEKDAYS: { value: IsoWeekday; label: string; fullLabel: string }[] = [
   { value: 7, label: 'Вс', fullLabel: 'Воскресенье' },
 ]
 
-const TIME_STEP_MINUTES = 15
-const MINUTES_IN_DAY = 24 * 60
-
 interface RecurrenceEditorProps {
   initialRule: RecurrenceRule
-  schedule?: Schedule | null
   preview?: BookingSeriesPreviewResponse | null
   previewRequired?: boolean
   errorMessage?: string | null
   showValidationInitially?: boolean
-  initialTimePickerDay?: IsoWeekday | null
   title?: string
   subtitle?: string
   saveLabel?: string
@@ -49,12 +42,10 @@ interface RecurrenceEditorProps {
 
 export default function RecurrenceEditor({
   initialRule,
-  schedule = null,
   preview = null,
   previewRequired = false,
   errorMessage = null,
   showValidationInitially = false,
-  initialTimePickerDay = null,
   title = 'Расписание',
   subtitle,
   saveLabel = 'Сохранить расписание',
@@ -65,7 +56,6 @@ export default function RecurrenceEditor({
 }: RecurrenceEditorProps) {
   const [draft, setDraft] = useState(initialRule)
   const [showValidation, setShowValidation] = useState(showValidationInitially)
-  const [timePickerDay, setTimePickerDay] = useState<IsoWeekday | null>(initialTimePickerDay)
   const [saving, setSaving] = useState(false)
   const validation = useMemo(() => validateRecurrenceRule(draft), [draft])
   const localOccurrences = useMemo(
@@ -74,11 +64,6 @@ export default function RecurrenceEditor({
   )
   const activePreview = JSON.stringify(draft) === JSON.stringify(initialRule) ? preview : null
   const shownOccurrences = activePreview?.occurrences.length ? activePreview.occurrences : localOccurrences.map((item) => ({ ...item, warnings: [] }))
-  const selectedSlot = timePickerDay === null ? null : draft.slots.find((slot) => slot.dayOfWeek === timePickerDay) ?? null
-  const timeOptions = useMemo(
-    () => timePickerDay === null ? [] : buildTimeOptions(timePickerDay, schedule, activePreview),
-    [timePickerDay, schedule, activePreview],
-  )
 
   const updateDateRange = (changes: Partial<Pick<RecurrenceRule, 'startDate' | 'endDate'>>) => {
     setDraft((current) => ({ ...current, ...changes }))
@@ -90,16 +75,10 @@ export default function RecurrenceEditor({
       if (existing) return { ...current, slots: current.slots.filter((slot) => slot.dayOfWeek !== dayOfWeek) }
       return {
         ...current,
-        slots: [...current.slots, { dayOfWeek, time: '' }].sort((left, right) => left.dayOfWeek - right.dayOfWeek),
+        slots: [...current.slots, { dayOfWeek, time: current.slots[0]?.time ?? initialRule.slots[0]?.time ?? '' }]
+          .sort((left, right) => left.dayOfWeek - right.dayOfWeek),
       }
     })
-  }
-
-  const updateTime = (dayOfWeek: IsoWeekday, time: string) => {
-    setDraft((current) => ({
-      ...current,
-      slots: current.slots.map((slot) => slot.dayOfWeek === dayOfWeek ? { ...slot, time } : slot),
-    }))
   }
 
   const submit = async () => {
@@ -184,37 +163,6 @@ export default function RecurrenceEditor({
           })}
         </div>
 
-        {draft.slots.length > 0 && (
-          <>
-            <SectionTitle>Время</SectionTitle>
-            {draft.slots.map((slot) => {
-              const day = WEEKDAYS.find((item) => item.value === slot.dayOfWeek)
-              const slotWarnings = warningTypesForSlot(slot.dayOfWeek, slot.time, schedule, activePreview)
-              return (
-                <button
-                  key={slot.dayOfWeek}
-                  type="button"
-                  onClick={() => setTimePickerDay(slot.dayOfWeek)}
-                  style={timeRowStyle}
-                >
-                  <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{day?.fullLabel}</span>
-                    <span style={{ ...text.callout1, color: slot.time ? 'var(--color-on-surface)' : 'var(--color-primary-surface)' }}>
-                      {slot.time || 'Выбрать время'}
-                    </span>
-                    {slotWarnings.length > 0 && slot.time && (
-                      <span style={{ ...text.caption2, color: 'var(--color-warning-surface-accented)' }}>
-                        {warningLabel(slotWarnings[0])}
-                      </span>
-                    )}
-                  </span>
-                  <ChevronRightIcon />
-                </button>
-              )
-            })}
-          </>
-        )}
-
         <SectionTitle>Ближайшие записи</SectionTitle>
         <OccurrencePreview occurrences={shownOccurrences} />
 
@@ -246,14 +194,6 @@ export default function RecurrenceEditor({
       <BookingFlowBottomButton disabled={!validation.valid || saveDisabled || saving} onClick={() => { void submit() }}>
         {saving ? 'Проверяем…' : previewRequired && !activePreview ? 'Проверить расписание' : saveLabel}
       </BookingFlowBottomButton>
-
-      <WheelPicker
-        open={timePickerDay !== null}
-        value={selectedSlot?.time || timeOptions[0]?.value || '00:00'}
-        options={timeOptions}
-        onSelect={(value) => { if (timePickerDay !== null) updateTime(timePickerDay, value) }}
-        onClose={() => setTimePickerDay(null)}
-      />
     </div>
   )
 }
@@ -344,45 +284,6 @@ export function WarningSummary({ warnings }: { warnings: SeriesWarning[] }) {
   )
 }
 
-function buildTimeOptions(dayOfWeek: IsoWeekday, schedule: Schedule | null, preview: BookingSeriesPreviewResponse | null): WheelPickerOption[] {
-  const options: WheelPickerOption[] = []
-  for (let minute = 0; minute < MINUTES_IN_DAY; minute += TIME_STEP_MINUTES) {
-    const time = minutesToTime(minute)
-    const warnings = warningTypesForSlot(dayOfWeek, time, schedule, preview)
-    const firstWarning = warnings[0]
-    options.push({
-      value: time,
-      label: firstWarning ? `${time} · ${warningLabel(firstWarning).toLowerCase()}` : time,
-      tone: firstWarning === 'OUTSIDE_WORKING_HOURS' ? 'muted' : firstWarning ? 'warning' : 'default',
-    })
-  }
-  return options
-}
-
-function warningTypesForSlot(
-  dayOfWeek: IsoWeekday,
-  time: string,
-  schedule: Schedule | null,
-  preview: BookingSeriesPreviewResponse | null,
-): SeriesWarningType[] {
-  if (!time) return []
-  const warnings = new Set<SeriesWarningType>()
-  if (schedule) {
-    const minute = timeToMinutes(time)
-    const isWorkingDay = schedule.workingDays.includes(dayOfWeek)
-    const outsideHours = minute < timeToMinutes(schedule.startTime) || minute >= timeToMinutes(schedule.endTime)
-    if (!isWorkingDay || outsideHours) warnings.add('OUTSIDE_WORKING_HOURS')
-    if (schedule.breakStart && schedule.breakEnd && minute >= timeToMinutes(schedule.breakStart) && minute < timeToMinutes(schedule.breakEnd)) {
-      warnings.add('BREAK_OVERLAP')
-    }
-  }
-  preview?.occurrences.forEach((occurrence) => {
-    if (occurrence.time !== time || isoWeekdayForDate(occurrence.date) !== dayOfWeek) return
-    occurrence.warnings.forEach((warning) => warnings.add(warning.type))
-  })
-  return [...warnings]
-}
-
 function warningLabel(type: SeriesWarningType): string {
   if (type === 'BOOKING_OVERLAP') return 'Занятое время'
   if (type === 'BREAK_OVERLAP') return 'Время перерыва'
@@ -390,25 +291,10 @@ function warningLabel(type: SeriesWarningType): string {
   return 'Вне рабочего времени'
 }
 
-function isoWeekdayForDate(value: string): IsoWeekday {
-  const [year, month, day] = value.split('-').map(Number)
-  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay()
-  return (weekday === 0 ? 7 : weekday) as IsoWeekday
-}
-
 function formatLocalDate(value: string): string {
   const [year, month, day] = value.split('-').map(Number)
   return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', weekday: 'short', timeZone: 'UTC' })
     .format(new Date(Date.UTC(year, month - 1, day)))
-}
-
-function timeToMinutes(value: string): number {
-  const [hours, minutes] = value.split(':').map(Number)
-  return hours * 60 + minutes
-}
-
-function minutesToTime(value: number): string {
-  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -466,20 +352,6 @@ const toggleRowStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-const timeRowStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 72,
-  borderRadius: 20,
-  background: 'var(--color-surface-transparent)',
-  border: 'none',
-  padding: '15px 20px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  textAlign: 'left',
-  cursor: 'pointer',
-}
-
 const previewCardStyle: React.CSSProperties = {
   width: '100%',
   borderRadius: 20,
@@ -509,14 +381,6 @@ const errorCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>
-      <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
 }
 
 function WarningIcon() {

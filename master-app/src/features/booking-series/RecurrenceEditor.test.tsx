@@ -1,9 +1,7 @@
 import type { ComponentProps } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-
-import type { Schedule } from '@/types'
 
 import RecurrenceEditor from './RecurrenceEditor'
 import type { BookingSeriesPreviewResponse, RecurrenceRule, SeriesWarning } from './types'
@@ -51,7 +49,7 @@ describe('RecurrenceEditor', () => {
   it('показывает local preview до получения authoritative preview и затем заменяет его', () => {
     const view = renderEditor()
 
-    expect(screen.getAllByText('10:00')).toHaveLength(4)
+    expect(screen.getAllByText('10:00')).toHaveLength(3)
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
     expect(screen.queryByText(/Всего записей:/)).not.toBeInTheDocument()
 
@@ -62,7 +60,7 @@ describe('RecurrenceEditor', () => {
     })
     view.rerender(<RecurrenceEditor {...view.props} preview={authoritativePreview} />)
 
-    expect(screen.getAllByText('10:00')).toHaveLength(1)
+    expect(screen.queryByText('10:00')).not.toBeInTheDocument()
     expect(screen.getByText('16:30')).toBeInTheDocument()
     expect(screen.getByText('Всего записей: 1')).toBeInTheDocument()
   })
@@ -151,42 +149,28 @@ describe('RecurrenceEditor', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it('оставляет warning time options доступными для выбора и сохранения', async () => {
-    const schedule: Schedule = {
-      id: 'schedule-1',
-      workingDays: [1],
-      startTime: '09:00',
-      endTime: '18:00',
-      breakStart: '13:00',
-      breakEnd: '14:00',
-      bufferMinutes: 0,
-    }
+  it('не дублирует выбор времени и наследует время записи для нового дня', async () => {
     const onSave = vi.fn()
     const view = renderEditor({
       initialRule: {
         ...finiteRule,
         slots: [{ dayOfWeek: 1, time: '12:00' }],
       },
-      schedule,
-      initialTimePickerDay: 1,
       onSave,
     })
-    const warningOption = screen.getByText('13:00 · время перерыва')
-    const optionsScroller = warningOption.parentElement!
 
-    expect(warningOption).not.toHaveAttribute('aria-disabled')
-    optionsScroller.scrollTop = (13 * 60 / 15) * 30
-    fireEvent.scroll(optionsScroller)
-    await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
-
-    expect(screen.getByText('Время перерыва')).toBeInTheDocument()
+    expect(screen.queryByText('Время')).not.toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Ср' }))
     const submitButton = screen.getByRole('button', { name: 'Сохранить расписание' })
     expect(submitButton).toBeEnabled()
     await view.user.click(submitButton)
 
     expect(onSave).toHaveBeenCalledWith({
       ...finiteRule,
-      slots: [{ dayOfWeek: 1, time: '13:00' }],
+      slots: [
+        { dayOfWeek: 1, time: '12:00' },
+        { dayOfWeek: 3, time: '12:00' },
+      ],
     })
   })
 })

@@ -258,7 +258,7 @@ function createSeriesResponse(date: string): BookingSeriesCreateResponse {
 
 async function openSeriesEditor(view: ReturnType<typeof renderPage>) {
   await view.user.click(formCard('Дата и время').getByRole('button', { name: /Повторение/ }))
-  await view.user.click(screen.getByRole('option', { name: 'Несколько' }))
+  await view.user.click(screen.getByRole('menuitem', { name: 'Несколько' }))
   expect(await screen.findByText('Расписание')).toBeInTheDocument()
 }
 
@@ -652,7 +652,7 @@ describe('master CreateBookingPage', () => {
     await selectBookingPlace(view, 'Онлайн')
 
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Повторение/ }))
-    await view.user.click(screen.getByRole('option', { name: 'Несколько' }))
+    await view.user.click(screen.getByRole('menuitem', { name: 'Несколько' }))
 
     expect(await screen.findByText(/Онлайн-запись пока недоступна для серии/)).toBeInTheDocument()
     expect(screen.queryByText('Расписание')).not.toBeInTheDocument()

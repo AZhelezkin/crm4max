@@ -436,7 +436,7 @@ function BookingModeTabs({ isPackage, onChange }: { isPackage: boolean; onChange
       active: isPackage,
       disabled: !isPackage,
       disabledReason: !isPackage ? 'Создание абонементов временно недоступно' : undefined,
-      hint: !isPackage ? 'Временно недоступен' : undefined,
+      hint: !isPackage ? 'В разработке' : undefined,
       on: () => onChange(true),
     },
   ]

@@ -316,6 +316,7 @@ export default function CreateBookingPage() {
   const [time, setTime] = useState(restoredDraft?.time ?? '')
   const [repetitionMode, setRepetitionMode] = useState<RepetitionMode>(restoredDraft?.repetitionMode ?? 'single')
   const [repetitionMenuOpen, setRepetitionMenuOpen] = useState(false)
+  const [repetitionMenu, setRepetitionMenu] = useState<PopoverPosition | null>(null)
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(restoredDraft?.recurrenceRule ?? null)
   const [recurrenceEditorRule, setRecurrenceEditorRule] = useState<RecurrenceRule | null>(null)
   const [seriesPreview, setSeriesPreview] = useState<BookingSeriesPreviewResponse | null>(null)
@@ -746,6 +747,7 @@ export default function CreateBookingPage() {
 
   const openRecurrenceEditor = () => {
     setRepetitionMenuOpen(false)
+    setRepetitionMenu(null)
     if (online) {
       setError(SERIES_ONLINE_UNSUPPORTED_MESSAGE)
       return
@@ -756,6 +758,8 @@ export default function CreateBookingPage() {
   }
 
   const handleRepetitionMode = (mode: RepetitionMode) => {
+    setRepetitionMenuOpen(false)
+    setRepetitionMenu(null)
     if (mode === 'single') {
       setRepetitionMode(mode)
       setSeriesConflictWarn(false)
@@ -775,16 +779,17 @@ export default function CreateBookingPage() {
   }
 
   const previewOrSaveRecurrenceRule = async (rule: RecurrenceRule) => {
-    if (!validateRecurrenceRule(rule).valid) return
-    const request = buildSeriesPreviewRequest(rule)
+    const ruleWithBookingTime = { ...rule, slots: rule.slots.map((slot) => ({ ...slot, time })) }
+    if (!validateRecurrenceRule(ruleWithBookingTime).valid) return
+    const request = buildSeriesPreviewRequest(ruleWithBookingTime)
     if (!seriesGateway || !request) {
       setSeriesPreviewError('Сначала выберите клиента и услуги и проверьте данные записи.')
       return
     }
     const fingerprint = previewFingerprint(request)
     if (seriesPreview && seriesPreviewFingerprint === fingerprint) {
-      const first = generateOccurrenceDates(rule)[0]
-      setRecurrenceRule(rule)
+      const first = generateOccurrenceDates(ruleWithBookingTime)[0]
+      setRecurrenceRule(ruleWithBookingTime)
       setRecurrenceEditorRule(null)
       setRepetitionMode('series')
       if (first) { setDate(first.date); setTime(first.time) }
@@ -792,7 +797,7 @@ export default function CreateBookingPage() {
       setStep('confirm')
       return
     }
-    setRecurrenceEditorRule(rule)
+    setRecurrenceEditorRule(ruleWithBookingTime)
     setSeriesPreview(null)
     setSeriesPreviewFingerprint(null)
     setSeriesPreviewError(null)
@@ -1703,7 +1708,6 @@ export default function CreateBookingPage() {
     return (
       <RecurrenceEditor
         initialRule={recurrenceEditorRule ?? recurrenceRule ?? createInitialRecurrenceRule(date, time, master?.timezone)}
-        schedule={schedule}
         preview={editorSeriesPreview}
         previewRequired
         errorMessage={seriesPreviewError}
@@ -2018,7 +2022,7 @@ export default function CreateBookingPage() {
             />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={seriesMode ? openRecurrenceEditor : () => setStep('date')} />
-          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={seriesMode ? openRecurrenceEditor : () => setStep(date ? 'time' : 'date')} />
+          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
           {seriesEnabled && !rescheduleId && (
             <RepetitionFields
               mode={repetitionMode}
@@ -2026,7 +2030,15 @@ export default function CreateBookingPage() {
               summary={recurrenceSummary}
               warningsCount={freshSeriesPreview?.warningsCount ?? 0}
               reviewRequired={seriesMode && !!recurrenceRule && !freshSeriesPreview}
-              onMenuOpenChange={setRepetitionMenuOpen}
+              onMenuOpenChange={(open, trigger) => {
+                setRepetitionMenuOpen(open)
+                if (!open || !trigger) { setRepetitionMenu(null); return }
+                const bounds = trigger.getBoundingClientRect()
+                const right = Math.max(16, window.innerWidth - bounds.right)
+                setRepetitionMenu(bounds.bottom > window.innerHeight - 180
+                  ? { right, bottom: window.innerHeight - bounds.top + 8 }
+                  : { right, top: bounds.bottom + 8 })
+              }}
               onModeChange={handleRepetitionMode}
               onEditSchedule={openRecurrenceEditor}
             />
@@ -2139,8 +2151,38 @@ export default function CreateBookingPage() {
           onSelect={selectBookingPlace}
         />
       )}
+      {repetitionMenu && (
+        <RepetitionMenu
+          pos={repetitionMenu}
+          value={repetitionMode}
+          onClose={() => { setRepetitionMenu(null); setRepetitionMenuOpen(false) }}
+          onSelect={handleRepetitionMode}
+        />
+      )}
     </div>
   )
+}
+
+function RepetitionMenu({ pos, value, onClose, onSelect }: {
+  pos: PopoverPosition
+  value: RepetitionMode
+  onClose: () => void
+  onSelect: (value: RepetitionMode) => void
+}) {
+  return (
+    <BookingActionsMenu
+      pos={pos}
+      onClose={onClose}
+      items={[
+        { label: 'Разовая', icon: value === 'single' ? <MenuCheckIcon /> : null, onClick: () => onSelect('single') },
+        { label: 'Несколько', icon: value === 'series' ? <MenuCheckIcon /> : null, onClick: () => onSelect('series') },
+      ]}
+    />
+  )
+}
+
+function MenuCheckIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }
 
 function BookingPlaceMenu({ pos, value, onClose, onSelect }: {

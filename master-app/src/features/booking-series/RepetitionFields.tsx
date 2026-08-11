@@ -8,7 +8,7 @@ interface RepetitionFieldsProps {
   summary?: string
   warningsCount?: number
   reviewRequired?: boolean
-  onMenuOpenChange: (open: boolean) => void
+  onMenuOpenChange: (open: boolean, trigger?: HTMLButtonElement) => void
   onModeChange: (mode: RepetitionMode) => void
   onEditSchedule: () => void
 }
@@ -28,9 +28,9 @@ export default function RepetitionFields({
       <div style={{ position: 'relative' }}>
         <button
           type="button"
-          aria-haspopup="listbox"
+          aria-haspopup="menu"
           aria-expanded={menuOpen}
-          onClick={() => onMenuOpenChange(!menuOpen)}
+          onClick={(event) => onMenuOpenChange(!menuOpen, event.currentTarget)}
           style={rowStyle}
         >
           <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: 1, minWidth: 0 }}>Повторение</span>
@@ -42,39 +42,6 @@ export default function RepetitionFields({
           </span>
         </button>
 
-        {menuOpen && (
-          <div
-            role="listbox"
-            aria-label="Повторение"
-            style={{
-              position: 'absolute',
-              zIndex: 1000,
-              right: 16,
-              top: '100%',
-              width: 220,
-              maxWidth: 'calc(100vw - 32px)',
-              borderRadius: 16,
-              padding: '12px 20px',
-              boxSizing: 'border-box',
-              background: 'var(--color-secondary-surface)',
-              boxShadow: 'var(--shadow-soft)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <ModeOption
-              selected={mode === 'single'}
-              label="Разовая"
-              onClick={() => { onModeChange('single'); onMenuOpenChange(false) }}
-            />
-            <div style={{ height: 1, background: 'var(--color-divider-low)', margin: '8px 0' }} />
-            <ModeOption
-              selected={mode === 'series'}
-              label="Несколько"
-              onClick={() => { onModeChange('series'); onMenuOpenChange(false) }}
-            />
-          </div>
-        )}
       </div>
 
       {mode === 'series' && (
@@ -104,32 +71,6 @@ export default function RepetitionFields({
   )
 }
 
-function ModeOption({ selected, label, onClick }: { selected: boolean; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={selected}
-      onClick={onClick}
-      style={{
-        border: 'none',
-        background: 'none',
-        padding: '6px 0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        color: selected ? 'var(--color-active-element)' : 'var(--color-on-surface)',
-        cursor: 'pointer',
-        textAlign: 'left',
-        ...text.body2,
-      }}
-    >
-      <span style={{ flex: 1 }}>{label}</span>
-      {selected && <CheckIcon />}
-    </button>
-  )
-}
-
 const rowStyle: React.CSSProperties = {
   width: '100%',
   display: 'flex',
@@ -148,14 +89,6 @@ function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}>
       <path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

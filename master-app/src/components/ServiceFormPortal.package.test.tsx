@@ -48,7 +48,7 @@ describe('ServiceFormPortal package restriction', () => {
     const packageTab = screen.getByRole('button', {
       name: 'Абонемент. Создание абонементов временно недоступно',
     })
-    const unavailableHint = screen.getByText('Временно недоступен')
+    const unavailableHint = screen.getByText('В разработке')
 
     expect(packageTab).toBeDisabled()
     expect(packageTab.style.background).toBe('var(--color-secondary-surface-muted)')
