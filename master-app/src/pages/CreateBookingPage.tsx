@@ -654,6 +654,15 @@ export default function CreateBookingPage() {
   const recurrenceValid = recurrenceRule ? validateRecurrenceRule(recurrenceRule).valid : false
   const seriesMode = seriesEnabled && repetitionMode === 'series'
   const recurrenceSummary = recurrenceRule && recurrenceValid ? formatRecurrenceSummary(recurrenceRule) : ''
+  const inlineMasterNow = currentMasterWall(master?.timezone)
+  const inlineCurrentMinute = inlineMasterNow.hour() * 60 + inlineMasterNow.minute() + (inlineMasterNow.second() || inlineMasterNow.millisecond() ? 1 : 0)
+  const inlineMinTime = date === inlineMasterNow.format('YYYY-MM-DD')
+    ? buildDayTimes(Math.max(TIME_STEP_MIN, durationMin)).find((value) => hhmmToMin(value) >= inlineCurrentMinute) ?? '23:45'
+    : '00:00'
+  const inlineTimeTone = (slotTime: string): TimeWheelTone => {
+    const windows = effectiveWindowsCache.current.get(date) ?? baseScheduleWindows(date, schedule)
+    return fitsWorkWindow(slotTime, Math.max(TIME_STEP_MIN, durationMin), windows) ? 'success' : 'error'
+  }
 
   const buildSeriesTemplate = (): BookingSeriesTemplate | null => {
     if (!selectedClient) return null
@@ -779,17 +788,16 @@ export default function CreateBookingPage() {
   }
 
   const previewOrSaveRecurrenceRule = async (rule: RecurrenceRule) => {
-    const ruleWithBookingTime = { ...rule, slots: rule.slots.map((slot) => ({ ...slot, time })) }
-    if (!validateRecurrenceRule(ruleWithBookingTime).valid) return
-    const request = buildSeriesPreviewRequest(ruleWithBookingTime)
+    if (!validateRecurrenceRule(rule).valid) return
+    const request = buildSeriesPreviewRequest(rule)
     if (!seriesGateway || !request) {
       setSeriesPreviewError('Сначала выберите клиента и услуги и проверьте данные записи.')
       return
     }
     const fingerprint = previewFingerprint(request)
     if (seriesPreview && seriesPreviewFingerprint === fingerprint) {
-      const first = generateOccurrenceDates(ruleWithBookingTime)[0]
-      setRecurrenceRule(ruleWithBookingTime)
+      const first = generateOccurrenceDates(rule)[0]
+      setRecurrenceRule(rule)
       setRecurrenceEditorRule(null)
       setRepetitionMode('series')
       if (first) { setDate(first.date); setTime(first.time) }
@@ -797,7 +805,7 @@ export default function CreateBookingPage() {
       setStep('confirm')
       return
     }
-    setRecurrenceEditorRule(ruleWithBookingTime)
+    setRecurrenceEditorRule(rule)
     setSeriesPreview(null)
     setSeriesPreviewFingerprint(null)
     setSeriesPreviewError(null)
@@ -2022,7 +2030,7 @@ export default function CreateBookingPage() {
             />
           )}
           <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={seriesMode ? openRecurrenceEditor : () => setStep('date')} />
-          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
+          {!seriesMode && <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => date ? setTimePickerOpen(true) : setStep('date')} />}
           {seriesEnabled && !rescheduleId && (
             <RepetitionFields
               mode={repetitionMode}
@@ -2116,6 +2124,16 @@ export default function CreateBookingPage() {
           onCancel={() => setSeriesConflictWarn(false)}
         />
       )}
+      {outsideScheduleSlot && (
+        <ConfirmDialog
+          title="Вне рабочего графика"
+          message={`Записать на ${dayjs(date).format('D MMMM')}, ${outsideScheduleSlot}?`}
+          confirmLabel="Записать"
+          danger={false}
+          onConfirm={() => { const slot = outsideScheduleSlot; setOutsideScheduleSlot(null); applySlot(slot) }}
+          onCancel={() => setOutsideScheduleSlot(null)}
+        />
+      )}
 
       {/* Редактирование услуги для этого заказа (макет 10138-40554). */}
       {editingServiceId && (() => {
@@ -2141,6 +2159,14 @@ export default function CreateBookingPage() {
         options={durationOptions}
         onSelect={(v) => setDurationOverride(Number(v))}
         onClose={() => setDurationPickerOpen(false)}
+      />
+      <TimeWheelPicker
+        open={timePickerOpen}
+        value={time || '12:00'}
+        minTime={inlineMinTime}
+        getTone={inlineTimeTone}
+        onSelect={(value) => { void onSlotTap(value) }}
+        onClose={() => setTimePickerOpen(false)}
       />
 
       {placeMenu && (

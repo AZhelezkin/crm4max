@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { BookingFlowBottomButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
+import TimeWheelPicker from '@/components/TimeWheelPicker'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import { ArrowLeftIcon, FloatingField } from '@/components/onboardingShared'
 import { text } from '@/styles/typography'
@@ -56,6 +57,7 @@ export default function RecurrenceEditor({
 }: RecurrenceEditorProps) {
   const [draft, setDraft] = useState(initialRule)
   const [showValidation, setShowValidation] = useState(showValidationInitially)
+  const [timePickerDay, setTimePickerDay] = useState<IsoWeekday | null>(null)
   const [saving, setSaving] = useState(false)
   const validation = useMemo(() => validateRecurrenceRule(draft), [draft])
   const localOccurrences = useMemo(
@@ -75,10 +77,17 @@ export default function RecurrenceEditor({
       if (existing) return { ...current, slots: current.slots.filter((slot) => slot.dayOfWeek !== dayOfWeek) }
       return {
         ...current,
-        slots: [...current.slots, { dayOfWeek, time: current.slots[0]?.time ?? initialRule.slots[0]?.time ?? '' }]
+        slots: [...current.slots, { dayOfWeek, time: '' }]
           .sort((left, right) => left.dayOfWeek - right.dayOfWeek),
       }
     })
+  }
+
+  const updateTime = (dayOfWeek: IsoWeekday, time: string) => {
+    setDraft((current) => ({
+      ...current,
+      slots: current.slots.map((slot) => slot.dayOfWeek === dayOfWeek ? { ...slot, time } : slot),
+    }))
   }
 
   const submit = async () => {
@@ -163,6 +172,26 @@ export default function RecurrenceEditor({
           })}
         </div>
 
+        {draft.slots.length > 0 && (
+          <>
+            <SectionTitle>Время</SectionTitle>
+            {draft.slots.map((slot) => {
+              const day = WEEKDAYS.find((item) => item.value === slot.dayOfWeek)
+              return (
+                <button key={slot.dayOfWeek} type="button" onClick={() => setTimePickerDay(slot.dayOfWeek)} style={timeRowStyle}>
+                  <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span style={{ ...text.caption2, color: 'var(--color-on-surface-secondary)' }}>{day?.fullLabel}</span>
+                    <span style={{ ...text.callout1, color: slot.time ? 'var(--color-on-surface)' : 'var(--color-primary-surface)' }}>
+                      {slot.time || 'Выбрать время'}
+                    </span>
+                  </span>
+                  <ChevronRightIcon />
+                </button>
+              )
+            })}
+          </>
+        )}
+
         <SectionTitle>Ближайшие записи</SectionTitle>
         <OccurrencePreview occurrences={shownOccurrences} />
 
@@ -194,6 +223,13 @@ export default function RecurrenceEditor({
       <BookingFlowBottomButton disabled={!validation.valid || saveDisabled || saving} onClick={() => { void submit() }}>
         {saving ? 'Проверяем…' : previewRequired && !activePreview ? 'Проверить расписание' : saveLabel}
       </BookingFlowBottomButton>
+      <TimeWheelPicker
+        open={timePickerDay !== null}
+        value={draft.slots.find((slot) => slot.dayOfWeek === timePickerDay)?.time || '12:00'}
+        getTone={() => 'success'}
+        onSelect={(value) => { if (timePickerDay !== null) updateTime(timePickerDay, value) }}
+        onClose={() => setTimePickerDay(null)}
+      />
     </div>
   )
 }
@@ -352,6 +388,12 @@ const toggleRowStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+const timeRowStyle: React.CSSProperties = {
+  width: '100%', minHeight: 72, borderRadius: 20,
+  background: 'var(--color-surface-transparent)', border: 'none', padding: '15px 20px',
+  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
+}
+
 const previewCardStyle: React.CSSProperties = {
   width: '100%',
   borderRadius: 20,
@@ -381,6 +423,10 @@ const errorCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
+}
+
+function ChevronRightIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--color-interactive-element-secondary)' }}><path d="M6 4L10.5 8L6 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }
 
 function WarningIcon() {

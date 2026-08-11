@@ -183,8 +183,8 @@ async function selectRegularDateAndTime(view: ReturnType<typeof renderPage>, sel
   await selectWheelTime(view, time)
 }
 
-async function selectWheelTime(view: ReturnType<typeof renderPage>, time: string) {
-  await view.user.click(screen.getByRole('button', { name: 'Выбрать время' }))
+async function selectWheelTime(view: ReturnType<typeof renderPage>, time: string, open = false) {
+  if (open) await view.user.click(screen.getByRole('button', { name: 'Выбрать время' }))
   const [hour, minute] = time.split(':').map(Number)
   const hours = screen.getByRole('listbox', { name: 'Часы' })
   const minutes = screen.getByRole('listbox', { name: 'Минуты' })
@@ -328,7 +328,6 @@ describe('master CreateBookingPage', () => {
     await selectDate(view, dayjs())
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
 
-    await view.user.click(screen.getByRole('button', { name: 'Выбрать время' }))
     const hours = screen.getByRole('listbox', { name: 'Часы' })
     expect(within(hours).queryByRole('option', { name: '12' })).not.toBeInTheDocument()
     expect(within(hours).getByRole('option', { name: '16' })).toBeInTheDocument()
@@ -355,7 +354,6 @@ describe('master CreateBookingPage', () => {
     expect(api.getEffectiveWindows).toHaveBeenCalledWith(selectedDate.format('YYYY-MM-DD'))
     expect(screen.getByText('Вне рабочего графика')).toBeInTheDocument()
     expect(screen.getByText(`Записать на ${selectedDate.format('D MMMM')}, 08:00?`)).toBeInTheDocument()
-    expect(screen.getByText('Выберите время')).toBeInTheDocument()
     const dialog = screen.getByText('Вне рабочего графика').parentElement!
     await view.user.click(within(dialog).getByRole('button', { name: 'Записать' }))
 
@@ -822,7 +820,7 @@ describe('master CreateBookingPage', () => {
     expect(await screen.findByText('Новая дата')).toBeInTheDocument()
 
     await selectDate(view, selectedDate)
-    await selectWheelTime(view, '10:00')
+    await selectWheelTime(view, '10:00', true)
 
     expect(screen.getByText('Перенести запись')).toBeInTheDocument()
     expect(api.reschedule).not.toHaveBeenCalled()
@@ -851,7 +849,7 @@ describe('master CreateBookingPage', () => {
     })
     expect(await screen.findByText('Выберите время')).toBeInTheDocument()
 
-    await selectWheelTime(view, '11:00')
+    await selectWheelTime(view, '11:00', true)
     const dialog = screen.getByText('Перенести запись').parentElement!
     await view.user.click(within(dialog).getByRole('button', { name: 'Перенести' }))
 

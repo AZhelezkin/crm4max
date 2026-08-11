@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -49,7 +49,7 @@ describe('RecurrenceEditor', () => {
   it('показывает local preview до получения authoritative preview и затем заменяет его', () => {
     const view = renderEditor()
 
-    expect(screen.getAllByText('10:00')).toHaveLength(3)
+    expect(screen.getAllByText('10:00')).toHaveLength(4)
     expect(screen.queryByText('16:30')).not.toBeInTheDocument()
     expect(screen.queryByText(/Всего записей:/)).not.toBeInTheDocument()
 
@@ -60,7 +60,7 @@ describe('RecurrenceEditor', () => {
     })
     view.rerender(<RecurrenceEditor {...view.props} preview={authoritativePreview} />)
 
-    expect(screen.queryByText('10:00')).not.toBeInTheDocument()
+    expect(screen.getByText('10:00')).toBeInTheDocument()
     expect(screen.getByText('16:30')).toBeInTheDocument()
     expect(screen.getByText('Всего записей: 1')).toBeInTheDocument()
   })
@@ -149,7 +149,7 @@ describe('RecurrenceEditor', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it('не дублирует выбор времени и наследует время записи для нового дня', async () => {
+  it('позволяет выбрать отдельное время для нового дня новым wheel picker', async () => {
     const onSave = vi.fn()
     const view = renderEditor({
       initialRule: {
@@ -159,8 +159,15 @@ describe('RecurrenceEditor', () => {
       onSave,
     })
 
-    expect(screen.queryByText('Время')).not.toBeInTheDocument()
     await view.user.click(screen.getByRole('button', { name: 'Ср' }))
+    await view.user.click(screen.getByRole('button', { name: /Среда.*Выбрать время/ }))
+    const hours = screen.getByRole('listbox', { name: 'Часы' })
+    const minutes = screen.getByRole('listbox', { name: 'Минуты' })
+    hours.scrollTop = 13 * 30
+    minutes.scrollTop = 30
+    fireEvent.scroll(hours)
+    fireEvent.scroll(minutes)
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
     const submitButton = screen.getByRole('button', { name: 'Сохранить расписание' })
     expect(submitButton).toBeEnabled()
     await view.user.click(submitButton)
@@ -169,7 +176,7 @@ describe('RecurrenceEditor', () => {
       ...finiteRule,
       slots: [
         { dayOfWeek: 1, time: '12:00' },
-        { dayOfWeek: 3, time: '12:00' },
+        { dayOfWeek: 3, time: '13:15' },
       ],
     })
   })
