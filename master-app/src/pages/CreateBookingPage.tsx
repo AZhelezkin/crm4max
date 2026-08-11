@@ -26,7 +26,7 @@ import BookingOnlineLinkEditor from '@/components/BookingOnlineLinkEditor'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { BookingFlowBottomButton, BookingFlowPillButton, BookingFlowToolbar } from '@/components/BookingFlowShell'
 import ServiceEditorPortal, { type ServiceEditorTarget } from '@/components/ServiceEditorPortal'
-import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type BookingAddressDetails } from '@/lib/bookingAddress'
+import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type DestinationAddressDetails } from '@/lib/bookingAddress'
 import { openExternalLink } from '@/lib/bridge'
 import BookingAddressText from '@/components/BookingAddressText'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
@@ -69,7 +69,7 @@ type BookingSubscriptionDraft = {
   /** Draft старой версии, сохранённый до появления трёх вариантов места. */
   outbound?: boolean
   address: string
-  addressDetails: BookingAddressDetails
+  addressDetails: DestinationAddressDetails
   addressComment: string
   onlineMeetingLink?: string
   miscPrices: Record<string, string>
@@ -273,7 +273,9 @@ export default function CreateBookingPage() {
   const online = bookingPlace === 'online'
   const [placeMenu, setPlaceMenu] = useState<PopoverPosition | null>(null)
   const [address, setAddress] = useState(restoredDraft?.address ?? '')
-  const [addressDetails, setAddressDetails] = useState<BookingAddressDetails>(restoredDraft?.addressDetails ?? { floor: '', apartment: '', intercom: '' })
+  const [addressDetails, setAddressDetails] = useState<DestinationAddressDetails>({
+    entrance: '', floor: '', apartment: '', intercom: '', ...restoredDraft?.addressDetails,
+  })
   const [addressComment, setAddressComment] = useState(restoredDraft?.addressComment ?? '')
   const [addressPickerOpen, setAddressPickerOpen] = useState(false)
   const [addressReturnStep, setAddressReturnStep] = useState<'confirm' | 'package'>('confirm')

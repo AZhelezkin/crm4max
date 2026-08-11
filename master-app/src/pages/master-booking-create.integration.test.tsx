@@ -402,6 +402,7 @@ describe('master CreateBookingPage', () => {
 
     await view.user.click(screen.getByRole('button', { name: /Адрес клиента/ }))
     await view.user.click(screen.getByRole('button', { name: 'Выбрать адрес на карте' }))
+    await view.user.type(screen.getByRole('textbox', { name: 'Подъезд' }), '2')
     await view.user.type(screen.getByPlaceholderText('Комментарий'), 'Слева от входа')
     await view.user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
@@ -409,14 +410,14 @@ describe('master CreateBookingPage', () => {
     expect(dateCard.getByText('Адрес')).toBeInTheDocument()
     expect(dateCard.queryByText('Адрес клиента')).not.toBeInTheDocument()
     expect(dateCard.getByText('Москва, Серебряническая набережная, 29')).toBeInTheDocument()
-    expect(dateCard.getByText('кв. 104')).toBeInTheDocument()
+    expect(dateCard.getByText(/кв\.\/офис 104/)).toBeInTheDocument()
     expect(dateCard.getByText('Слева от входа')).toBeInTheDocument()
-    expect(dateCard.getByText('7 этаж, домофон 123#')).toBeInTheDocument()
+    expect(dateCard.getByText(/подъезд 2, домофон 123#, 7 этаж/)).toBeInTheDocument()
 
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
 
     expect(api.createBooking).toHaveBeenCalledWith(expect.objectContaining({
-      clientAddress: 'Москва, Серебряническая набережная, 29\nэтаж 7, кв./офис 104, домофон 123#\nСлева от входа',
+      clientAddress: 'Москва, Серебряническая набережная, 29\nподъезд 2, этаж 7, кв./офис 104, домофон 123#\nСлева от входа',
       onlineMeetingLink: undefined,
     }))
   })

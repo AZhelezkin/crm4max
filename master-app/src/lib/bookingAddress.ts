@@ -15,8 +15,9 @@ export interface ParsedBookingAddress extends DestinationAddressDetails {
 
 const STRUCTURED_ADDRESS_MARKER = 'Дополнительно [CRM4MAX/1]:'
 
-export function formatBookingAddress(address: string, details: BookingAddressDetails, comment: string): string {
+export function formatBookingAddress(address: string, details: BookingAddressDetails & { entrance?: string }, comment: string): string {
   const detailLine = [
+    details.entrance?.trim() && `подъезд ${details.entrance.trim()}`,
     details.floor.trim() && `этаж ${details.floor.trim()}`,
     details.apartment.trim() && `кв./офис ${details.apartment.trim()}`,
     details.intercom.trim() && `домофон ${details.intercom.trim()}`,

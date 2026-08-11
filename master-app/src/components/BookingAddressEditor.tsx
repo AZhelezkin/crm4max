@@ -1,16 +1,16 @@
 import AddressPickerPortal from '@/components/AddressPickerPortal'
 import { BookingFlowBottomButton } from '@/components/BookingFlowShell'
 import { HeroHeader, FloatingField } from '@/components/onboardingShared'
-import type { BookingAddressDetails } from '@/lib/bookingAddress'
+import type { DestinationAddressDetails } from '@/lib/bookingAddress'
 import { text } from '@/styles/typography'
 
 interface Props {
   address: string
-  details: BookingAddressDetails
+  details: DestinationAddressDetails
   comment: string
   pickerOpen: boolean
   onAddressChange: (address: string) => void
-  onDetailsChange: (details: BookingAddressDetails) => void
+  onDetailsChange: (details: DestinationAddressDetails) => void
   onCommentChange: (comment: string) => void
   onPickerOpenChange: (open: boolean) => void
   onBack: () => void
@@ -51,6 +51,31 @@ export default function BookingAddressEditor({
         </button>
 
         <FloatingField
+          label="Подъезд"
+          value={details.entrance ?? ''}
+          onChange={(entrance) => onDetailsChange({ ...details, entrance })}
+          valueBold
+        />
+        <FloatingField
+          label="Домофон"
+          value={details.intercom}
+          onChange={(intercom) => onDetailsChange({ ...details, intercom })}
+          valueBold
+        />
+        <FloatingField
+          label="Этаж"
+          value={details.floor}
+          onChange={(floor) => onDetailsChange({ ...details, floor })}
+          valueBold
+        />
+        <FloatingField
+          label="Квартира/офис"
+          value={details.apartment}
+          onChange={(apartment) => onDetailsChange({ ...details, apartment })}
+          valueBold
+        />
+
+        <FloatingField
           multiline
           align="top"
           autoGrow
@@ -71,7 +96,7 @@ export default function BookingAddressEditor({
         onClose={() => onPickerOpenChange(false)}
         onConfirm={(nextAddress, _coords, nextDetails) => {
           onAddressChange(nextAddress)
-          if (nextDetails) onDetailsChange(nextDetails)
+          if (nextDetails) onDetailsChange({ entrance: details.entrance ?? '', ...nextDetails })
         }}
       />
     </div>
