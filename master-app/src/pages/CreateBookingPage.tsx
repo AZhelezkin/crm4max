@@ -20,6 +20,7 @@ import { scrollPageTop } from '@/lib/scroll'
 import { clearBookingDraft, readBookingDraft, rememberBookingReturn } from '@/lib/subscriptionReturn'
 import ToggleSwitch from '@/components/ToggleSwitch'
 import WheelPicker, { type WheelPickerOption } from '@/components/WheelPicker'
+import TimeWheelPicker, { type TimeWheelTone } from '@/components/TimeWheelPicker'
 import { FloatingField } from '@/components/onboardingShared'
 import BookingAddressEditor from '@/components/BookingAddressEditor'
 import BookingOnlineLinkEditor from '@/components/BookingOnlineLinkEditor'
@@ -257,6 +258,7 @@ export default function CreateBookingPage() {
   // любое значение из колеса (шаг 5 мин, макет 10302-42986). Сбрасывается при смене услуг.
   const [durationOverride, setDurationOverride] = useState<number | null>(restoredDraft?.durationOverride ?? null)
   const [durationPickerOpen, setDurationPickerOpen] = useState(false)
+  const [timePickerOpen, setTimePickerOpen] = useState(false)
   // Ручной итог записи (строка рублей; пусто = считаем сумму по услугам). Мастер может
   // задать любую стоимость заказа — она не обязана равняться сумме услуг.
   const [totalOverride, setTotalOverride] = useState<string | null>(restoredDraft?.totalOverride ?? null)
@@ -1020,6 +1022,16 @@ export default function CreateBookingPage() {
       const start = hhmmToMin(slotTime)
       if (occupied.some((interval) => start < interval.end && start + slotDuration > interval.start)) busyTimes.add(slotTime)
     }
+    const workWindows = effectiveWindowsCache.current.get(date) ?? baseScheduleWindows(date, schedule)
+    const earliestVisibleTime = visibleDayTimes[0] ?? '00:00'
+    const initialTime = time || (workWindows.length > 0
+      ? workWindows[0].startTime > earliestVisibleTime ? workWindows[0].startTime : earliestVisibleTime
+      : '12:00' > earliestVisibleTime ? '12:00' : earliestVisibleTime)
+    const timeTone = (slotTime: string): TimeWheelTone => {
+      if (busyTimes.has(slotTime)) return 'warning'
+      if (!fitsWorkWindow(slotTime, slotDuration, workWindows)) return 'error'
+      return 'success'
+    }
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <Toolbar title="Выберите время" subtitle={packageSessionIndex !== null ? `Приём ${packageSessionIndex + 1} из ${selectedService?.sessionsCount ?? ''}` : selectedService?.name} onBack={() => {
@@ -1056,11 +1068,9 @@ export default function CreateBookingPage() {
             {visibleDayTimes.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет доступного времени</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {visibleDayTimes.map((t) => (
-                  <TimeChip key={t} label={t} selected={time === t} busy={busyTimes.has(t)} disabled={isPackageTime && busyTimes.has(t)} onClick={() => { void onSlotTap(t) }} />
-                ))}
-              </div>
+              <button type="button" onClick={() => setTimePickerOpen(true)} style={{ ...listItemStyle, justifyContent: 'center', ...text.callout1, color: time ? 'var(--color-on-surface)' : 'var(--color-on-surface-secondary)' }}>
+                {time || 'Выбрать время'}
+              </button>
             )}
           </div>
 
@@ -1093,6 +1103,14 @@ export default function CreateBookingPage() {
             onCancel={() => setOutsideScheduleSlot(null)}
           />
         )}
+        <TimeWheelPicker
+          open={timePickerOpen}
+          value={initialTime}
+          minTime={earliestVisibleTime}
+          getTone={timeTone}
+          onSelect={(selectedTime) => { void onSlotTap(selectedTime) }}
+          onClose={() => setTimePickerOpen(false)}
+        />
       </div>
     )
   }

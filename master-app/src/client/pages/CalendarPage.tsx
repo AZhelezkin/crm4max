@@ -10,6 +10,7 @@ import { text } from '@/styles/typography'
 import CalendarDateSkeleton from '@client/components/CalendarDateSkeleton'
 import SlotsGridSkeleton from '@client/components/SlotsGridSkeleton'
 import { daysAheadBucket, timeBucket, trackEvent } from '@/lib/metrics'
+import TimeWheelPicker from '@/components/TimeWheelPicker'
 
 dayjs.locale('ru')
 
@@ -85,6 +86,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(date || today.format('YYYY-MM-DD'))
   const [slots, setSlots] = useState<ClientSlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [timePickerOpen, setTimePickerOpen] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>({})
   const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
 
@@ -155,6 +157,8 @@ export default function CalendarPage() {
     ? new Set(pkgSlots.filter((p, i) => i !== sessionIndex && p).map((p) => `${p.date} ${p.time}`))
     : new Set<string>()
   const visibleSlots = slots.filter((s) => !takenKeys.has(`${s.masterDate} ${s.masterTime}`))
+  const visibleSlotByTime = new Map(visibleSlots.map((slot) => [slot.time, slot]))
+  const firstVisibleTime = visibleSlots[0]?.time ?? '12:00'
 
   const headerTitle = step === 'date' ? 'Выберите дату' : 'Выберите время'
   const headerSubtitle = isSession
@@ -397,31 +401,16 @@ export default function CalendarPage() {
             ) : visibleSlots.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--color-on-surface-secondary)', padding: '32px 0' }}>Нет свободных слотов</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {visibleSlots.map((s) => {
-                  const isSel = s.masterDate === date && s.masterTime === time
-                  return (
-                    <button
-                      key={`${s.masterDate} ${s.masterTime}`}
-                      onClick={() => handleSelectTime(s)}
-                      style={{
-                        height: 69, padding: '12px 0', borderRadius: 18,
-                        background: isSel
-                          ? 'var(--color-active-surface)'
-                          : 'var(--color-surface-transparent)',
-                        color: isSel
-                          ? 'var(--color-interactive-element-accented)'
-                          : 'var(--color-on-surface)',
-                        ...text.callout1,
-                        border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      {s.time}
-                    </button>
-                  )
-                })}
-              </div>
+              <button type="button" onClick={() => setTimePickerOpen(true)} style={{
+                height: 69, padding: '12px 0', borderRadius: 18,
+                background: 'var(--color-surface-transparent)',
+                color: 'var(--color-on-surface)',
+                ...text.callout1,
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                Выбрать время
+              </button>
             )}
           </div>
 
@@ -453,6 +442,19 @@ export default function CalendarPage() {
               aria-label="Напомнить за 1 час"
             />
           </div>
+
+          <TimeWheelPicker
+            open={timePickerOpen}
+            value={firstVisibleTime}
+            minTime={firstVisibleTime}
+            getTone={(selectedTime) => visibleSlotByTime.has(selectedTime) ? 'success' : 'muted'}
+            isSelectable={(selectedTime) => visibleSlotByTime.has(selectedTime)}
+            onSelect={(selectedTime) => {
+              const slot = visibleSlotByTime.get(selectedTime)
+              if (slot) handleSelectTime(slot)
+            }}
+            onClose={() => setTimePickerOpen(false)}
+          />
 
         </div>
       )}

@@ -82,7 +82,8 @@ describe('client CalendarPage', () => {
     await view.user.click(dayButton)
 
     expect(api.getSlots).toHaveBeenCalledWith(MASTER_ID, target.format('YYYY-MM-DD'), SERVICE_ID)
-    await view.user.click(await screen.findByRole('button', { name: '12:30' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Выбрать время' }))
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
 
     expect(useBookingStore.getState()).toMatchObject({
       date: '2030-01-10',
@@ -119,7 +120,7 @@ describe('client CalendarPage', () => {
 
     expect(screen.getByText('Выберите время')).toBeInTheDocument()
     await waitFor(() => expect(api.getSlots).toHaveBeenCalledWith(MASTER_ID, '2030-01-10', SERVICE_ID))
-    expect(await screen.findByRole('button', { name: '12:30' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Выбрать время' })).toBeInTheDocument()
   })
 
   it('package session скрывает занятый slot и пишет canonical slot по индексу', async () => {
@@ -148,8 +149,9 @@ describe('client CalendarPage', () => {
     await view.user.click(dayButton)
     expect(await screen.findByText('Приём 2 из 2')).toBeInTheDocument()
     await waitFor(() => expect(api.getSlots).toHaveBeenCalled())
-    expect(screen.queryByRole('button', { name: '12:30' })).not.toBeInTheDocument()
-    await view.user.click(screen.getByRole('button', { name: '13:30' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Выбрать время' }))
+    expect(screen.getByRole('button', { name: 'Выбрать' })).toBeEnabled()
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
 
     expect(useBookingStore.getState().slots).toEqual([
       { date: '2030-01-10', time: '10:30' },

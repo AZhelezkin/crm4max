@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
@@ -157,7 +157,20 @@ async function selectRegularDateAndTime(view: ReturnType<typeof renderPage>, sel
   await view.user.click(formCard('Дата и время').getByRole('button', { name: /Дата/ }))
   await selectDate(view, selected)
   await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
-  await view.user.click(screen.getByRole('button', { name: time }))
+  await selectWheelTime(view, time)
+}
+
+async function selectWheelTime(view: ReturnType<typeof renderPage>, time: string) {
+  await view.user.click(screen.getByRole('button', { name: 'Выбрать время' }))
+  const [hour, minute] = time.split(':').map(Number)
+  const hours = screen.getByRole('listbox', { name: 'Часы' })
+  const minutes = screen.getByRole('listbox', { name: 'Минуты' })
+  const firstHour = Number(within(hours).getAllByRole('option')[0].textContent)
+  hours.scrollTop = (hour - firstHour) * 30
+  minutes.scrollTop = (minute / 15) * 30
+  fireEvent.scroll(hours)
+  fireEvent.scroll(minutes)
+  await view.user.click(screen.getByRole('button', { name: 'Выбрать' }))
 }
 
 async function completeRegularDraft(view: ReturnType<typeof renderPage>, selected: dayjs.Dayjs) {
@@ -241,9 +254,10 @@ describe('master CreateBookingPage', () => {
     await selectDate(view, dayjs())
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
 
-    expect(screen.queryByRole('button', { name: '12:30' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '16:00' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '16:15' })).toBeEnabled()
+    await view.user.click(screen.getByRole('button', { name: 'Выбрать время' }))
+    const hours = screen.getByRole('listbox', { name: 'Часы' })
+    expect(within(hours).queryByRole('option', { name: '12' })).not.toBeInTheDocument()
+    expect(within(hours).getByRole('option', { name: '16' })).toBeInTheDocument()
   })
 
   it('выбирает время вне графика только после подтверждения', async () => {
@@ -262,9 +276,7 @@ describe('master CreateBookingPage', () => {
     await selectDate(view, selectedDate)
 
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
-    expect(screen.getByRole('button', { name: '00:00' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: '23:00' })).toBeEnabled()
-    await view.user.click(screen.getByRole('button', { name: '08:00' }))
+    await selectWheelTime(view, '08:00')
 
     expect(api.getEffectiveWindows).toHaveBeenCalledWith(selectedDate.format('YYYY-MM-DD'))
     expect(screen.getByText('Вне рабочего графика')).toBeInTheDocument()
@@ -535,7 +547,7 @@ describe('master CreateBookingPage', () => {
 
     await selectRegularService(view)
     await view.user.click(formCard('Дата и время').getByRole('button', { name: /Время/ }))
-    await view.user.click(screen.getByRole('button', { name: '10:00' }))
+    await selectWheelTime(view, '10:00')
     await view.user.click(screen.getByRole('button', { name: 'Записать' }))
 
     await waitFor(() => expect(api.createBooking).toHaveBeenCalledOnce())
@@ -618,7 +630,7 @@ describe('master CreateBookingPage', () => {
     expect(await screen.findByText('Новая дата')).toBeInTheDocument()
 
     await selectDate(view, selectedDate)
-    await view.user.click(screen.getByRole('button', { name: '10:00' }))
+    await selectWheelTime(view, '10:00')
 
     expect(screen.getByText('Перенести запись')).toBeInTheDocument()
     expect(api.reschedule).not.toHaveBeenCalled()
@@ -647,7 +659,7 @@ describe('master CreateBookingPage', () => {
     })
     expect(await screen.findByText('Выберите время')).toBeInTheDocument()
 
-    await view.user.click(screen.getByRole('button', { name: '11:00' }))
+    await selectWheelTime(view, '11:00')
     const dialog = screen.getByText('Перенести запись').parentElement!
     await view.user.click(within(dialog).getByRole('button', { name: 'Перенести' }))
 
