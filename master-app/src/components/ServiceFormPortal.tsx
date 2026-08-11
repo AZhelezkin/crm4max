@@ -419,11 +419,26 @@ export default function ServiceFormPortal({
 // Segment-control «Одиночная / Абонемент» (Figma 9762:65203).
 // Контейнер h44 p4 rx16 surface-transparent gap4; кнопки flex-1 h36 rx12.
 // Активная — secondary-surface + interactive-element-accented (#F2F2F5);
-// неактивная — прозрачная + interactive-element (#BCBECC). Текст Callout 2.
+// неактивная — прозрачная + interactive-element (#BCBECC), disabled — muted tokens.
+// Текст Callout 2.
 function BookingModeTabs({ isPackage, onChange }: { isPackage: boolean; onChange: (v: boolean) => void }) {
   const tabs = [
-    { label: 'Одиночная', active: !isPackage, on: () => onChange(false) },
-    { label: 'Абонемент', active: isPackage, on: () => onChange(true) },
+    {
+      label: 'Одиночная',
+      active: !isPackage,
+      disabled: isPackage,
+      disabledReason: isPackage ? 'Тип существующего абонемента нельзя изменить' : undefined,
+      hint: undefined,
+      on: () => onChange(false),
+    },
+    {
+      label: 'Абонемент',
+      active: isPackage,
+      disabled: !isPackage,
+      disabledReason: !isPackage ? 'Создание абонементов временно недоступно' : undefined,
+      hint: !isPackage ? 'Временно недоступен' : undefined,
+      on: () => onChange(true),
+    },
   ]
   return (
     <div style={{
@@ -434,16 +449,30 @@ function BookingModeTabs({ isPackage, onChange }: { isPackage: boolean; onChange
         <button
           key={t.label}
           type="button"
+          disabled={t.disabled}
+          aria-label={t.disabledReason ? `${t.label}. ${t.disabledReason}` : t.label}
+          title={t.disabledReason}
           onClick={t.on}
           style={{
-            flex: 1, height: 36, borderRadius: 12, border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flex: 1, height: 36, borderRadius: 12, border: 'none', cursor: t.disabled ? 'default' : 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             ...text.callout2,
-            background: t.active ? 'var(--color-secondary-surface)' : 'transparent',
-            color: t.active ? 'var(--color-interactive-element-accented)' : 'var(--color-interactive-element)',
+            background: t.active
+              ? 'var(--color-secondary-surface)'
+              : t.disabled ? 'var(--color-secondary-surface-muted)' : 'transparent',
+            color: t.disabled
+              ? 'var(--color-interactive-element-muted)'
+              : t.active ? 'var(--color-interactive-element-accented)' : 'var(--color-interactive-element)',
           }}
         >
-          {t.label}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {t.hint && <Clock16 />}
+            {t.label}
+          </span>
+          {/* 20px callout2 + 16px caption = существующая высота кнопки 36px. */}
+          {t.hint && (
+            <span style={{ ...text.caption, color: 'var(--color-interactive-element-muted)' }}>{t.hint}</span>
+          )}
         </button>
       ))}
     </div>
@@ -456,6 +485,15 @@ function FolderIcon() {
   return (
     <svg width="24" height="24" viewBox="46 214 24 24" fill="none">
       <path d="M68 225V231C68 235 67 236 63 236H53C49 236 48 235 48 231V221C48 217 49 216 53 216H54.5C56 216 56.33 216.44 56.9 217.2L58.4 219.2C58.78 219.7 59 220 60 220H63C67 220 68 221 68 225Z" stroke="currentColor" strokeWidth="1.75" strokeMiterlimit="10" />
+    </svg>
+  )
+}
+
+function Clock16() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.71 15.18l-3.1-1.85c-.54-.32-.98-1.09-.98-1.72V7.51" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

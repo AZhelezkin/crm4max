@@ -15,9 +15,9 @@ export type MetricEventMap = {
   subscription_payment_redirected: { period: 'month' | 'year'; form: 'payment' | 'card_binding' }
   subscription_cancelled: Record<string, never>
   subscription_payment_returned: { result: 'success' | 'fail' }
-  master_booking_created: { booking_type: 'regular'; services_count: number; has_address: boolean; remind: boolean; has_overlap: boolean }
+  master_booking_created: { booking_type: 'regular' | 'series'; services_count: number; has_address: boolean; remind: boolean; has_overlap: boolean }
   master_package_created: { sessions_count: number; has_address: boolean; remind: boolean }
-  master_booking_create_failed: { booking_type: 'regular' | 'package'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
+  master_booking_create_failed: { booking_type: 'regular' | 'package' | 'series'; error_type: 'conflict' | 'validation' | 'network' | 'unknown' }
   client_master_opened: { source: ClientMasterSource }
   client_qr_scan_started: Record<string, never>
   client_qr_scan_completed: { result: 'valid' | 'invalid' | 'cancelled' }

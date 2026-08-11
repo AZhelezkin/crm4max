@@ -31,7 +31,15 @@ import { bookingRouteAddress, formatBookingAddress, yandexRouteUrl, type Destina
 import { openExternalLink } from '@/lib/bridge'
 import { BookingActionsButton, BookingActionsMenu, bookingActionsPosition, type BookingActionsPosition } from '@/components/BookingActionsMenu'
 import BookingAddressText from '@/components/BookingAddressText'
+import { FormCard, FormRow } from '@/components/BookingFormCard'
 import { metricErrorType, trackEvent } from '@/lib/metrics'
+import RepetitionFields, { type RepetitionMode } from '@/features/booking-series/RepetitionFields'
+import RecurrenceEditor from '@/features/booking-series/RecurrenceEditor'
+import SeriesCreationSuccess from '@/features/booking-series/SeriesCreationSuccess'
+import { useBookingSeriesGateway } from '@/features/booking-series/gateway'
+import { SeriesEditContextCard } from '@/features/booking-series/BookingSeriesEditPage'
+import { formatRecurrenceSummary, generateOccurrenceDates, validateRecurrenceRule } from '@/features/booking-series/recurrence'
+import type { BookingSeriesCreateResponse, BookingSeriesPreviewRequest, BookingSeriesPreviewResponse, BookingSeriesTemplate, RecurrenceRule } from '@/features/booking-series/types'
 import { normalizeOnlineMeetingLink } from '@/lib/onlineMeetingLink'
 
 dayjs.locale('ru')
@@ -52,6 +60,8 @@ const BOOKING_PLACE_LABELS: Record<BookingPlace, string> = {
   client: 'Выезд',
   online: 'Онлайн',
 }
+
+const SERIES_ONLINE_UNSUPPORTED_MESSAGE = 'Онлайн-запись пока недоступна для серии. Выберите другой формат или повторение «Один раз».'
 
 type PopoverPosition = { right: number; top?: number; bottom?: number }
 
@@ -81,6 +91,9 @@ type BookingSubscriptionDraft = {
   packageSlots: { date: string; time: string }[]
   weekdays: number[]
   weekTime: string
+  repetitionMode?: RepetitionMode
+  recurrenceRule?: RecurrenceRule | null
+  seriesIdempotencyKey?: string
 }
 
 // Шаг сетки свободного времени мастера (минуты).
@@ -125,6 +138,54 @@ function currentMasterWall(masterTimezone: string | null | undefined): dayjs.Day
   } catch {
     return dayjs().tz(DEFAULT_TZ)
   }
+}
+
+function createSeriesIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const bytes = new Uint8Array(16)
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes)
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256)
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = [...bytes].map((value) => value.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+function createInitialRecurrenceRule(date: string, time: string, masterTimezone: string | null | undefined): RecurrenceRule {
+  const startDate = date || currentMasterWall(masterTimezone).format('YYYY-MM-DD')
+  return {
+    startDate,
+    endDate: null,
+    intervalWeeks: 1,
+    timezone: masterTimezone || DEFAULT_TZ,
+    slots: [{ dayOfWeek: (dayjs(startDate).day() || 7) as 1 | 2 | 3 | 4 | 5 | 6 | 7, time }],
+  }
+}
+
+function seriesConflictPreview(error: unknown): BookingSeriesPreviewResponse | null {
+  const response = (error as {
+    response?: { data?: { error?: { code?: string; details?: { preview?: BookingSeriesPreviewResponse } } } }
+  }).response
+  return response?.data?.error?.code === 'SERIES_CONFLICTS'
+    ? response.data.error.details?.preview ?? null
+    : null
+}
+
+function seriesErrorCode(error: unknown): string | null {
+  return (error as { response?: { data?: { error?: { code?: string } } } }).response?.data?.error?.code ?? null
+}
+
+function seriesPreviewErrorMessage(error: unknown): string {
+  const response = (error as { response?: { data?: { error?: { message?: string } } } }).response
+  if (!response) return 'Нет связи с сервером. Проверьте подключение и повторите.'
+  return response.data?.error?.message ?? 'Не удалось проверить расписание. Повторите попытку.'
+}
+
+function previewFingerprint(request: BookingSeriesPreviewRequest): string {
+  return JSON.stringify(request)
 }
 
 // Дни недели (ISO 1=Пн … 7=Вс) для режима абонемента «По неделям».
@@ -197,6 +258,7 @@ export default function CreateBookingPage() {
   const upsertBooking = useBookingsStore((state) => state.upsertBooking)
   const invalidateBookings = useBookingsStore((state) => state.invalidate)
   const master = useAuthStore((s) => s.master)
+  const { enabled: seriesEnabled, gateway: seriesGateway } = useBookingSeriesGateway()
   const schedule = master?.schedule ?? null
   const homeVisit = !!master?.homeVisit
   const returningFromSubscription = (location.state as { subscriptionReturn?: boolean } | null)?.subscriptionReturn === true
@@ -211,10 +273,10 @@ export default function CreateBookingPage() {
   //  • { rescheduleId, serviceId } — перенос записи (сразу шаг даты),
   //  • { rescheduleId, serviceId, editTime, date } — изменить только время (сразу шаг времени, дата прежняя),
   //  • { client } — с карточки клиента (клиент предвыбран, флоу с шага выбора услуги).
-  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string } | null
+  const rescheduleInit = location.state as { rescheduleId?: string; serviceId?: string; client?: Client; editTime?: boolean; date?: string; seriesScope?: 'SINGLE' } | null
   const fixedDateFromSchedule = !rescheduleInit?.rescheduleId && !!rescheduleInit?.date
 
-  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'onlineLink' | 'success' | 'color'>(
+  const [step, setStep] = useState<'service' | 'date' | 'time' | 'package' | 'confirm' | 'client' | 'clientAdd' | 'address' | 'onlineLink' | 'success' | 'color' | 'recurrence'>(
     restoredDraft?.step ?? (rescheduleInit?.rescheduleId
       ? (rescheduleInit?.editTime ? 'time' : 'date')
       : 'confirm'),
@@ -252,6 +314,17 @@ export default function CreateBookingPage() {
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(restoredDraft?.selectedServiceIds ?? (rescheduleInit?.serviceId ? [rescheduleInit.serviceId] : []))
   const [date, setDate] = useState(restoredDraft?.date ?? rescheduleInit?.date ?? '')
   const [time, setTime] = useState(restoredDraft?.time ?? '')
+  const [repetitionMode, setRepetitionMode] = useState<RepetitionMode>(restoredDraft?.repetitionMode ?? 'single')
+  const [repetitionMenuOpen, setRepetitionMenuOpen] = useState(false)
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(restoredDraft?.recurrenceRule ?? null)
+  const [recurrenceEditorRule, setRecurrenceEditorRule] = useState<RecurrenceRule | null>(null)
+  const [seriesPreview, setSeriesPreview] = useState<BookingSeriesPreviewResponse | null>(null)
+  const [seriesPreviewFingerprint, setSeriesPreviewFingerprint] = useState<string | null>(null)
+  const [seriesPreviewError, setSeriesPreviewError] = useState<string | null>(null)
+  const [seriesReceipt, setSeriesReceipt] = useState<BookingSeriesCreateResponse | null>(null)
+  const [seriesIdempotencyKey, setSeriesIdempotencyKey] = useState(restoredDraft?.seriesIdempotencyKey ?? createSeriesIdempotencyKey)
+  const [seriesIdempotencyFingerprint, setSeriesIdempotencyFingerprint] = useState<string | null>(null)
+  const [seriesConflictWarn, setSeriesConflictWarn] = useState(false)
   const [remind, setRemind] = useState(restoredDraft?.remind ?? true)
   const [color, setColor] = useState<string>(restoredDraft?.color ?? BOOKING_COLORS[0])
   // Ручная длительность записи (null → сумма длительностей услуг). Мастер может выбрать
@@ -577,14 +650,66 @@ export default function CreateBookingPage() {
       ? { right, bottom: window.innerHeight - bounds.top + 6 }
       : { right, top: bounds.bottom + 6 })
   }
+  const recurrenceValid = recurrenceRule ? validateRecurrenceRule(recurrenceRule).valid : false
+  const seriesMode = seriesEnabled && repetitionMode === 'series'
+  const recurrenceSummary = recurrenceRule && recurrenceValid ? formatRecurrenceSummary(recurrenceRule) : ''
+
+  const buildSeriesTemplate = (): BookingSeriesTemplate | null => {
+    if (!selectedClient) return null
+    return {
+      clientId: selectedClient.clientId,
+      masterClientId: selectedClient.clientId ? null : selectedClient.id,
+      services: selectedServices.map((service) => ({
+        serviceId: service.id,
+        price: serviceOverrides[service.id]?.price ?? (service.isMisc && miscValid(service.id) ? miscKopecks(service.id) : null),
+      })),
+      totalPrice: manualTotal,
+      durationMinutes: durationMin,
+      clientAddress: outbound ? formatBookingAddress(address, addressDetails, addressComment) : null,
+      notes: null,
+      remind,
+      color,
+    }
+  }
+
+  const buildSeriesPreviewRequest = (rule: RecurrenceRule): BookingSeriesPreviewRequest | null => {
+    if (online) return null
+    const template = buildSeriesTemplate()
+    if (!master || !master.timezone || !template || selectedServices.length === 0 || !allMiscValid || durationMin <= 0) return null
+    return { masterId: master.id, template, rule }
+  }
+
+  const currentPreviewRequest = recurrenceRule && recurrenceValid ? buildSeriesPreviewRequest(recurrenceRule) : null
+  const currentPreviewFingerprint = currentPreviewRequest ? previewFingerprint(currentPreviewRequest) : null
+  const freshSeriesPreview = currentPreviewFingerprint && currentPreviewFingerprint === seriesPreviewFingerprint
+    ? seriesPreview
+    : null
+  const editorPreviewRequest = recurrenceEditorRule && validateRecurrenceRule(recurrenceEditorRule).valid
+    ? buildSeriesPreviewRequest(recurrenceEditorRule)
+    : null
+  const editorPreviewFingerprint = editorPreviewRequest ? previewFingerprint(editorPreviewRequest) : null
+  const editorSeriesPreview = editorPreviewFingerprint && editorPreviewFingerprint === seriesPreviewFingerprint
+    ? seriesPreview
+    : null
+  const dateTimeReady = seriesMode ? recurrenceValid && !!freshSeriesPreview : !!date && !!time
   const canSave = selectedServices.length > 0
-    && !!date
-    && !!time
+    && dateTimeReady
     && !!selectedClient
     && (!outbound || !!address.trim())
     && (!online || !!normalizedOnlineMeetingLink)
+    && (!seriesMode || !online)
     && allMiscValid
     && !saving
+
+  const selectBookingPlace = (value: BookingPlace) => {
+    setPlaceMenu(null)
+    if (value === 'online' && seriesMode) {
+      setError(SERIES_ONLINE_UNSUPPORTED_MESSAGE)
+      return
+    }
+    setBookingPlace(value)
+    setError(null)
+  }
 
   const openSubscriptionForDraft = (draftStep: BookingSubscriptionDraft['step']) => {
     if (!master) return
@@ -612,23 +737,112 @@ export default function CreateBookingPage() {
       packageSlots,
       weekdays,
       weekTime,
+      repetitionMode,
+      recurrenceRule,
+      seriesIdempotencyKey,
     })
     navigate('/subscription')
   }
 
+  const openRecurrenceEditor = () => {
+    setRepetitionMenuOpen(false)
+    if (online) {
+      setError(SERIES_ONLINE_UNSUPPORTED_MESSAGE)
+      return
+    }
+    setSeriesPreviewError(null)
+    setRecurrenceEditorRule(recurrenceRule ?? createInitialRecurrenceRule(date, time, master?.timezone))
+    setStep('recurrence')
+  }
+
+  const handleRepetitionMode = (mode: RepetitionMode) => {
+    if (mode === 'single') {
+      setRepetitionMode(mode)
+      setSeriesConflictWarn(false)
+      setError(null)
+      return
+    }
+    if (online) {
+      setRepetitionMenuOpen(false)
+      setError(SERIES_ONLINE_UNSUPPORTED_MESSAGE)
+      return
+    }
+    if (!master?.timezone) {
+      setError('Не удалось определить часовой пояс мастера. Обновите профиль и повторите.')
+      return
+    }
+    openRecurrenceEditor()
+  }
+
+  const previewOrSaveRecurrenceRule = async (rule: RecurrenceRule) => {
+    if (!validateRecurrenceRule(rule).valid) return
+    const request = buildSeriesPreviewRequest(rule)
+    if (!seriesGateway || !request) {
+      setSeriesPreviewError('Сначала выберите клиента и услуги и проверьте данные записи.')
+      return
+    }
+    const fingerprint = previewFingerprint(request)
+    if (seriesPreview && seriesPreviewFingerprint === fingerprint) {
+      const first = generateOccurrenceDates(rule)[0]
+      setRecurrenceRule(rule)
+      setRecurrenceEditorRule(null)
+      setRepetitionMode('series')
+      if (first) { setDate(first.date); setTime(first.time) }
+      setSeriesPreviewError(null)
+      setStep('confirm')
+      return
+    }
+    setRecurrenceEditorRule(rule)
+    setSeriesPreview(null)
+    setSeriesPreviewFingerprint(null)
+    setSeriesPreviewError(null)
+    try {
+      const preview = await seriesGateway.preview(request)
+      setSeriesPreview(preview)
+      setSeriesPreviewFingerprint(fingerprint)
+    } catch (previewError) {
+      setSeriesPreviewError(seriesPreviewErrorMessage(previewError))
+    }
+  }
+
   const handleSave = async (force = false) => {
-    if (!master || selectedServices.length === 0 || !date || !time || !selectedClient) return
+    if (!master || selectedServices.length === 0 || !selectedClient) return
+    if (seriesMode && online) { setError(SERIES_ONLINE_UNSUPPORTED_MESSAGE); return }
+    if (seriesMode && (!seriesGateway || !recurrenceRule || !recurrenceValid || !currentPreviewRequest || !freshSeriesPreview)) return
+    if (!seriesMode && (!date || !time)) return
     if (outbound && !address.trim()) return
     if (online && !normalizedOnlineMeetingLink) return
     if (!allMiscValid) return
     // Истёк триал / не оплачено → вместо подтверждения записи экран «Подписка».
     if (subState && !subState.onlineBookingAvailable) { openSubscriptionForDraft('confirm'); return }
+    if (seriesMode && !force && (freshSeriesPreview?.warningsCount ?? 0) > 0) { setSeriesConflictWarn(true); return }
     // Пересечение — предупреждаем один раз, затем разрешаем (allowOverlap на бэке).
-    if (!force && hasOverlap) { setOverlapWarn(true); return }
+    if (!seriesMode && !force && hasOverlap) { setOverlapWarn(true); return }
     setOverlapWarn(false)
+    setSeriesConflictWarn(false)
     setSaving(true)
     setError(null)
     try {
+      if (seriesMode && seriesGateway && currentPreviewRequest) {
+        const fingerprint = previewFingerprint(currentPreviewRequest)
+        const idempotencyKey = seriesIdempotencyFingerprint && seriesIdempotencyFingerprint !== fingerprint
+          ? createSeriesIdempotencyKey()
+          : seriesIdempotencyKey
+        if (idempotencyKey !== seriesIdempotencyKey) setSeriesIdempotencyKey(idempotencyKey)
+        setSeriesIdempotencyFingerprint(fingerprint)
+        const receipt = await seriesGateway.create({ ...currentPreviewRequest, allowConflicts: force }, idempotencyKey)
+        invalidateBookings()
+        trackEvent('master_booking_created', {
+          booking_type: 'series',
+          services_count: selectedServices.length,
+          has_address: outbound && Boolean(address.trim()),
+          remind,
+          has_overlap: (freshSeriesPreview?.warningsCount ?? 0) > 0,
+        })
+        setSeriesReceipt(receipt)
+        setStep('success')
+        return
+      }
       // Цена услуги в заказе: правка мастера, иначе ручная сумма «Прочее», иначе цена каталога.
       const services = selectedServices.map((s) => ({
         serviceId: s.id,
@@ -667,7 +881,20 @@ export default function CreateBookingPage() {
       setCreatedBooking(booking)
       setStep('success')
     } catch (e) {
-      trackEvent('master_booking_create_failed', { booking_type: 'regular', error_type: metricErrorType(e) })
+      const conflictPreview = seriesConflictPreview(e)
+      if (seriesMode && conflictPreview && currentPreviewRequest) {
+        setSeriesPreview(conflictPreview)
+        setSeriesPreviewFingerprint(previewFingerprint(currentPreviewRequest))
+        setSeriesConflictWarn(true)
+        return
+      }
+      if (seriesMode && seriesErrorCode(e) === 'IDEMPOTENCY_KEY_REUSED') {
+        setSeriesIdempotencyKey(createSeriesIdempotencyKey())
+        setSeriesIdempotencyFingerprint(null)
+        setError('Данные серии изменились. Проверьте расписание и повторите создание.')
+        return
+      }
+      trackEvent('master_booking_create_failed', { booking_type: seriesMode ? 'series' : 'regular', error_type: metricErrorType(e) })
       console.error('[booking] create failed', e)
       setError('Не удалось создать запись. Попробуйте ещё раз.')
     } finally {
@@ -777,7 +1004,8 @@ export default function CreateBookingPage() {
   const handleCancelBooking = async () => {
     if (!createdBooking) return
     try {
-      upsertBooking(await bookingsApi.cancel(createdBooking.id))
+      const updated = await bookingsApi.cancel(createdBooking.id)
+      if (updated) upsertBooking(updated)
     } catch (e) {
       console.error('[booking] cancel failed', e)
     }
@@ -932,6 +1160,7 @@ export default function CreateBookingPage() {
           }}
         />
         <div style={{ flex: 1, padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {rescheduleInit?.seriesScope === 'SINGLE' && <SeriesEditContextCard scope="SINGLE" />}
           {months.map((monthStart) => (
             <div key={monthStart.format('YYYY-MM')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ paddingLeft: 6 }}>
@@ -1040,6 +1269,7 @@ export default function CreateBookingPage() {
           else setStep('confirm')
         }} />
         <div style={{ flex: 1, padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {rescheduleInit?.seriesScope === 'SINGLE' && <SeriesEditContextCard scope="SINGLE" />}
           {fixedDateFromSchedule && packageSessionIndex === null ? (
             <div style={{ ...listItemStyle, gap: 12, cursor: 'default' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1340,7 +1570,7 @@ export default function CreateBookingPage() {
             pos={placeMenu}
             value={bookingPlace}
             onClose={() => setPlaceMenu(null)}
-            onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
+            onSelect={selectBookingPlace}
           />
         )}
       </div>
@@ -1469,6 +1699,20 @@ export default function CreateBookingPage() {
     )
   }
 
+  if (step === 'recurrence') {
+    return (
+      <RecurrenceEditor
+        initialRule={recurrenceEditorRule ?? recurrenceRule ?? createInitialRecurrenceRule(date, time, master?.timezone)}
+        schedule={schedule}
+        preview={editorSeriesPreview}
+        previewRequired
+        errorMessage={seriesPreviewError}
+        onBack={() => { setRecurrenceEditorRule(null); setSeriesPreviewError(null); setStep('confirm') }}
+        onSave={(rule) => previewOrSaveRecurrenceRule(rule)}
+      />
+    )
+  }
+
   if (step === 'address') {
     return (
       <BookingAddressEditor
@@ -1499,6 +1743,18 @@ export default function CreateBookingPage() {
 
   // ─── Шаг 7: успех «Запись создана!» (макет 8746-41315) ──────────────────────
   if (step === 'success') {
+    if (seriesReceipt && recurrenceRule && selectedClient) {
+      return (
+        <SeriesCreationSuccess
+          receipt={seriesReceipt}
+          rule={recurrenceRule}
+          clientName={selectedClient.name}
+          serviceNames={selectedServices.map((service) => service.name)}
+          onOpenSeries={() => navigate(`/booking-series/${seriesReceipt.series.id}`)}
+          onClose={() => navigate('/bookings')}
+        />
+      )
+    }
     const badge = PAYMENT_BADGE[createdBooking?.paymentStatus ?? 'UNPAID']
     const addressText = outbound ? formatBookingAddress(address, addressDetails, addressComment) : master?.location ?? ''
     const successOnlineMeetingLink = createdBooking?.onlineMeetingLink
@@ -1761,8 +2017,20 @@ export default function CreateBookingPage() {
               onClick={() => { setOnlineLinkReturnStep('confirm'); setStep('onlineLink') }}
             />
           )}
-          <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={() => setStep('date')} />
-          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={() => setStep(date ? 'time' : 'date')} />
+          <FormRow label="Дата" value={date ? dayjs(date).format('D MMMM, dd') : 'Выбрать'} prompt={!date} onClick={seriesMode ? openRecurrenceEditor : () => setStep('date')} />
+          <FormRow label="Время" value={time || 'Выбрать'} prompt={!time} onClick={seriesMode ? openRecurrenceEditor : () => setStep(date ? 'time' : 'date')} />
+          {seriesEnabled && !rescheduleId && (
+            <RepetitionFields
+              mode={repetitionMode}
+              menuOpen={repetitionMenuOpen}
+              summary={recurrenceSummary}
+              warningsCount={freshSeriesPreview?.warningsCount ?? 0}
+              reviewRequired={seriesMode && !!recurrenceRule && !freshSeriesPreview}
+              onMenuOpenChange={setRepetitionMenuOpen}
+              onModeChange={handleRepetitionMode}
+              onEditSchedule={openRecurrenceEditor}
+            />
+          )}
           <FormRow
             label="Длительность"
             value={durationMin > 0 ? formatDuration(durationMin) : '0 мин'}
@@ -1826,6 +2094,17 @@ export default function CreateBookingPage() {
         />
       )}
 
+      {seriesConflictWarn && (
+        <ConfirmDialog
+          title="Есть конфликты"
+          message={`В расписании отмечено конфликтов: ${freshSeriesPreview?.warningsCount ?? 0}. Создать серию всё равно?`}
+          confirmLabel="Создать всё равно"
+          danger={false}
+          onConfirm={() => { void handleSave(true) }}
+          onCancel={() => setSeriesConflictWarn(false)}
+        />
+      )}
+
       {/* Редактирование услуги для этого заказа (макет 10138-40554). */}
       {editingServiceId && (() => {
         const s = selectedServices.find((x) => x.id === editingServiceId)
@@ -1857,60 +2136,11 @@ export default function CreateBookingPage() {
           pos={placeMenu}
           value={bookingPlace}
           onClose={() => setPlaceMenu(null)}
-          onSelect={(value) => { setBookingPlace(value); setPlaceMenu(null) }}
+          onSelect={selectBookingPlace}
         />
       )}
     </div>
   )
-}
-
-// Карточка-группа формы-сводки (макет 10111-37975 «listItem»): полупрозрачная
-// поверхность, скруг. 20, мягкая тень «Card Soft», заголовок по центру + разделитель.
-function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ width: '100%', background: 'var(--color-surface-transparent)', borderRadius: 20, boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, borderBottom: '1px solid var(--color-secondary-surface-muted)' }}>
-        <span style={{ ...text.callout1, color: 'var(--color-on-surface)' }}>{title}</span>
-      </div>
-      {children}
-    </div>
-  )
-}
-
-// Строка карточки: лейбл слева (Body2, onSurfaceSecondary), значение справа
-// (Body2; «Выбрать» → primarySurface, иначе onSurface) + стрелка. В макете стрелка
-// у всех строк, кроме «Стоимости» (noArrow). Последняя строка карточки — без разделителя.
-function FormRow({ label, value, prompt, right, onClick, noArrow, last, stacked, menuOpen }: {
-  label: string
-  value?: string
-  prompt?: boolean
-  right?: React.ReactNode
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
-  noArrow?: boolean
-  last?: boolean
-  stacked?: boolean
-  menuOpen?: boolean
-}) {
-  const rowStyle: React.CSSProperties = {
-    width: '100%', display: 'flex', flexDirection: stacked ? 'column' : 'row', alignItems: stacked ? 'stretch' : 'center', justifyContent: 'space-between', gap: 8,
-    padding: 16, background: 'none', border: 'none',
-    borderBottom: last ? 'none' : '1px solid var(--color-secondary-surface-muted)',
-    cursor: onClick ? 'pointer' : 'default', textAlign: 'left',
-  }
-  const inner = (
-    <>
-      <span style={{ ...text.body2, color: 'var(--color-on-surface-secondary)', flex: stacked ? undefined : 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flex: 1, minWidth: 0 }}>
-        {right ?? (
-          <span style={{ ...text.body2, color: prompt ? 'var(--color-primary-surface)' : 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>{value}</span>
-        )}
-        {!noArrow && <ArrowRightIcon />}
-      </span>
-    </>
-  )
-  return onClick
-    ? <button type="button" onClick={onClick} aria-haspopup={menuOpen === undefined ? undefined : 'menu'} aria-expanded={menuOpen} style={rowStyle}>{inner}</button>
-    : <div style={rowStyle}>{inner}</div>
 }
 
 function BookingPlaceMenu({ pos, value, onClose, onSelect }: {
@@ -2000,7 +2230,6 @@ function BookingPlaceMenu({ pos, value, onClose, onSelect }: {
     document.body,
   )
 }
-
 const listItemStyle: React.CSSProperties = {
   width: '100%',
   display: 'flex',
@@ -2012,19 +2241,6 @@ const listItemStyle: React.CSSProperties = {
   border: 'none',
   cursor: 'pointer',
   textAlign: 'left',
-}
-
-const chipStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 4,
-  background: 'var(--color-surface-transparent)',
-  borderRadius: 18,
-  padding: '12px 8px',
-  border: 'none',
-  cursor: 'pointer',
-  color: 'var(--color-active-element)',
 }
 
 const PAYMENT_BADGE: Record<Booking['paymentStatus'], { label: string; bg: string; color: string }> = {

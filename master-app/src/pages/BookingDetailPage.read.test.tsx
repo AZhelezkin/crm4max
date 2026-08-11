@@ -158,7 +158,7 @@ describe('master BookingDetailPage read state', () => {
   })
 
   it('передаёт exact reschedule и edit-time route state', async () => {
-    const booking = createMasterBooking({ id: 'booking-route', date: '2026-08-05' })
+    const booking = createMasterBooking({ id: 'booking-route', date: '2099-08-05' })
     mocks.getById.mockResolvedValue(booking)
     const reschedule = renderPage('booking-route')
     await reschedule.user.click(await screen.findByRole('button', { name: 'Изменить дату' }))
@@ -177,7 +177,7 @@ describe('master BookingDetailPage read state', () => {
       rescheduleId: 'booking-route',
       serviceId: booking.service.id,
       editTime: true,
-      date: '2026-08-05',
+      date: '2099-08-05',
     })
   })
 
@@ -247,6 +247,8 @@ describe('master BookingDetailPage read state', () => {
 
     expect(await screen.findByRole('button', { name: 'Отметить как оплачено' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Напомнить об оплате' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Изменить дату' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Изменить время' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Действия' })).not.toBeInTheDocument()
     expect(screen.queryByText('Напомнить о записи')).not.toBeInTheDocument()
     expect(screen.queryByText('Перенести')).not.toBeInTheDocument()

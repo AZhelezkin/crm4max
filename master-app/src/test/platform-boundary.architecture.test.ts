@@ -21,6 +21,7 @@ const WEB_APP_ALLOWLIST = [
   'src/client/components/BottomNav.tsx',
   'src/client/pages/BookingDetailPage.tsx',
   'src/client/pages/ConfirmPage.tsx',
+  'src/client/pages/MasterAddressPage.tsx',
   'src/client/pages/MasterCardPage.tsx',
   'src/client/pages/PackageBookingPage.tsx',
   'src/client/pages/QRScanPage.tsx',
@@ -285,7 +286,7 @@ describe('platform provider boundary architecture', () => {
     const actual = filesWithProviderWebAppAccess()
 
     assertExactLocations('provider WebApp access', actual, WEB_APP_ALLOWLIST)
-    expect(actual).toHaveLength(20)
+    expect(actual).toHaveLength(21)
   })
 
   it('изолирует tracked legacy JavaScript shadows от production imports', () => {

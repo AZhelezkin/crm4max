@@ -29,6 +29,7 @@ interface Props {
  */
 export default function ServiceEditorPortal({ target, onClose, onSaved }: Props) {
   const editService = target?.mode === 'edit' ? target.service : null
+  const isExistingPackage = (editService?.sessionsCount ?? 1) > 1
 
   const [showPopular, setShowPopular] = useState(false)
   const [name, setName] = useState('')
@@ -66,6 +67,11 @@ export default function ServiceEditorPortal({ target, onClose, onSaved }: Props)
   const save = async () => {
     if (!name.trim()) return
     const firstPhotoUrl = getFirstUploadedWorkPhotoUrl(workPhotos)
+    // Пока создание абонементов выключено, тип услуги неизменяем. Для уже
+    // существующего абонемента сохраняем выбранное число приёмов без нормализации.
+    const savedSessionsCount = editService && editService.sessionsCount > 1
+      ? (sessionsCount > 1 ? sessionsCount : editService.sessionsCount)
+      : 1
     const data = {
       name: name.trim(),
       description: desc || null,
@@ -73,7 +79,7 @@ export default function ServiceEditorPortal({ target, onClose, onSaved }: Props)
       duration: Number(duration) || 30,
       // null (а не undefined) — чтобы при выключении скидки она обнулялась в БД.
       discountPercent: discountEnabled ? discountPercent : null,
-      sessionsCount: isPackage ? sessionsCount : 1,
+      sessionsCount: savedSessionsCount,
       photo: firstPhotoUrl || null,
     }
     if (editService) {
@@ -125,7 +131,9 @@ export default function ServiceEditorPortal({ target, onClose, onSaved }: Props)
         discountPercent={discountPercent}
         onDiscountPercentChange={setDiscountPercent}
         isPackage={isPackage}
-        onIsPackageChange={setIsPackage}
+        onIsPackageChange={(nextIsPackage) => {
+          if (nextIsPackage === isExistingPackage) setIsPackage(nextIsPackage)
+        }}
         sessionsCount={sessionsCount}
         onSessionsCountChange={setSessionsCount}
         workPhotos={workPhotos}

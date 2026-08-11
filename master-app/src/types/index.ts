@@ -90,6 +90,16 @@ export interface BookingServiceItem {
   order: number
 }
 
+export interface BookingSeriesReference {
+  id: string
+  status: 'ACTIVE' | 'ENDED' | 'CANCELLED'
+  version: number
+  isException: boolean
+  originalDate: string
+  originalTime: string
+  summary: string
+}
+
 export interface Booking {
   id: string
   date: string           // "2025-03-25"
@@ -116,6 +126,8 @@ export interface Booking {
   /** Все услуги записи (мультиуслуги). Пусто → одиночная услуга (service). */
   services: BookingServiceItem[]
   payments: Payment[]
+  /** null/undefined у разовой записи; undefined допустим до включения backend feature. */
+  series?: BookingSeriesReference | null
 }
 
 /** Сеанс внутри пакета (курса) — лёгкая строка Booking без вложенных связей. */

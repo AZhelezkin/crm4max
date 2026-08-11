@@ -661,16 +661,28 @@ export default function HomePage() {
           busy={menuBusy}
           onClose={() => setMenu(null)}
           onRemind={() => { void handleRemind(menu.booking) }}
-          onRemindPayment={dayjs(`${menu.booking.date}T${menu.booking.time}`).add(bookingDuration(menu.booking), 'minute').isBefore(dayjs())
+          onRemindPayment={menu.booking.paymentStatus !== 'PAID' && dayjs(`${menu.booking.date}T${menu.booking.time}`).add(bookingDuration(menu.booking), 'minute').isBefore(dayjs())
             ? () => { void handleRemindPayment(menu.booking) }
             : undefined}
           onEdit={() => { const id = menu.booking.id; setMenu(null); navigate(`/bookings/${id}`) }}
           onReschedule={() => {
             const b = menu.booking
             setMenu(null)
+            if (b.series) {
+              navigate(`/bookings/${b.id}`, { state: { seriesIntent: 'date' } })
+              return
+            }
             navigate('/bookings/new', { state: { rescheduleId: b.id, serviceId: b.service.id } })
           }}
-          onCancel={() => { const b = menu.booking; setMenu(null); setConfirmCancel(b) }}
+          onCancel={() => {
+            const b = menu.booking
+            setMenu(null)
+            if (b.series) {
+              navigate(`/bookings/${b.id}`, { state: { seriesIntent: 'cancel' } })
+              return
+            }
+            setConfirmCancel(b)
+          }}
         />
       )}
 

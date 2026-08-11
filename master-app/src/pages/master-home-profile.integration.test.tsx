@@ -466,4 +466,49 @@ describe('master HomePage', () => {
     expect(screen.queryByRole('button', { name: 'Напомнить об оплате' })).not.toBeInTheDocument()
   })
 
+  it('не показывает напоминание об оплате для оплаченной записи', async () => {
+    const booking = createMasterBooking({
+      id: 'booking-paid',
+      date: TODAY,
+      paymentStatus: 'PAID',
+    })
+    api.listBookings.mockResolvedValue([booking])
+    setMaster(createMasterProfile({ services: [booking.service] }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с записью' }))
+
+    expect(screen.getByRole('button', { name: 'Напомнить клиенту' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Напомнить об оплате' })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['Перенести', 'date'],
+    ['Отменить', 'cancel'],
+  ] as const)('%s серии передаёт действие в scope-dialog карточки записи', async (action, seriesIntent) => {
+    const booking = createMasterBooking({
+      id: `booking-series-${seriesIntent}`,
+      date: TODAY,
+      series: {
+        id: 'series-home',
+        status: 'ACTIVE',
+        version: 1,
+        isException: false,
+        originalDate: TODAY,
+        originalTime: '10:00',
+        summary: 'Каждую неделю',
+      },
+    })
+    api.listBookings.mockResolvedValue([booking])
+    setMaster(createMasterProfile({ services: [booking.service] }))
+    const view = renderAtRoute(<HomePage />)
+
+    await view.user.click(await screen.findByRole('button', { name: 'Действия с записью' }))
+    await view.user.click(screen.getByRole('button', { name: action }))
+
+    expect(view.getLocation().pathname).toBe(`/bookings/${booking.id}`)
+    expect(view.getLocation().state).toEqual({ seriesIntent })
+    expect(api.cancelBooking).not.toHaveBeenCalled()
+  })
+
 })

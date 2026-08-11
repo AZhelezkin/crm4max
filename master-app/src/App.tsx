@@ -30,6 +30,8 @@ import SchedulePage from '@/pages/SchedulePage'
 import ServicesPage from '@/pages/ServicesPage'
 import BookingDetailPage from '@/pages/BookingDetailPage'
 import CreateBookingPage from '@/pages/CreateBookingPage'
+import BookingSeriesDetailPage from '@/features/booking-series/BookingSeriesDetailPage'
+import BookingSeriesEditPage from '@/features/booking-series/BookingSeriesEditPage'
 import PaymentSettingsPage from '@/pages/PaymentSettingsPage'
 import ShareLinkPage from '@/pages/ShareLinkPage'
 import OtherPage from '@/pages/OtherPage'
@@ -361,6 +363,8 @@ function MasterApp() {
           <Route path="/swipe-test" element={<SwipeTestPage />} />
           <Route path="/bookings/new" element={<CreateBookingPage />} />
           <Route path="/bookings/:id" element={<BookingDetailPage />} />
+          <Route path="/booking-series/:seriesId" element={<BookingSeriesDetailPage />} />
+          <Route path="/booking-series/:seriesId/edit" element={<BookingSeriesEditPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/about" element={<AboutMePage />} />
           <Route path="/about-platform" element={<AboutPlatformPage />} />

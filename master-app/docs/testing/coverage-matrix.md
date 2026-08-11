@@ -79,6 +79,8 @@
 | `/income` | `PaymentsPage` | P0 |
 | `/bookings/new` | `CreateBookingPage` | P0 |
 | `/bookings/:id` | `BookingDetailPage` | P0 |
+| `/booking-series/:seriesId` | `BookingSeriesDetailPage` | P0 |
+| `/booking-series/:seriesId/edit` | `BookingSeriesEditPage` | P0 |
 | `/settings` | `SettingsPage` | P1 |
 | `/about` | `AboutMePage` | P1 |
 | `/about-platform` | `AboutPlatformPage` (из «Другое») | P1 |
@@ -103,6 +105,7 @@
 |---|---|---:|
 | `/` | `HomeRoute` → recent masters, QR or master profile | P0 |
 | `/masters` | `RecentMastersPage` | P1 |
+| `/master/address` | `MasterAddressPage` | P0 |
 | `/qr` | `QRScanPage` | P0 |
 | `/book/categories` | compatibility redirect to `/book/services` | P1 |
 | `/book/services` | `ServiceSelectPage` | P0 |
@@ -182,6 +185,7 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/client/api/bookings.api.ts#bookingsApi.reschedule`
 - `src/client/api/bookings.api.ts#bookingsApi.updateReminder`
 - `src/client/api/masters.api.ts#mastersApi.getAvailability`
+- `src/client/api/masters.api.ts#mastersApi.getAddressDetails`
 - `src/client/api/masters.api.ts#mastersApi.checkClientAccess`
 - `src/client/api/masters.api.ts#mastersApi.getById`
 - `src/client/api/masters.api.ts#mastersApi.getRecentMasters`

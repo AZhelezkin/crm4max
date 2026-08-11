@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 export interface WheelPickerOption {
   value: string
   label: string
+  tone?: 'default' | 'warning' | 'muted'
 }
 
 // Типовой picker проекта (Figma 9762:65897): bottom-sheet с iOS-колесом + кнопка «Выбрать».
@@ -48,14 +49,18 @@ export default function WheelPicker({ open, value, options, onSelect, onClose }:
   const confirm = () => { onSelect(options[centerIdx]?.value ?? value); onClose() }
 
   // Размер/тусклость ряда по расстоянию от центра (макет: 23/18/14/12).
-  const rowStyle = (dist: number): CSSProperties => ({
+  const rowStyle = (dist: number, tone: WheelPickerOption['tone']): CSSProperties => ({
     height: ROW_H,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     scrollSnapAlign: 'center',
     fontSize: dist === 0 ? 23 : dist === 1 ? 18 : dist === 2 ? 14 : 12,
     lineHeight: 1,
     fontWeight: dist === 0 ? 600 : 400,
-    color: 'var(--color-on-surface)',
+    color: tone === 'warning'
+      ? 'var(--color-warning-surface-accented)'
+      : tone === 'muted'
+        ? 'var(--color-on-surface-muted)'
+        : 'var(--color-on-surface)',
     opacity: dist === 0 ? 1 : dist === 1 ? 0.85 : dist === 2 ? 0.72 : 0.6,
     whiteSpace: 'nowrap',
     padding: '0 24px',
@@ -105,7 +110,7 @@ export default function WheelPicker({ open, value, options, onSelect, onClose }:
               <div
                 key={o.value}
                 onClick={() => scrollRef.current?.scrollTo({ top: i * ROW_H, behavior: 'smooth' })}
-                style={rowStyle(Math.abs(i - centerIdx))}
+                style={rowStyle(Math.abs(i - centerIdx), o.tone)}
               >
                 {o.label}
               </div>

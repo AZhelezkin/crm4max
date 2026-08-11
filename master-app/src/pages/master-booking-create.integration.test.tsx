@@ -9,6 +9,8 @@ import { createMasterProfile } from '@/test/fixtures/masters'
 import { createMasterService } from '@/test/fixtures/services'
 import { renderAtRoute } from '@/test/render'
 import type { Booking, Client } from '@/types'
+import { BookingSeriesGatewayProvider, type BookingSeriesGateway } from '@/features/booking-series/gateway'
+import type { BookingSeriesCreateResponse, BookingSeriesPreviewResponse } from '@/features/booking-series/types'
 
 const api = vi.hoisted(() => ({
   listServices: vi.fn(),
@@ -26,6 +28,12 @@ const api = vi.hoisted(() => ({
   confirmPayment: vi.fn(),
   openAddToCalendar: vi.fn(),
   scrollPageTop: vi.fn(),
+  previewSeries: vi.fn(),
+  createSeries: vi.fn(),
+  getSeries: vi.fn(),
+  previewSeriesChange: vi.fn(),
+  updateSeries: vi.fn(),
+  cancelSeries: vi.fn(),
 }))
 
 vi.mock('@/api/services.api', () => ({ servicesApi: { list: api.listServices } }))
@@ -94,6 +102,15 @@ const existingClient = createMasterClient({
   phone: '+79990000002',
 })
 
+const seriesGateway = {
+  preview: api.previewSeries,
+  create: api.createSeries,
+  get: api.getSeries,
+  previewChange: api.previewSeriesChange,
+  update: api.updateSeries,
+  cancel: api.cancelSeries,
+} as unknown as BookingSeriesGateway
+
 function deferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((next) => {
@@ -105,6 +122,7 @@ function deferred<T>() {
 function setMaster() {
   const profile = createMasterProfile({
     homeVisit: false,
+    timezone: 'Europe/Moscow',
     services: [regularService, packageService],
   })
   const master = {
@@ -122,8 +140,13 @@ function setMaster() {
   return master
 }
 
-function renderPage(state?: Record<string, unknown>) {
-  return renderAtRoute(<CreateBookingPage />, {
+function renderPage(state?: Record<string, unknown>, bookingSeriesEnabled = false) {
+  const page = bookingSeriesEnabled ? (
+    <BookingSeriesGatewayProvider enabled gateway={seriesGateway}>
+      <CreateBookingPage />
+    </BookingSeriesGatewayProvider>
+  ) : <CreateBookingPage />
+  return renderAtRoute(page, {
     entries: [{ pathname: '/bookings/new', state }],
   })
 }
@@ -201,6 +224,42 @@ function bookingResult(date: string, client = existingClient): Booking {
 
 function nextBookableDate() {
   return dayjs().add(1, 'day').startOf('day')
+}
+
+function previewResponse(date: string, time = '10:00', warningsCount = 0): BookingSeriesPreviewResponse {
+  return {
+    occurrences: [{ date, time, warnings: [] }],
+    previewLimit: 12,
+    estimatedTotalOccurrences: null,
+    materializationOccurrences: 1,
+    warningsCount,
+  }
+}
+
+function createSeriesResponse(date: string): BookingSeriesCreateResponse {
+  return {
+    series: {
+      id: 'series-created',
+      status: 'ACTIVE',
+      version: 1,
+      timezone: 'Europe/Moscow',
+      startDate: date,
+      endDate: null,
+      rule: {
+        intervalWeeks: 1,
+        slots: [{ dayOfWeek: (dayjs(date).day() || 7) as 1 | 2 | 3 | 4 | 5 | 6 | 7, time: '10:00' }],
+      },
+    },
+    firstBookingId: 'series-booking-first',
+    materializedCount: 1,
+    warnings: [],
+  }
+}
+
+async function openSeriesEditor(view: ReturnType<typeof renderPage>) {
+  await view.user.click(formCard('Дата и время').getByRole('button', { name: /Повторение/ }))
+  await view.user.click(screen.getByRole('option', { name: 'Несколько' }))
+  expect(await screen.findByText('Расписание')).toBeInTheDocument()
 }
 
 function nextWeekdaySlots(isoWeekday: number, count: number, time: string) {
@@ -571,6 +630,124 @@ describe('master CreateBookingPage', () => {
       date: selectedDate.format('YYYY-MM-DD'),
       serviceId: regularService.id,
     })
+  })
+
+  it('не коммитит режим серии при возврате из первого редактора', async () => {
+    const selectedDate = nextBookableDate()
+    const view = renderPage(undefined, true)
+    await completeRegularDraft(view, selectedDate)
+
+    await openSeriesEditor(view)
+    await view.user.click(screen.getByRole('button', { name: 'Назад' }))
+
+    expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Разовая/ })).toBeInTheDocument()
+    expect(api.previewSeries).not.toHaveBeenCalled()
+    expect(api.createSeries).not.toHaveBeenCalled()
+  })
+
+  it('не открывает редактор серии для онлайн-записи', async () => {
+    const selectedDate = nextBookableDate()
+    const view = renderPage(undefined, true)
+    await completeRegularDraft(view, selectedDate)
+    await selectBookingPlace(view, 'Онлайн')
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Повторение/ }))
+    await view.user.click(screen.getByRole('option', { name: 'Несколько' }))
+
+    expect(await screen.findByText(/Онлайн-запись пока недоступна для серии/)).toBeInTheDocument()
+    expect(screen.queryByText('Расписание')).not.toBeInTheDocument()
+    expect(formCard('Дата и время').getByRole('button', { name: /Где/ })).toHaveTextContent('Онлайн')
+    expect(api.previewSeries).not.toHaveBeenCalled()
+  })
+
+  it('не переключает настроенную серию в онлайн-формат', async () => {
+    const selectedDate = nextBookableDate()
+    api.previewSeries.mockResolvedValue(previewResponse(selectedDate.format('YYYY-MM-DD')))
+    const view = renderPage(undefined, true)
+    await completeRegularDraft(view, selectedDate)
+    await openSeriesEditor(view)
+    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
+
+    await selectBookingPlace(view, 'Онлайн')
+
+    expect(await screen.findByText(/Онлайн-запись пока недоступна для серии/)).toBeInTheDocument()
+    expect(formCard('Дата и время').getByRole('button', { name: /Где/ })).toHaveTextContent('Принимаю у себя')
+    expect(formCard('Дата и время').queryByRole('button', { name: /Ссылка/ })).not.toBeInTheDocument()
+  })
+
+  it('создаёт серию только после authoritative preview с точным Max client identity', async () => {
+    const selectedDate = nextBookableDate()
+    const date = selectedDate.format('YYYY-MM-DD')
+    api.previewSeries.mockResolvedValue(previewResponse(date))
+    api.createSeries.mockResolvedValue(createSeriesResponse(date))
+    const view = renderPage(undefined, true)
+    await completeRegularDraft(view, selectedDate)
+    await openSeriesEditor(view)
+
+    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+
+    await waitFor(() => expect(api.previewSeries).toHaveBeenCalledOnce())
+    expect(api.previewSeries).toHaveBeenCalledWith({
+      masterId: useAuthStore.getState().master!.id,
+      template: {
+        clientId: existingClient.clientId,
+        masterClientId: null,
+        services: [{ serviceId: regularService.id, price: null }],
+        totalPrice: null,
+        durationMinutes: 60,
+        clientAddress: null,
+        notes: null,
+        remind: true,
+        color: '#1F9432',
+      },
+      rule: {
+        startDate: date,
+        endDate: null,
+        intervalWeeks: 1,
+        timezone: 'Europe/Moscow',
+        slots: [{ dayOfWeek: (selectedDate.day() || 7), time: '10:00' }],
+      },
+    })
+    expect(api.createSeries).not.toHaveBeenCalled()
+    expect(await screen.findByText('Без даты окончания · показаны первые 1')).toBeInTheDocument()
+    expect(screen.getByText('В ближайшие 90 дней: 1')).toBeInTheDocument()
+
+    await view.user.click(screen.getByRole('button', { name: 'Сохранить расписание' }))
+    expect(formCard('Дата и время').getByRole('button', { name: /Повторение.*Несколько/ })).toBeInTheDocument()
+    await view.user.click(screen.getByRole('button', { name: 'Записать' }))
+
+    await waitFor(() => expect(api.createSeries).toHaveBeenCalledOnce())
+    expect(api.createSeries.mock.calls[0]?.[0]).toEqual({
+      ...api.previewSeries.mock.calls[0]?.[0],
+      allowConflicts: false,
+    })
+    expect(api.createSeries.mock.calls[0]?.[1]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+    expect(api.createBooking).not.toHaveBeenCalled()
+    expect(await screen.findByText('Серия создана!')).toBeInTheDocument()
+  })
+
+  it('инвалидирует preview после изменения шаблона и требует повторную проверку', async () => {
+    const selectedDate = nextBookableDate()
+    const date = selectedDate.format('YYYY-MM-DD')
+    api.previewSeries.mockResolvedValue(previewResponse(date))
+    const view = renderPage(undefined, true)
+    await completeRegularDraft(view, selectedDate)
+    await openSeriesEditor(view)
+    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
+
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Напоминание клиенту/ }))
+
+    expect(screen.getByText('Проверьте расписание снова')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeDisabled()
+    await view.user.click(formCard('Дата и время').getByRole('button', { name: /Расписание/ }))
+    await view.user.click(screen.getByRole('button', { name: 'Проверить расписание' }))
+
+    await waitFor(() => expect(api.previewSeries).toHaveBeenCalledTimes(2))
+    expect(api.previewSeries.mock.calls[1]?.[0]).toMatchObject({ template: { remind: false } })
+    await view.user.click(await screen.findByRole('button', { name: 'Сохранить расписание' }))
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeEnabled()
   })
 
   it('отклоняет incomplete package и сохраняет ordered slots для retry', async () => {
