@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMasterBooking } from '@/test/fixtures/bookings'
@@ -32,6 +32,17 @@ function dateInCurrentMonth(predicate: (date: dayjs.Dayjs) => boolean) {
 
 function calendarDay(date: dayjs.Dayjs) {
   return screen.getByRole('button', { name: String(date.date()) })
+}
+
+async function finishScheduleFadeOut() {
+  const emptyState = screen.getByText('Нет записей на этот день')
+  const animatedContent = emptyState.parentElement
+  if (!animatedContent) throw new Error('Animated schedule content is missing')
+
+  await waitFor(() => expect(animatedContent).toHaveStyle({ opacity: '0' }))
+  const event = new Event('transitionend', { bubbles: true })
+  Object.defineProperty(event, 'propertyName', { value: 'opacity' })
+  fireEvent(animatedContent, event)
 }
 
 describe('BookingsPage', () => {
@@ -69,6 +80,7 @@ describe('BookingsPage', () => {
     ])
     renderAtRoute(<BookingsPage />)
 
+    await finishScheduleFadeOut()
     const early = await screen.findByText('Ранняя услуга')
     const late = screen.getByText('Поздняя услуга')
     expect(early.compareDocumentPosition(late) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -82,7 +94,7 @@ describe('BookingsPage', () => {
     renderAtRoute(<BookingsPage />)
     await waitFor(() => expect(api.getSchedule).toHaveBeenCalledOnce())
 
-    expect(calendarDay(nonWorking)).toHaveStyle({ background: 'var(--color-pattern-element)' })
+    expect(calendarDay(nonWorking)).toHaveStyle({ background: 'var(--color-calendar-non-working-surface-transparent)' })
   })
 
   it('считает занятость выходного относительно условных восьми часов', async () => {
@@ -124,6 +136,7 @@ describe('BookingsPage', () => {
     await waitFor(() => expect(api.listBookings).toHaveBeenCalledOnce())
 
     await view.user.click(calendarDay(selected))
+    await finishScheduleFadeOut()
     await view.user.click(await screen.findByText('Услуга выбранного дня'))
 
     expect(view.getLocation().pathname).toBe('/bookings/selected-booking')

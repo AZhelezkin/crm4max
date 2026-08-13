@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getLaunchContext } from '@/lib/launchContext'
 
 export const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
@@ -7,7 +8,7 @@ export const api = axios.create({
 
 // Подставляем JWT из localStorage в каждый запрос
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('masterToken')
+  const token = localStorage.getItem(getLaunchContext().tokenKey)
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -17,8 +18,9 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('masterToken')
-      window.location.hash = '#/onboarding'
+      const context = getLaunchContext()
+      localStorage.removeItem(context.tokenKey)
+      if (context.provider === 'max') window.location.hash = '#/onboarding'
     }
     return Promise.reject(err)
   }

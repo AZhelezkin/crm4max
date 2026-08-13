@@ -7,12 +7,13 @@ import { OFFER_URL, PERSONAL_DATA_URL, openLegalDocument } from '@/lib/legalDocu
 // Используется на онбординге (Welcome → согласия → кабинет). Кнопка всегда
 // активна: без обоих согласий подсвечиваем невыбранные чекбоксы ошибкой.
 
-export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Подключить', busy = false }: {
+export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Подключить', busy = false, error = null }: {
   onBack: () => void
   /** Вызывается только когда оба согласия отмечены. */
   onConfirm: () => void
   confirmLabel?: string
   busy?: boolean
+  error?: string | null
 }) {
   const [offerAccepted, setOfferAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
@@ -50,6 +51,11 @@ export default function ConsentsStep({ onBack, onConfirm, confirmLabel = 'Под
       </div>
 
       <div style={{ padding: '8px 12px calc(16px + env(safe-area-inset-bottom))' }}>
+        {error && (
+          <div style={{ ...text.footnote, color: 'var(--color-error-surface-accented)', textAlign: 'center', marginBottom: 8 }}>
+            {error}
+          </div>
+        )}
         <button
           type="button"
           onClick={handleConfirm}

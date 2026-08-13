@@ -7,22 +7,22 @@ import { useBookingsStore } from '@/store/bookings.store'
 import { useHomeDataStore } from '@/store/home-data.store'
 import { usePaymentsStore } from '@/store/payments.store'
 import { useScheduleStore } from '@/store/schedule.store'
+import { readyMiniApp } from '@/lib/miniAppHost'
+import { getLaunchContext } from '@/lib/launchContext'
+import axios from 'axios'
 
 async function loadMasterData(): Promise<Master> {
   const masterRequest = mastersApi.getMe()
-  const bookingsRequest = useBookingsStore.getState().fetchBookings()
-  const { fetchClients, fetchSubscription } = useHomeDataStore.getState()
-  const paymentsRequest = usePaymentsStore.getState().fetchPayments()
-  const scheduleRequest = useScheduleStore.getState().fetchSchedule()
+  const secondaryRequests = [
+    useBookingsStore.getState().fetchBookings(),
+    useHomeDataStore.getState().fetchClients(),
+    useHomeDataStore.getState().fetchSubscription(),
+    usePaymentsStore.getState().fetchPayments(),
+    useScheduleStore.getState().fetchSchedule(),
+  ]
 
-  const [master] = await Promise.all([
-    masterRequest,
-    bookingsRequest,
-    fetchClients(),
-    fetchSubscription(),
-    paymentsRequest,
-    scheduleRequest,
-  ])
+  const master = await masterRequest
+  await Promise.allSettled(secondaryRequests)
   return master
 }
 
@@ -30,45 +30,68 @@ interface AuthState {
   token: string | null
   master: Master | null
   isLoading: boolean
+  status: 'loading' | 'authenticated' | 'onboarding' | 'invalid-launch' | 'authentication-error' | 'forbidden' | 'transient-error'
   init: () => Promise<void>
   setMaster: (master: Master) => void
   refreshMaster: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem('masterToken'),
+  token: localStorage.getItem(getLaunchContext().tokenKey),
   master: null,
   isLoading: true,
+  status: 'loading',
 
   init: async () => {
-    set({ isLoading: true })
+    const context = getLaunchContext()
+    if (context.appMode === 'invalid') {
+      set({ token: null, master: null, isLoading: false, status: 'invalid-launch' })
+      return
+    }
+    set({ isLoading: true, status: 'loading' })
     try {
-      const initData = window.WebApp?.initData
-      if (!initData) throw new Error('MAX WebApp unavailable')
+      if (!context.initData) throw new Error('Mini App unavailable')
 
-      window.WebApp?.ready()
+      readyMiniApp()
 
-      const { token, isNewUser, analyticsUserId } = await authApi.loginWithMax({ init_data: initData })
+      const { token, isNewUser, analyticsUserId } = await authApi.login(context)
       setAnalyticsUserId(analyticsUserId)
-      localStorage.setItem('masterToken', token)
+      localStorage.setItem(context.tokenKey, token)
 
       const master = await loadMasterData()
-      set({ token, master, isLoading: false })
+      const status = context.provider === 'max' && (isNewUser || !master.isOnboarded) ? 'onboarding' : 'authenticated'
+      set({ token, master, isLoading: false, status })
       trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: isNewUser })
     } catch (error) {
       // Вне Max — используем сохранённый токен
-      const token = localStorage.getItem('masterToken')
+      const code = axios.isAxiosError(error) ? error.response?.data?.code : undefined
+      if (code === 'INVALID_LAUNCH') {
+        localStorage.removeItem(context.tokenKey)
+        set({ token: null, master: null, isLoading: false, status: 'invalid-launch' })
+        return
+      }
+      if (code === 'INVALID_AUTHENTICATION' || code === 'INVALID_REQUEST') {
+        localStorage.removeItem(context.tokenKey)
+        set({ token: null, master: null, isLoading: false, status: 'authentication-error' })
+        return
+      }
+      if (code === 'IDENTITY_UNMAPPED' || code === 'PRINCIPAL_FORBIDDEN') {
+        localStorage.removeItem(context.tokenKey)
+        set({ token: null, master: null, isLoading: false, status: 'forbidden' })
+        return
+      }
+      const token = localStorage.getItem(context.tokenKey)
       if (token) {
         try {
           const master = await loadMasterData()
-          set({ token, master, isLoading: false })
+          set({ token, master, isLoading: false, status: 'authenticated' })
           trackEventOnce('auth-completed:master', 'auth_completed', { app_mode: 'master', is_new_user: false })
           return
         } catch {
-          localStorage.removeItem('masterToken')
+          localStorage.removeItem(context.tokenKey)
         }
       }
-      set({ isLoading: false })
+      set({ token: null, master: null, isLoading: false, status: 'transient-error' })
       trackEventOnce('auth-failed:master', 'auth_failed', { app_mode: 'master', error_type: metricAuthErrorType(error) })
     }
   },

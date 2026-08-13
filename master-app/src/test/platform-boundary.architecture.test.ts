@@ -17,7 +17,7 @@ const LEGACY_JAVASCRIPT_WEB_APP_ALLOWLIST = [
 ]
 
 const WEB_APP_ALLOWLIST = [
-  'src/App.tsx',
+  'src/lib/launchContext.ts',
   'src/client/components/BottomNav.tsx',
   'src/client/pages/BookingDetailPage.tsx',
   'src/client/pages/ConfirmPage.tsx',
@@ -27,45 +27,33 @@ const WEB_APP_ALLOWLIST = [
   'src/client/pages/QRScanPage.tsx',
   'src/client/pages/ServiceDetailPage.tsx',
   'src/client/store/auth.store.ts',
-  'src/hooks/usePaymentsExport.ts',
   'src/lib/bridge.ts',
-  'src/lib/calendar.ts',
-  // Централизованные открытия документов и hosted-формы AddCard.
-  'src/lib/legalDocuments.ts',
-  'src/lib/paymentForm.ts',
-  'src/pages/BlockedSubscriptionPage.tsx',
-  'src/pages/BookingDetailPage.tsx',
-  // Поддержка переехала из навбара на экран «Другое» (макет 10302-42755).
-  'src/pages/OtherPage.tsx',
-  'src/standalone-pages/handoff/destination-selector/DestinationSelectorPage.tsx',
-  'src/standalone-pages/handoff/destination-selector/useDestinationSelector.ts',
-  'src/store/auth.store.ts',
+  'src/lib/miniAppHost.ts',
 ]
 
 const PROVIDER_LOCATIONS = {
   authEndpoint: [
-    'src/App.tsx',
     'src/api/auth.api.ts',
     'src/client/api/auth.api.ts',
+    'src/lib/launchContext.ts',
   ],
   masterToken: [
-    'src/App.tsx',
-    'src/api/client.ts',
-    'src/api/upload.api.ts',
-    'src/store/auth.store.ts',
+    'src/lib/miniAppHost.ts',
+    'src/lib/launchContext.ts',
   ],
   clientToken: [
     'src/client/api/client.ts',
     'src/client/store/auth.store.ts',
+    'src/lib/launchContext.ts',
   ],
   maxDeepLink: [
     'src/client/pages/MasterCardPage.tsx',
-    'src/pages/ShareLinkPage.tsx',
-    'src/pages/SubscriptionSuccessPage.tsx',
+    'src/lib/miniAppDestinations.ts',
   ],
   maxUiImport: [
     'src/components/onboardingShared.tsx',
     'src/main.tsx',
+    'src/telegram-render.tsx',
   ],
   metrikaRuntime: [
     'src/lib/metrics.ts',
@@ -286,7 +274,7 @@ describe('platform provider boundary architecture', () => {
     const actual = filesWithProviderWebAppAccess()
 
     assertExactLocations('provider WebApp access', actual, WEB_APP_ALLOWLIST)
-    expect(actual).toHaveLength(21)
+    expect(actual).toHaveLength(WEB_APP_ALLOWLIST.length)
   })
 
   it('изолирует tracked legacy JavaScript shadows от production imports', () => {

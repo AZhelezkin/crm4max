@@ -47,6 +47,20 @@ describe('ShareLinkPage', () => {
 
     expect(screen.getByText('QR-код появится после авторизации')).toBeInTheDocument()
     expect(document.querySelector('canvas')).not.toBeInTheDocument()
+    expect(screen.getByTitle('Поделиться')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Скопировать ссылку' })).toBeDisabled()
+  })
+
+  it('не показывает MAX destination в Telegram', () => {
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    setMaster()
+    installBrowserFixture()
+
+    renderAtRoute(<ShareLinkPage />)
+
+    expect(screen.queryByText(/https:\/\/max\.ru/)).not.toBeInTheDocument()
+    expect(screen.getByTitle('Поделиться')).toBeDisabled()
+    expect(document.querySelector('canvas')).not.toBeInTheDocument()
   })
 
   it('копирует ссылку и сбрасывает feedback через две секунды', async () => {

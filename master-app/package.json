@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:telegram-stage": "node scripts/build-telegram-stage.mjs",
+    "deploy:telegram-stage": "../infra/telegram-stage/deploy.sh",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run",
@@ -12,6 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "smoke:telegram-stage": "node scripts/telegram-stage-smoke.mjs",
+    "test:baseline": "vitest run src/test/dual-entrypoint.architecture.test.ts src/lib/miniAppHost.test.ts src/api/auth.api.test.ts src/store/auth.store.test.ts scripts/telegram-artifact.test.mjs scripts/telegram-stage-smoke.test.mjs",
     "test:ci": "npm run typecheck && npm run test:coverage && npm run build"
   },
   "dependencies": {

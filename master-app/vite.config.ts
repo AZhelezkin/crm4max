@@ -22,4 +22,12 @@ export default defineConfig({
       '/api': 'http://localhost:3000',
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        telegram: resolve(__dirname, 'telegram.html'),
+      },
+    },
+  },
 })

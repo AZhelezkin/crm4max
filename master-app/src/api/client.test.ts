@@ -71,4 +71,22 @@ describe.sequential('master API client', () => {
     expect(localStorage.getItem('masterToken')).toBe(MASTER_TOKEN)
     expect(window.location.hash).toBe('#/bookings')
   })
+
+  it('на Telegram 401 очищает только Telegram token без MAX onboarding redirect', async () => {
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    window.Telegram = { WebApp: { initData: 'telegram-init-data', initDataUnsafe: { start_param: 'mmode' } } }
+    localStorage.setItem('telegramMasterToken', MASTER_TOKEN)
+    localStorage.setItem('masterToken', 'max-master-token')
+    window.location.hash = '#/bookings'
+    server.use(
+      http.get('*/api/probe', () => HttpResponse.json({ error: 'unauthorized' }, { status: 401 })),
+    )
+    const { api } = await loadApi()
+
+    await expect(api.get('/probe')).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(localStorage.getItem('telegramMasterToken')).toBeNull()
+    expect(localStorage.getItem('masterToken')).toBe('max-master-token')
+    expect(window.location.hash).toBe('#/bookings')
+  })
 })

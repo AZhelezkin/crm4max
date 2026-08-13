@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { openMiniAppLink } from './miniAppHost'
 
 /** iOS-устройство (включая iPadOS, который в desktop-режиме мимикрирует под Mac). */
 function isIOS(): boolean {
@@ -33,6 +34,5 @@ export function openAddToCalendar(p: {
       `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(p.title)}` +
       `&dates=${fmt(start)}/${fmt(end)}${p.location ? `&location=${encodeURIComponent(p.location)}` : ''}`
   }
-  if (window.WebApp?.openLink) window.WebApp.openLink(url)
-  else window.open(url, '_blank')
+  openMiniAppLink(url)
 }

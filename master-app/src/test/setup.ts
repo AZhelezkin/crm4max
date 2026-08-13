@@ -11,6 +11,7 @@ import {
   resetApplicationStores,
 } from './storage'
 import { removeWebApp } from './web-app-fixture'
+import { resetMiniAppHostForTests } from '@/lib/miniAppHost'
 
 installTestStorageGlobals()
 
@@ -27,6 +28,10 @@ afterEach(async () => {
   installTestStorageGlobals()
   resetBrowserFixture()
   removeWebApp()
+  resetMiniAppHostForTests()
+  delete window.Telegram
+  delete window.__MINI_APP_PROVIDER__
+  delete window.__TELEGRAM_INIT_DATA__
   await resetApplicationStores()
   clearTestStorage()
   document.body.className = ''

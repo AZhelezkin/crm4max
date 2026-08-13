@@ -6,6 +6,8 @@ import { text } from '@/styles/typography'
 import wordmarkSvg from '@/assets/sub-wordmark.svg'
 import logoTileSvg from '@/assets/sub-logo-tile.svg'
 import confettiGif from '@/assets/sub-confetti.gif'
+import { renderMiniAppDestination } from '@/lib/miniAppDestinations'
+import { miniAppProvider } from '@/lib/miniAppHost'
 
 // «Успех оплаты» (макет 10256-55423): зелёный hero с конфетти + плитка-лого,
 // «Подписка оформлена! / Поздравляем 🎉», карточка с QR клиентской ссылки и
@@ -20,10 +22,10 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
   const { master } = useAuthStore()
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const clientBotName = (import.meta.env.VITE_CLIENT_BOT_NAME as string | undefined) || 'id9706002253_1_bot'
   const masterId = master?.id ?? ''
-  const deepLink = `https://max.ru/${clientBotName}?start=${masterId}`
-  const hasLink = masterId.length > 0
+  const destination = renderMiniAppDestination(miniAppProvider(), { kind: 'client-booking-share', masterId })
+  const deepLink = destination.status === 'available' ? destination.url : ''
+  const hasLink = destination.status === 'available'
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -100,6 +102,7 @@ export default function SubscriptionSuccessPage({ onGoProfile }: Props) {
           <button
             type="button"
             onClick={handleShare}
+            disabled={!hasLink}
             style={{
               height: 60, borderRadius: 20, border: 'none', padding: 18, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

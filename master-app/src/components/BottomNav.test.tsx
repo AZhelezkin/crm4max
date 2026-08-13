@@ -24,14 +24,14 @@ describe('master BottomNav', () => {
     renderAtRoute(<BottomNav />, { route: '/bookings/booking-1' })
 
     const label = screen.getByText('Записи')
-    expect(label).toHaveStyle({ color: 'var(--color-active-element)' })
+    expect(label).toHaveStyle({ color: 'var(--color-on-floating-surface-active)' })
     expect(screen.getByText('Главная')).toHaveStyle({ color: 'var(--color-on-surface-secondary)' })
   })
 
   it('подсвечивает вкладку «Другое» на своём роуте', () => {
     renderAtRoute(<BottomNav />, { route: '/other' })
 
-    expect(screen.getByText('Другое')).toHaveStyle({ color: 'var(--color-active-element)' })
+    expect(screen.getByText('Другое')).toHaveStyle({ color: 'var(--color-on-floating-surface-active)' })
     expect(screen.getByText('Главная')).toHaveStyle({ color: 'var(--color-on-surface-secondary)' })
   })
 })

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { formatBookingAddressNote, parseBookingAddress, type DestinationAddressDetails } from '@/lib/bookingAddress'
 import { getDestinationSelectorContext, saveDestinationSelectorAddress, saveDestinationSelectorMasterLocation } from './api'
 import type { DestinationSelectorContextData, DestinationSelectorCoords } from './types'
+import { closeMiniApp } from '@/lib/miniAppHost'
 
 type LoadState = 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved'
@@ -122,7 +123,7 @@ export function useDestinationSelector(token: string | null, enabled = true) {
         return
       }
       setSaveState('saved')
-      window.setTimeout(() => (window.WebApp as { close?: () => void } | undefined)?.close?.(), 500)
+      window.setTimeout(closeMiniApp, 500)
     } catch {
       setSaveState('idle')
       setError('Не удалось сохранить адрес')

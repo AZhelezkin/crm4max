@@ -35,8 +35,8 @@ describe('GuideCard', () => {
     expect(screen.getByText('Добро пожаловать!')).toBeInTheDocument()
     expect(screen.getByText(/Осталось всего 3 шага/)).toBeInTheDocument()
     // Первый шаг зачёркнут (выполнен), остальные — нет.
-    expect(screen.getByText('Познакомиться с умным ассистентом — ботом в чате')).toHaveStyle({ textDecoration: 'line-through' })
-    expect(screen.getByText(/Попробуй открыть запись Синьёры Капибары/)).not.toHaveStyle({ textDecoration: 'line-through' })
+    expect(screen.getByText(/Познакомиться с умным/)).toHaveStyle({ textDecoration: 'line-through' })
+    expect(screen.getByText(/Попробуй открыть запись Синьёры/)).not.toHaveStyle({ textDecoration: 'line-through' })
   })
 
   it('выполненные шаги отмечаются, все три → «Отлично!» без списка', () => {

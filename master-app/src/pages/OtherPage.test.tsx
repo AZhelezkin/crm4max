@@ -93,7 +93,7 @@ describe('master OtherPage', () => {
 
     await user.click(screen.getByRole('button', { name: SUPPORT }))
 
-    await waitFor(() => expect(browser.open).toHaveBeenCalledWith(BOT_URL, '_blank'))
+    await waitFor(() => expect(browser.open).toHaveBeenCalledWith(BOT_URL, '_blank', 'noopener,noreferrer'))
   })
 
   it('показывает ошибку и не открывает URL при API failure', async () => {

@@ -41,6 +41,9 @@ import DestinationSelectorPage from '@/standalone-pages/handoff/destination-sele
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
 import MetricsPageTracker from '@/components/MetricsPageTracker'
 import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
+import { bindMiniAppNativeBack, readyMiniApp, resolveDynamicMaxMasterBookingLaunch } from '@/lib/miniAppHost'
+import { authApi } from '@/api/auth.api'
+import { getLaunchContext, MASTER_BOOKING_DEEPLINK_RE } from '@/lib/launchContext'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -52,16 +55,6 @@ import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
 //             веб-адреса/нативной web-app кнопки в Max;
 //   ?masterId=<UUID> — старый алиас для шаринга ссылки на мастера.
 // В Max start_param приходит из initDataUnsafe и имеет приоритет.
-function resolveStartParam(): string {
-  const fromMax = window.WebApp?.initDataUnsafe?.start_param
-  if (fromMax) return fromMax
-  if (typeof window !== 'undefined') {
-    const q = new URLSearchParams(window.location.search)
-    return q.get('startapp') || q.get('masterId') || ''
-  }
-  return ''
-}
-
 // T-Bank может отбросить URL fragment при возврате с hosted-формы. Backend
 // передаёт результат обычным query-параметром, а HashRouter получает маршрут
 // до первого render. Остальные query-параметры сохраняются.
@@ -91,7 +84,8 @@ function normalizeMaxLaunchFragment(): void {
 }
 
 normalizePaymentResultRoute()
-export const startParam = resolveStartParam()
+const launchContext = getLaunchContext()
+export const startParam = launchContext.startParam ?? ''
 normalizeMaxLaunchFragment()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 
@@ -101,25 +95,11 @@ const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 //   <masterId>-<bookingId>    → клиентское приложение, /my-bookings/<bookingId>
 //   m-<masterId>-<bookingId>  → мастер-приложение, /bookings/<bookingId>
 const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`, 'i')
-const MASTER_BOOKING_DEEPLINK_RE = new RegExp(`^m-(${UUID_PART})-(${UUID_PART})$`, 'i')
 
 export function getMasterBookingDeepLinkId(): string | null {
   const m = MASTER_BOOKING_DEEPLINK_RE.exec(startParam ?? '')
   // m[1]=masterId, m[2]=bookingId
   return m ? m[2] : null
-}
-
-type MasterBookingLaunch = { param: string; bookingId: string; source: 'query' | 'bridge' }
-
-function resolveMasterBookingLaunch(): MasterBookingLaunch | null {
-  const queryParam = new URLSearchParams(window.location.search).get('startapp') ?? ''
-  const bridgeParam = window.WebApp?.initDataUnsafe?.start_param ?? ''
-
-  for (const [param, source] of [[queryParam, 'query'], [bridgeParam, 'bridge']] as const) {
-    const match = MASTER_BOOKING_DEEPLINK_RE.exec(param)
-    if (match) return { param, bookingId: match[2], source }
-  }
-  return null
 }
 
 function consumeMasterBookingQuery(param: string): void {
@@ -131,12 +111,8 @@ function consumeMasterBookingQuery(param: string): void {
 }
 
 function resolveInitialMode(): 'master' | 'client' | null {
-  if (startParam === 'mmode' || startParam === 'msubscription') return 'master'
-  if (MASTER_BOOKING_DEEPLINK_RE.test(startParam)) return 'master'
-  // Список последних мастеров (открывается из клиент-бота).
-  if (startParam === 'cmasters') return 'client'
-  if (UUID_RE.test(startParam)) return 'client'
-  if (CLIENT_BOOKING_DEEPLINK_RE.test(startParam)) return 'client'
+  if (launchContext.appMode === 'master' || launchContext.appMode === 'invalid') return 'master'
+  if (launchContext.appMode === 'client') return 'client'
   return null
 }
 
@@ -176,21 +152,13 @@ export default function App() {
 
     async function detect() {
       try {
-        const initData = window.WebApp?.initData
+        const initData = launchContext.initData
         if (!initData) { setMode('client'); return }
-        window.WebApp?.ready()
+        readyMiniApp()
 
-        const apiUrl = import.meta.env.VITE_API_URL ?? ''
-        const res = await fetch(`${apiUrl}/api/auth/max`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ init_data: initData }),
-        })
-        if (!res.ok) { setMode('client'); return }
-
-        const data = await res.json() as { token: string; role: string }
+        const data = await authApi.detect(launchContext)
         if (data.role === 'master') {
-          localStorage.setItem('masterToken', data.token)
+          localStorage.setItem(launchContext.tokenKey, data.token)
           setMode('master')
         } else {
           setMode('client')
@@ -230,7 +198,7 @@ function MasterDeepLinkRedirect() {
 
   useEffect(() => {
     const syncBookingLaunch = () => {
-      const launch = resolveMasterBookingLaunch()
+      const launch = resolveDynamicMaxMasterBookingLaunch(MASTER_BOOKING_DEEPLINK_RE)
       if (!launch || handledBookingParam.current === launch.param) return
       handledBookingParam.current = launch.param
       navigate(`/bookings/${launch.bookingId}`, { replace: true })
@@ -256,6 +224,21 @@ function MasterDeepLinkRedirect() {
     navigate(target, { replace: true })
     setTarget(null)
   }, [navigate, target])
+
+  return null
+}
+
+function NativeBackSync() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const outcome = bindMiniAppNativeBack({
+      visible: location.pathname !== '/',
+      onBack: () => navigate(-1),
+    })
+    return outcome.status === 'completed' ? outcome.value : undefined
+  }, [location.pathname, navigate])
 
   return null
 }
@@ -292,7 +275,7 @@ function PayFailRoute() {
 }
 
 function MasterApp() {
-  const { init, isLoading, master } = useAuthStore()
+  const { init, isLoading, master, status } = useAuthStore()
   // Кабинет мастера НЕ блокируется по подписке: при истёкшем триале недоступна
   // только клиентская онлайн-запись (плашка на главной + пейволл на создании записи).
   //
@@ -323,10 +306,21 @@ function MasterApp() {
     )
   }
 
+  if (status === 'invalid-launch' || status === 'authentication-error' || status === 'forbidden' || status === 'transient-error') {
+    const message = status === 'forbidden'
+      ? 'Доступ к кабинету не разрешён.'
+      : status === 'invalid-launch'
+        ? 'Откройте кабинет мастера по корректной ссылке.'
+        : status === 'authentication-error'
+          ? 'Не удалось подтвердить авторизацию. Откройте приложение снова из чата.'
+          : 'Не удалось авторизоваться. Попробуйте открыть приложение снова.'
+    return <div style={{ color: 'var(--color-on-surface)' }}>{message}</div>
+  }
+
   // Новый мастер, не прошедший онбординг; или мастер не авторизован.
   // Онбординг сведён к велком-экрану: привязка карты → одобрение → кабинет
   // (профиль/расписание/услуги/клиент уже заведены пример-данными на бэке).
-  const needsOnboarding = !master || !master.isOnboarded
+  const needsOnboarding = status === 'onboarding' || !master?.isOnboarded
 
   return (
     <BrowserRouter>
@@ -334,6 +328,7 @@ function MasterApp() {
       <DesktopScrollbar />
       <MasterParallaxBackground />
       <MetricsPageTracker appMode="master" />
+      <NativeBackSync />
       <MasterDeepLinkRedirect />
       <Routes>
         {/* Велком-экран нового мастера: привязка карты → одобрение → кабинет */}

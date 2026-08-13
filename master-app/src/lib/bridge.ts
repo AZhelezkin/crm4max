@@ -3,6 +3,14 @@
  * Позволяет не переписывать весь код при миграции с VK на Max.
  */
 import { installTopOverscrollGuard } from './topOverscrollGuard'
+import {
+  closeMiniApp,
+  miniAppProvider,
+  miniAppVerticalSwipesEnabled,
+  openMiniAppLink,
+  readyMiniApp,
+  setMiniAppVerticalSwipes,
+} from './miniAppHost'
 
 declare global {
   interface Window {
@@ -94,36 +102,20 @@ function describeError(err: unknown): string {
 
 /** Включить/выключить вертикальные свайпы. Ошибку не бросает — возвращает в результате. */
 export async function setVerticalSwipes(allow: boolean): Promise<VerticalSwipesResult> {
-  const wa = window.WebApp
-  if (!wa) return { ok: false, error: 'window.WebApp отсутствует (открыто вне Max?)' }
-  // Проверяем ровно тот метод, который нужен, — а не пару сразу.
-  const method = allow ? wa.enableVerticalSwipes : wa.disableVerticalSwipes
-  if (typeof method !== 'function') {
-    return { ok: false, error: `${allow ? 'enable' : 'disable'}VerticalSwipes нет в window.WebApp (старая версия моста)` }
-  }
-  try {
-    const res = await method.call(wa)
-    return { ok: true, allowVerticalSwipes: res?.allowVerticalSwipes ?? allow }
-  } catch (err) {
-    // Клиент не ответил/не поддерживает — не фатально, просто остаётся штатный жест.
-    return { ok: false, error: describeError(err) }
-  }
+  const outcome = await setMiniAppVerticalSwipes(allow)
+  if (outcome.status === 'completed') return { ok: true, allowVerticalSwipes: outcome.value }
+  if (outcome.status === 'failed') return { ok: false, error: describeError(outcome.error) }
+  const environment = miniAppProvider() === 'telegram' ? 'Telegram WebApp' : 'MAX WebApp'
+  return { ok: false, error: `${allow ? 'enable' : 'disable'}VerticalSwipes недоступен в ${environment}` }
 }
 
 export function openExternalLink(url: string): void {
-  window.WebApp?.openLink?.(url)
+  openMiniAppLink(url)
 }
 
 /** Закрывает miniapp, если текущая версия MAX WebApp поддерживает этот метод. */
 export function closeWebApp(): boolean {
-  const webApp = window.WebApp
-  if (typeof webApp?.close !== 'function') return false
-  try {
-    webApp.close()
-    return true
-  } catch {
-    return false
-  }
+  return closeMiniApp()
 }
 
 /**
@@ -145,7 +137,7 @@ export function keepVerticalSwipesDisabled(): () => void {
   const onVisibilityChange = () => {
     if (document.visibilityState !== 'visible') return
     // Уже заблокировано — повторный запрос к клиенту не нужен.
-    if (window.WebApp?.isVerticalSwipesEnabled === false) return
+    if (miniAppVerticalSwipesEnabled() === false) return
     void request()
   }
 
@@ -160,7 +152,7 @@ const bridge = {
   send: async (method: string, params?: Record<string, unknown>): Promise<Record<string, unknown>> => {
     switch (method) {
       case 'VKWebAppInit':
-        window.WebApp?.ready()
+        readyMiniApp()
         return {}
 
       case 'VKWebAppGetAuthToken': {

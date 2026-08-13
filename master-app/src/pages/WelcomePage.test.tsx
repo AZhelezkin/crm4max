@@ -132,6 +132,7 @@ describe('WelcomePage', () => {
     await acceptConsents(view.user)
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(1))
     expect(view.getLocation().pathname).toBe('/welcome/consents')
+    expect(screen.getByText(/Не удалось подключить кабинет/)).toBeInTheDocument()
 
     await view.user.click(screen.getByRole('button', { name: 'Подключить' }))
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(2))

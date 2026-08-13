@@ -1,3 +1,5 @@
+import { readMasterToken } from '@/lib/miniAppHost'
+
 export type UploadFolder = 'masters' | 'categories' | 'services' | 'work'
 
 /**
@@ -54,7 +56,7 @@ export function compressImage(file: File, maxSize = 1200, quality = 0.82): Promi
  */
 export async function uploadPhoto(file: File, folder: UploadFolder = 'masters'): Promise<string> {
   const compressed = await compressImage(file).catch(() => file)
-  const token = localStorage.getItem('masterToken')
+  const token = readMasterToken()
 
   const formData = new FormData()
   formData.append('file', compressed)

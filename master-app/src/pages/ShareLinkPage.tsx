@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/auth.store'
 import { colors } from '@/styles/tokens'
 import { text } from '@/styles/typography'
 import { trackEvent, trackEventOnce } from '@/lib/metrics'
+import { renderMiniAppDestination } from '@/lib/miniAppDestinations'
+import { miniAppProvider } from '@/lib/miniAppHost'
 
 function BackArrowIcon() {
   return (
@@ -55,10 +57,10 @@ export default function ShareLinkPage() {
   // mini-app не зарегистрирован, поэтому используем ?start= — payload приходит
   // в bot_started, бот шлёт клиенту welcome-кнопку «Записаться», открывающую
   // mini-app мастер-бота. Имя клиентского бота переопределяется через VITE_CLIENT_BOT_NAME.
-  const clientBotName = (import.meta.env.VITE_CLIENT_BOT_NAME as string | undefined) || 'id9706002253_1_bot'
   const masterId = master?.id ?? ''
-  const deepLink = `https://max.ru/${clientBotName}?start=${masterId}`
-  const hasLink = masterId.length > 0
+  const destination = renderMiniAppDestination(miniAppProvider(), { kind: 'client-booking-share', masterId })
+  const deepLink = destination.status === 'available' ? destination.url : ''
+  const hasLink = destination.status === 'available'
 
   useEffect(() => {
     trackEventOnce(`share-page:${location.key}`, 'share_page_opened', {})
@@ -157,6 +159,7 @@ export default function ShareLinkPage() {
           {/* Кнопка поделиться */}
           <button
             onClick={handleShare}
+            disabled={!hasLink}
             style={{
               flexShrink: 0,
               background: 'none', border: 'none',
@@ -172,8 +175,9 @@ export default function ShareLinkPage() {
         </div>
 
         {/* Кнопка копирования */}
-        <button
-          onClick={() => { void handleCopy('button') }}
+          <button
+            onClick={() => { void handleCopy('button') }}
+            disabled={!hasLink}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             background: copied ? 'var(--color-secondary-surface)' : 'var(--color-surface)',

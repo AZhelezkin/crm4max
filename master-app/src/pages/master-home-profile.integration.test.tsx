@@ -430,7 +430,7 @@ describe('master HomePage', () => {
   })
 
   it('показывает money-time сразу после обычного напоминания и отправляет payment reminder', async () => {
-    const booking = createMasterBooking({ id: 'booking-payment', date: TODAY, paymentStatus: 'UNPAID' })
+    const booking = createMasterBooking({ id: 'booking-payment', date: TODAY, time: '00:00', paymentStatus: 'UNPAID' })
     api.listBookings.mockResolvedValue([booking])
     setMaster(createMasterProfile({ services: [booking.service] }))
     const view = renderAtRoute(<HomePage />)

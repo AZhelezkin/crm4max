@@ -1,0 +1,14 @@
+tg.stage.soldatov.dev {
+	header Cache-Control "no-store, no-cache, must-revalidate"
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:18082
+	}
+
+	handle {
+		root * /var/www/tg.stage.soldatov.dev
+		encode gzip
+		try_files {path} /index.html
+		file_server
+	}
+}

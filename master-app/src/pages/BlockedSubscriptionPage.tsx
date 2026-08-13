@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { text } from '@/styles/typography'
 import { subscriptionApi } from '@/api/subscription.api'
+import { openMiniAppLink } from '@/lib/miniAppHost'
 
 // Человекочитаемая причина неуспешной оплаты. Бэкенд кладёт в lastChargeError
 // текст T-Bank (Details/Message, обычно уже по-русски) — показываем как есть.
@@ -43,8 +44,7 @@ export default function BlockedSubscriptionPage() {
 
   const handlePay = () => {
     if (!payUrl) return
-    if (window.WebApp?.openLink) window.WebApp.openLink(payUrl)
-    else window.open(payUrl, '_blank')
+    openMiniAppLink(payUrl)
   }
 
   return (

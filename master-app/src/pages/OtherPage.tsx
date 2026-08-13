@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
 import { startSupport } from '@/api/support.api'
+import { miniAppProvider, openMiniAppMessengerLink } from '@/lib/miniAppHost'
+import { renderMiniAppDestination } from '@/lib/miniAppDestinations'
 
 // Экран «Другое» (макеты 10302-42755, 10338-42120) — вкладка навбара: тулбар без
 // кнопки «назад» (leading-слот пуст), снизу виден навбар с активной вкладкой.
@@ -18,10 +20,9 @@ export default function OtherPage() {
     setSupportLoading(true)
     try {
       const { botUrl } = await startSupport()
-      const wa = window.WebApp
-      if (wa?.openMaxLink) wa.openMaxLink(botUrl)
-      else if (wa?.openLink) wa.openLink(botUrl)
-      else window.open(botUrl, '_blank')
+      const destination = renderMiniAppDestination(miniAppProvider(), { kind: 'support', url: botUrl })
+      if (destination.status !== 'available') throw new Error('Support destination unavailable')
+      openMiniAppMessengerLink(destination.url)
     } catch (err) {
       console.error('startSupport failed', err)
       alert('Не удалось открыть поддержку. Попробуйте позже.')

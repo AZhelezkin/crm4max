@@ -6,6 +6,7 @@ import { FloatingField } from '@/components/onboardingShared'
 import { text } from '@/styles/typography'
 import { useAuthStore } from '@/store/auth.store'
 import { useDestinationSelector } from './useDestinationSelector'
+import { closeMiniApp, readyMiniApp } from '@/lib/miniAppHost'
 
 interface Props {
   token: string | null
@@ -47,7 +48,7 @@ export default function DestinationSelectorPage({ token }: Props) {
         : error
 
   useEffect(() => {
-    window.WebApp?.ready?.()
+    readyMiniApp()
     void init()
   }, [init])
 
@@ -55,7 +56,7 @@ export default function DestinationSelectorPage({ token }: Props) {
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <BookingFlowToolbar
         title={masterLocation ? 'Адрес мастера' : 'Адрес клиента'}
-        onBack={() => (window.WebApp as { close?: () => void } | undefined)?.close?.()}
+        onBack={closeMiniApp}
         backIcon={<CloseIcon />}
         backAriaLabel="Закрыть"
         titleHeadingLevel={1}

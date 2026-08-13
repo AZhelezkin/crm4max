@@ -133,6 +133,8 @@ All methods below are P0 frontend-owned HTTP contracts.
 Each token below is consumed by `coverage-inventory.architecture.test.ts`; adding an exported API method requires a reviewed matrix entry.
 
 - `src/api/auth.api.ts#authApi.loginWithMax`
+- `src/api/auth.api.ts#authApi.login`
+- `src/api/auth.api.ts#authApi.detect`
 - `src/api/bookings.api.ts#bookingsApi.cancel`
 - `src/api/bookings.api.ts#bookingsApi.confirmPayment`
 - `src/api/bookings.api.ts#bookingsApi.create`

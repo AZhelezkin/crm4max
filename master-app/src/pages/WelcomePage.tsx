@@ -117,6 +117,7 @@ export default function WelcomePage() {
   const location = useLocation()
   const setMaster = useAuthStore((s) => s.setMaster)
   const [finishing, setFinishing] = useState(false)
+  const [finishError, setFinishError] = useState<string | null>(null)
   // URL сохраняет шаг согласий при reload WebView.
   const step = location.pathname === '/welcome/consents' ? 'consents' : 'start'
 
@@ -130,12 +131,14 @@ export default function WelcomePage() {
   const finishToCabinet = async () => {
     if (finishing) return
     setFinishing(true)
+    setFinishError(null)
     try {
       await mastersApi.updateProfile({ isOnboarded: true })
       const master = await mastersApi.getMe()
       setMaster(master)
       navigate('/', { replace: true })
     } catch {
+      setFinishError('Не удалось подключить кабинет. Проверьте соединение и попробуйте ещё раз.')
       setFinishing(false)
     }
   }
@@ -146,6 +149,7 @@ export default function WelcomePage() {
         onBack={() => navigate('/welcome', { replace: true })}
         onConfirm={() => { void finishToCabinet() }}
         busy={finishing}
+        error={finishError}
       />
     )
   }

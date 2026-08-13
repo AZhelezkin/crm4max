@@ -65,6 +65,76 @@ describe.sequential('master auth store', () => {
     expect(useScheduleStore.getState().loaded).toBe(true)
   })
 
+  it('авторизуется через Telegram и изолирует token от MAX', async () => {
+    handleHomePrefetch()
+    const ready = vi.fn()
+    const expand = vi.fn()
+    const master = createMasterProfile()
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    window.__TELEGRAM_INIT_DATA__ = 'signed-telegram-init-data'
+    window.Telegram = { WebApp: { ready, expand, initDataUnsafe: { start_param: 'mmode' } } }
+    let authBody: Record<string, string> | null = null
+    server.use(
+      http.post('*/api/auth/telegram', async ({ request }) => {
+        authBody = await request.json() as Record<string, string>
+        return HttpResponse.json({
+          token: MASTER_TOKEN,
+          userId: master.id,
+          role: 'master',
+          isNewUser: false,
+          analyticsUserId: ANALYTICS_USER_ID,
+        })
+      }),
+      http.get('*/api/masters/me', () => HttpResponse.json(master)),
+    )
+    const { useAuthStore } = await loadStore()
+
+    await useAuthStore.getState().init()
+
+    expect(authBody).toMatchObject({ init_data: 'signed-telegram-init-data' })
+    expect(authBody).not.toHaveProperty('role')
+    expect(ready).toHaveBeenCalledOnce()
+    expect(expand).toHaveBeenCalledOnce()
+    expect(localStorage.getItem('telegramMasterToken')).toBe(MASTER_TOKEN)
+    expect(localStorage.getItem('masterToken')).toBeNull()
+    expect(useAuthStore.getState()).toMatchObject({ token: MASTER_TOKEN, master, isLoading: false })
+  })
+
+  it('не использует MAX token и не включает onboarding при forbidden Telegram identity', async () => {
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    window.__TELEGRAM_INIT_DATA__ = 'signed-telegram-init-data'
+    window.Telegram = { WebApp: { initDataUnsafe: { start_param: 'mmode' } } }
+    localStorage.setItem('masterToken', 'max-token')
+    server.use(http.post('*/api/auth/telegram', () => HttpResponse.json(
+      { error: 'Forbidden', code: 'IDENTITY_UNMAPPED' },
+      { status: 403 },
+    )))
+    const { useAuthStore } = await loadStore()
+
+    await useAuthStore.getState().init()
+
+    expect(useAuthStore.getState()).toMatchObject({ token: null, master: null, status: 'forbidden', isLoading: false })
+    expect(localStorage.getItem('masterToken')).toBe('max-token')
+    expect(localStorage.getItem('telegramMasterToken')).toBeNull()
+  })
+
+  it('не подхватывает stale Telegram token после authoritative auth failure', async () => {
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    window.__TELEGRAM_INIT_DATA__ = 'invalid-telegram-init-data'
+    window.Telegram = { WebApp: { initDataUnsafe: { start_param: 'mmode' } } }
+    localStorage.setItem('telegramMasterToken', 'stale-telegram-token')
+    server.use(http.post('*/api/auth/telegram', () => HttpResponse.json(
+      { error: 'Invalid Telegram authentication', code: 'INVALID_AUTHENTICATION' },
+      { status: 401 },
+    )))
+    const { useAuthStore } = await loadStore()
+
+    await useAuthStore.getState().init()
+
+    expect(useAuthStore.getState()).toMatchObject({ token: null, master: null, status: 'authentication-error', isLoading: false })
+    expect(localStorage.getItem('telegramMasterToken')).toBeNull()
+  })
+
   it('использует сохранённый master token вне MAX', async () => {
     handleHomePrefetch()
     removeWebApp()
@@ -89,6 +159,29 @@ describe.sequential('master auth store', () => {
     expect(authRequest).not.toHaveBeenCalled()
     expect(authorization).toBe(`Bearer ${MASTER_TOKEN}`)
     expect(useAuthStore.getState()).toMatchObject({ master, isLoading: false })
+  })
+
+  it('не блокирует авторизацию при ошибке вторичной загрузки', async () => {
+    handleHomePrefetch()
+    const master = createMasterProfile({ isOnboarded: false })
+    installWebApp({ initData: 'master-init-data' })
+    server.use(
+      http.post('*/api/auth/max', () => HttpResponse.json({
+        token: MASTER_TOKEN,
+        userId: master.id,
+        role: 'master',
+        isNewUser: true,
+        analyticsUserId: ANALYTICS_USER_ID,
+      })),
+      http.get('*/api/masters/me', () => HttpResponse.json(master)),
+      http.get('*/api/subscription/me', () => HttpResponse.json({ error: 'unavailable' }, { status: 500 })),
+    )
+    const { useAuthStore } = await loadStore()
+
+    await useAuthStore.getState().init()
+
+    expect(localStorage.getItem('masterToken')).toBe(MASTER_TOKEN)
+    expect(useAuthStore.getState()).toMatchObject({ token: MASTER_TOKEN, master, isLoading: false })
   })
 
   it('удаляет невалидный сохранённый token', async () => {

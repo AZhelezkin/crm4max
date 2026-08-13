@@ -22,6 +22,7 @@ import BottomToast from '@/components/BottomToast'
 import { systemMapsUrl } from '@/lib/maps'
 import { BookingActionsButton, BookingActionsMenu, bookingActionsPosition, type BookingActionsPosition } from '@/components/BookingActionsMenu'
 import { reminderRetryMessage } from '@/lib/reminderError'
+import { openMiniAppLink } from '@/lib/miniAppHost'
 
 dayjs.locale('ru')
 
@@ -340,8 +341,7 @@ export default function BookingDetailPage() {
             onOpenMaps={() => {
               setAddressMenu(null)
               const url = systemMapsUrl({ address: routeAddress, lat: booking.clientAddress ? null : booking.master.lat, lng: booking.clientAddress ? null : booking.master.lng, label: booking.master.name })
-              if (window.WebApp?.openLink) window.WebApp.openLink(url)
-              else window.location.href = url
+              openMiniAppLink(url)
             }}
           />
         )}

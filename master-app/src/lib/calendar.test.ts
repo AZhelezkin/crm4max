@@ -80,6 +80,7 @@ describe('calendar platform effect', () => {
     expect(browser.open).toHaveBeenCalledWith(
       expect.stringContaining('https://calendar.google.com/calendar/render'),
       '_blank',
+      'noopener,noreferrer',
     )
   })
 })
