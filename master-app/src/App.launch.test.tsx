@@ -12,21 +12,35 @@ const BOOKING_ID = '50000000-0000-4000-8000-000000000005'
 
 interface AppSetup {
   webAppStart?: string
+  telegramStart?: string
   initData?: string
   search?: string
   hash?: string
 }
 
-async function loadApp({ webAppStart, initData, search = '', hash = '#/' }: AppSetup = {}) {
+async function loadApp({ webAppStart, telegramStart, initData, search = '', hash = '#/' }: AppSetup = {}) {
   vi.resetModules()
   window.history.replaceState(null, '', `/${search}${hash}`)
 
-  if (webAppStart !== undefined || initData !== undefined) {
+  if (telegramStart !== undefined) {
+    removeWebApp()
+    window.__MINI_APP_PROVIDER__ = 'telegram'
+    window.Telegram = {
+      WebApp: {
+        initData: initData ?? 'signed-telegram-init-data',
+        initDataUnsafe: { start_param: telegramStart },
+      },
+    }
+  } else if (webAppStart !== undefined || initData !== undefined) {
+    delete window.__MINI_APP_PROVIDER__
+    delete window.Telegram
     installWebApp({
       initData: initData ?? 'signed-max-init-data',
       initDataUnsafe: webAppStart === undefined ? {} : { start_param: webAppStart },
     })
   } else {
+    delete window.__MINI_APP_PROVIDER__
+    delete window.Telegram
     removeWebApp()
   }
 
@@ -110,6 +124,30 @@ describe.sequential('App launch routing', () => {
     expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
   })
 
+  it('маршрутизирует Telegram mbooking launch только по booking id', async () => {
+    const { default: App, getMasterBookingDeepLinkId } = await loadApp({
+      telegramStart: `mbooking-${BOOKING_ID}`,
+    })
+
+    render(<App />)
+
+    expect(getMasterBookingDeepLinkId()).toBe(BOOKING_ID)
+    expect(await screen.findByTestId('master-booking')).toBeInTheDocument()
+    expect(window.location.hash).toBe(`#/bookings/${BOOKING_ID}`)
+  })
+
+  it('fail closed для malformed Telegram mbooking launch', async () => {
+    const { default: App, getMasterBookingDeepLinkId } = await loadApp({
+      telegramStart: `mbooking-${MASTER_ID}-${BOOKING_ID}`,
+    })
+
+    render(<App />)
+
+    expect(getMasterBookingDeepLinkId()).toBeNull()
+    await waitFor(() => expect(window.location.hash).toBe('#/'))
+    expect(screen.queryByTestId('master-booking')).not.toBeInTheDocument()
+  })
+
   it('обрабатывает master booking query отдельно от старого MAX mmode', async () => {
     const { default: App } = await loadApp({
       webAppStart: 'mmode',
@@ -143,6 +181,15 @@ describe.sequential('App launch routing', () => {
       webAppStart: 'msubscription',
       hash: '#WebAppData=signed-data&WebAppPlatform=android&WebAppVersion=26.19.2',
     })
+
+    render(<StrictMode><App /></StrictMode>)
+
+    expect(await screen.findByTestId('subscription-plan')).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/subscription')
+  })
+
+  it('открывает подписку мастера после Telegram auth launch с msubscription', async () => {
+    const { default: App } = await loadApp({ telegramStart: 'msubscription' })
 
     render(<StrictMode><App /></StrictMode>)
 

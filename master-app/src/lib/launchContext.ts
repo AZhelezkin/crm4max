@@ -15,10 +15,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 export const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`, 'i')
 export const MASTER_BOOKING_DEEPLINK_RE = new RegExp(`^m-(${UUID_PART})-(${UUID_PART})$`, 'i')
+export const TELEGRAM_MASTER_BOOKING_DEEPLINK_RE = new RegExp(`^mbooking-(${UUID_PART})$`, 'i')
 export const PROFILE_LINK_START_PARAM_RE = /^pl_[A-Za-z0-9_-]{32}$/
 
 export function parseProfileLinkStartParam(startParam: string | null): string | null {
   return startParam && PROFILE_LINK_START_PARAM_RE.test(startParam) ? startParam : null
+}
+
+export function parseTelegramMasterBookingStartParam(startParam: string | null): string | null {
+  return startParam ? TELEGRAM_MASTER_BOOKING_DEEPLINK_RE.exec(startParam)?.[1] ?? null : null
 }
 
 let launchContext: MiniAppLaunchContext | undefined
@@ -62,16 +67,17 @@ export function createTelegramLaunchContext(fragment: URLSearchParams): MiniAppL
   const signedStart = new URLSearchParams(initData).get('start_param')
   const fragmentStart = fragment.get('tgWebAppStartParam')
   const queryStart = new URLSearchParams(window.location.search).get('startapp')
-  const queryTarget = queryStart === 'mmode' || parseProfileLinkStartParam(queryStart) ? queryStart : ''
+  const queryTarget = queryStart === 'mmode' || queryStart === 'msubscription' || parseTelegramMasterBookingStartParam(queryStart) || parseProfileLinkStartParam(queryStart) ? queryStart : ''
   const startParam = sdkStart || signedStart || fragmentStart || queryTarget
+  const isMasterLaunch = startParam === 'mmode' || startParam === 'msubscription' || Boolean(parseTelegramMasterBookingStartParam(startParam || null))
   return Object.freeze({
     provider: 'telegram',
-    appMode: startParam === 'mmode' ? 'master' : 'invalid',
+    appMode: isMasterLaunch ? 'master' : 'invalid',
     startParam: startParam || null,
     startParamSource: sdkStart || signedStart ? 'telegram-sdk' : fragmentStart ? 'telegram-fragment' : startParam ? 'query-startapp' : 'none',
     initData,
     authEndpoint: '/auth/telegram',
-    authRole: startParam === 'mmode' ? 'master' : null,
+    authRole: isMasterLaunch ? 'master' : null,
     tokenKey: 'telegramMasterToken',
   })
 }

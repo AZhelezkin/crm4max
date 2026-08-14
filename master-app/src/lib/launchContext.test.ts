@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { installWebApp, removeWebApp } from '@/test/web-app-fixture'
-import { createMaxLaunchContext, createTelegramLaunchContext, initializeLaunchContext, parseProfileLinkStartParam, resetLaunchContextForTests } from './launchContext'
+import { createMaxLaunchContext, createTelegramLaunchContext, initializeLaunchContext, parseProfileLinkStartParam, parseTelegramMasterBookingStartParam, resetLaunchContextForTests } from './launchContext'
 
 describe('launch context', () => {
   beforeEach(() => {
@@ -42,6 +42,47 @@ describe('launch context', () => {
 
     window.history.replaceState(null, '', '/telegram.html?startapp=client')
     expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ appMode: 'invalid', startParam: null, startParamSource: 'none' })
+  })
+
+  it('классифицирует Telegram startapp=msubscription как авторизованный запуск мастера', () => {
+    window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: {} } }
+    window.history.replaceState(null, '', '/telegram.html?startapp=msubscription')
+
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({
+      provider: 'telegram',
+      appMode: 'master',
+      startParam: 'msubscription',
+      startParamSource: 'query-startapp',
+      authEndpoint: '/auth/telegram',
+      authRole: 'master',
+      tokenKey: 'telegramMasterToken',
+    })
+  })
+
+  it('строго парсит Telegram master booking launch и классифицирует его как master', () => {
+    const bookingId = '50000000-0000-4000-8000-000000000005'
+    const startParam = `mbooking-${bookingId}`
+    window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: { start_param: startParam } } }
+
+    expect(parseTelegramMasterBookingStartParam(startParam)).toBe(bookingId)
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({
+      appMode: 'master',
+      authRole: 'master',
+      startParam,
+      startParamSource: 'telegram-sdk',
+    })
+  })
+
+  it.each([
+    'mbooking-',
+    'mbooking-not-a-uuid',
+    'mbooking-50000000-0000-4000-8000-000000000005-extra',
+    'mbooking-10000000-0000-4000-8000-000000000001-50000000-0000-4000-8000-000000000005',
+  ])('fail closed для malformed Telegram master booking launch %s', (startParam) => {
+    window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: { start_param: startParam } } }
+
+    expect(parseTelegramMasterBookingStartParam(startParam)).toBeNull()
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ appMode: 'invalid', authRole: null })
   })
 
   it.each([

@@ -43,7 +43,7 @@ import MetricsPageTracker from '@/components/MetricsPageTracker'
 import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
 import { bindMiniAppNativeBack, closeMiniApp, readyMiniApp, resolveDynamicMaxMasterBookingLaunch } from '@/lib/miniAppHost'
 import { authApi } from '@/api/auth.api'
-import { getLaunchContext, MASTER_BOOKING_DEEPLINK_RE, parseProfileLinkStartParam } from '@/lib/launchContext'
+import { getLaunchContext, MASTER_BOOKING_DEEPLINK_RE, parseProfileLinkStartParam, parseTelegramMasterBookingStartParam } from '@/lib/launchContext'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { text } from '@/styles/typography'
 import {
@@ -119,6 +119,7 @@ const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 const CLIENT_BOOKING_DEEPLINK_RE = new RegExp(`^(${UUID_PART})-(${UUID_PART})$`, 'i')
 
 export function getMasterBookingDeepLinkId(): string | null {
+  if (launchContext.provider === 'telegram') return parseTelegramMasterBookingStartParam(startParam)
   const m = MASTER_BOOKING_DEEPLINK_RE.exec(startParam ?? '')
   // m[1]=masterId, m[2]=bookingId
   return m ? m[2] : null
@@ -298,6 +299,8 @@ function MasterDeepLinkRedirect() {
   const handledBookingParam = useRef<string | null>(null)
   const [target, setTarget] = useState(() => {
     if (startParam === 'msubscription') return '/subscription'
+    const bookingId = launchContext.provider === 'telegram' ? getMasterBookingDeepLinkId() : null
+    if (bookingId) return `/bookings/${bookingId}`
     return null
   })
 

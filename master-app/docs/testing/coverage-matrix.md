@@ -156,6 +156,10 @@ Each token below is consumed by `coverage-inventory.architecture.test.ts`; addin
 - `src/api/masters.api.ts#mastersApi.updatePayment`
 - `src/api/masters.api.ts#mastersApi.markGuideStep`
 - `src/api/masters.api.ts#mastersApi.updateProfile`
+- `src/api/messenger-profile-links.api.ts#confirmMessengerProfileLink`
+- `src/api/messenger-profile-links.api.ts#createMessengerProfileLink`
+- `src/api/messenger-profile-links.api.ts#messengerProfileLinkErrorMessage`
+- `src/api/messenger-profile-links.api.ts#previewMessengerProfileLink`
 - `src/api/payments.api.ts#paymentsApi.exportXlsx`
 - `src/api/payments.api.ts#paymentsApi.list`
 - `src/api/schedule.api.ts#scheduleApi.get`
