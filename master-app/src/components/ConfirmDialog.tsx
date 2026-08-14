@@ -6,7 +6,7 @@ interface Props {
   title: string
   message: string
   confirmLabel: string
-  cancelLabel?: string
+  cancelLabel?: string | null
   /** true (по умолчанию) — деструктивное действие, кнопка красная; false — primary. */
   danger?: boolean
   /** Блокирует повторное подтверждение и закрытие, пока действие выполняется. */
@@ -122,24 +122,26 @@ export default function ConfirmDialog({
           >
             {confirmLabel}
           </button>
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            style={{
-              width: '100%',
-              height: 44,
-              borderRadius: 22,
-              border: 'none',
-              cursor: busy ? 'default' : 'pointer',
-              background: 'var(--color-background)',
-              ...text.callout1,
-              color: 'var(--color-on-surface)',
-            }}
-          >
-            {cancelLabel}
-          </button>
+          {cancelLabel && (
+            <button
+              ref={cancelRef}
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 22,
+                border: 'none',
+                cursor: busy ? 'default' : 'pointer',
+                background: 'var(--color-background)',
+                ...text.callout1,
+                color: 'var(--color-on-surface)',
+              }}
+            >
+              {cancelLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>,

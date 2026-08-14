@@ -35,7 +35,8 @@ async function loadApp(provider: 'MAX' | 'TELEGRAM' = 'MAX') {
 
 describe.sequential('destination profile-link confirmation gate', () => {
   beforeEach(() => {
-    preview.mockReset().mockResolvedValue({ sourceProvider: 'MAX', destinationProvider: 'TELEGRAM', expiresIn: 20 })
+    sessionStorage.removeItem('profileLink.confirmedToken')
+    preview.mockReset().mockResolvedValue({ sourceProvider: 'MAX', destinationProvider: 'TELEGRAM', expiresIn: 60 })
     confirm.mockReset().mockResolvedValue(undefined)
     authDetect.mockReset()
   })
@@ -50,11 +51,10 @@ describe.sequential('destination profile-link confirmation gate', () => {
     expect(screen.getByText(/текущий профиль будет связан/i)).toBeInTheDocument()
   })
 
-  it('подтверждает один раз, показывает успех и закрывает Mini App', async () => {
+  it('подтверждает один раз и отмечает token перед reload', async () => {
     let release: (() => void) | undefined
     confirm.mockImplementation(() => new Promise<void>((resolve) => { release = resolve }))
     const App = await loadApp()
-    const close = window.WebApp!.close
     render(<App />)
     const user = userEvent.setup()
     const button = await screen.findByRole('button', { name: 'Связать' })
@@ -64,8 +64,7 @@ describe.sequential('destination profile-link confirmation gate', () => {
     expect(confirm).toHaveBeenCalledWith({ provider: 'MAX', init_data: 'signed-max-data' })
     release?.()
 
-    expect(await screen.findByText('Профили связаны.')).toBeInTheDocument()
-    expect(close).toHaveBeenCalledOnce()
+    await waitFor(() => expect(sessionStorage.getItem('profileLink.confirmedToken')).toBe(TOKEN))
     expect(authDetect).not.toHaveBeenCalled()
   })
 
@@ -87,7 +86,8 @@ describe.sequential('destination profile-link confirmation gate', () => {
     render(<App />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Не удалось связать профили' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Закрыть' })).toBeEnabled()
     expect(authDetect).not.toHaveBeenCalled()
   })
 

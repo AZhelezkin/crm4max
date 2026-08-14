@@ -96,6 +96,20 @@ export const startParam = launchContext.startParam ?? ''
 normalizeMaxLaunchFragment()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
 const profileLinkToken = parseProfileLinkStartParam(startParam)
+const PROFILE_LINK_CONFIRMED_KEY = 'profileLink.confirmedToken'
+
+function consumeConfirmedProfileLinkToken(token: string | null): boolean {
+  if (!token) return false
+  try {
+    if (sessionStorage.getItem(PROFILE_LINK_CONFIRMED_KEY) !== token) return false
+    sessionStorage.removeItem(PROFILE_LINK_CONFIRMED_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const profileLinkConfirmationConsumed = consumeConfirmedProfileLinkToken(profileLinkToken)
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -119,6 +133,7 @@ function consumeMasterBookingQuery(param: string): void {
 }
 
 function resolveInitialMode(): 'master' | 'client' | null {
+  if (profileLinkConfirmationConsumed) return 'master'
   if (launchContext.appMode === 'master' || launchContext.appMode === 'invalid') return 'master'
   if (launchContext.appMode === 'client') return 'client'
   return null
@@ -156,7 +171,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (profileLinkToken) return
+    if (profileLinkToken && !profileLinkConfirmationConsumed) return
     if (mode !== null) return
 
     async function detect() {
@@ -179,7 +194,7 @@ export default function App() {
     detect()
   }, [mode])
 
-  if (profileLinkToken) return <ProfileLinkConfirmationGate />
+  if (profileLinkToken && !profileLinkConfirmationConsumed) return <ProfileLinkConfirmationGate />
   if (isMapTestHash()) return <MapTestPage />
   if (isSwipeTestHash()) return <SwipeTestPage />
   if (destinationSelectorToken) return <DestinationSelectorPage token={destinationSelectorToken} />
@@ -228,8 +243,8 @@ function ProfileLinkConfirmationGate() {
     setState('confirming')
     confirmMessengerProfileLink(request)
       .then(() => {
-        setState('success')
-        closeMiniApp()
+        try { sessionStorage.setItem(PROFILE_LINK_CONFIRMED_KEY, profileLinkToken!) } catch { /* reload всё равно обновит launch context */ }
+        window.location.reload()
       })
       .catch((error) => {
         setErrorMessage(messengerProfileLinkErrorMessage(error))
@@ -260,6 +275,17 @@ function ProfileLinkConfirmationGate() {
           danger={false}
           busy={state === 'confirming'}
           onConfirm={confirm}
+          onCancel={closeMiniApp}
+        />
+      )}
+      {state === 'error' && (
+        <ConfirmDialog
+          title="Не удалось связать профили"
+          message={errorMessage}
+          confirmLabel="Закрыть"
+          cancelLabel={null}
+          danger={false}
+          onConfirm={closeMiniApp}
           onCancel={closeMiniApp}
         />
       )}
