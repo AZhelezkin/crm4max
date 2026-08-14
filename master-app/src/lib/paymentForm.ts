@@ -1,6 +1,5 @@
 /**
- * Открытие hosted-формы ОПЛАТЫ T-Bank в ТОМ ЖЕ WebView мини-аппа (а не во
- * внешнем браузере через WebApp.openLink).
+ * Открытие hosted-формы оплаты T-Bank с учётом возможностей контейнера.
  *
  * Почему так: openLink уводит во внешний браузер, а Max не шлёт
  * visibilitychange/focus ни при уходе, ни при возврате — приложение не узнаёт
@@ -9,10 +8,16 @@
  * `payResult`; приложение преобразует его в #/pay-result и сразу показывает
  * результат. Авторизация переживает круг: JWT мастера в localStorage.
  *
- * NB: только для оплаты (Init). Форма ПРИВЯЗКИ карты (AddCard) SuccessURL не
+ * Telegram сохраняем открытым и отправляем во внешний банковский checkout.
+ *
+ * NB: форма ПРИВЯЗКИ карты (AddCard) SuccessURL не
  * принимает — её по-прежнему открываем через openLink во внешнем браузере.
  */
 export function openPaymentForm(url: string): void {
+  if (miniAppProvider() === 'telegram') {
+    openMiniAppLink(url)
+    return
+  }
   window.location.assign(url)
 }
 
@@ -21,4 +26,4 @@ export function openPaymentForm(url: string): void {
 export function openCardBindingForm(url: string): void {
   openMiniAppLink(url)
 }
-import { openMiniAppLink } from './miniAppHost'
+import { miniAppProvider, openMiniAppLink } from './miniAppHost'
