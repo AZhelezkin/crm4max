@@ -68,4 +68,11 @@ describe('launch context', () => {
     window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: { start_param: startParam } } }
     expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ provider: 'telegram', startParam })
   })
+
+  it('читает profile-link start param напрямую из подписанного Telegram initData', () => {
+    const startParam = 'pl_0123456789abcdefghijklmnopqrstuv'
+    window.Telegram = { WebApp: { initData: new URLSearchParams({ start_param: startParam }).toString(), initDataUnsafe: {} } }
+
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ provider: 'telegram', startParam, startParamSource: 'telegram-sdk' })
+  })
 })

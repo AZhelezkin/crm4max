@@ -69,13 +69,13 @@ describe('master OtherPage', () => {
   it('показывает ошибку связывания при API failure', async () => {
     profileLinkMock.mockRejectedValue(new Error('failed'))
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const alert = vi.spyOn(window, 'alert').mockImplementation(() => undefined)
     const webApp = installWebApp()
     const { user } = renderAtRoute(<OtherPage />, { route: '/other' })
 
     await user.click(screen.getByRole('button', { name: LINK_PROFILES }))
 
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('Не удалось связать профили. Попробуйте позже.'))
+    expect(await screen.findByRole('dialog', { name: 'Не удалось связать профили' })).toBeInTheDocument()
+    expect(screen.getByText('Попробуйте ещё раз позже.')).toBeInTheDocument()
     expect(webApp.openMaxLink).not.toHaveBeenCalled()
   })
 

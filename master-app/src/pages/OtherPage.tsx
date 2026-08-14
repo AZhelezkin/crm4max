@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { startSupport } from '@/api/support.api'
 import { createMessengerProfileLink } from '@/api/messenger-profile-links.api'
 import { miniAppProvider, openMiniAppMessengerLink } from '@/lib/miniAppHost'
@@ -15,6 +16,7 @@ export default function OtherPage() {
   const navigate = useNavigate()
   const [supportLoading, setSupportLoading] = useState(false)
   const [profileLinkLoading, setProfileLinkLoading] = useState(false)
+  const [profileLinkError, setProfileLinkError] = useState(false)
 
   // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как было в навбаре).
   const openSupport = async () => {
@@ -41,7 +43,7 @@ export default function OtherPage() {
       openMiniAppMessengerLink(url)
     } catch (err) {
       console.error('createMessengerProfileLink failed', err)
-      alert('Не удалось связать профили. Попробуйте позже.')
+      setProfileLinkError(true)
     } finally {
       setProfileLinkLoading(false)
     }
@@ -94,6 +96,17 @@ export default function OtherPage() {
           })}
         </div>
       </div>
+      {profileLinkError && (
+        <ConfirmDialog
+          title="Не удалось связать профили"
+          message="Попробуйте ещё раз позже."
+          confirmLabel="Повторить"
+          cancelLabel="Закрыть"
+          danger={false}
+          onConfirm={() => { setProfileLinkError(false); void linkProfiles() }}
+          onCancel={() => setProfileLinkError(false)}
+        />
+      )}
     </div>
   )
 }

@@ -57,17 +57,19 @@ export function createMaxLaunchContext(): MiniAppLaunchContext {
 }
 
 export function createTelegramLaunchContext(fragment: URLSearchParams): MiniAppLaunchContext {
+  const initData = window.Telegram?.WebApp?.initData || fragment.get('tgWebAppData') || ''
   const sdkStart = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+  const signedStart = new URLSearchParams(initData).get('start_param')
   const fragmentStart = fragment.get('tgWebAppStartParam')
   const queryStart = new URLSearchParams(window.location.search).get('startapp')
   const queryTarget = queryStart === 'mmode' || parseProfileLinkStartParam(queryStart) ? queryStart : ''
-  const startParam = sdkStart || fragmentStart || queryTarget
+  const startParam = sdkStart || signedStart || fragmentStart || queryTarget
   return Object.freeze({
     provider: 'telegram',
     appMode: startParam === 'mmode' ? 'master' : 'invalid',
     startParam: startParam || null,
-    startParamSource: sdkStart ? 'telegram-sdk' : fragmentStart ? 'telegram-fragment' : startParam ? 'query-startapp' : 'none',
-    initData: window.Telegram?.WebApp?.initData || fragment.get('tgWebAppData') || '',
+    startParamSource: sdkStart || signedStart ? 'telegram-sdk' : fragmentStart ? 'telegram-fragment' : startParam ? 'query-startapp' : 'none',
+    initData,
     authEndpoint: '/auth/telegram',
     authRole: startParam === 'mmode' ? 'master' : null,
     tokenKey: 'telegramMasterToken',
