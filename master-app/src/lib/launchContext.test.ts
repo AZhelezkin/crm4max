@@ -34,4 +34,13 @@ describe('launch context', () => {
     const fragment = new URLSearchParams(startParam ? `tgWebAppStartParam=${startParam}` : '')
     expect(createTelegramLaunchContext(fragment)).toMatchObject({ appMode: 'invalid', authRole: null, tokenKey: 'telegramMasterToken' })
   })
+
+  it('принимает только точный master target из URL встроенной menu button', () => {
+    window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: {} } }
+    window.history.replaceState(null, '', '/telegram.html?startapp=mmode')
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ appMode: 'master', startParam: 'mmode', startParamSource: 'query-startapp', authEndpoint: '/auth/telegram' })
+
+    window.history.replaceState(null, '', '/telegram.html?startapp=client')
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ appMode: 'invalid', startParam: null, startParamSource: 'none' })
+  })
 })
