@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { text } from '@/styles/typography'
 import { HeroHeader } from '@/components/onboardingShared'
 import { startSupport } from '@/api/support.api'
+import { createMessengerProfileLink } from '@/api/messenger-profile-links.api'
 import { miniAppProvider, openMiniAppMessengerLink } from '@/lib/miniAppHost'
 import { renderMiniAppDestination } from '@/lib/miniAppDestinations'
 
@@ -13,6 +14,7 @@ import { renderMiniAppDestination } from '@/lib/miniAppDestinations'
 export default function OtherPage() {
   const navigate = useNavigate()
   const [supportLoading, setSupportLoading] = useState(false)
+  const [profileLinkLoading, setProfileLinkLoading] = useState(false)
 
   // Поддержка: включаем режим на бэке и открываем мастер-бот в Max (как было в навбаре).
   const openSupport = async () => {
@@ -31,10 +33,25 @@ export default function OtherPage() {
     }
   }
 
+  const linkProfiles = async () => {
+    if (profileLinkLoading) return
+    setProfileLinkLoading(true)
+    try {
+      const { url } = await createMessengerProfileLink()
+      openMiniAppMessengerLink(url)
+    } catch (err) {
+      console.error('createMessengerProfileLink failed', err)
+      alert('Не удалось связать профили. Попробуйте позже.')
+    } finally {
+      setProfileLinkLoading(false)
+    }
+  }
+
   const items: Array<{ label: string; onClick?: () => void; loading?: boolean }> = [
     { label: 'Согласия', onClick: () => navigate('/consents') },
     { label: 'Подписка', onClick: () => navigate('/subscription') },
     { label: 'Способы оплаты', onClick: () => navigate('/payment-methods') },
+    { label: 'Связать профили', onClick: linkProfiles, loading: profileLinkLoading },
     { label: 'Техническая поддержка', onClick: openSupport, loading: supportLoading },
     { label: 'О платформе', onClick: () => navigate('/about-platform') },
   ]

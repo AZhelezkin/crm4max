@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { installWebApp, removeWebApp } from '@/test/web-app-fixture'
-import { createMaxLaunchContext, createTelegramLaunchContext, initializeLaunchContext, resetLaunchContextForTests } from './launchContext'
+import { createMaxLaunchContext, createTelegramLaunchContext, initializeLaunchContext, parseProfileLinkStartParam, resetLaunchContextForTests } from './launchContext'
 
 describe('launch context', () => {
   beforeEach(() => {
@@ -42,5 +42,30 @@ describe('launch context', () => {
 
     window.history.replaceState(null, '', '/telegram.html?startapp=client')
     expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ appMode: 'invalid', startParam: null, startParamSource: 'none' })
+  })
+
+  it.each([
+    'pl_0123456789abcdefghijklmnopqrstuv',
+    'pl_0123456789ABCDEFGHIJKLMN_-qrstuv',
+  ])('распознаёт строгий profile-link start param %s', (startParam) => {
+    expect(parseProfileLinkStartParam(startParam)).toBe(startParam)
+  })
+
+  it.each([
+    'pl_short',
+    'PL_0123456789abcdefghijklmnopqrstuv',
+    'pl_0123456789abcdefghijklmnopqrstu!',
+    'xpl_0123456789abcdefghijklmnopqrstuv',
+  ])('отклоняет malformed profile-link start param %s', (startParam) => {
+    expect(parseProfileLinkStartParam(startParam)).toBeNull()
+  })
+
+  it('читает profile-link launch из MAX и Telegram contexts', () => {
+    const startParam = 'pl_0123456789abcdefghijklmnopqrstuv'
+    installWebApp({ initData: 'max-data', initDataUnsafe: { start_param: startParam } })
+    expect(createMaxLaunchContext()).toMatchObject({ provider: 'max', startParam })
+
+    window.Telegram = { WebApp: { initData: 'telegram-data', initDataUnsafe: { start_param: startParam } } }
+    expect(createTelegramLaunchContext(new URLSearchParams())).toMatchObject({ provider: 'telegram', startParam })
   })
 })

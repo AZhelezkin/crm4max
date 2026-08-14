@@ -41,9 +41,16 @@ import DestinationSelectorPage from '@/standalone-pages/handoff/destination-sele
 import { parseDestinationSelectorStartParam } from '@/standalone-pages/handoff/destination-selector/route'
 import MetricsPageTracker from '@/components/MetricsPageTracker'
 import { resolveLaunchSource, trackEventOnce } from '@/lib/metrics'
-import { bindMiniAppNativeBack, readyMiniApp, resolveDynamicMaxMasterBookingLaunch } from '@/lib/miniAppHost'
+import { bindMiniAppNativeBack, closeMiniApp, readyMiniApp, resolveDynamicMaxMasterBookingLaunch } from '@/lib/miniAppHost'
 import { authApi } from '@/api/auth.api'
-import { getLaunchContext, MASTER_BOOKING_DEEPLINK_RE } from '@/lib/launchContext'
+import { getLaunchContext, MASTER_BOOKING_DEEPLINK_RE, parseProfileLinkStartParam } from '@/lib/launchContext'
+import ConfirmDialog from '@/components/ConfirmDialog'
+import { text } from '@/styles/typography'
+import {
+  confirmMessengerProfileLink,
+  messengerProfileLinkErrorMessage,
+  previewMessengerProfileLink,
+} from '@/api/messenger-profile-links.api'
 
 // Режимы по start_param из Max WebApp (window.WebApp.initDataUnsafe.start_param):
 //   "mmode" → мастер (кабинет / онбординг) — быстрый путь
@@ -88,6 +95,7 @@ const launchContext = getLaunchContext()
 export const startParam = launchContext.startParam ?? ''
 normalizeMaxLaunchFragment()
 const destinationSelectorToken = parseDestinationSelectorStartParam(startParam)
+const profileLinkToken = parseProfileLinkStartParam(startParam)
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -148,6 +156,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (profileLinkToken) return
     if (mode !== null) return
 
     async function detect() {
@@ -170,6 +179,7 @@ export default function App() {
     detect()
   }, [mode])
 
+  if (profileLinkToken) return <ProfileLinkConfirmationGate />
   if (isMapTestHash()) return <MapTestPage />
   if (isSwipeTestHash()) return <SwipeTestPage />
   if (destinationSelectorToken) return <DestinationSelectorPage token={destinationSelectorToken} />
@@ -186,6 +196,75 @@ export default function App() {
   }
 
   return mode === 'client' ? <ClientApp /> : <MasterApp />
+}
+
+type ProfileLinkGateState = 'loading' | 'ready' | 'confirming' | 'success' | 'error'
+
+function ProfileLinkConfirmationGate() {
+  const [state, setState] = useState<ProfileLinkGateState>('loading')
+  const [errorMessage, setErrorMessage] = useState('')
+  const previewStarted = useRef(false)
+  const confirmStarted = useRef(false)
+  const request = {
+    provider: launchContext.provider === 'telegram' ? 'TELEGRAM' as const : 'MAX' as const,
+    init_data: launchContext.initData,
+  }
+
+  useEffect(() => {
+    if (previewStarted.current) return
+    previewStarted.current = true
+    readyMiniApp()
+    previewMessengerProfileLink(request)
+      .then(() => setState('ready'))
+      .catch((error) => {
+        setErrorMessage(messengerProfileLinkErrorMessage(error))
+        setState('error')
+      })
+  }, [])
+
+  const confirm = () => {
+    if (confirmStarted.current) return
+    confirmStarted.current = true
+    setState('confirming')
+    confirmMessengerProfileLink(request)
+      .then(() => {
+        setState('success')
+        closeMiniApp()
+      })
+      .catch((error) => {
+        setErrorMessage(messengerProfileLinkErrorMessage(error))
+        setState('error')
+      })
+  }
+
+  const message = state === 'success'
+    ? 'Профили связаны.'
+    : state === 'error'
+      ? errorMessage
+      : 'Загрузка...'
+
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      height: '100dvh', background: 'var(--color-background)',
+    }}>
+      <span role={state === 'error' ? 'alert' : 'status'} style={{ ...text.body2, color: 'var(--color-on-surface)' }}>
+        {message}
+      </span>
+      {(state === 'ready' || state === 'confirming') && (
+        <ConfirmDialog
+          title="Связать профили?"
+          message="Текущий профиль будет связан с вашим профилем в другом мессенджере."
+          confirmLabel="Связать"
+          cancelLabel="Отмена"
+          danger={false}
+          busy={state === 'confirming'}
+          onConfirm={confirm}
+          onCancel={closeMiniApp}
+        />
+      )}
+    </div>
+  )
 }
 
 function MasterDeepLinkRedirect() {
